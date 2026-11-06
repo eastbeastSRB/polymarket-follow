@@ -12,6 +12,13 @@ sheet settles (`W OWNER-TEST-SHEET.md`).
 2026-11-06 (page text saved in `W src\`). *From memory* = my knowledge, not re-checked today; it is marked and should be tested
 before anything rests on it.
 
+[Correction 2026-11-06 22:44Z, self-review: "stamped UTC" was not true of four outputs: `24-read-setting.out.txt`,
+`25-parse-check.out.txt`, `26-read-aumid-registry.out.txt` and `27-encoding-test.out.txt` carry no time inside. Their file times
+(UTC, from the file system) are 22:24:19Z, 22:26:07Z, 22:28:32Z and 22:31:00Z. `snap-before.txt` and `snap-after.txt` carry their
+time and count on one joined first line (a precedence slip in `snap-notif-keys.ps1`, fixed after the runs); my first diff of the two
+skipped each file's first name because of it, so the added Settings key was established by searching both files for the GUID, not by
+that diff.]
+
 ## 1. The answers
 
 ### 1. Every way a background Node process can show a Windows 11 notification
