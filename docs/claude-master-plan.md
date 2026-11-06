@@ -26,27 +26,30 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-06, through decisions 2026-11-06 (the research
-phase approved).*
+*Brought in step on 2026-11-06, through decisions 2026-11-06 (the pre-test
+and waves 2–4 approved).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
 - Nothing is built. The perps API was verified for following before founding:
   public leaderboards 100 a page, any account's fills and open positions by
   address, the rate budget (external-apis).
-- The research phase runs in three waves; wave 1 (R1, R4, R5) is running
-  (decisions 2026-11-06, the research phase approved).
+- The research phase runs in four waves; wave 1 (R1, R4, R5) is running
+  (decisions 2026-11-06, the research phase approved). Before v1 is planned,
+  R8 asks once, on the past, whether following pays and whether the
+  leaderboard is skill or luck (decisions 2026-11-06, the pre-test and waves
+  2–4 approved).
 
 ## The plan — the next steps
 
 | | When | What | Who |
 |---|---|---|---|
-| 🔵 | now | The research phase, R1–R7 (below), in three waves | subagents, one report each |
+| 🔵 | now | The research phase, R1–R8 (below), in four waves | subagents, one report each |
 | ⬜ | after the research | The v1 plan: what v1 does, what waits; the owner approves; registered in decisions | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
 
-## The research phase (R1–R7)
+## The research phase (R1–R8)
 
 Each topic is one subagent with a written report in `docs/reviews/`, every
 number from a saved script output, every fact about an API added to
@@ -57,11 +60,12 @@ through each, and nothing is planned or built until the owner says the
 research is complete (decisions 2026-11-06, three more of the owner's
 requirements). **Every report also has a "Beyond the brief" section and ends
 with its questions for the owner, each with a recommendation** (decisions
-2026-11-06, the research phase approved). **The waves:** 1 — R1, R4, R5 in
-parallel; 2 — R2 (with a blind re-check of its labels) and R3, after R1; 3 —
-R6 and R7, after R2 and R3. Waves 2 and 3 are revised with the owner's lessons
-from polymarket-lab before they start. Every subagent that calls the API
-shares one IP budget, so the waves are also its schedule.
+2026-11-06, the research phase approved). **The waves** (decisions
+2026-11-06, the pre-test and waves 2–4 approved): 1 — R1, R4, R5 in
+parallel; 2 — R2 (with R2-LABELS, a blind re-check of its labels) and R3,
+after R1; 3 — R8 and R6, after R2 and R3; 4 — R7, after R8. Every subagent
+that calls the API shares one IP budget, so the waves are also its schedule;
+bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 - 🔵 **R1 — The perps API in full:** every endpoint we would use — the
   leaderboard (how often it refreshes), fills and position-fills by address
@@ -77,10 +81,18 @@ shares one IP budget, so the waves are also its schedule.
   once, positions held), proven on labelled examples (the all-time #1: 100
   fills in 64 minutes, 11 positions at once); alerts and the scoreboard
   cover directional traders by default (decisions 2026-11-06, three more of
-  the owner's requirements).
+  the owner's requirements). Also: an "underwater" flag (realized profit
+  against account value — the board counts closed trades only), profit per
+  volume by instrument category, competition players and reward farmers,
+  and the pool's fill histories that R8 reuses (decisions 2026-11-06, the
+  pre-test and waves 2–4 approved).
 - ⬜ **R3 — The paper-follow method:** the entry price after the alert's
-  delay, fees, funding, slippage, the exit; the after-following scoreboard
-  and its null (polymarket-lab's F9 design: decisions 2026-11-06).
+  delay, fees, funding, slippage by instrument and hour, the exit; the
+  after-following scoreboard and its null (polymarket-lab's F9 design:
+  decisions 2026-11-06); the scoreboard's statistics valid however often the
+  owner looks — an e-process, a verdict only at E ≥ 20, rules fixed before
+  the data, a correction for many traders (decisions 2026-11-06, the
+  pre-test and waves 2–4 approved).
 - 🔵 **R4 — Notifications:** Windows notifications from a background process
   (how, and how reliable — including under Task Scheduler, where a task run
   "whether the user is logged on or not" cannot show one), what an alert says;
@@ -88,11 +100,17 @@ shares one IP budget, so the waves are also its schedule.
 - 🔵 **R5 — Existing tools:** trackers that already follow perps or similar
   exchanges' traders, what they show, and what this project does differently.
 - ⬜ **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
-  50 and 100 followed traders (fill rates from R2); what to keep; the backup in its own folder on
-  E: and F: (E: was 92% full on 2026-11-05).
+  50 and 100 followed traders (fill rates from R2); what to keep; the backup
+  in its own folder on E: and F: (E: 92% full, 16 GB free, on 2026-11-06).
 - ⬜ **R7 — The pages:** the leaderboard, a trader's page, favourites, the
   alert feed, the paper-follow log; the ports, clear of the lab's 3000 and
-  4000.
+  4000. After R8: its verdict decides whether v1 is a copy-alert tool or a
+  watching tool.
+- ⬜ **R8 — Does following pay, and is the leaderboard skill or luck?** One
+  retrospective study, one look, its rules fixed in decisions before it
+  (decisions 2026-11-06, the pre-test and waves 2–4 approved). If following
+  fails or there are too few to tell, v1 is planned as a watching and
+  analysis tool, and the forward paper-follow log is the real test.
 
 ## Later — the backlog
 

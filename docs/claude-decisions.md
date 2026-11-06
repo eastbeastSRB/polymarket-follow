@@ -1,5 +1,96 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-06 (the pre-test and waves 2–4 approved — the owner, on the
+supervisor's recommendations): **BEFORE V1 IS PLANNED, ONE RETROSPECTIVE LOOK
+ASKS WHETHER FOLLOWING PAYS AT ALL, AND WHETHER THE LEADERBOARD IS SKILL OR
+LUCK.** The owner sent nine lessons from polymarket-lab's supervisor
+(2026-11-06), each with its source in `E:\coding\polymarket-lab`, read only:
+the F9 drift probe (`docs/reviews/drift-probe-2026-09-04.md`, its review;
+the lab's decisions 2026-09-04), data-hunt Q8
+(`docs/reviews/data-hunt-2026-11-04.md`), STATS-1
+(`docs/reviews/statistics-methods-2026-09-24.md`; the lab's decisions
+2026-09-24, reading methods), READ-64 item 5 (the lab's decisions
+2026-10-03), hunt-1 Q2 (`docs/reviews/hunt-1-2026-11-04.md`) and the lab
+master-plan's "What the leaderboard is actually for". **Where they landed:**
+(1) does following pay and (2) skill or luck → **R8-PRETEST**, one new study;
+(3) the scoreboard's statistics → R3: an e-process valid however often the
+owner looks (a verdict only at E ≥ 20, as the lab's nightly number), rules
+fixed before the data, a correction for testing many traders at once; (4)
+realized profit against account value — the perps board counts closed trades
+only, so a trader banking small wins and holding big losers open ranks high
+while underwater → R2, an "underwater" flag beside the style label; (5)
+profit per volume by instrument category (crypto majors, small coins, US
+stocks, commodities, pre-IPO) → R2, read relatively, the volume beside it;
+(6)–(9) competition players and reward farmers, thin markets and the
+follower's slippage, liquidity by hour and stock sessions, data freezes →
+already in the plan (R1–R4, the v1 plan), now with the lab's evidence. **THE
+WAVES, REVISED:** wave 2 — R2-STYLE (Opus 5.5, max; 350 tokens a minute; it
+also collects the pool's fill histories R8 reuses), R2-LABELS (Sonnet 5.5,
+xhigh; blind, no API), R3-PAPER (Opus 5.5, max; 100); wave 3 — R8-PRETEST
+(Opus 5.5, max; 450), R6-STORAGE (Sonnet 5.5, xhigh; 50); wave 4 — R7-PAGES
+(Sonnet 5.5, xhigh), after R8, whose verdict decides what v1 is. **R8'S
+RULES, FIXED NOW** — the structure; every number marked [R1], [R2] or [R3]
+is filled from those reports, shown to the owner and recorded here BEFORE the
+one look:
+**A — DOES FOLLOWING PAY?** (A1) *Pool:* the all-time NOTIONAL board's
+pageable top 1,000, read at a stamped instant — chosen on activity, not
+profit. (A2) *Periods:* selection, the 30 days before T0; measurement, [T0,
+T1), as long as the fill history allows [R1]. (A3) *Tracked set, fixed at T0
+from pre-T0 data only:* labelled directional by R2's frozen classifier on
+pre-T0 fills [R2]; window notional above a floor (the lab's dormant-wallet
+trap) [R2]; at least 10 closed positions in the window; the top 50 by
+realized PnL minus fees. Secondary arm: the top 50 by PnL / notional. (A4)
+*Entry:* each opening from flat and each flip; fills of one order and fills
+within 60 s merged; adds secondary. (A5) *The follower's price:* the first
+public trade at or after the fill plus the delay the planned poller would
+really have had — the next poll at a random phase (fixed seed), the API's lag
+[R1], the notification [R4], 60 s to act — plus the cost of crossing the
+spread [R3]; never a price before the fill (the follower cannot capture the
+trader's own impact: F9). Secondary delays 15 s, 5 min, 30 min. (A6) *Exit:*
+mirror the trader's close or liquidation after the same delay; open at T1 →
+marked at T1 and flagged; secondary horizons 1 h, 6 h, 24 h. (A7) *Costs:*
+the base-tier taker fee on both legs and funding over the hold, signed [R1].
+(A8) *Unit:* net return on equal notional per entry. (A9) *Null:* per entry,
+3 random public trades in the same instrument and the same UTC hour of the
+same day (the tracked accounts' trades removed by trade ID if R1 confirms the
+match [R1]), each keeping its own taker direction, with the same delay,
+holding time and costs; fixed seed; d = tracked − the mean of its nulls.
+(A10) *Honest N is traders:* a paired bootstrap clustered by trader (2,000
+resamples), and by calendar day as a second clustering. (A11) *The verdict,
+one look, the primary cell only:* **PAYS** only if (i) the mean tracked net
+return is above zero with its trader-clustered 95% interval above zero, (ii)
+the mean d is above zero with its 95% interval above zero under both
+clusterings, and (iii) the exact two-sided sign test, one vote per trader (its
+mean d), gives p < 0.05 in favour; **TOO FEW TO TELL** under 20 traders with 5+
+entries or under 300 entries; **FAILS** otherwise. The upper end of d's
+interval is always printed against the round-trip cost. (A12) Secondaries —
+other delays and horizons, the ratio arm, adds, categories, hours, sessions —
+decide nothing. (A13) *Frozen before the look:* a rules file with every
+threshold, committed and recorded here; the capture stored with its read
+instant; the analysis reads only the capture (polymarket-lab 2026-09-04: an
+experiment that reads a live collection has no fixed answer); a changed
+threshold makes a new run, never a revision.
+**B — SKILL OR LUCK?** (one study with A, the same pool) (B1) *Reappearance:*
+weekly boards rebuilt within the pool from fills (Monday 00:00 UTC; PnL =
+realized − fees, funding estimated and stated), directional accounts only;
+the share of week w's PnL top 50 also in week w+1's, against the same share
+on the notional board. Find on the first half of the weeks, confirm on the
+second; **kill** in the find half unless PnL reappearance exceeds notional
+reappearance with a week-block bootstrap interval excluding zero. (B2)
+*Persistence:* rank on PnL / notional over 4 weeks, measure the next 4;
+Spearman and the top fifth minus the rest against 2,000 permutations; find on
+the first pair, confirm on the next; **kill** if the find pair's correlation
+is ≤ 0 or its permutation p ≥ 0.05. (B3) Under 8 weeks of history [R1], B is
+"not testable yet" and becomes a forward measurement on v1's stored weekly
+boards. (B4) A board rebuilt inside the pool is not the real board; stated.
+**THE OWNER'S RULINGS WITH IT:** (1) **"Too few to tell" counts as not
+proven:** v1 is then planned as a watching tool and the forward paper-follow
+log is the real test. (2) **If following fails,** alerts still fire, as
+information about what a trader did; what goes is the copy framing and the
+scoreboard's headline place. (3) **Bulk research data** goes gzip-compressed
+to `F:\polymarket-follow-research\` (E: 16 GB free, 92% full; F: 1,556 GB
+free — measured 2026-11-06 22:18Z).
+
 2026-11-06 (the research phase approved — the owner, recorded by this
 project's supervisor in its first session): **THE RESEARCH PHASE STARTS, IN
 THREE WAVES.** The supervisor's first report (2026-11-06, from the saved spec

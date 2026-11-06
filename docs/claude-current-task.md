@@ -17,8 +17,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   database and backup folder, research before the plan and the plan before
   code.
 - **The research phase is running** (decisions 2026-11-06, the research phase
-  approved): wave 1 — R1-API, R4-NOTIFY, R5-TOOLS — started 2026-11-06; waves
-  2 and 3 are being revised with the owner's lessons from polymarket-lab.
+  approved): wave 1 — R1-API, R4-NOTIFY, R5-TOOLS — started 2026-11-06.
+  Waves 2–4 and R8, a one-look retrospective test of whether following pays
+  and whether the leaderboard is skill or luck, are approved with R8's rules
+  (decisions 2026-11-06, the pre-test and waves 2–4 approved).
 - **Verified before founding** (external-apis): the public leaderboard, any
   account's fills and open positions by address, the live stream naming no
   account (so following is by polling), the IP budget of 1,000 weighted
@@ -34,8 +36,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 1. **Wave 1** reports, each verified by the supervisor and walked through
    with the owner.
-2. **Waves 2 and 3** (R2 with a blind re-check, R3; then R6, R7), shown to the
-   owner before they start.
+2. **Wave 2** (R2 with R2-LABELS, R3) after R1 is verified; **wave 3** (R8,
+   R6) after R2 and R3, R8's numbers filled and recorded in decisions before
+   its one look; **wave 4** (R7) after R8.
 3. **The owner says the research is complete;** then the v1 plan, approved
    and registered in decisions.
 4. **The skeleton,** then **v1** in parts.
@@ -47,6 +50,8 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - The PnL history's parameters, and whether it reveals deposits and
   withdrawals (R1).
 - How to tell an algorithm or market maker from a directional trader (R2).
+- Whether following pays at all, after the delay, fees and funding, against
+  random trades; whether the leaderboard is skill or luck (R8).
 - How the poller raises a Windows notification reliably (R4).
 - Storage per day, and E:'s room (R6).
 
