@@ -87,14 +87,19 @@ this PC's task data; the live proof of "no toast" is on the owner sheet (F).**
 
 - *Read (Learn, TASK_LOGON_TYPE, updated 2024-02-22):* S4U ("run whether logged on or not", no password stored) means "the task
   will run in a non-interactive desktop"; the interactive-token type means "User must already be logged on. The task will be run
-  only in an existing interactive session". Password logon types are session-0 tasks too (non-interactive window station).
+  only in an existing interactive session". [Correction 2026-11-06 22:41Z, self-review: the first version also said here that Password logon types are session-0 tasks "too" and filed it under *Read*. That page says "non-interactive" only for S4U; for Password it says only "Use a password for logging on the user". It is now *measured* instead, in the next bullet.]
   *Read (Learn, Interactive Services, updated 2025-04-15):* "Services cannot directly interact with a user as of Windows Vista"; the
   supported ways are `WTSSendMessage` or a helper process in the user's session talking to the service.
 - *Measured, this PC (W `01-probe-machine.out.txt`, 22:15:54Z):* qwinsta shows session 0 "services" (disconnected) and session 1
   "console" (grozd, active). **polymarket-lab's "Polymarket Lab Worker"** is a boot trigger (1 min delay), logon type **Password**,
-  run level Limited, no time limit, restart 3 times 1 minute apart. That is the "whether logged on or not" kind: it cannot show a
-  toast, and it was right for the lab, which needs none. (Its backup task is SYSTEM, its mirror task Password.) Read only; nothing touched.
-- *A WMI test did not stand in for session 0:* a process started through `Win32_Process.Create` by this standard user landed in
+  run level Limited, no time limit, restart 3 times 1 minute apart. That is the "whether logged on or not" kind. [Correction 2026-11-06 22:41Z: the first version said
+  "it cannot show a toast" with no measurement. **Measured now:** the node.exe that the lab's own how-it-works names as its worker
+  (pid 42592, created 2026-11-02T15:17:32Z, the task's last run) is in **session 0** (W `41-lab-worker-session.out.txt`, 22:38:51Z). So
+  a boot/Password task does run in the non-interactive session. That a toast raised from there is not shown is still unmeasured;
+  the owner sheet's `-s4u` task stands in for it, since S4U is the same kind without a stored password.] It was right for the lab,
+  which needs no toast. (Its backup task is SYSTEM, its mirror task Password.) Read only; nothing touched.
+- *A WMI test did not stand in for session 0:* a process started through `Win32_Process.Create` from this non-elevated shell (the first version said "by
+  this standard user"; whether the account is an administrator was not established, W `40-review-facts.out.txt`) landed in
   session 1, `WinSta0`, visible, and its toast was accepted (W `31-session0-via-wmi.out.txt`). So the live proof needs the owner's
   Task Scheduler test (prepared: `W register-R4-test.ps1`, two tasks, `r4-task-run.mjs`).
 - *Locked screen:* the session stays alive and a process in it keeps running; a toast raised then goes to the notification centre
