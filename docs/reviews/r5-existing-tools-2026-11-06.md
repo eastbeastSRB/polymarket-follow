@@ -97,10 +97,16 @@ Evidence:
   endpoints (external-apis) settle the data question; the page is about the
   web leaderboard. The signer-address point matters: the same person can be
   two addresses on the two boards.
-- Scale claims, unverified: one search summary quoted a KuCoin flash-news
-  piece putting perps open interest near $26.4M (about 0.3% of Hyperliquid's)
-  and launch-day volume near $48M, from an article of unclear age [S]. Do not
-  use until measured (R1's exchange-stats endpoint is public).
+- Scale claims, unverified: one search summary put perps open interest near
+  $26.4M (about 0.3% of Hyperliquid's) and launch-day 24-hour volume near
+  $48M, from a source the summary did not name, in an article it described as
+  102 days old [S]. **[Corrected by the Final review, 2026-11-06, C4. The
+  first version named "a KuCoin flash-news piece"; the summary never said which
+  article, so the attribution was my guess and is withdrawn. "102 days" before
+  today is about late July, before the 2026-09-03 launch, so the age is
+  inconsistent with launch-day figures.]** Do not use until measured (the
+  exchange-stats route, added 2026-09-02, is public per the changelog; R1
+  measures it).
 
 ### Q2. Trackers for exchanges with public accounts
 
@@ -706,3 +712,5 @@ seven — a slip in the message only.
   "point the same way"), Q2 ("Only Hyperdash"), Q7 ("nobody"), section 7 question 2 ("I could read"). Dorfleitner et al. found no positive *abnormal* return
   (four-factor alpha) after costs, not that no strategy made money. Yieldfund's summed follower PnL was positive (+709,045 USDT), so its finding is the
   gap between leaders and followers, not a net loss.
+- **C4 (medium)** — section 1 Q1, scale claims: the attribution to "a KuCoin flash-news piece" was a guess (the search summary named no article) and is
+  withdrawn; the "102 days old" age cannot fit launch-day figures. The claim stays ungraded and unused until R1 measures exchange-stats.
