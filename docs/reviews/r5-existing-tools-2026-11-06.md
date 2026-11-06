@@ -19,12 +19,23 @@ Plain verdict first:
    leaderboard site found covers Polymarket's prediction markets or other
    exchanges (mostly Hyperliquid). Perps launched on 2026-09-03; the field is
    two months old.
-2. **The tools that follow traders on Hyperliquid are mostly paid or
-   closed**, publish no alert delay, and label algorithms in one place only
-   (Hyperdash, by average trade duration, with no threshold for "algo").
+2. **Of the Hyperliquid tools I could read, alerts for followed wallets are
+   plan-gated (Cielo) or feed-only (Hyperdash)**, none publishes an alert
+   delay, and only Hyperdash publishes a trader-style filter (by average trade
+   duration, with no threshold for "algo"). Copin, Hypurrscan and Hyperliquid's
+   own leaderboard could not be read. *(C3: the first version said "mostly
+   paid or closed … label algorithms in one place only", which claimed more
+   than I read.)*
 3. **The evidence on copying is poor for followers:** the one peer-reviewed
-   paper with costs found no profitable follow-the-top strategy after costs;
-   the field measurements (three non-peer-reviewed) point the same way.
+   paper I could read that models costs (Dorfleitner et al., 2018) found that
+   picking the traders with the highest accumulated returns loses heavily and
+   that no strategy shows a positive abnormal return (four-factor alpha)
+   after costs. The field measurements (three, not peer-reviewed) show
+   followers doing worse than leaders and than holding, but Yieldfund's
+   aggregate follower PnL was positive (+709,045 USDT, 48.5% of outcomes
+   profitable): the gap is leader against follower, not a net loss. *(C3: the
+   first version said "no profitable follow-the-top strategy after costs …
+   point the same way", which overstated both.)*
 4. **Published bot/market-maker classifiers exist, but they lean on order
    data (time-in-force, builder tags) that Polymarket's public fills do not
    carry.** Features computable from fills alone are fewer, and R2 must prove
@@ -97,8 +108,10 @@ Evidence:
 leaderboards (Hyperdash, HyperTracker, Copin, Nansen), (b) whale and position
 scanners (CoinGlass, Arkham, Hypurrscan), (c) followed-wallet alert bots
 (Cielo, Copin's bot, SuperX and similar), and (d) data feeds (Hydromancer,
-ASXN, HyperTracker's API). **Only Hyperdash publishes any trader-style
-filter, and it publishes no threshold for "algo".** Other exchanges are thin.
+ASXN, HyperTracker's API). **Of the tools I could read, only Hyperdash
+publishes a trader-style filter, and it publishes no threshold for "algo"**
+(C3: first version said "Only Hyperdash"; Copin, Hypurrscan and Hyperliquid's
+own leaderboard were unreadable). Other exchanges are thin.
 
 | Tool | What it shows per trader | Leaderboard | Alerts and delay | Price | Labels for bots, MMs, vaults |
 |---|---|---|---|---|---|
@@ -193,7 +206,7 @@ How the numbers mislead — what is documented, and by whom:
 
 | Distortion | Documented? |
 |---|---|
-| **Leader numbers vs follower numbers.** In an October 2025 hand-collected snapshot of Binance, Bybit and MEXC, 97% of leaders were profitable on their own account but only 43.6% of leaders had positive follower PnL, and 48.5% of copier outcomes ended positive (Yieldfund, 2025-11-24, 1,486 leaders, 100,236 outcomes, 90 days [P]; Yieldfund sells investment products; follower PnL is the platform's field, not decomposed for fees or slippage; event-weighted, not per person) | A vendor study, one 90-day window |
+| **Leader numbers vs follower numbers.** In an October 2025 hand-collected snapshot of Binance, Bybit and MEXC, 97% of leaders were profitable on their own account but only 43.6% of leaders had positive follower PnL, and 48.5% of copier outcomes ended positive; the summed follower PnL was still positive, +709,045 USDT (Binance +572,980, Bybit +346,106, MEXC −210,041), so the finding is a gap between leaders and followers, not a net loss (C3: first version left the sum out) (Yieldfund, 2025-11-24, 1,486 leaders, 100,236 outcomes, 90 days [P]; Yieldfund sells investment products; follower PnL is the platform's field, not decomposed for fees or slippage; event-weighted, not per person) | A vendor study, one 90-day window |
 | **Deposits and withdrawals moving ROI** | Binance, Bybit, Hyperdash and Polymarket all document a base-capital rule; Binance says outright it changed the rule to stop transfers eroding ROI |
 | **ROI on tiny accounts** | Hyperdash ranks percent only above $1,000; Polymarket floors at $100; a $100 account's ROI can still look huge. Third-party posts warn of 99% win rate on one trade (aotrading.io [S]) |
 | **Losers kept open while winners are banked** | Bybit's win rate counts open winners as wins, so the number flatters open books; Binance's counts closed positions only. Hyperdash's "Trades" column says "Open" when no trade closed in the window, so the PnL came from an open position [P]. No platform page I read names this as a known trick |
@@ -279,7 +292,8 @@ adjacent evidence, in order of weight:
    copying** — every run uses only information available at the start date —
    but not its numbers.
 10. **Yieldfund** (item above in Q3): leaders 97% profitable, leaders with
-    profitable followers 43.6%.
+    profitable followers 43.6%; the summed follower PnL was positive
+    (+709,045 USDT; Binance and Bybit positive, MEXC −210,041) (C3: sum added).
 11. **Vultax Research**, 2026-09-11, updated 2026-10-28 [P; vendor, AI-assisted
     per the page]: Polymarket *prediction-market* wallets: the top 1% of
     winning wallets took 43.9% of realised gains; across all wallets 41–51% of
@@ -380,8 +394,9 @@ source tool) batching.
 
 **Different by design:** a paper-follow log with a stated delay, fees and
 funding, measured only after following starts and against a random baseline
-(nobody in sections Q2–Q4 does this; ShieldTX measured copier cost but
-sells a product against copiers); a style label with *published thresholds and
+(none of the tools or studies I read does exactly this — C3: first version
+said "nobody"; ShieldTX measured copier cost but sells a product against
+copiers); a style label with *published thresholds and
 an honest "unclassified"* (Hyperdash publishes bands but no "algo" rule;
 Nansen publishes no criteria; Arrakis leaves 70% unlabelled); watch only, no
 copy button.
@@ -639,8 +654,9 @@ far as I could find; they are Hyperliquid or multi-chain.
    top rows.
 2. **Add a single "quality" or "copy" score?** *Recommendation:* no. Show raw
    measures with sample size and a "not enough history" state. Reason: Iron
-   Rule 6, unpublished formulas elsewhere, and the one peer-reviewed paper
-   found that chasing the top loses.
+   Rule 6, unpublished formulas elsewhere, and the one peer-reviewed paper I
+   could read found that choosing by the highest accumulated returns loses
+   heavily (C3: first version dropped "I could read").
 3. **Store competition membership and live competition windows, and label on
    rolling windows?** *Recommendation:* yes — one weight-1 public endpoint.
    Reason: the board and the labels are bent by competitions.
@@ -684,3 +700,9 @@ seven — a slip in the message only.
 - **C2 (high)** — liquidity rewards: graded [P] (docs.polymarket.com/perps/liquidity-rewards.md, read 2026-11-06; the supervisor read it too) and the missing
   rules added in section 3 table, section 5 caution (b), section 4 and section 6 item 4: the 1% trailing seven-day maker-volume gate, the score formula, the
   25% cap, the 20 bps depth rule, the entity grouping. The unsupported sentence that market makers are "likely more numerous" is withdrawn.
+- **C2 location note (made under C3):** the C2 entry above names the places loosely. The rewards rules were added to the Q3 table row "Competition and
+  reward farming" (section 1), caution (b) under Q5 (section 1), the rewards row in section 4, and section 6 item 4.
+- **C3 (medium)** — overclaims narrowed: verdict items 2 and 3 ("mostly paid or closed", "one place only", "no profitable follow-the-top strategy",
+  "point the same way"), Q2 ("Only Hyperdash"), Q7 ("nobody"), section 7 question 2 ("I could read"). Dorfleitner et al. found no positive *abnormal* return
+  (four-factor alpha) after costs, not that no strategy made money. Yieldfund's summed follower PnL was positive (+709,045 USDT), so its finding is the
+  gap between leaders and followers, not a net loss.
