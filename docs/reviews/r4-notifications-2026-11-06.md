@@ -81,7 +81,7 @@ drawn is not proven here.**
      alert disappears, and the header does not say which project it is.
 - *Recommendation:* start on PowerShell's ID; if sheet H shows a banner headed "polymarket-follow", adopt the registry key. It is
   also what makes question 5's "notifications switched off for the app" detectable: `ToastNotifier.Setting` reports
-  `DisabledForApplication` / `DisabledForUser` / `DisabledByGroupPolicy` (enum names from the API; only `Enabled` was observed).
+  `DisabledForApplication` / `DisabledForUser` / `DisabledByGroupPolicy` (the enum's five values, measured by listing it: Enabled, DisabledForApplication, DisabledForUser, DisabledByGroupPolicy, DisabledByManifest, W `40-review-facts.out.txt`, 22:38:39Z; only `Enabled` was ever returned for a used ID, and a blank for an unused one) [Correction 2026-11-06 22:43Z, self-review: the first version said "enum names from the API" with no source; they were from memory.].
 - **Click needs no registration:** `activationType="protocol"` with `launch="http://localhost:<port>/traders/<address>"` is
   handled by Windows (Learn, toast schema, updated 2026-04-21: ActivationType Protocol). Not clicked yet (owner sheet B).
 
