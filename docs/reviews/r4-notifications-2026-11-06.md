@@ -1,7 +1,7 @@
 # R4 — Windows notifications from the poller (R4-NOTIFY, 2026-11-06)
 
 Research report. It decides nothing: what it concludes is copied into the other docs by the supervisor, or it does not exist
-(reviews README). Written 2026-11-06 between 22:15Z and about 22:45Z on the owner's PC (Windows 11 Pro build 26200, Node
+(reviews README). Written 2026-11-06 between 22:15Z and 22:33Z on the owner's PC [Correction 2026-11-06 22:41Z, self-review: this said "about 22:45Z"; the commit `effb182` is stamped 22:33:29Z and the work started 22:15:19Z, from the system clock; the supervisor's own "~22:25Z" and "~22:50Z" stamps run about 10 minutes ahead of it] (Windows 11 Pro build 26200, Node
 v24.13.0, Windows PowerShell 5.1.26100.9711, host UTC+1). **W** below means
 `E:\coding\Claude\supervisor\polymarket-follow\workers\R4-NOTIFY\`; every evidence file is named under it. No call to Polymarket's
 API was made. 14 silent test toasts, each titled "polymarket-follow R4 test", were shown on the owner's screen (limit ~20).
