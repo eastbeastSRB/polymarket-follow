@@ -540,16 +540,42 @@ far as I could find; they are Hyperliquid or multi-chain.
 
 ## 6. Beyond the brief
 
-1. **The API changes weekly, including breaking additions.** The changelog
-   shows about 35 entries in five months. One (2026-10-06) added a *required*
-   `roi` field to every leaderboard row and warns that strict validators must
-   add it; others added required fill fields (`settlement`, `builder_fee`,
-   `total_fee`, `adl`). Iron Rule 3 says a reply failing its schema is
-   dropped. **A strict schema would drop whole replies the day a field is
-   added.** Candidate rule for code-rules (the supervisor decides): parse
-   known fields strictly, tolerate unknown ones, treat only a *missing or
-   mistyped known field* as failure, log the schema drift once per day, and
-   keep the raw reply for debugging.
+1. **The API changes more than once a week, including additions to required
+   fields.** The changelog shows 33 entries between 2026-06-08 and
+   2026-11-05 (this item first said "about 35 … weekly"; the count is 33, see
+   C1). One (2026-10-06) added a *required* `roi` field to every leaderboard
+   row and says strict validators must add it; others added required fill
+   fields (`settlement`, `builder_fee`, `total_fee`, `adl`), a `pre_ipo`
+   instrument category (2026-10-29) and two new terminal order statuses
+   (2026-09-27).
+
+   **[Corrected by the Final review, 2026-11-06, C1. The first version of
+   this item said: "A strict schema would drop whole replies the day a field
+   is added." That is wrong for Zod's default and is withdrawn.]** Zod's own
+   documentation (zod.dev/api, section Objects, read 2026-11-06): `z.object()`
+   strips unrecognised keys by default; `z.strictObject()` throws on them;
+   `z.looseObject()` lets them through; keys are required by default; and
+   `z.enum()` rejects a value that is not in its list (the docs' example
+   rejects "Swordfish"). So with the default parsing **a field the exchange
+   adds does not break anything** — it is dropped from the result unseen.
+   What does break, and what the changelog shows happening:
+   (a) `z.strictObject()`, if we ever chose it;
+   (b) a field we declare required that the exchange removes, renames or
+   leaves out;
+   (c) a changed type or format of a field we declare;
+   (d) a closed list the exchange widens — a new category or order status
+   fails an enum, and the changelog added both within weeks.
+   What does not break but costs us: new information stays invisible (we would
+   not see `roi` until the schema names it).
+   Candidate rule for code-rules (the supervisor decides): keep the default,
+   non-strict object parsing; declare closed lists only where an unknown value
+   would do harm, otherwise accept unknown strings and map them to an
+   "unknown" state; compare each reply's keys with the schema's once a day and
+   log the difference; keep the raw reply for debugging. **A design question
+   for the plan, not from Zod's docs:** Iron Rule 3 drops a reply that fails
+   its schema, so if a page of 100 leaderboard rows is one reply, one row with
+   a new list value drops all 100 — the plan should decide whether rows are
+   parsed one by one.
 2. **A weekly changelog watch** is cheap and would have caught the ROI field.
    The docs page is public; reading it needs no API call.
 3. **Competitions are regime changes every two weeks.** The scoring (PnL ×
@@ -592,9 +618,14 @@ far as I could find; they are Hyperliquid or multi-chain.
 3. **Store competition membership and live competition windows, and label on
    rolling windows?** *Recommendation:* yes — one weight-1 public endpoint.
    Reason: the board and the labels are bent by competitions.
-4. **Change the schema rule (strict on known fields, tolerant of new ones)
-   and add a weekly changelog read?** *Recommendation:* yes; for code-rules
-   and the plan page. Reason: section 6, item 1.
+4. **Adopt a schema-drift rule and a weekly changelog read?**
+   *Recommendation:* yes; for code-rules and the plan page — default
+   (non-strict) object parsing, closed lists only where an unknown value would
+   do harm, a daily keys-against-schema comparison, and a decision on whether
+   one odd row may drop a page. Reason: section 6, item 1 **(corrected, C1:
+   this question first asked to "change the schema rule (strict on known
+   fields, tolerant of new ones)", which rested on the withdrawn claim that
+   added fields break a strict-by-default schema)**.
 5. **Ask R1 to read the public builders list and the competition and
    exchange-stats routes, and to compare the leaderboard PnL with the
    lifetime PnL route for a known maker (to see whether rewards are
@@ -611,3 +642,16 @@ far as I could find; they are Hyperliquid or multi-chain.
 8. **Should the app show a "same signer address" note for accounts the owner
    links manually?** *Recommendation:* defer to after v1; note it on the
    backlog. Reason: it is the owner's own data, but nothing in v1 needs it.
+
+## 8. Corrections by the Final review (2026-11-06)
+
+The supervisor's Final review and R5-TOOLS's own re-check, 2026-11-06
+~23:00Z. Each correction is marked in place with its number; short original
+wordings are kept in the marks. Checked with no change needed: this report
+lists eight owner questions (section 7); the commit message of de29b84 says
+seven — a slip in the message only.
+
+- **C1 (high)** — section 6 item 1 and section 7 question 4: the claim that
+  a strict schema drops replies when a field is added was wrong for Zod's
+  default parsing; restated with the exact risks (Zod docs, zod.dev/api,
+  read 2026-11-06). Also: the changelog count is 33, not "about 35".
