@@ -21,7 +21,13 @@ install.** A Node process spawns `powershell.exe`, which makes a toast with the 
 it took **336-379 ms from Node's spawn to Windows accepting the toast** (4 cold runs), and **7 ms** once a PowerShell is already
 running and is fed over stdin (the first message after start 72 ms). Windows put each toast into the app's notification history
 17-26 ms after `Show()` (4-5 ms warm), which is the nearest measurable thing to "delivered" (W `20-runs.jsonl`, `T1.out.txt`,
-`T4-T6.out.txt`, `23-persistent-notifier.out.txt`). 14 of 14 toasts were accepted; none raised an error. Whether the banner then
+`T4-T6.out.txt`, `23-persistent-notifier.out.txt`). [Correction 2026-11-06 22:43Z, self-review, sample sizes. Cold: spawn to
+`Show()` 379, 340, 336, 337 ms (the 340 is T4, the unregistered ID); `Show()` to history 26, 17, 17, 18 ms (`20-runs.jsonl`).
+Persistent PowerShell, from `23-persistent-notifier.out.txt` (clean run) and `...run1-misaligned.out.txt` (read with its lines
+shifted by one, which the file's own "history" line confirms): messages after the first, receipt to `Show()` returned **6, 6, 7 ms**
+and `Show()` to history **5, 5, 4 ms** (3 samples); the first message in a process **68 and 91 ms** to `Show()` and 19 and 20 ms to
+history (2 samples); process start to ready **335 and 344 ms** (2 samples). So read "7 ms" as 6-7 ms from 3 samples, "72 ms" as
+68-91 ms from 2, "4-5 ms warm" as 3 samples. Small samples: they show the order of magnitude, not a distribution.] 14 of 14 toasts were accepted; none raised an error. Whether the banner then
 appeared is unmeasured (owner sheet A).
 
 | Route | Depends on | Reliability / delay | Click opens our page | Grouping | Sound | Upkeep | Security |
