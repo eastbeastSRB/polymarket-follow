@@ -389,6 +389,21 @@ All paths under **W** = `E:\coding\Claude\supervisor\polymarket-follow\workers\R
 | Pages read through the fetch tool, not saved as files | Learn: TASK_LOGON_TYPE (2024-02-22), Security Contexts for Tasks (2025-05-12), Interactive Services (2025-04-15), toast/app notification schema (2026-04-21) |
 | Progress log | `progress.md` |
 
+[Correction 2026-11-06 22:44Z, self-review, **scripts changed after the runs that produced the evidence** (none of the saved outputs
+changes). Removed as unused: the UI Automation banner search `Wait-Banner` and toast-once's `-Banner` switch (T1 used it and found
+nothing; it read other windows' text), and the `-Silent` parameter of `New-ToastXml` (no caller set it false). `Show-Toast` now
+reports `in_history` as null for a toast without a Tag instead of any earlier toast counting as a hit (every measured toast had a Tag,
+so no figure here is affected). Renamed: the probe's field `parent_cmdline_hint` held a parent process id and is now `parent_pid`
+(the saved `30-probe-baseline.json` and `task-results\*.json` keep the old name). Fixed a stale comment in
+`23-persistent-notifier.mjs` (it says 2 toasts; run 1 showed 3). `21-uia-dump.ps1` now starts with a warning: it prints every open
+window's title. Deleted two saved 404 pages (`src\nn-toaster.js`, `src\snore-CHANGELOG.md`) and one saved dead link
+(`src\ms-wrl.txt`). Checked afterwards, no toast shown: all 21 `.ps1` files parse, none holds a non-ASCII byte (PowerShell 5.1 reads
+a BOM-less file as Windows-1252), the XML builder escapes `< > & "` and yields well-formed XML (`42-recheck-after-cleanup.out.txt`,
+`43-ascii-check.out.txt`, `42-probe-recheck.json`). Left as run: `01-probe-machine.ps1` has an empty "whoami /groups" section (Git
+Bash's `whoami` answers there) and one noisy `where pwsh`; `31-session0-via-wmi.ps1` keeps its name though its result is session 1.
+`toast-lib.ps1` is 55 lines, `toast-once.ps1` 15, `notifier-loop.ps1` 25. The supervisor folder is not a git repository, so
+these script changes are not versioned; this report is the record of them.]
+
 **Changes this research left on the PC (all by Windows, none by script):** the Settings key `{1AC14E77-...}` for Windows
 PowerShell (question 2); 14 toasts that expired or were cleared; nothing else. No task, shortcut, startup entry, package or setting
 was created or changed. A shell-quoting slip started three empty `powershell` sessions once; they exited and changed nothing
