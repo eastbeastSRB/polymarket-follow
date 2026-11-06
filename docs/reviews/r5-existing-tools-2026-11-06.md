@@ -77,8 +77,10 @@ Evidence:
   (public API, our founding doc), the public account profile (newsletter), and
   a **Competitions tab with its own live leaderboard** (docs page
   docs.polymarket.com/perps/trading-competitions [P]; API
-  `GET /v1/info/competition/leaderboard`, keyless, weight 1, cached 1 s,
-  [P] docs.polymarket.com/api-reference/get-trading-competition-leaderboard.md).
+  `GET /v1/info/competition/leaderboard`, weight 1, cached 1 s, the spec
+  declares no security requirement but the page does not call it public
+  (C5: first version said "keyless"), [P]
+  docs.polymarket.com/api-reference/get-trading-competition-leaderboard.md).
 - What third parties exist near it, none confirmed for perps: Struct's open
   explorer, Polynyx, PMWallets (clusters a signer and its proxy wallet into
   one entity; forward-only PnL; win rate with a confidence interval),
@@ -219,7 +221,7 @@ How the numbers mislead — what is documented, and by whom:
 | **Reset, abandoned, or cherry-picked accounts** | OKX bans multi-account use; Binance's compare page lists "Closed Portfolios"; ShieldTX's 29% subaccount figure; the Hyperliquid vault simulation below counts closed vaults on purpose |
 | **Survivorship in leaderboards** | Named in vendor blogs without data [S]; handled explicitly only in the Reddit vault study (closed vaults included) and flagged as a gap in the Vultax study (its active cohort needs continued trading) |
 | **Statistics that can be gamed in real time** | eToro's 7-day average risk score; OKX's "inflating indicator data" clause |
-| **Competition and reward farming** | Polymarket's own: bi-weekly competitions scored on PnL × √(boosted volume), with a $100K minimum volume, boosted markets at (for example) 3×, and $50,000 for the top 50; wash trading, self-trading and multi-accounting disqualify all linked accounts (docs.polymarket.com/perps/trading-competitions [P]). Daily liquidity rewards: $75,000 a day split evenly across active markets, one pool per market (and a $1,000 bonus for a new market's first day); **only an account with at least 1% of maker volume over the trailing seven days qualifies**; score = maker_score^0.35 × active_liquidity_score^0.65 × uptime, maker share capped at 25%, resting orders within 20 bps of the mid counted on both sides; accounts in a "rewards entity" are counted together (docs.polymarket.com/perps/liquidity-rewards.md [P], read 2026-11-06; **corrected, C2: first graded [S] and without the 1% rule**). Aevo (2024) is the precedent for farming volume |
+| **Competition and reward farming** | Polymarket's own: competitions the page calls "bi-weekly" without defining it (C5: I had read "every two weeks"; the page gives no schedule or length, only that each is announced a few days ahead) scored on PnL × √(boosted volume), with a $100K minimum volume, boosted markets at (for example) 3×, and $50,000 for the top 50 (first place $10,000, places 25 to 50 $250 each); wash trading, self-trading and multi-accounting disqualify all linked accounts (docs.polymarket.com/perps/trading-competitions [P]). Daily liquidity rewards: $75,000 a day split evenly across active markets, one pool per market (and a $1,000 bonus for a new market's first day); **only an account with at least 1% of maker volume over the trailing seven days qualifies**; score = maker_score^0.35 × active_liquidity_score^0.65 × uptime, maker share capped at 25%, resting orders within 20 bps of the mid counted on both sides; accounts in a "rewards entity" are counted together (docs.polymarket.com/perps/liquidity-rewards.md [P], read 2026-11-06; **corrected, C2: first graded [S] and without the 1% rule**). Aevo (2024) is the precedent for farming volume |
 
 ### Q4. Does copying pay — the evidence
 
@@ -488,7 +490,8 @@ far as I could find; they are Hyperliquid or multi-chain.
 5. **ROI shown or hidden.** Shown with its base and a floor, or hidden in favour
    of PnL and capital. See question 1 for the owner.
 6. **Windows for labels:** a lifetime label vs a rolling window. Competitions
-   change behaviour every two weeks; a rolling window is safer.
+   change behaviour with each competition (C5: first version said "every two
+   weeks"; the page does not define "bi-weekly"); a rolling window is safer.
 7. **Counting competition participants separately vs ignoring them.** See
    possibilities.
 8. **Baseline for the paper log:** random trades in the same markets (our F9),
@@ -497,8 +500,9 @@ far as I could find; they are Hyperliquid or multi-chain.
 
 ## 3. Possibilities found
 
-1. **The competition leaderboard endpoint** (keyless, weight 1, cached 1 s)
-   lists accounts with score, PnL, volume, boosted volume, first-fill time and
+1. **The competition leaderboard endpoint** (weight 1, cached 1 s; the spec
+   declares no security requirement, though the page does not call it public
+   — C5: first version said "keyless"; R1 confirms with one call) lists accounts with score, PnL, volume, boosted volume, first-fill time and
    row state. It can flag "in a competition now", cheaply, and its
    `include_unqualified` option lists those below the minimum.
 2. **Fills per order is computable** (`order_id` on every fill): the cleanest
@@ -601,7 +605,9 @@ far as I could find; they are Hyperliquid or multi-chain.
    parsed one by one.
 2. **A weekly changelog watch** is cheap and would have caught the ROI field.
    The docs page is public; reading it needs no API call.
-3. **Competitions are regime changes every two weeks.** The scoring (PnL ×
+3. **Competitions are regime changes, on a schedule the docs do not state**
+   (C5: first version said "every two weeks"; the page calls them "bi-weekly",
+   announced a few days ahead, no dates or length). The scoring (PnL ×
    √boosted volume, boosts like 3× on selected markets, an Anthropic pre-IPO
    market competition running to 2026-11-16 [S]) pays for volume in specific
    markets. A favourite's behaviour — and an "algorithm" label — can change
@@ -664,7 +670,8 @@ far as I could find; they are Hyperliquid or multi-chain.
    could read found that choosing by the highest accumulated returns loses
    heavily (C3: first version dropped "I could read").
 3. **Store competition membership and live competition windows, and label on
-   rolling windows?** *Recommendation:* yes — one weight-1 public endpoint.
+   rolling windows?** *Recommendation:* yes — one weight-1 endpoint that the spec lists without a
+   security requirement (C5).
    Reason: the board and the labels are bent by competitions.
 4. **Adopt a schema-drift rule and a weekly changelog read?**
    *Recommendation:* yes; for code-rules and the plan page — default
@@ -714,3 +721,6 @@ seven — a slip in the message only.
   gap between leaders and followers, not a net loss.
 - **C4 (medium)** — section 1 Q1, scale claims: the attribution to "a KuCoin flash-news piece" was a guess (the search summary named no article) and is
   withdrawn; the "102 days old" age cannot fit launch-day figures. The claim stays ungraded and unused until R1 measures exchange-stats.
+- **C5 (medium)** — the competition leaderboard route is no longer called "keyless" (the spec lists no security requirement; the page does not call it
+  public; R1's one call settles it), and "bi-weekly" is no longer read as "every two weeks" (the competitions page does not define it and gives no schedule;
+  re-read 2026-11-06 ~23:05Z). Payout ladder added: first place $10,000, places 25 to 50 $250 each.
