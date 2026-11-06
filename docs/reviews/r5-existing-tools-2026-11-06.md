@@ -184,8 +184,11 @@ Definitions found (page read unless marked):
   (prior equity + new deposits), computed daily at 00:00 UTC; **win rate
   counts open positions that are currently in profit as wins**; max drawdown
   is the largest unrealised loss in the last 30 days; to enter the leaderboard
-  a trader needs 30-day drawdown at or below 40% and positive followers' PnL
-  over 7 days; followers' PnL refreshes daily at 03:00 UTC; a "balanced"
+  a trader needs 30-day drawdown at or below 40% (this gate appears in a
+  snippet of Bybit's rules) and, per a snippet whose source may be a
+  third-party guide rather than Bybit, positive followers' PnL over 7 days
+  (C6: first version gave both as Bybit's rules); followers' PnL refreshes
+  daily at 03:00 UTC; a "balanced"
   category scores 30-day ROI, drawdown, volatility, Sharpe, Sortino,
   activity and balance (formula unpublished).
 - **OKX**, "Copy Trading Service Terms", updated 2025-11-10 [P]: may
@@ -724,3 +727,5 @@ seven — a slip in the message only.
 - **C5 (medium)** — the competition leaderboard route is no longer called "keyless" (the spec lists no security requirement; the page does not call it
   public; R1's one call settles it), and "bi-weekly" is no longer read as "every two weeks" (the competitions page does not define it and gives no schedule;
   re-read 2026-11-06 ~23:05Z). Payout ladder added: first place $10,000, places 25 to 50 $250 each.
+- **C6 (low)** — Bybit: the 7-day positive followers' PnL gate may come from a third-party guide inside the search snippet, not Bybit's own page; both Bybit
+  gates stay snippet-level [S]. Bybit's help pages timed out three times; re-read them in a browser if a decision leans on them.
