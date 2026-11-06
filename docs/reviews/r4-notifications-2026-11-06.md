@@ -105,7 +105,7 @@ this PC's task data; the live proof of "no toast" is on the owner sheet (F).**
 - *Locked screen:* the session stays alive and a process in it keeps running; a toast raised then goes to the notification centre
   and may or may not draw on the lock screen. Not measured; sheet D. The probe records `locked` (is `LogonUI.exe` running).
 - *Sleep and resume:* this desktop has no battery and `powercfg /a` says mains "sleep after" is 0 = never (W probe), so sleep
-  happens only when the owner chooses. A sleeping PC freezes every process; timers fire late on waking. A gap in the poll loop's
+  happens only when the owner chooses (and then it also freezes polymarket-lab's worker: see the correction in question 7.1). A sleeping PC freezes every process; timers fire late on waking. A gap in the poll loop's
   own clock is the signal (question 8). The lab's logs show the same ("missed execution": lab how-it-works, §3).
 - *Reboot before logon:* an "at log on" task does not run until someone signs in, so the poller is off meanwhile and fills in that
   gap are only caught up later (question 8). **Reboots are rare here:** uptime was 16.9 days at 22:26Z, and explorer.exe started
@@ -135,7 +135,7 @@ this PC's task data; the live proof of "no toast" is on the owner sheet (F).**
 | (a) Console Node process shows a toast through the best candidate; delay | **Done.** Node 24.13.0 -> `powershell.exe` -> Windows toast API; accepted 14/14; spawn to `Show()` returned 336-379 ms (script starts at ~233 ms, XML build ~70 ms, `Show()` 7-10 ms); in history 17-26 ms later. Warm process 7 ms. Banner drawn: **unmeasured** (UI Automation did not find a banner window and I did not capture the screen: a window dump exposed the owner's window titles, so I redacted it and stopped) | `20-runs.jsonl`, `T1.out.txt`, `T4-T6.out.txt`, `21-uia-dump.out.txt` (redacted), `23-persistent-notifier.out.txt`, `32-dryrun-console.out.txt`, `task-results\` |
 | (b) From a process Task Scheduler starts at logon | **Prepared, not run** (needs the owner). `polymarket-follow-R4-test` (interactive) and `polymarket-follow-R4-test-s4u`, both "at log on", running `node r4-task-run.mjs`, two toast attempts 45 s apart, a JSON result each. Dry run from the console (same script, label `dryrun-console`): session 1, `WinSta0` visible, both toasts accepted | `register-R4-test.ps1`, `unregister-R4-test.ps1`, `r4-task-run.mjs`, `r4-session-probe.ps1`, `task-results\dryrun-console-*.json`, sheet F |
 | (c) With every browser closed | **Not run:** at 22:18Z Chrome had 58 processes and Edge 7; they are the owner's. The route has no browser in it (process tree: Node, PowerShell). Sheet C | W `01-probe-machine.ps1`, browser count in `progress.md` |
-| (d) Lock screen, sleep and resume, Do Not Disturb | **Owner only.** `r4-owner-delayed-toast.ps1` records `locked`, history and sleep gaps and shows a "late summary" toast after a gap. Sheet D, E | `r4-owner-delayed-toast.ps1`, sheet D, E |
+| (d) Lock screen, sleep and resume, Do Not Disturb | **Owner only.** `r4-owner-delayed-toast.ps1` records `locked`, history and sleep gaps and shows a "late summary" toast after a gap. Sheet D, E (E optional: it stops the lab's worker, see question 7.1) | `r4-owner-delayed-toast.ps1`, sheet D, E |
 
 ### 5. Silent failure
 
@@ -336,7 +336,7 @@ in the feed and each channel is a consumer of that feed; the Windows notifier is
 
 ## 7. Questions for the owner
 
-1. **Run the owner test sheet?** Parts A-E first (nothing persistent, about 20 minutes), then F-G at a time agreed with the
+1. **Run the owner test sheet?** Parts A-D first (nothing persistent, about 15 minutes) [Correction 2026-11-06 22:42Z, supervisor finding: the first version said "A-E". Part E (sleep) and the reboot step of F also stop polymarket-lab's worker, which runs on this PC (boot task, Password, session 0; a sign-out or lock does not stop it, a sleep or reboot does). They are now marked optional on the sheet, to be done only at :10-:25 past an hour and never 02:35-03:50 UTC, with the supervisor confirming the lab is at a safe point; the lab will log the gap.], then F-G at a time agreed with the
    supervisor (two scheduled tasks, no password, removed by one script). *Recommendation: yes.* Everything the report cannot
    prove (banners, click, lock, Do Not Disturb, sleep, session 0) is on it.
 2. **Is the PC normally left signed in (locked) when you are away?** It decides whether "start at sign-in" is enough. *Recommendation:*
