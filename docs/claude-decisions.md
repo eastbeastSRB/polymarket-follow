@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-06 (three more of the owner's requirements, before this project's
+supervisor starts — recorded by polymarket-lab's supervisor): **(1) ALGORITHMS
+AND MARKET MAKERS ARE ALWAYS RECOGNISED, NEVER FOLLOWED BY MISTAKE.** The live
+check that founded the project (2026-11-06) found the all-time #1 of the perps
+leaderboard making 100 fills in 64.4 minutes across 7 instruments — 48 adds,
+52 reductions, every one a taker fill — while holding 11 positions at once: an
+algorithm, whose alerts would mean nothing to a follower. The owner: "we need
+to avoid this and always recognize so to not get into trap." So every account
+the project stores carries a style label computed from its own fills (trades
+per day, holding time, both sides at once, positions held), shown wherever the
+account appears; alerts and the paper-follow scoreboard cover directional
+traders by default; favouriting an account labelled an algorithm or market
+maker warns first. R2 designs the classifier and proves it on labelled
+examples before v1 is planned; v1 does not ship without it. **(2) EVERYTHING
+IS RESEARCHED BEFORE ANYTHING IS BUILT** — the owner: "everything need to be
+fully researched all variations, all possibilities, all potential problems,
+and everything before i start." Every research report states the variations it
+weighed, the possibilities it found, the potential problems and how each would
+be handled, and what stays unknown; the supervisor walks the owner through the
+reports, and nothing is planned or built until the owner says the research is
+complete. **(3) THE LAB'S DATA DOES NOT CARRY OVER TO PERPS.**
+polymarket-lab's three months are prediction-market data — its forecasts,
+scores and a daily top-50 leaderboard of prediction-market traders since late
+August 2026 (its `leaderboard_snapshots`) — and perps is a separate exchange
+with its own traders, so perps starts from its own API. When prediction-market
+traders are added (the plan page's backlog), that leaderboard series is worth
+a one-time read-only export: no API can backfill standings over time
+(polymarket-lab's master-plan), and reading is not writing (Iron Rule 2).
+
 2026-11-06 (polymarket-follow founded — the owner's decisions, recorded by
 polymarket-lab's supervisor before this project's own supervisor starts):
 **A SEPARATE PROJECT, WATCH-ONLY.** The owner wants to follow Polymarket

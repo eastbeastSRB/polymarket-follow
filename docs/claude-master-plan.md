@@ -49,8 +49,13 @@ step with the record; only the supervisor sets a marker.
 
 Each topic is one subagent with a written report in `docs/reviews/`, every
 number from a saved script output, every fact about an API added to
-external-apis, dated and sourced. R1, R4, R5 and R6 can run in parallel; R2
-and R3 need R1's facts; R7 comes last.
+external-apis, dated and sourced. **Every report states the variations it
+weighed, the possibilities it found, the potential problems and how each
+would be handled, and what stays unknown;** the supervisor walks the owner
+through each, and nothing is planned or built until the owner says the
+research is complete (decisions 2026-11-06, three more of the owner's
+requirements). R1, R4, R5 and R6 can run in parallel; R2 and R3 need R1's
+facts; R7 comes last.
 
 - ⬜ **R1 — The perps API in full:** every endpoint we would use — the
   leaderboard (how often it refreshes), fills and position-fills by address
@@ -59,9 +64,14 @@ and R3 need R1's facts; R7 comes last.
   fees; each read's real weight; freshness; what a 429 looks like; the
   public WebSocket channels.
 - ⬜ **R2 — Trader analytics:** what to measure per trader (win rate, average
-  hold, leverage, drawdown, PnL by market, trades per day); how to tell an
-  algorithm or market maker from a directional trader (the all-time #1 made
-  100 fills in 64 minutes); which statistics stay honest at small samples.
+  hold, leverage, drawdown, PnL by market, trades per day), and which
+  statistics stay honest at small samples. **A v1 requirement:** a style
+  label on every account — algorithm or market maker versus directional
+  trader — from its own fills (trades per day, holding time, both sides at
+  once, positions held), proven on labelled examples (the all-time #1: 100
+  fills in 64 minutes, 11 positions at once); alerts and the scoreboard
+  cover directional traders by default (decisions 2026-11-06, three more of
+  the owner's requirements).
 - ⬜ **R3 — The paper-follow method:** the entry price after the alert's
   delay, fees, funding, slippage, the exit; the after-following scoreboard
   and its null (polymarket-lab's F9 design: decisions 2026-11-06).
@@ -80,8 +90,10 @@ and R3 need R1's facts; R7 comes last.
 ## Later — the backlog
 
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
-  external-apis holds verified facts about it, readable as a template).
-  Trigger: v1 running well, and the owner's word.
+  external-apis holds verified facts about it, readable as a template; its
+  daily top-50 leaderboard since late August 2026 is worth a one-time
+  read-only export, since no API can backfill it). Trigger: v1 running well,
+  and the owner's word.
 - 🅿️ **Alerts on other devices and by email.** Trigger: Windows alerts working.
 - 🅿️ **Paid data** — a higher rate tier or a data vendor. Trigger: research
   shows the free API cannot do something v1 needs; the owner decides.
