@@ -200,7 +200,7 @@ How the numbers mislead — what is documented, and by whom:
 | **Reset, abandoned, or cherry-picked accounts** | OKX bans multi-account use; Binance's compare page lists "Closed Portfolios"; ShieldTX's 29% subaccount figure; the Hyperliquid vault simulation below counts closed vaults on purpose |
 | **Survivorship in leaderboards** | Named in vendor blogs without data [S]; handled explicitly only in the Reddit vault study (closed vaults included) and flagged as a gap in the Vultax study (its active cohort needs continued trading) |
 | **Statistics that can be gamed in real time** | eToro's 7-day average risk score; OKX's "inflating indicator data" clause |
-| **Competition and reward farming** | Polymarket's own: bi-weekly competitions scored on PnL × √(boosted volume), with a $100K minimum volume, boosted markets at (for example) 3×, and $50,000 for the top 50; wash trading, self-trading and multi-accounting disqualify all linked accounts (docs.polymarket.com/perps/trading-competitions [P]). Daily liquidity rewards of $75,000 split across active markets, shared by makers by score (docs.polymarket.com/perps/liquidity-rewards [S]). Aevo (2024) is the precedent for farming volume |
+| **Competition and reward farming** | Polymarket's own: bi-weekly competitions scored on PnL × √(boosted volume), with a $100K minimum volume, boosted markets at (for example) 3×, and $50,000 for the top 50; wash trading, self-trading and multi-accounting disqualify all linked accounts (docs.polymarket.com/perps/trading-competitions [P]). Daily liquidity rewards: $75,000 a day split evenly across active markets, one pool per market (and a $1,000 bonus for a new market's first day); **only an account with at least 1% of maker volume over the trailing seven days qualifies**; score = maker_score^0.35 × active_liquidity_score^0.65 × uptime, maker share capped at 25%, resting orders within 20 bps of the mid counted on both sides; accounts in a "rewards entity" are counted together (docs.polymarket.com/perps/liquidity-rewards.md [P], read 2026-11-06; **corrected, C2: first graded [S] and without the 1% rule**). Aevo (2024) is the precedent for farming volume |
 
 ### Q4. Does copying pay — the evidence
 
@@ -337,9 +337,11 @@ Answer to R2's feature list (brief's six):
 Two cautions the sources raise: (a) Arrakis says its retail count is a
 minimum, because humans who only place limit orders look like bots, and it
 leaves 70% unlabelled — so an honest classifier needs an explicit "can't tell" class;
-(b) Polymarket's competitions and liquidity rewards give *humans* a reason to
-trade like bots (high volume in boosted markets) and bots a reason to quote
-two-sided, so a label is true for a window, not for ever.
+(b) Polymarket's competitions give *humans* a reason to trade like bots (high
+volume in boosted markets) and its liquidity rewards give *large* makers a
+reason to quote both sides all day (C2: the first version said "bots", but
+only accounts with at least 1% of maker volume qualify), so a label is true
+for a window, not for ever.
 
 ### Q6. Alert noise and speed in existing tools
 
@@ -512,7 +514,7 @@ far as I could find; they are Hyperliquid or multi-chain.
 | **Prices and features drift** (HyperTracker's own pages disagree) | Dates on every price; not used as decisions; re-read if the owner considers paying |
 | **Script-rendered and blocked pages** (Hypurrscan, Hyperliquid's own leaderboard, Copin, SSRN, Bybit timeouts) | Listed under "stays unknown"; the owner can open them in a browser |
 | **Competitions distort the leaderboard and the style labels** | Flag competition windows and markets in stored data (possibility 1); compute labels on rolling windows; do not sort discovery by notional |
-| **Liquidity rewards may inflate market makers' PnL.** Rewards are credited to the Perps account in pUSD; the leaderboard PnL is realised minus fees plus funding (external-apis), but the lifetime PnL route is defined as equity minus net capital (changelog 2026-10-20), which would include a credit. My inference, not read | R1 compares the two figures for a known maker: a steady daily gap would be the rewards. The rewards route itself needs authentication and is never called. Until settled, mark maker PnL "may include rewards" |
+| **Liquidity rewards may inflate market makers' PnL.** Rewards are credited to the Perps account in pUSD; the rewards page says nothing about whether they count in PnL or equity (read 2026-11-06, C2). The leaderboard PnL is realised minus fees plus funding (external-apis), but the lifetime PnL route is defined as equity minus net capital (changelog 2026-10-20), which would include a credit. My inference, not read. Only makers with at least 1% of maker volume qualify, so this concerns large makers only | R1 compares the two figures for a known maker: a steady daily gap would be the rewards. The rewards route itself needs authentication and is never called. Until settled, mark maker PnL "may include rewards" |
 | **Subaccounts and multiple accounts** (29% of Hyperliquid's top 150 use subaccounts; competition rules ban multi-accounting) | One tracked "trader" is one signer address; say so in the page; never merge by guess |
 | **Tiny-account ROI at the top of the board** | Display floor on capital, shown beside ROI |
 | **A favourite may itself be a copy bot, or may change behaviour once watched** (ShieldTX exists because leaders now hide) | Lead–lag test (possibility 4); labels on rolling windows; stats shown with dates |
@@ -583,10 +585,34 @@ far as I could find; they are Hyperliquid or multi-chain.
    market competition running to 2026-11-16 [S]) pays for volume in specific
    markets. A favourite's behaviour — and an "algorithm" label — can change
    with the schedule. Store which competition was live; label on windows.
-4. **Liquidity rewards ($75,000 a day, shared by makers) mean market makers
-   are paid to be there.** Their number is likely higher than on exchanges
-   without rewards; the "alerts on directional traders by default" decision is
-   even more important than assumed.
+4. **Liquidity rewards pay large market makers to quote.**
+   **[Corrected by the Final review, 2026-11-06, C2. The first version said
+   "Liquidity rewards ($75,000 a day, shared by makers) mean market makers
+   are paid to be there. Their number is likely higher than on exchanges
+   without rewards …". The second sentence had no evidence and is withdrawn;
+   the rules below show rewards reach large makers only.]** Read from
+   docs.polymarket.com/perps/liquidity-rewards.md (2026-11-06; the page
+   carries no date): $75,000 a day split evenly across active markets; an
+   account qualifies only with at least 1% of maker volume over the trailing
+   seven days (an entity's combined share for accounts in one "rewards
+   entity"; trades between accounts of one known entity do not count toward
+   maker share); raw_score = maker_score^0.35 × active_liquidity_score^0.65 ×
+   uptime; maker share above 25% adds nothing; only resting orders within 20
+   bps of the mid count, with weights 1.00 (within 5 bps), 0.25 (5–10) and
+   0.10 (10–20), each tier capped at $100,000 per side; bid and ask scores
+   are combined so a one-sided book scores zero; uptime is the share of
+   snapshots with qualifying orders on both sides; periods run 12:00 to 12:00
+   UTC; paid in pUSD to the earning account. For R2 as notes, no code: (i) a
+   reward-earning account is by construction large and quotes both sides
+   nearly all day — fills show only the filled part (high maker share,
+   two-sided position swings); the quotes themselves are not public;
+   (ii) the exchange groups linked accounts into entities and discounts
+   trades among them, so it knows account links and treats self-dealing as
+   worthless for rewards, but none of that is public (the page does not even
+   define an entity); (iii) small bots are not driven by rewards, so rewards
+   explain the big market makers, not the many small algorithms; (iv) the
+   decision "alerts on directional traders by default" is unchanged by this;
+   (v) whether rewards count in PnL is not stated (see section 4).
 5. **The leader-vs-follower gap (97% vs 43.6%)** is the same gap the project
    exists to measure honestly. The paper-follow log is the follower-PnL that
    platforms show only as a field.
@@ -655,3 +681,6 @@ seven — a slip in the message only.
   a strict schema drops replies when a field is added was wrong for Zod's
   default parsing; restated with the exact risks (Zod docs, zod.dev/api,
   read 2026-11-06). Also: the changelog count is 33, not "about 35".
+- **C2 (high)** — liquidity rewards: graded [P] (docs.polymarket.com/perps/liquidity-rewards.md, read 2026-11-06; the supervisor read it too) and the missing
+  rules added in section 3 table, section 5 caution (b), section 4 and section 6 item 4: the 1% trailing seven-day maker-volume gate, the score formula, the
+  25% cap, the 20 bps depth rule, the entity grouping. The unsupported sentence that market makers are "likely more numerous" is withdrawn.
