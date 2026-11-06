@@ -26,21 +26,22 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-06, through decisions 2026-11-06
-(polymarket-follow founded).*
+*Brought in step on 2026-11-06, through decisions 2026-11-06 (the research
+phase approved).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
 - Nothing is built. The perps API was verified for following before founding:
   public leaderboards 100 a page, any account's fills and open positions by
   address, the rate budget (external-apis).
+- The research phase runs in three waves; wave 1 (R1, R4, R5) is running
+  (decisions 2026-11-06, the research phase approved).
 
 ## The plan — the next steps
 
 | | When | What | Who |
 |---|---|---|---|
-| 🟢 | next | The supervisor's first session: read everything, report what it understood, propose the research briefs | the supervisor |
-| ⬜ | on the owner's yes | The research phase, R1–R7 (below) | subagents, one report each |
+| 🔵 | now | The research phase, R1–R7 (below), in three waves | subagents, one report each |
 | ⬜ | after the research | The v1 plan: what v1 does, what waits; the owner approves; registered in decisions | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
@@ -54,10 +55,15 @@ weighed, the possibilities it found, the potential problems and how each
 would be handled, and what stays unknown;** the supervisor walks the owner
 through each, and nothing is planned or built until the owner says the
 research is complete (decisions 2026-11-06, three more of the owner's
-requirements). R1, R4, R5 and R6 can run in parallel; R2 and R3 need R1's
-facts; R7 comes last.
+requirements). **Every report also has a "Beyond the brief" section and ends
+with its questions for the owner, each with a recommendation** (decisions
+2026-11-06, the research phase approved). **The waves:** 1 — R1, R4, R5 in
+parallel; 2 — R2 (with a blind re-check of its labels) and R3, after R1; 3 —
+R6 and R7, after R2 and R3. Waves 2 and 3 are revised with the owner's lessons
+from polymarket-lab before they start. Every subagent that calls the API
+shares one IP budget, so the waves are also its schedule.
 
-- ⬜ **R1 — The perps API in full:** every endpoint we would use — the
+- 🔵 **R1 — The perps API in full:** every endpoint we would use — the
   leaderboard (how often it refreshes), fills and position-fills by address
   (history depth, paging, the 30-day default window), the portfolio, the PnL
   history (its parameters: a first call answered 400), instruments, funding,
@@ -75,13 +81,14 @@ facts; R7 comes last.
 - ⬜ **R3 — The paper-follow method:** the entry price after the alert's
   delay, fees, funding, slippage, the exit; the after-following scoreboard
   and its null (polymarket-lab's F9 design: decisions 2026-11-06).
-- ⬜ **R4 — Notifications:** Windows notifications from a background process
-  (how, and how reliable with the browser closed), what an alert says; later
-  phone and email.
-- ⬜ **R5 — Existing tools:** trackers that already follow perps or similar
+- 🔵 **R4 — Notifications:** Windows notifications from a background process
+  (how, and how reliable — including under Task Scheduler, where a task run
+  "whether the user is logged on or not" cannot show one), what an alert says;
+  later phone and email.
+- 🔵 **R5 — Existing tools:** trackers that already follow perps or similar
   exchanges' traders, what they show, and what this project does differently.
 - ⬜ **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
-  50 and 100 followed traders; what to keep; the backup in its own folder on
+  50 and 100 followed traders (fill rates from R2); what to keep; the backup in its own folder on
   E: and F: (E: was 92% full on 2026-11-05).
 - ⬜ **R7 — The pages:** the leaderboard, a trader's page, favourites, the
   alert feed, the paper-follow log; the ports, clear of the lab's 3000 and
@@ -97,8 +104,17 @@ facts; R7 comes last.
 - 🅿️ **Alerts on other devices and by email.** Trigger: Windows alerts working.
 - 🅿️ **Paid data** — a higher rate tier or a data vendor. Trigger: research
   shows the free API cannot do something v1 needs; the owner decides.
+- 🅿️ **Thinning order books before price jumps, as an alert type**
+  (polymarket-lab's `docs/reviews/data-hunt-2026-11-04.md`, Q3). Trigger: v1
+  running well, and the owner's word.
+- 🅿️ **How fast the leaderboard turns over** (polymarket-lab's master-plan,
+  "What the leaderboard is actually for", use 3). Trigger: v1 storing
+  leaderboard snapshots.
 
 ## Done lately
 
+- ✅ 11-06 **The supervisor's first session:** the founding docs checked
+  against the saved spec, the research phase proposed and approved
+  (decisions 2026-11-06, the research phase approved).
 - ✅ 11-06 **Founded:** the repository, the supervisor folder and the founding
   docs (decisions 2026-11-06, polymarket-follow founded).

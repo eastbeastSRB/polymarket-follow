@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-06 (the research phase approved — the owner, recorded by this
+project's supervisor in its first session): **THE RESEARCH PHASE STARTS, IN
+THREE WAVES.** The supervisor's first report (2026-11-06, from the saved spec
+in `verify/SEED-PERPS-1106/`) found the founding docs short of what the spec
+says: the leaderboard pages only to rank 1,000; the spec publishes each
+endpoint's request weight (fills, position-fills, trades and funding 10;
+portfolio, leaderboard and klines 5; fills and position-fills cached 2 s, a
+cached read costing 1); `trade_id` is a plain JSON integer already at 94.6% of
+JavaScript's largest exact integer; `/v2/info/pnl` is not in the saved spec;
+money fields are decimal strings of up to 28 digits; and "both sides at once"
+cannot be read from one account's net position. R1 corrects external-apis
+with live evidence; R2 redefines the style features. **The owner approved, on
+the supervisor's recommendations: (1) THE WAVES.** Wave 1: R1-API, R4-NOTIFY
+and R5-TOOLS in parallel (Sonnet 5.5, effort xhigh). Wave 2: R2-STYLE and
+R3-PAPER (Opus 5.5, effort max — their output decides something: a ship gate
+and the honesty method), with R2-LABELS, a blind re-check of R2's labels
+(Sonnet 5.5, xhigh). Wave 3: R6-STORAGE and R7-PAGES (Sonnet 5.5, xhigh).
+Waves 2 and 3 are revised with the owner's lessons from polymarket-lab and
+shown to the owner before they start. R6 waits for R2's fill rates by style
+instead of running beside R1 as the plan page said, because **every subagent
+that calls the API shares one IP budget** — with each other and with this
+machine's other traffic. **(2) THE WEIGHT CHECK:** R1 runs 10 minutes of
+steady load at the planned rate (half the budget), which must see zero 429s,
+plus ONE ceiling test on fills that stops at the first 429 and pauses 2
+minutes — the one deliberate touch of the limit, because the replies carry no
+rate-limit header to confirm the published weights by. **(3) TASK
+SCHEDULER:** R4 prepares its test task; the owner registers and runs it at a
+time agreed with the supervisor (no persistent setting without the owner's
+yes: WORKFLOW). **(4) THROWAWAY MEASUREMENT SCRIPTS** in a subagent's own
+`workers/<NAME>/` folder are research, not code — like the founding probe; no
+app code and no package installs until the owner approves the v1 plan. **(5)
+THE OWNER'S RULE — EVERY REPORT GOES BEYOND ITS BRIEF:** besides the
+variations, possibilities, problems with their handling and unknowns
+(2026-11-06, three more of the owner's requirements), every report has a
+"Beyond the brief" section — what nobody asked but matters — and ends with
+its questions for the owner, each with a recommendation. The owner: "think
+out of the box, try to get everything, predict everything ... all your
+subagents which will work should work on same way until we define 100% what
+we doing and how we doing." **The rules for every subagent that calls the
+API:** the user agent `polymarket-follow-research`; a fixed token share each,
+all together at most 500 weighted tokens a minute (half the published 1,000);
+stop at the first 429 and pause; no calls during polymarket-lab's nightly
+window, 02:35–03:50 UTC; Node's built-ins only.
+
 2026-11-06 (three more of the owner's requirements, before this project's
 supervisor starts — recorded by polymarket-lab's supervisor): **(1) ALGORITHMS
 AND MARKET MAKERS ARE ALWAYS RECOGNISED, NEVER FOLLOWED BY MISTAKE.** The live
