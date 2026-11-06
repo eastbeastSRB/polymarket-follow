@@ -703,8 +703,9 @@ far as I could find; they are Hyperliquid or multi-chain.
 
 ## 8. Corrections by the Final review (2026-11-06)
 
-The supervisor's Final review and R5-TOOLS's own re-check, 2026-11-06
-~23:00Z. Each correction is marked in place with its number; short original
+The supervisor's Final review and R5-TOOLS's own re-check, 2026-11-06,
+22:38Z to 22:41Z by the commit times of C1 to C6 (C7: this line first said
+"~23:00Z", ahead of the real clock). Each correction is marked in place with its number; short original
 wordings are kept in the marks. Checked with no change needed: this report
 lists eight owner questions (section 7); the commit message of de29b84 says
 seven — a slip in the message only.
@@ -726,6 +727,10 @@ seven — a slip in the message only.
   withdrawn; the "102 days old" age cannot fit launch-day figures. The claim stays ungraded and unused until R1 measures exchange-stats.
 - **C5 (medium)** — the competition leaderboard route is no longer called "keyless" (the spec lists no security requirement; the page does not call it
   public; R1's one call settles it), and "bi-weekly" is no longer read as "every two weeks" (the competitions page does not define it and gives no schedule;
-  re-read 2026-11-06 ~23:05Z). Payout ladder added: first place $10,000, places 25 to 50 $250 each.
+  re-read 2026-11-06 shortly before 22:38Z, the commit time of C1 — C7: first said "~23:05Z", ahead of the real clock). Payout ladder added: first place $10,000, places 25 to 50 $250 each.
 - **C6 (low)** — Bybit: the 7-day positive followers' PnL gate may come from a third-party guide inside the search snippet, not Bybit's own page; both Bybit
   gates stay snippet-level [S]. Bybit's help pages timed out three times; re-read them in a browser if a decision leans on them.
+- **C7 (low)** — two time stamps in this section were ahead of the real clock (the supervisor's messages to me carried stamps about 10 minutes fast, and I copied
+  them): the section's opening line said "~23:00Z" and the C5 entry said "re-read ~23:05Z". Corrected to the commit times (UTC): C1 22:38:23Z, C2 22:39:10Z,
+  C3 22:39:41Z, C4 22:39:54Z, C5 22:40:18Z, C6 22:40:30Z; the original report de29b84 was committed at 22:33:38Z. The pages in C1 and C2 were read, and the
+  competitions page re-read, in the minutes before 22:38Z.
