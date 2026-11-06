@@ -1,0 +1,9 @@
+# Git on Windows checks out LF as CRLF by default (core.autocrlf=true, set by
+# the Git for Windows installer). Prettier's endOfLine default is "lf", so a
+# fresh clone would fail `pnpm format:check` on every file and `pnpm format`
+# would rewrite the whole repo. Forcing LF in both the index and the working
+# tree keeps Windows, WSL and CI byte-identical.
+* text=auto eol=lf
+
+# Lockfile: never normalized, never diffed by hand.
+pnpm-lock.yaml -diff linguist-generated=true

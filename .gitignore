@@ -1,0 +1,16 @@
+node_modules
+dist
+.turbo
+coverage
+*.log
+.DS_Store
+
+# Per-machine Claude Code settings (permission allowlists and similar).
+# .claude/settings.json is the shared one and stays tracked if it appears.
+.claude/settings.local.json
+
+# Real environment values, including Vite's mode-specific variants. The
+# committed template is the one exception.
+.env
+.env.*
+!.env.example
