@@ -727,9 +727,12 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
    design measures what is left after the delay, which is the honest question,
    and should not be compared with studies that ignore the delay.
 7. **Code-rule candidate (from this study's slip):** a weight-paced client must
-   pace by the *next* call's weight (check the trailing 60 s plus the next call
-   against the share before sending), or a sliding minute can exceed the share
-   by one heavy call although the average is under it.
+   check the trailing 60 s plus the next call against the share before
+   sending [Final review F7: was "must pace by the *next* call's weight (check
+   … before sending)"; spacing by the next call's weight alone overruns as
+   much as by the previous one, `workers/R3-REVIEW/out/check-pacing.txt`], or
+   a sliding minute can exceed the share by one heavy call although the
+   average is under it.
 8. **ANT's mark switches regime** (following the index, then the book), so
    unrealized P&L at the mark can jump by tens of bps with no trade: show a
    paper position's P&L at the book's exit price, not at the mark.
