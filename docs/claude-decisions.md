@@ -1,5 +1,21 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (R2's classifier frozen — the supervisor, at R2-STYLE's third
+stop, before scoring): **THE STYLE CLASSIFIER IS FINGERPRINTED BEFORE THE
+SUPERVISOR RUNS IT ON THE HOLDOUT.** R2 built it on non-holdout accounts only
+(its run log: three runs, none on the holdout) and froze it at
+2026-11-07T09:42:15Z: `classifier-v1.json` (thresholds) SHA-256
+`d803192c779e107b61eab13b4bd52fc488b04cd0c9f38939c2efb5acf292e4ad`,
+`scripts/classifier.mjs` (the rules) `f7f32f22…8c01`,
+`scripts/label-accounts.mjs` (the apply script) `aa9df253…a9a4` (in
+`workers/R2-STYLE/`; copies in `verify/R2-STYLE/frozen-classifier/`). On the
+1,602 non-holdout accounts it labelled 807 with fills in the window:
+directional 288, algorithm 144, market maker 36, churner 7, unclassified —
+mixed 113, unclassified — too few 219; both anchors algorithm. The supervisor
+now runs it on the 100 holdout accounts and scores it by the rules fixed
+before any label existed (decisions 2026-11-07, the style labels' definitions
+frozen).
+
 2026-11-07 (R3 accepted, and the pre-test's rules amended — the owner, on the
 supervisor's recommendations): **THE FOLLOWER IS PRICED AT THE MARK PLUS THE
 MEASURED COST, AND A TRADER IS JUDGED OVER A FIXED HORIZON, NEVER BY THE
