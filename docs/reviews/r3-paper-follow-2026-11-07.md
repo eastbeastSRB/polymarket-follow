@@ -47,7 +47,10 @@ supervisor folder; polymarket-lab was read only (three files).
    instrument's mean quoted half-spread and depth cost**. Against 950 live book
    instants on 28 instruments it was within ±1.6 bps per side on average
    outside the pre-IPO (on one Saturday morning, the same morning that gave
-   the table [Final review F1: added; see Q1]) — and 5–15× less noisy than A5's "first public trade
+   the table [Final review F1: added; see Q1]) — and 1.7–15× less noisy (mean
+   absolute error) [Final review F4: was "5–15×"; by category 1.7×
+   commodities, 3.4× indices, 4.6× equities, 5.6× majors, 15× small coins,
+   `out/an-q1b-N1000.txt`] than A5's "first public trade
    after the delay", which on this Saturday came 1.4 minutes (crypto majors)
    to 24 minutes (indices) after the instant. **ANT, the pre-IPO, cannot be
    priced from history within ±20 bps** by any rule tried.
@@ -715,8 +718,11 @@ supervisor on 2026-11-07 ~05:30Z, recommendation "yes" on all six).
    1 s mark at the follow instant + the instrument's mean quoted half-spread +
    mean depth for $1,000, both legs; `out/rule-table.json`, one Saturday
    morning's table, re-measured under question 5 [Final review F1: added]),
-   keeping A5 as a check? *Recommendation: yes* — ±1.6 bps per side outside the pre-IPO
-   against A5's 1.7–19.5 bps mean abs error.
+   keeping A5 as a check? *Recommendation: yes* — a mean absolute error of
+   0.3–4.9 bps per side outside the pre-IPO (its mean within ±1.6) against
+   A5's 1.7–19.5 bps (its mean up to ±6.4) [Final review F4: was "±1.6 bps
+   per side outside the pre-IPO against A5's 1.7–19.5 bps mean abs error",
+   which set the rule's mean error against A5's mean absolute error].
 2. **R8's primary cell without pre-IPO entries (ANT), a secondary with
    them?** *Recommendation: yes* — no rule priced ANT within ±20 bps.
 3. **The vote on fixed-horizon d (1 h / 6 h / 24 h by the trader's own holding
@@ -878,3 +884,4 @@ replaced.
 | F1 | The rule's table and its ±1.6 bps are one Saturday morning's, but that caveat (with the supervisor's 05:26Z snapshot) stood only beside the category table, in headline 5, §4, §5 and question 5 — not where the rule is used. Checked out of sample within the morning (the table from one session, the error on the other): the largest per-side mean outside the pre-IPO is 1.44 bps (1.53 in-sample), so the small error is not an artefact of fitting; weekdays and R8's period stay unmeasured | caveat added in headline 1, the Q1 answer and its ±1.6 bullet, Q8, §7 question 1; `out/check-pricing-xval-N1000.txt` |
 | F2 | Q5 and Q6 item 2 take the vote's d against the median of the 3 nulls; A9 fixes d against their mean, so this changes a rule the owner fixed, yet neither the status paragraph nor any question in §7 said so — a "yes" to question 3 would not cover it | the median added to the status paragraph and to question 3 (the question changes: the supervisor's note to the owner needs it) |
 | F3 | "The 1-second mark history that R8 would read is the live mark" and "R8 needs no tape to price" rest on one 1,000 s window (01:23:50–01:40:30Z, six instruments) read 2.5 hours later; whether 1 s buckets exist for September–October, R8's period, was never read, and R8's rule and cost depend on it | stated in Q1, §3 item 4 and §8, with the one read that settles it; the "sub-second timing" claim checked (±1 s shift: 97–100% agree, `out/check-markhist.txt`) |
+| F4 | The rule against A5: headline 1's "5–15× less noisy" — the mean absolute error ratio is 1.7× (commodities) to 15× (small coins), under 5× on commodities, indices and equities; and question 1's reason set the rule's mean error (±1.6) against A5's mean absolute error (1.7–19.5), two different measures | headline 1 and question 1 corrected (the rule's mean absolute error is 0.3–4.9 bps a side outside the pre-IPO; A5's mean reaches ±6.4); `out/check-arith.txt` |
