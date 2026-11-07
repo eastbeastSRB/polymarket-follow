@@ -981,8 +981,10 @@ No finding is High: no conclusion changes, no Iron Rule was broken, and every
 rule R3 broke is listed by R3 itself. Commits: F1 `9537a2c` · F2 `bef03d9` ·
 F3 `e75f3a8` · F4 `8c0e682` · F5 `f55a294` · F6 `c8b85af` · F7 `7edd02c` and
 `8a81308` (the third place, missed by the first) · F8 `e861bca` · F9
-`3092a40` · F10 `c57ba88` · F11 `004f64e` · F12 `c31bc76`; this section's end
-and a wording fix inside F12's marker: the commit after them.
+`3092a40` · F10 `c57ba88` · F11 `004f64e` and `40b78df` (wording) · F12
+`c31bc76`; this section's end and a wording fix inside F12's marker
+`eaf9ea4`; three markers re-wrapped for search `1035890`; this line's update
+the commit after.
 
 **The supervisor's five points.**
 
