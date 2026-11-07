@@ -121,7 +121,15 @@ tape of 28 instruments, 3,255 trades; `out/an-q1a.txt`, `out/an-ticks.txt`):
 | pre-IPO (ANT) | 7.60 / 18.38 | 7.24 / 11.51 | 13.88 / 22.46 | 27.62 / 45.22 (0%) |
 
 The crossing cost includes the half-spread and is one side: a round trip pays
-it twice, plus the 4 bps fee each way. BTC's spread is one tick ($1 on
+it twice, plus the 4 bps fee each way. [Final review F10: added — the
+half-spread column comes from the 413 all-instrument bbo snapshots and the
+crossing columns from the 1,227 depth-100 books, 13–14 an instrument at other
+instants, so a category's crossing median can sit below its half-spread
+median (ANT 7.24 against 7.60). The rule's table (`out/rule-table.json`)
+takes each instrument's depth cost from those 13–14 books; at $10,000 it is
+not usable for PRL-USD (14 of 28 book sides could not fill it, the others
+cost 343–581 bps beyond the half-spread) nor fully for NCLD-USD (9 of 28
+could not); `workers/R3-REVIEW/out/check-data-counts.txt`.] BTC's spread is one tick ($1 on
 ~$75,800). **By the hour the medians move** (half-spread, hours 00–05Z):
 indices 2.18 → 1.30, commodities 0.38 → 0.12, ANT between 3.54 and 11.55; the
 supervisor's own snapshot at 05:26Z, just after my window, showed indices
@@ -180,7 +188,11 @@ of an old window (weight 5) settles it before R8 relies on the rule.]
   recent trades, the last trade moved by the mark, the next trade moved back,
   the buy/sell midpoint against the mark or against the index. Outside ANT
   none was materially better than the plain mark (a fraction of a bp better in
-  bias on majors and commodities, worse on small coins, equities and indices);
+  bias on majors and commodities; on equities the index-anchored and
+  next-trade variants had less bias, 0.2–0.5 against the mark's 0.9–1.2 bps,
+  but 1.6–1.8 times its mean absolute error; worse on small coins and
+  indices [Final review F10: was "worse on small coins, equities and
+  indices"]);
   on ANT the anchored ones were 20–39 bps biased the other way, and the
   next-trade variant averaged +8.5 / −5.0 with a mean abs error of 80 bps. Two
   reasons, both measured: real takers pay less than the quoted spread
@@ -942,3 +954,4 @@ replaced.
 | # | Finding | Fix |
 |---|---|---|
 | F9 | Q6's figures: "1–14 votes" when merged across traders (the outputs show 1–12 at 2 entries a day, 80 at half an entry); one-sided "~10–20% fewer votes" (12–18% at the bar of 20, 7–9% at 400, the bar recommended); the 30 bps and 15 bps edges' shares are of entries, used as the merged-vote P of E3 (merged votes: 61.0, 58.3, 56.7% at 1, 6, 24 h; 54.2% for 15 bps); the owner's-view example's E (0.6, 0.5) does not match its counts (0.23, 0.29) | corrected in Q6 items 5–7, the power paragraph, the year table, the example and §2; `out/check-e2-merged-S*.txt`, `out/check-arith.txt` |
+| F10 | Q1's details: the trade-anchored rules were called worse "on equities", where two of them had less bias than the mark (and more noise); the category table sets medians from two samples side by side (bbo snapshots, rotating books), so ANT's crossing median sits below its half-spread median although crossing includes it; the rule table's $10,000 column is not usable for PRL-USD (half its book sides could not fill $10,000, the rest 343–581 bps) or fully for NCLD-USD, and each depth cost rests on 13–14 books — none of it stated | the three stated in Q1; `out/check-data-counts.txt` |
