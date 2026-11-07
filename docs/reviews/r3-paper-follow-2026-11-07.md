@@ -44,7 +44,8 @@ supervisor folder; polymarket-lab was read only (three files).
    follow instant; historically, **the 1-second mark at that instant plus the
    instrument's mean quoted half-spread and depth cost**. Against 950 live book
    instants on 28 instruments it was within ±1.6 bps per side on average
-   outside the pre-IPO — and 5–15× less noisy than A5's "first public trade
+   outside the pre-IPO (on one Saturday morning, the same morning that gave
+   the table [Final review F1: added; see Q1]) — and 5–15× less noisy than A5's "first public trade
    after the delay", which on this Saturday came 1.4 minutes (crypto majors)
    to 24 minutes (indices) after the instant. **ANT, the pre-IPO, cannot be
    priced from history within ±20 bps** by any rule tried.
@@ -83,7 +84,11 @@ read later. The same at every exit. No model: it is what the book offered.
 mark(t) × (1 + s × (h̄ + δ̄(N)))** — mark(t) from the 1-second mark history at
 the instant, h̄ the instrument's **mean** quoted half-spread, δ̄(N) its mean
 extra cost of filling N beyond the half-spread (per instrument,
-`out/rule-table.json`), s = +1 for a long's entry or a short's exit, −1
+`out/rule-table.json` — one Saturday morning's means, 2026-11-07
+00:53–05:21Z, from 413 bbo snapshots and 13–14 depth-100 books an
+instrument; the supervisor's 05:26Z snapshot differed on indices,
+commodities and ANT (below); to be re-measured on a weekday before R8's
+numbers are frozen, §7 question 5 [Final review F1: added]), s = +1 for a long's entry or a short's exit, −1
 otherwise, both legs, tracked and null alike. The mean, not the median,
 because a follower at a random instant pays the mean. **This replaces A5's
 "first public trade at or after the fill plus the delay" — a proposal (§7,
@@ -137,7 +142,16 @@ thin books: last − mid for small coins −46.7 / +0.3 / +61.9 (`out/an-q1a.txt
 
 - **The mark rule** is within ±1.6 bps per side on average at $1,000 outside
   the pre-IPO (±1.2 outside indices; ±1.4 at $10,000) — a fraction of the
-  8 bps round-trip fee.
+  8 bps round-trip fee. [Final review F1: added — measured on the same
+  Saturday morning that gave the table. Within that morning it is not an
+  artefact of fitting: with the table built from one session and the error
+  measured on the other, the largest per-side mean outside the pre-IPO was
+  1.44 bps (in-sample 1.53; `workers/R3-REVIEW/out/check-pricing-xval-N1000.txt`
+  in the supervisor folder). On a weekday, in regular sessions and in R8's
+  September–October it is not measured; its per-side bias follows where the
+  mark sits against the book, which moves with the weekend premium (the
+  supervisor's 05:26Z snapshot: indices' book − index −0.14 bps against
+  +1.2 to +11.7 by the hour this morning).]
 - **A5 as written** ("the first public trade at or after the fill plus the
   delay, plus the cost of crossing the spread") is noisy (mean abs error
   1.7–19.5 bps) because the next trade comes minutes later and the price
@@ -537,7 +551,7 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
 | Iron Rule 4 says | The design | Where |
 |---|---|---|
 | "every followed entry is recorded" | every opening and flip of a followed directional trader becomes an entry, also when late, when the data was stale, when a read failed (flagged, never dropped), and when following stops while it is open (marked) | Q2, Q3, Q7 |
-| "at the price a follower could have had" | live: the book's VWAP for $1,000 on the follower's side at t_follow; historical: the mark rule, measured within ±1.6 bps per side outside the pre-IPO against live books, with the pre-IPO kept out of the primary cell (proposal); never the trader's own fill price, never a price before the fill | Q1 |
+| "at the price a follower could have had" | live: the book's VWAP for $1,000 on the follower's side at t_follow; historical: the mark rule, measured within ±1.6 bps per side outside the pre-IPO against live books on one Saturday morning [Final review F1: "on one Saturday morning" added], with the pre-IPO kept out of the primary cell (proposal); never the trader's own fill price, never a price before the fill | Q1 |
 | "after the alert's delay" | t_follow = the alert's time + 60 s; R8 simulates the poll phase from a fixed seed; outage entries are priced at their real alert time and kept out of the vote | Q2 |
 | "with fees" | the instrument's base-tier taker fee on both legs (0.04%; ANT 0.02% by its override), never the trader's tier or rebate | Q4 |
 | "and funding" | every whole hour crossed, signed by direction, at the published rate (the scale inside), on the paper quantity at the mark | Q4 |
@@ -689,8 +703,9 @@ supervisor on 2026-11-07 ~05:30Z, recommendation "yes" on all six).
 1. **Replace R8's A5 price ("the first public trade at or after the fill plus
    the delay, plus the cost of crossing the spread") by the mark rule** (the
    1 s mark at the follow instant + the instrument's mean quoted half-spread +
-   mean depth for $1,000, both legs; `out/rule-table.json`), keeping A5 as a
-   check? *Recommendation: yes* — ±1.6 bps per side outside the pre-IPO
+   mean depth for $1,000, both legs; `out/rule-table.json`, one Saturday
+   morning's table, re-measured under question 5 [Final review F1: added]),
+   keeping A5 as a check? *Recommendation: yes* — ±1.6 bps per side outside the pre-IPO
    against A5's 1.7–19.5 bps mean abs error.
 2. **R8's primary cell without pre-IPO entries (ANT), a secondary with
    them?** *Recommendation: yes* — no rule priced ANT within ±20 bps.
@@ -828,3 +843,22 @@ Ramdas, "False discovery rate control with e-values", arXiv 2009.02824v5
 broken, 3). **Drafts** sent at the planned stop (05:25Z):
 `drafts/q1-pricing-rule.md`, `drafts/q6-statistics.md`. **Progress log:**
 `progress.md`.
+
+---
+
+## Corrections by the Final review (R3-REVIEW, 2026-11-07)
+
+R3-REVIEW (Opus 5.5, max), a fresh subagent, from 05:34Z, on R3-PAPER's own
+brief: the scripts, every number's source, unit and grouping, and whether
+each claim follows from its evidence. No API call was made; R3's seeded
+simulations were re-run and its saved data re-analysed locally. Evidence: the
+supervisor folder's `workers/R3-REVIEW/` (`scripts/`, `out/`, `progress.md`).
+Each finding is fixed in its own commit and marked in place
+(`[Final review Fn]`), the old text quoted in the marker, never silently
+replaced.
+
+**Medium — could mislead a decision or a fact file**
+
+| # | Finding | Fix |
+|---|---|---|
+| F1 | The rule's table and its ±1.6 bps are one Saturday morning's, but that caveat (with the supervisor's 05:26Z snapshot) stood only beside the category table, in headline 5, §4, §5 and question 5 — not where the rule is used. Checked out of sample within the morning (the table from one session, the error on the other): the largest per-side mean outside the pre-IPO is 1.44 bps (1.53 in-sample), so the small error is not an artefact of fitting; weekdays and R8's period stay unmeasured | caveat added in headline 1, the Q1 answer and its ±1.6 bullet, Q8, §7 question 1; `out/check-pricing-xval-N1000.txt` |
