@@ -273,8 +273,13 @@ late because of an outage (the poller's own clock gap over two poll
 intervals, or an alert delay over 5 minutes) is priced at its real alert time
 + R and flagged "late"; it counts in the "as experienced" paper P&L and not in
 the e-process. Why: the vote tests one fixed strategy (follow within the
-normal delay); an outage is unrelated to what the trader's market does next,
-so leaving those entries out of the vote cannot bias it, while putting them in
+normal delay); an outage of this PC is unrelated to what the trader's market
+does next, so leaving those entries out of the vote cannot bias it; an alert
+late because the exchange's data lagged (and an entry under "data stale", §4)
+may fall in fast markets, so for those this is not shown [Final review F12:
+was "an outage is unrelated to what the trader's market does next, so
+leaving those entries out of the vote cannot bias it", which holds for the
+PC's own outages only]; putting them in
 would mix a different, random delay into the trader's score. "Not at all" was
 rejected because it would drop real entries from the money record (Iron Rule
 4). An exit seen late is priced late: the paper position really stays open
@@ -430,9 +435,14 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
    runs (S1) and 4.5–5.1% with herding and baskets mixed (S5); merged,
    2.8–3.3%. The unit: entries whose leg windows (hour start + delay, to the
    last leg's exit) overlap, across instruments; the vote completes when its
-   last leg closes; votes are ordered by completion. Returns over disjoint
-   windows are independent whatever the instruments' correlation, so BTC and
-   ETH need merging only when they overlap in time.
+   last leg closes; votes are ordered by completion. Votes over disjoint
+   windows stay fair coins under the null whatever the instruments'
+   correlation, because each tracked leg and its nulls face the same market,
+   so BTC and ETH need merging only when they overlap in time; E2's market
+   has volatility clustering, so its returns over disjoint windows are not
+   independent, and the merged votes held [Final review F12: was "Returns
+   over disjoint windows are independent whatever the instruments'
+   correlation"].
 4. **e-Bonferroni, not e-BH.** Wang & Ramdas (arXiv 2009.02824v5): e-BH
    rejects the k* largest e-values, k* = max{k : k·e_[k]/K ≥ 1/α}, with FDR ≤
    K0·α/K under any dependence (Theorem 2) — at one decision time, with
@@ -963,3 +973,4 @@ replaced.
 | F9 | Q6's figures: "1–14 votes" when merged across traders (the outputs show 1–12 at 2 entries a day, 80 at half an entry); one-sided "~10–20% fewer votes" (12–18% at the bar of 20, 7–9% at 400, the bar recommended); the 30 bps and 15 bps edges' shares are of entries, used as the merged-vote P of E3 (merged votes: 61.0, 58.3, 56.7% at 1, 6, 24 h; 54.2% for 15 bps); the owner's-view example's E (0.6, 0.5) does not match its counts (0.23, 0.29) | corrected in Q6 items 5–7, the power paragraph, the year table, the example and §2; `out/check-e2-merged-S*.txt`, `out/check-arith.txt` |
 | F10 | Q1's details: the trade-anchored rules were called worse "on equities", where two of them had less bias than the mark (and more noise); the category table sets medians from two samples side by side (bbo snapshots, rotating books), so ANT's crossing median sits below its half-spread median although crossing includes it; the rule table's $10,000 column is not usable for PRL-USD (half its book sides could not fill $10,000, the rest 343–581 bps) or fully for NCLD-USD, and each depth cost rests on 13–14 books — none of it stated | the three stated in Q1; `out/check-data-counts.txt` |
 | F11 | Facts proposed for external-apis: the settled funding "equals" the ticker's rate "to three digits" — ZEC (5.470e-6 against 5.480e-6) and KAITO (−7.682e-5 against −7.695e-5) differ in the third digit, all within 0.2%; ANT-USD's mark "at other times followed the book" — it equalled the ticker mid in 8.4% of seconds and sat between index and book in 92.7% | Q4, §3 item 5 and §8 corrected; `out/check-data-counts.txt` |
+| F12 | Two justifications that do not follow: Q6 item 3's "returns over disjoint windows are independent whatever the instruments' correlation" (false under volatility clustering, which E2's own market has; what the merge needs is that each vote stays a fair coin, which E2 shows); Q2's "an outage … cannot bias it", true for this PC's outages but not for alerts late because the exchange's data lagged, which the same rule (and §4's "data stale") leaves out of the vote | both qualified in place |
