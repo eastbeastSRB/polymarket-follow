@@ -386,7 +386,10 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
 1. **A fixed horizon, not the trader's own exit, for the vote.** A sign test
    assumes a vote is a fair coin under "no skill". The trader's exit breaks
    that: a zero-skill trader taking profit at +0.5% and stopping at −2% wins
-   63.4% of single comparisons (E4, 200,000 trials; the supervisor's check:
+   62.9% of single comparisons (E4, exact over its 200,000 trials [Final
+   review F6: was "63.4% ... (E4, 200,000 trials" — sim-e4 printed a share of
+   4,000 resamples of the trials, ±0.8 point; it reproduces exactly, and the
+   exact share is 62.85%, `workers/R3-REVIEW/out/check-e4-exact.txt`]; the supervisor's check:
    b/(a+b) = 2/2.5 = 80% before costs) while the mean net return stays
    −10.0 bps, the costs — exits create no money. The sign e-process crowns that
    trader: E ≥ 20 in 79% of 120-day runs, E ≥ 200 in 54%, a family of 10 such
@@ -522,10 +525,13 @@ an edge three times the fees; the pooled board is faster (twenty traders with
 
 **For R8 (one look).** A11 (iii), "one vote per trader, its mean d", with
 mirrored exits is biased for traders with few entries: zero-skill disposition
-traders give a positive vote 57.9% of the time at 5 entries, 54.1% at 10,
-53.6% at 20, 50.5% at 50 (E4); reverse habits bias the other way (41.9% at
+traders give a positive vote 57.8% of the time at 5 entries, 54.1% at 10,
+52.6% at 20, 51.4% at 50, 50.7% at 100 (E4's trials, 200,000 resamples)
+[Final review F6: was "57.9% ... 53.6% at 20, 50.5% at 50 (E4)" — 4,000
+resamples, ±0.8 point]; reverse habits bias the other way (41.9% at
 5). (i) and (ii) (means) are not biased. **Proposal: compute (iii) on
-fixed-horizon d** (or count only traders with ≥ 50 entries in it).
+fixed-horizon d** (or count only traders with ≥ 50 entries in it, which still
+leaves a bias of 1.4 points at 50 [Final review F6: added]).
 
 ### Q7. What each paper entry stores
 
@@ -902,3 +908,4 @@ replaced.
 | F3 | "The 1-second mark history that R8 would read is the live mark" and "R8 needs no tape to price" rest on one 1,000 s window (01:23:50–01:40:30Z, six instruments) read 2.5 hours later; whether 1 s buckets exist for September–October, R8's period, was never read, and R8's rule and cost depend on it | stated in Q1, §3 item 4 and §8, with the one read that settles it; the "sub-second timing" claim checked (±1 s shift: 97–100% agree, `out/check-markhist.txt`) |
 | F4 | The rule against A5: headline 1's "5–15× less noisy" — the mean absolute error ratio is 1.7× (commodities) to 15× (small coins), under 5× on commodities, indices and equities; and question 1's reason set the rule's mean error (±1.6) against A5's mean absolute error (1.7–19.5), two different measures | headline 1 and question 1 corrected (the rule's mean absolute error is 0.3–4.9 bps a side outside the pre-IPO; A5's mean reaches ±6.4); `out/check-arith.txt` |
 | F5 | Q6 item 4 and §2: "Under the global null e-BH is the same rule (its first rejection needs K/α)" is false — e-BH rejects r hypotheses when each passes K/(r·α) (the paper's own self-consistency condition); E1's re-run found it rejecting on a day no E had reached 20·K in 5 of 60,000 null paths, once where e-Bonferroni never did. The choice of e-Bonferroni stands (time-uniform, any dependence). Also "the same instrument at once" should read the same or correlated instruments at overlapping times | corrected in Q6 item 4 and §2; the paper's rule, Theorem 2 and §7's condition verified against its own text (rules broken 3; `scripts/pdf-text.cjs`, `out/check-e1-ebh.txt`) |
+| F6 | E4's "63.4% of single comparisons (200,000 trials)" and its n-entry shares are each a share of 4,000 resamples of the trials (±0.8 point): the run reproduces them exactly, but the exact share is 62.85%, and at 20 and 50 entries the bias is 52.6% and 51.4%, not 53.6% and 50.5% — so "count only traders with ≥ 50 entries" does not remove it | Q6 item 1 and the A11 (iii) paragraph corrected; `out/check-e4-exact.txt` |
