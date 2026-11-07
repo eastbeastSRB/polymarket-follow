@@ -1,5 +1,32 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (the classifier's ruling — the owner, on the supervisor's
+recommendations; and the supervisor's prior before R8): **V1 OF THE STYLE
+CLASSIFIER IS USED FOR THE RESEARCH; THE APP SHIPS ONLY WITH A V2 THAT PASSES
+AN HONEST FORWARD BLIND TEST.** The score (decisions 2026-11-07, R2's
+classifier scored: trap 2 of 23, both anchors caught) showed two weak spots —
+slow fixed-size algorithms, and "directional" called on thin evidence. A fix
+made now would be tuned on labels already seen, so: (1) **R8 uses v1;** its
+tracked set already needs 10 closed positions (A3), which removes most thin
+evidence, and R8 prints its primary result again with the tracked accounts a
+careful reader would doubt left out, as a sensitivity. (2) **R2 designs a v2**
+for the two weak spots on non-holdout accounts only, and freezes it with its
+hash before the test data exists. (3) **The forward blind test:** after
+2026-11-21 the 100 holdout accounts' fills for 2026-11-07 to 2026-11-21 —
+data nobody has seen — are pulled, a fresh blind labeller labels them by the
+frozen definitions, and the supervisor scores v2 by the same rules; R2 never
+opens the holdout's data meanwhile. (4) **In the app, a "directional" label
+on thin evidence carries a warning.** **THE SUPERVISOR'S PRIOR FOR R8, written
+before its rules are frozen and before its one look:** PAYS ~20%, FAILS ~50%,
+TOO FEW TO TELL ~30%. Why: polymarket-lab's F9 found no edge in top
+prediction-market wallets; the published evidence on copying finds none after
+costs (R5); the best on-chain wallets' information is used within seconds
+(R5, Zhai) while a follower here acts 20–80 s late; a round trip costs ~8–10
+bps in fees and spread; and most of what tops the boards is algorithms and
+market makers (R2-LABELS: 23 of the 37 active holdout accounts with a clear
+label). For it: the owner follows directional traders only, perps leaders may
+differ from prediction-market ones, and R8's horizons reach 24 h.
+
 2026-11-07 (R2's classifier scored — the supervisor, by the rules fixed
 before any label existed): **THE TRAP RATE IS 2 OF 23 (8.7%, 95% INTERVAL
 1.1–28.0%); BOTH ANCHORS ARE CAUGHT.** The supervisor ran the frozen

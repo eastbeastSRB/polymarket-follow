@@ -112,6 +112,11 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   alert feed, the paper-follow log; the ports, clear of the lab's 3000 and
   4000. After R8: its verdict decides whether v1 is a copy-alert tool or a
   watching tool.
+- ⏳ **The classifier v2's forward blind test:** the 100 holdout accounts'
+  fills for 2026-11-07 to 2026-11-21, labelled blind by a fresh labeller, v2
+  (frozen beforehand on non-holdout accounts) scored by the same rules; the app
+  ships only with a v2 that passes (decisions 2026-11-07, the classifier's
+  ruling). Trigger: 2026-11-21.
 - ⏳ **R8's weekday measurement:** R3's scripts for two hours in US trading
   hours, Monday 2026-11-09 14:30–16:30Z, before R8's numbers are frozen
   (decisions 2026-11-07, R3 accepted). Trigger: that time.
