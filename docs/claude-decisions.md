@@ -1,5 +1,20 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (the blind labels fixed — the supervisor): **R2-LABELS'S 100
+LABELS ARE FINGERPRINTED BEFORE ANY CLASSIFIER OUTPUT EXISTS.** R2-LABELS
+(Sonnet 5.5, xhigh; report `docs/reviews/r2-labels-2026-11-07.md`, `c63c39e`)
+labelled the 100 holdout accounts for 2026-10-24 to 2026-11-07 from their raw
+fills by the frozen definitions: none (no fill) 40 · unclassified — too few 20
+· unclassified — mixed 3 · directional 14 · algorithm 17 · market maker 6 ·
+churner 0. Checked by the supervisor: it never opened R2-STYLE's folders
+(access scan 0 outside its own); the 40 "none" agree with the supervisor's own
+count from the raw files on all 100 accounts (`verify/R2-STYLE/window-fills.cjs`).
+`labels.csv` SHA-256 `617c53afb0aa64a25f549dd5b1cdef60a748f1eb3655880e9f479ac8a332b1d0`
+and `labels-extras.csv` (the two anchors, outside the score) `dabbbfee…a055`,
+2026-11-07 05:08Z; frozen copies in `verify/R2-STYLE/`. Its Final review may
+correct a label only where the frozen definitions were misapplied, each change
+logged; the supervisor then scores both versions and reports both.
+
 2026-11-07 (the style labels' definitions frozen, and how the classifier is
 scored — the supervisor, at R2-STYLE's second stop): **SIX LABELS, WORDS
 ONLY, AND THE SCORING FIXED BEFORE ANY LABEL OR CLASSIFIER OUTPUT EXISTS.**
