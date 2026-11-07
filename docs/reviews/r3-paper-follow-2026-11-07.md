@@ -128,6 +128,12 @@ thin books: last − mid for small coins −46.7 / +0.3 / +61.9 (`out/an-q1a.txt
 §3). The 1-second mark history that R8 would read **is** the live mark: in six
 1,000-second windows every second was present and equal or within 0.5 bps in
 74–100% of seconds, the rest sub-second timing (`out/an-checks.txt`).
+[Final review F3: added — the six windows are one window, 01:23:50–01:40:30Z,
+on six instruments, read about 2.5 hours later; with a ±1 s shift 97–100% of
+seconds agree, so "sub-second timing" holds
+(`workers/R3-REVIEW/out/check-markhist.txt`). Whether 1-second buckets exist
+for September–October, R8's period, was not checked: one mark-history read
+of an old window (weight 5) settles it before R8 relies on the rule.]
 
 **The historical rules, against the live truth** (the VWAP the book offered,
 950 instants on 28 instruments; `out/an-q1b-N1000.txt`, `-N10000.txt`; bps,
@@ -608,6 +614,8 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
    exchange's spreads every 30 s cost 4 tokens a minute.
 4. **R8 needs no tape to price**: the 1 s mark history is the live mark, every
    second present (`out/an-checks.txt`); the tape is needed only for the nulls.
+   [Final review F3: added — shown on one recent 1,000 s window; that 1 s
+   marks exist for R8's period is not checked (Q1).]
 5. **The settled funding equals the ticker's rate 5 s before the hour**, so the
    forward log can take funding from the stream and check it against
    `/v1/info/funding` later.
@@ -783,9 +791,10 @@ the supervisor to copy; nothing here was written to external-apis.
   `message_rate_limited`, the socket left open. The `funding` channel is
   private.
 - **Mark history** (spec): "Only buckets with at least one mark update are
-  included". **Measured:** at `interval=1s` every second was present in six
-  1,000 s windows (01:23–01:40Z) and matched the live mark (within 0.5 bps in
-  74–100% of seconds).
+  included". **Measured:** at `interval=1s` every second was present in one
+  1,000 s window (01:23:50–01:40:30Z) on six instruments [Final review F3:
+  was "in six 1,000 s windows (01:23–01:40Z)"; older windows not read] and
+  matched the live mark (within 0.5 bps in 74–100% of seconds).
 - **Trades:** `sort=asc` with `cursor` pages correctly (140 reads, 3,255
   distinct trades, 0 errors; 2026-11-07 03:50–05:20Z).
 - **Books on a weekend:** a depth-100 book can hold fewer than 100 levels
@@ -868,3 +877,4 @@ replaced.
 |---|---|---|
 | F1 | The rule's table and its ±1.6 bps are one Saturday morning's, but that caveat (with the supervisor's 05:26Z snapshot) stood only beside the category table, in headline 5, §4, §5 and question 5 — not where the rule is used. Checked out of sample within the morning (the table from one session, the error on the other): the largest per-side mean outside the pre-IPO is 1.44 bps (1.53 in-sample), so the small error is not an artefact of fitting; weekdays and R8's period stay unmeasured | caveat added in headline 1, the Q1 answer and its ±1.6 bullet, Q8, §7 question 1; `out/check-pricing-xval-N1000.txt` |
 | F2 | Q5 and Q6 item 2 take the vote's d against the median of the 3 nulls; A9 fixes d against their mean, so this changes a rule the owner fixed, yet neither the status paragraph nor any question in §7 said so — a "yes" to question 3 would not cover it | the median added to the status paragraph and to question 3 (the question changes: the supervisor's note to the owner needs it) |
+| F3 | "The 1-second mark history that R8 would read is the live mark" and "R8 needs no tape to price" rest on one 1,000 s window (01:23:50–01:40:30Z, six instruments) read 2.5 hours later; whether 1 s buckets exist for September–October, R8's period, was never read, and R8's rule and cost depend on it | stated in Q1, §3 item 4 and §8, with the one read that settles it; the "sub-second timing" claim checked (±1 s shift: 97–100% agree, `out/check-markhist.txt`) |
