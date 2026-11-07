@@ -410,8 +410,8 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
 1. **A fixed horizon, not the trader's own exit, for the vote.** A sign test
    assumes a vote is a fair coin under "no skill". The trader's exit breaks
    that: a zero-skill trader taking profit at +0.5% and stopping at −2% wins
-   62.9% of single comparisons (E4, exact over its 200,000 trials [Final
-   review F6: was "63.4% ... (E4, 200,000 trials" — sim-e4 printed a share of
+   62.9% of single comparisons (E4, exact over its 200,000 trials
+   [Final review F6: was "63.4% ... (E4, 200,000 trials" — sim-e4 printed a share of
    4,000 resamples of the trials, ±0.8 point; it reproduces exactly, and the
    exact share is 62.85%, `workers/R3-REVIEW/out/check-e4-exact.txt`]; the supervisor's check:
    b/(a+b) = 2/2.5 = 80% before costs) while the mean net return stays
@@ -450,8 +450,8 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
    e-values valid at that time; their sequential case (§7 of the paper) needs
    each null's increments valid given all earlier information, which two
    traders holding the same or correlated instruments at overlapping times
-   break [Final review F5: was "the same instrument at once"]. [Final review
-   F5: added — the rule (the paper's eq. 1 and eq. 5), Theorem 2 and §7's
+   break [Final review F5: was "the same instrument at once"].
+   [Final review F5: added — the rule (the paper's eq. 1 and eq. 5), Theorem 2 and §7's
    condition (its Table 1: E[X_j^k | G] ≤ 1, G the information available
    before X_j^k is observed) were checked against the paper's own text, the
    arXiv v5 PDF that R3's fetch saved, read with a text extractor
@@ -468,8 +468,8 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
    but not always: it rejects r traders at once when each passes K/(r·α),
    below K/α (the paper's self-consistency condition) — in E1's 60,000 null
    paths, 5 times on a day no E had reached 20·K, once where e-Bonferroni
-   never rejected (`workers/R3-REVIEW/out/check-e1-ebh.txt`) [Final review
-   F5: was "Under the global null e-BH is the same rule (its first rejection
+   never rejected (`workers/R3-REVIEW/out/check-e1-ebh.txt`)
+   [Final review F5: was "Under the global null e-BH is the same rule (its first rejection
    needs K/α)"]; with real traders present its "ever" family error rose to
    2.3–9.8% (e-Bonferroni 1.2–2.5% in the same runs) for little gain, since
    real edges are expected to be rare. In the market simulation, fixed horizon
