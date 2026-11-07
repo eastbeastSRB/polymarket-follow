@@ -27,8 +27,12 @@ more than my 50 weighted tokens (maximum 54; the 10 s maximum was 17, under the
 30-token burst rule; all in Session B, 03:53–05:20Z; the average was 45 a
 minute; Session A's maximum was 49). Cause: my client paced each call by the
 *previous* call's weight, so a minute could catch one extra weight-10 tape
-read. Pacing by the *next* call's weight (a token check before sending) caps
-it; the code-rule candidate is in §6. (2) One line of `scripts/sim-e2.cjs`
+read. A token check before sending (the trailing 60 s plus the next call
+within the share) caps it; pacing by the next call's weight instead would not
+[Final review F7: was "Pacing by the *next* call's weight (a token check
+before sending) caps it" — replayed on the 1,796 calls' weights, spacing by
+either call's weight reaches 54, the check 50;
+`workers/R3-REVIEW/out/check-pacing.txt`]; the code-rule candidate is in §6. (2) One line of `scripts/sim-e2.cjs`
 (the horizon read from the environment, 01:08Z) was patched with `sed`, not
 the Write or Edit tool; every later script change used them. (3) **The paper
 was not read as a PDF:** the brief says "read the paper itself"; the arXiv PDF
@@ -672,7 +676,7 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
 | A read at t_follow fails or comes late | retry once within 2 s; else price by the historical rule, flagged "rule-priced" |
 | Fee schedule or override changes | the rate is stored per entry; R8 states the schedule it used |
 | A data freeze (the lab's frozen leaderboard) | entries during "data stale" are flagged and kept out of the vote, like outages |
-| A client paced by the previous call's weight overruns a sliding minute (this study's slip) | pace by the next call's weight: send only when the trailing 60 s plus the next call stays inside the share |
+| A client paced by the previous call's weight overruns a sliding minute (this study's slip) | send only when the trailing 60 s plus the next call stays inside the share [Final review F7: was "pace by the next call's weight: send only when …"; spacing by either call's weight overruns alike] |
 
 ## 5. What stays unknown, and what would settle it
 
@@ -909,3 +913,4 @@ replaced.
 | F4 | The rule against A5: headline 1's "5–15× less noisy" — the mean absolute error ratio is 1.7× (commodities) to 15× (small coins), under 5× on commodities, indices and equities; and question 1's reason set the rule's mean error (±1.6) against A5's mean absolute error (1.7–19.5), two different measures | headline 1 and question 1 corrected (the rule's mean absolute error is 0.3–4.9 bps a side outside the pre-IPO; A5's mean reaches ±6.4); `out/check-arith.txt` |
 | F5 | Q6 item 4 and §2: "Under the global null e-BH is the same rule (its first rejection needs K/α)" is false — e-BH rejects r hypotheses when each passes K/(r·α) (the paper's own self-consistency condition); E1's re-run found it rejecting on a day no E had reached 20·K in 5 of 60,000 null paths, once where e-Bonferroni never did. The choice of e-Bonferroni stands (time-uniform, any dependence). Also "the same instrument at once" should read the same or correlated instruments at overlapping times | corrected in Q6 item 4 and §2; the paper's rule, Theorem 2 and §7's condition verified against its own text (rules broken 3; `scripts/pdf-text.cjs`, `out/check-e1-ebh.txt`) |
 | F6 | E4's "63.4% of single comparisons (200,000 trials)" and its n-entry shares are each a share of 4,000 resamples of the trials (±0.8 point): the run reproduces them exactly, but the exact share is 62.85%, and at 20 and 50 entries the bias is 52.6% and 51.4%, not 53.6% and 50.5% — so "count only traders with ≥ 50 entries" does not remove it | Q6 item 1 and the A11 (iii) paragraph corrected; `out/check-e4-exact.txt` |
+| F7 | The code-rule candidate (rules broken 1, §4, §6 item 7) said to "pace by the *next* call's weight"; replaying the 1,796 calls' weights, spacing by the next call's weight reaches 54 in a trailing minute exactly as spacing by the previous one does — only the admission check in its parenthesis (trailing 60 s plus the next call within the share) holds 50 | the three places reworded to the admission check; `out/check-pacing.txt` |
