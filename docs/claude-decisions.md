@@ -1,5 +1,44 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (the style labels' definitions frozen, and how the classifier is
+scored — the supervisor, at R2-STYLE's second stop): **SIX LABELS, WORDS
+ONLY, AND THE SCORING FIXED BEFORE ANY LABEL OR CLASSIFIER OUTPUT EXISTS.**
+R2 wrote the definitions from non-holdout data only (the supervisor checked:
+every analysis script goes through one guard that refuses holdout accounts;
+none of the appendix's nine example accounts is in the holdout; R2's
+transcript shows no hand access to the holdout folder). The file:
+`workers/R2-STYLE/label-definitions.md` in the supervisor folder, copied
+unchanged to `workers/R2-LABELS/label-definitions-v1.md`, SHA-256
+`29df3f0c5fdec788bc36dc277f66a1b5b4734d201598138933cecc12c6d656a7`
+(written 2026-11-07 04:50:35Z; its header's "05:05Z" is a slip). **The
+labels:** directional (with a horizon: scalp, intraday, swing, position) ·
+market maker · algorithm · churner · unclassified — too few · unclassified —
+mixed; a window with no fill gets no label (the dormant flag). Hedger is not a
+label (no case among the 547 heaviest non-holdout accounts; offsetting pairs
+go to "mixed"); competition player, reward farmer, disqualified status and
+linked accounts are flags beside the label, never the label. **The deciding
+rule:** read decisions (order events, orders, action groups, position
+cycles), never fills; a non-directional label wins when its signs are clear in
+most decisions; **in doubt between directional and anything else →
+unclassified — mixed, never directional** — the costly error is calling a
+non-directional account directional. **The blind labels:** R2-LABELS (Sonnet
+5.5, xhigh) labels each of the 100 holdout accounts for one window,
+2026-10-24T00:00Z to 2026-11-07T00:00Z, from the raw fills alone (copied to
+`F:\polymarket-follow-research\R2-LABELS\holdout\`, 100 files, SHA-256 of
+their hash list `cbf25167…a713`), never seeing R2's work; the two anchors are
+labelled as named extras, outside the score. **The scoring, fixed now:** the
+unit is the holdout account in that window; accounts with no fill in it are
+left out and counted. Labels collapse to D (directional, any horizon), N
+(market maker, algorithm, churner) and U (either unclassified). **Primary —
+the trap rate:** of the accounts R2-LABELS labels N, the share the frozen
+classifier labels D, with its exact (Clopper–Pearson) 95% interval; both
+anchors must be labelled N by the classifier. **Secondary:** of R2-LABELS's D,
+the share the classifier labels N (traders lost); the classifier's D where
+R2-LABELS says U (a risky D, counted apart); the classifier's U where
+R2-LABELS says D or N (an abstention); the full six-way table; the horizon's
+agreement on accounts both call D. The supervisor scores with its own script;
+the owner rules on whether the result is good enough for v1.
+
 2026-11-07 (R2's holdout fixed — the supervisor, at R2-STYLE's first stop):
 **THE STYLE LABEL WILL BE SCORED ON 100 ACCOUNTS R2 NEVER ANALYSES, DRAWN BY
 THE SUPERVISOR BEFORE ANY CLASSIFIER EXISTS.** R2 read the pool — 1,702
