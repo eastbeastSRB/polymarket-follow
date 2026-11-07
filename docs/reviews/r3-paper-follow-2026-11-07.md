@@ -13,7 +13,9 @@ No real trader's outcome was read: the statistics were proven on simulated
 markets, and the pricing rule on live market data only.
 
 **Status of the conclusions.** A review decides nothing. Six answers below
-change rules the owner fixed (R8's A5, A11 (iii), the pre-IPO scope) or set
+change rules the owner fixed (R8's A5, A11 (iii), the pre-IPO scope; also
+A9's d for the vote — the median of the 3 nulls in place of their mean, Q5
+and Q6 [Final review F2: added; it was in no proposal, now in question 3]) or set
 what the owner will see; **they are proposals awaiting the owner's ruling**
 (§7), put to the owner by the supervisor on 2026-11-07 ~05:30Z with the
 recommendation "yes" on all six. A ruling that changes anything here becomes a
@@ -711,7 +713,10 @@ supervisor on 2026-11-07 ~05:30Z, recommendation "yes" on all six).
    them?** *Recommendation: yes* — no rule priced ANT within ±20 bps.
 3. **The vote on fixed-horizon d (1 h / 6 h / 24 h by the trader's own holding
    time before following), the mirrored exits as money only, and A11 (iii) on
-   fixed-horizon d?** *Recommendation: yes* — mirrored exits crown zero-skill
+   fixed-horizon d, each entry's d taken against the median of its 3 nulls
+   (A9's mean kept for (i) and (ii))?** [Final review F2: the median added —
+   Q5 and Q6 item 2 change A9's "d = tracked − the mean of its nulls" for
+   the vote, which no question said] *Recommendation: yes* — mirrored exits crown zero-skill
    disposition traders.
 4. **e-Bonferroni with K trader slots per run, K = 20 (a verdict at E ≥ 400),
    and the pooled daily board shown first?** *Recommendation: yes* — fewer
@@ -862,3 +867,4 @@ replaced.
 | # | Finding | Fix |
 |---|---|---|
 | F1 | The rule's table and its ±1.6 bps are one Saturday morning's, but that caveat (with the supervisor's 05:26Z snapshot) stood only beside the category table, in headline 5, §4, §5 and question 5 — not where the rule is used. Checked out of sample within the morning (the table from one session, the error on the other): the largest per-side mean outside the pre-IPO is 1.44 bps (1.53 in-sample), so the small error is not an artefact of fitting; weekdays and R8's period stay unmeasured | caveat added in headline 1, the Q1 answer and its ±1.6 bullet, Q8, §7 question 1; `out/check-pricing-xval-N1000.txt` |
+| F2 | Q5 and Q6 item 2 take the vote's d against the median of the 3 nulls; A9 fixes d against their mean, so this changes a rule the owner fixed, yet neither the status paragraph nor any question in §7 said so — a "yes" to question 3 would not cover it | the median added to the status paragraph and to question 3 (the question changes: the supervisor's note to the owner needs it) |
