@@ -9,4 +9,8 @@ here was true when it was measured and is not maintained afterwards.
 copied into CLAUDE.md, current-task, architecture, decisions, code-rules, the
 plan page or external-apis — or it does not exist.
 
-None yet.
+| Review | What | Accepted |
+|---|---|---|
+| `r1-perps-api-2026-11-07.md` | R1-API: the Perps API in full — endpoints, the token-bucket limit, fills semantics, the tape, history depth, the feasibility table; 14 Final-review corrections (§8) | decisions 2026-11-07, wave 1 closed |
+| `r4-notifications-2026-11-06.md` | R4-NOTIFY: Windows notifications from the poller — PowerShell toasts, sessions under Task Scheduler, silent failures, alert noise; the owner test sheet in the supervisor folder; 11 corrections | decisions 2026-11-07, wave 1 closed |
+| `r5-existing-tools-2026-11-06.md` | R5-TOOLS: existing trackers, copy-trading metrics and the evidence on copying, published bot and market-maker classifiers, competitions and rewards; 9 corrections (§8) | decisions 2026-11-07, wave 1 closed |

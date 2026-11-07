@@ -26,6 +26,28 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   date; a pointer to the docs names its anchor (a dated decisions entry or a
   section), so a reader opens one entry, not a whole file.
 
+## The Perps API (from the research, 2026-11-07; the facts: external-apis)
+
+- **One client, one request at a time, evenly spaced.** The limit is a token
+  bucket with a burst of only ~90–100 tokens; the budget is 250 tokens a minute
+  for all callers together, never more than 30 in a burst (decisions
+  2026-11-07, wave 1 closed). No cron tick that fires many reads at once. On a
+  429: drop the tick, back off at least 2 s, never retry in a loop.
+- **Schemas tolerate new fields:** `z.object()` (never `.strict()`) on external
+  replies, a daily log of unknown keys; closed lists (`z.enum`) only where an
+  unknown value would do harm, and then decide whether one bad row drops the
+  row or the page (R5 §6, corrected).
+- **IDs:** `z.number().int().safe()`; they are random, so never order or page
+  by id; key a fill by `(trade_id, instrument_id, timestamp)`.
+- **Money and sizes are decimal strings** (up to 28 digits): never through a
+  float for accounting.
+- **Read fills per order event:** group by `(order_id, previous_size)` — both
+  describe the position before the whole order; reading fill by fill misreads
+  ~11% of events (R1 Q4).
+- **Addresses are stored lower-case** (the API returns them checksum-cased).
+- **Time windows:** `start_timestamp` inclusive, `end_timestamp` exclusive;
+  after the first read, resume from the last seen time and dedupe by key.
+
 ## Tests
 
 - **Assert every output a branch sets,** not only its summary: a mutant
@@ -53,3 +75,15 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **Use absolute paths;** batched shell calls share one working directory.
 - **Run checks with `< /dev/null`, to a file, under `timeout`;** stop a server
   by its port, never by a process name.
+- **A background loop needs its own time limit and a liveness check that works
+  here:** `pgrep -f` does not work in Git Bash, and two wait loops built on it
+  never ended (R1, 2026-11-06). Every background process a session starts is
+  stopped before it reports.
+- **An argument starting with `/` is rewritten by Git Bash** into a Windows
+  path: prefix `MSYS_NO_PATHCONV=1`, and then pass Windows-style paths
+  (`E:/…`), not `/e/…`.
+- **Windows PowerShell's stdin is code page 437 here:** a Node process feeding
+  it text sets `[Console]::InputEncoding` to UTF-8 first, or non-ASCII names
+  arrive garbled (R4, measured 2026-11-06).
+- **Never dump window titles or the screen in a test:** they leak the owner's
+  private window names (R4, 2026-11-06).

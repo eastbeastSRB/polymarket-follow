@@ -1,5 +1,64 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (wave 1 closed — the owner, on the supervisor's recommendations):
+**R1, R4 AND R5 ARE ACCEPTED, AND THE PROJECT RUNS AT A QUARTER OF THE
+PUBLISHED RATE LIMIT.** The reports (`docs/reviews/r1-perps-api-2026-11-07.md`,
+`r4-notifications-2026-11-06.md`, `r5-existing-tools-2026-11-06.md`) were
+verified on the supervisor's own path (R1's facts re-measured live 2026-11-07
+00:10–00:11Z, `verify/R1-API/`) and Final-reviewed: 34 corrections, each
+marked in place. The API facts are in external-apis. **(1) THE OPERATING
+BUDGET — 250 WEIGHTED TOKENS A MINUTE, ALL CALLERS TOGETHER** (a quarter of
+the published 1,000; Iron Rule 5's "about half" is the ceiling, this is the
+setting). The owner: "we should try to stay under the radar, we don't need to
+be in risky position, let's define some real number and start with it." Why
+this number: R1 measured a token bucket refilling ~1,000 a minute with a burst
+of only ~90–100 tokens, so the rule is about spacing as much as volume. **Every
+client sends one request at a time, evenly spaced (a fills read, weight 10,
+every 2.4 s at the full 250), never using more than 30 tokens in a burst**,
+with an honest client name — small and steady, never disguised. Inside it:
+50 a minute in reserve (leaderboard, tickers, retries); 200 for favourites.
+What 200 buys (R1's formulas, Q14; average alert delay, the worst about
+double): polling positions and reading fills on a change — 5 favourites
+≈ 4 s, 20 ≈ 17 s, 50 ≈ 50 s; with the active fifth polled faster, 50
+favourites ≈ 20 s for the active ones and ≈ 80 s for the quiet ones. For
+research: R2 200, R3 50 (this supersedes the 500 of decisions 2026-11-06, the
+research phase approved, which was for R1's measurements). Raising it is the
+owner's call. **(2) THE TERMS OF USE** (polymarket.com/tos §4.2 bars crawlers
+and scraping of "the Site, any other Interface, or Features" and sets no API
+rules; the API is documented as public, with published limits): the project
+continues — personal use, watch-only, no resale or sharing of the data, at the
+budget above. Asking Polymarket for a confirmation is NOT needed for any
+research step; it stays an option for the owner before v1 runs around the
+clock (the supervisor's recommendation: not needed at this volume; revisit if
+Polymarket publishes API terms or limits our address). **(3) R4's OWNER TEST
+SHEET** (`workers/R4-NOTIFY/OWNER-TEST-SHEET.md` in the supervisor folder)
+runs later, when the notifier is built, with the supervisor guiding it step by
+step; nothing for the owner now. **(4) DEFAULTS FOR THE V1 PLAN, approved
+together:** 20% of the budget in reserve; the owner's browser on
+polymarket.com/perps shares the bucket — no rule, the poller backs off on a
+429; positions polling (weight 5) with a fills read on a change only for
+accounts labelled directional and slow, fills polling (10) for the rest (the
+style label decides: a scalper's quick open-and-close was missed up to 6.8% of
+the time); the exact deposits-and-withdrawals column (`/v2/info/pnl`) only
+where it exists, "flows unknown" elsewhere; the unpublished pnl/equity routes
+charged 15 tokens, calibrated only if v1 reads them often; Windows' own Do Not
+Disturb for quiet hours; open, close, flip and liquidation alerted at once,
+adds and reduces grouped for up to 20 s; Windows PowerShell 5.1 as the toast
+helper, an own app name by one per-user registry key once the sheet proves it,
+no tray icon; two processes at sign-in (poller and notifier, the notifier
+also announcing "poller down" and "data stale"); phone alerts (ntfy and a
+dead-man's switch) after Windows alerts work; ROI only beside its capital
+base, with a display floor above $100; no composite "copy score";
+"unclassified" a visible label that warns on favouriting like an algorithm;
+competition membership stored and labels on rolling windows; schemas tolerant
+of new fields with a daily log of unknown keys, closed lists only where an
+unknown value would do harm, and a weekly read of the changelog; no paid data
+in v1; a manual "same person" note for linked addresses goes to the backlog.
+**What the owner will do with it:** use the information for the owner's own
+trading decisions, on Polymarket or elsewhere. The app stays watch-only and
+never advises (Iron Rules 1 and 6); R8 and the forward paper-follow log are
+how it shows, honestly, whether following the dominant traders pays.
+
 2026-11-06 (the pre-test and waves 2–4 approved — the owner, on the
 supervisor's recommendations): **BEFORE V1 IS PLANNED, ONE RETROSPECTIVE LOOK
 ASKS WHETHER FOLLOWING PAYS AT ALL, AND WHETHER THE LEADERBOARD IS SKILL OR

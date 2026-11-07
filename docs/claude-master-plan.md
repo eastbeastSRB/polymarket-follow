@@ -26,16 +26,17 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-06, through decisions 2026-11-06 (the pre-test
-and waves 2–4 approved).*
+*Brought in step on 2026-11-07, through decisions 2026-11-07 (wave 1
+closed).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
-- Nothing is built. The perps API was verified for following before founding:
-  public leaderboards 100 a page, any account's fills and open positions by
-  address, the rate budget (external-apis).
-- The research phase runs in four waves; wave 1 (R1, R4, R5) is running
-  (decisions 2026-11-06, the research phase approved). Before v1 is planned,
+- Nothing is built. The perps API is researched in full (R1, external-apis):
+  everything v1 needs is public and keyless, with history back to launch.
+- **The operating budget is 250 weighted tokens a minute, all callers
+  together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
+- The research phase runs in four waves; wave 1 (R1, R4, R5) is closed and
+  wave 2 (R2, R3) is running (decisions 2026-11-07). Before v1 is planned,
   R8 asks once, on the past, whether following pays and whether the
   leaderboard is skill or luck (decisions 2026-11-06, the pre-test and waves
   2–4 approved).
@@ -67,13 +68,13 @@ after R1; 3 — R8 and R6, after R2 and R3; 4 — R7, after R8. Every subagent
 that calls the API shares one IP budget, so the waves are also its schedule;
 bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
-- 🔵 **R1 — The perps API in full:** every endpoint we would use — the
+- ✅ **R1 — The perps API in full:** every endpoint we would use — the
   leaderboard (how often it refreshes), fills and position-fills by address
   (history depth, paging, the 30-day default window), the portfolio, the PnL
   history (its parameters: a first call answered 400), instruments, funding,
   fees; each read's real weight; freshness; what a 429 looks like; the
   public WebSocket channels.
-- ⬜ **R2 — Trader analytics:** what to measure per trader (win rate, average
+- 🔵 **R2 — Trader analytics:** what to measure per trader (win rate, average
   hold, leverage, drawdown, PnL by market, trades per day), and which
   statistics stay honest at small samples. **A v1 requirement:** a style
   label on every account — algorithm or market maker versus directional
@@ -86,18 +87,18 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   volume by instrument category, competition players and reward farmers,
   and the pool's fill histories that R8 reuses (decisions 2026-11-06, the
   pre-test and waves 2–4 approved).
-- ⬜ **R3 — The paper-follow method:** the entry price after the alert's
+- 🔵 **R3 — The paper-follow method:** the entry price after the alert's
   delay, fees, funding, slippage by instrument and hour, the exit; the
   after-following scoreboard and its null (polymarket-lab's F9 design:
   decisions 2026-11-06); the scoreboard's statistics valid however often the
   owner looks — an e-process, a verdict only at E ≥ 20, rules fixed before
   the data, a correction for many traders (decisions 2026-11-06, the
   pre-test and waves 2–4 approved).
-- 🔵 **R4 — Notifications:** Windows notifications from a background process
+- ✅ **R4 — Notifications:** Windows notifications from a background process
   (how, and how reliable — including under Task Scheduler, where a task run
   "whether the user is logged on or not" cannot show one), what an alert says;
   later phone and email.
-- 🔵 **R5 — Existing tools:** trackers that already follow perps or similar
+- ✅ **R5 — Existing tools:** trackers that already follow perps or similar
   exchanges' traders, what they show, and what this project does differently.
 - ⬜ **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
   50 and 100 followed traders (fill rates from R2); what to keep; the backup
@@ -119,7 +120,16 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   daily top-50 leaderboard since late August 2026 is worth a one-time
   read-only export, since no API can backfill it). Trigger: v1 running well,
   and the owner's word.
-- 🅿️ **Alerts on other devices and by email.** Trigger: Windows alerts working.
+- ⏳ **R4's owner test sheet** (`workers/R4-NOTIFY/OWNER-TEST-SHEET.md` in the
+  supervisor folder: banners, the click, lock screen, Do Not Disturb, the Task
+  Scheduler test, the own app name). Trigger: the notifier's build; the
+  supervisor guides the owner through it (decisions 2026-11-07, wave 1
+  closed).
+- 🅿️ **Alerts on other devices and by email** — first ntfy with a long random
+  topic, plus a dead-man's switch that alarms from outside when the PC is
+  silent (R4 §9). Trigger: Windows alerts working.
+- 🅿️ **A manual "same person" note** for addresses the owner links (R5).
+  Trigger: v1 running, and the owner's word.
 - 🅿️ **Paid data** — a higher rate tier or a data vendor. Trigger: research
   shows the free API cannot do something v1 needs; the owner decides.
 - 🅿️ **Thinning order books before price jumps, as an alert type**
@@ -131,6 +141,10 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Done lately
 
+- ✅ 11-07 **Wave 1 — R1 (the API), R4 (notifications), R5 (existing
+  tools):** verified on the supervisor's path, Final-reviewed (34 marked
+  corrections); the operating budget set at 250 tokens a minute; the v1
+  defaults approved (decisions 2026-11-07, wave 1 closed).
 - ✅ 11-06 **The supervisor's first session:** the founding docs checked
   against the saved spec, the research phase proposed and approved
   (decisions 2026-11-06, the research phase approved).

@@ -7,52 +7,44 @@ page (docs/claude-master-plan.md).
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 (HANDOVER, WORKFLOW, LESSONS). **This host is UTC+1 (UTC+2 from
-2027-03-28):** write every stamp in UTC with Z.
+2027-03-28):** write every stamp in UTC with Z, read from `date -u`.
 
 ## Where things stand
 
-- **Founded** by the owner's decisions (decisions 2026-11-06, polymarket-follow
-  founded): its own repository and supervisor, watch-only, perps first,
-  Windows notifications first, 5–50 favourites, the data kept in its own
-  database and backup folder, research before the plan and the plan before
-  code.
-- **The research phase is running** (decisions 2026-11-06, the research phase
-  approved): wave 1 — R1-API, R4-NOTIFY, R5-TOOLS — started 2026-11-06.
-  Waves 2–4 and R8, a one-look retrospective test of whether following pays
-  and whether the leaderboard is skill or luck, are approved with R8's rules
-  (decisions 2026-11-06, the pre-test and waves 2–4 approved).
-- **Verified before founding** (external-apis): the public leaderboard, any
-  account's fills and open positions by address, the live stream naming no
-  account (so following is by polling), the IP budget of 1,000 weighted
-  tokens a minute. **Known to be incomplete there until R1 corrects it:** the
-  leaderboard pages only to rank 1,000; the spec publishes each endpoint's
-  weight; `trade_id` nears JavaScript's largest exact integer; money fields
-  are long decimal strings (decisions 2026-11-06, the research phase
-  approved).
+- **Wave 1 of the research is closed** (decisions 2026-11-07, wave 1 closed):
+  R1 (the API), R4 (notifications), R5 (existing tools), reports in
+  docs/reviews/. The API facts are in external-apis; the coding rules they
+  produced are in code-rules ("The Perps API").
+- **The operating budget is 250 weighted tokens a minute, all callers
+  together, one request at a time, evenly spaced, never more than 30 tokens in
+  a burst** (same entry). The limit is a token bucket (burst ~90–100 tokens).
+- **Wave 2 is running:** R2-STYLE (the style label and trader statistics; it
+  also collects the pool's fill histories R8 reuses) and R3-PAPER (the
+  paper-follow method and the scoreboard's statistics). R2-LABELS, the blind
+  re-check of R2's labels, starts once R2's label definitions are frozen.
+- **The v1 defaults are approved** (same entry): the owner chose them before
+  the plan; the plan subagent starts from them.
 - **The repository holds docs only:** no package.json, no code, no CI.
   GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
 
 ## Next up — IN ORDER
 
-1. **Wave 1** reports, each verified by the supervisor and walked through
-   with the owner.
-2. **Wave 2** (R2 with R2-LABELS, R3) after R1 is verified; **wave 3** (R8,
-   R6) after R2 and R3, R8's numbers filled and recorded in decisions before
-   its one look; **wave 4** (R7) after R8.
-3. **The owner says the research is complete;** then the v1 plan, approved
-   and registered in decisions.
-4. **The skeleton,** then **v1** in parts.
+1. **Wave 2** reports, verified and walked through with the owner.
+2. **Wave 3:** R8 (does following pay; skill or luck — its numbers filled and
+   recorded in decisions before its one look) and R6 (storage).
+3. **Wave 4:** R7 (the pages), after R8's verdict.
+4. **The owner says the research is complete;** then the v1 plan, approved
+   and registered in decisions; then the skeleton and v1 in parts.
 
 ## Open questions — the research answers them
 
-- How often 5, 20, 50 or 100 traders can be checked inside half the budget,
-  and the alert's delay each way (R1).
-- The PnL history's parameters, and whether it reveals deposits and
-  withdrawals (R1).
-- How to tell an algorithm or market maker from a directional trader (R2).
-- Whether following pays at all, after the delay, fees and funding, against
-  random trades; whether the leaderboard is skill or luck (R8).
-- How the poller raises a Windows notification reliably (R4).
+- How to tell an algorithm or market maker from a directional trader, proven
+  blind (R2).
+- A follower's realistic price on a thin tape (BTC: a page of 100 trades spans
+  50–140 minutes), the delay, fees and funding; statistics valid however often
+  the owner looks (R3).
+- Whether following pays at all, and whether the leaderboard is skill or luck
+  (R8).
 - Storage per day, and E:'s room (R6).
 
 ## How this file works
