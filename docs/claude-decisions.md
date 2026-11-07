@@ -1,5 +1,30 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (R2's classifier scored — the supervisor, by the rules fixed
+before any label existed): **THE TRAP RATE IS 2 OF 23 (8.7%, 95% INTERVAL
+1.1–28.0%); BOTH ANCHORS ARE CAUGHT.** The supervisor ran the frozen
+classifier (decisions 2026-11-07, R2's classifier frozen) on R2-LABELS's copy
+of the 100 holdout accounts, 2026-11-07 09:43Z (output
+`verify/R2-STYLE/classifier-holdout.tsv`, SHA-256 `77c05ec2…c635`), and
+scored it with its own script against the fingerprinted blind labels
+(`verify/R2-STYLE/score.cjs`, its Clopper–Pearson self-test passed; output
+`score.out.txt`). The 40 accounts R2-LABELS found idle the classifier found
+idle too; 60 were scored. **Primary:** of the 23 accounts R2-LABELS labelled
+non-directional (17 algorithm, 6 market maker), the classifier called 2
+directional — `0xc455dbd3` and `0x7d641ac8`, both algorithms trading a fixed
+size, which the classifier's fixed-size sign misses below 10 decisions a day.
+The two anchors: algorithm. **Secondary:** traders lost (R2-LABELS
+directional, classifier non-directional) 1 of 14 (`0x7c97eb77`, 50 large
+resting orders, called market maker); risky D (R2-LABELS unclassified,
+classifier directional) 6 of 23, all "too few" to the labeller — the
+classifier needs 5 decisions, the labeller wanted more; abstentions 6 of 37;
+horizon agreement 5 of 8; D/N/U agreement 45 of 60, six-way 40 of 60. **What
+it means:** the classifier catches most of the trap but not all of it, and on
+thin evidence it says "directional" where a careful reader says "can't
+tell". Any change made now is made after seeing the holdout, so it can no
+longer be tested on these labels; whether v1 is good enough, and how a
+corrected version is tested honestly, is the owner's ruling.
+
 2026-11-07 (R2's classifier frozen — the supervisor, at R2-STYLE's third
 stop, before scoring): **THE STYLE CLASSIFIER IS FINGERPRINTED BEFORE THE
 SUPERVISOR RUNS IT ON THE HOLDOUT.** R2 built it on non-holdout accounts only
