@@ -142,7 +142,7 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   trade_ids and order_ids spread evenly over 0…2^53−1 (max 99.98% of
   9,007,199,254,740,991; none above), correlation with time −0.02. All fit a
   JavaScript number (spec `x-js-safe-integer`); they collide only at scale
-  (≈4% chance of any collision in 10^8 ids).
+  (collision odds: report Q6; corrected 2026-11-07).
 - **Lag:** a fill first showed on the fills read a median 3.96 s after its
   `timestamp` with a 5 s poll per account (p90 6.1 s, max 8.6 s; 92 fills, 3
   accounts, 22:29–22:39Z); minus half the poll interval the API's own lag is about
