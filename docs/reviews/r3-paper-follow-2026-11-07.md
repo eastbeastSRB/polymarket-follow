@@ -451,8 +451,10 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
    and merged: 1.3–3.0% in every scenario (E2).
 5. **The pooled board: one vote per UTC day.** Pooling every entry as its own
    vote is invalid when traders herd or trade baskets (7.5–9.0%, E2 S1, S2,
-   S5); merging overlaps across traders glues everything into 1–14 votes in
-   120 days at 6–24 h horizons (useless; ~700 at 1 h). One vote a day held
+   S5); merging overlaps across traders glues everything into 1–12 votes in
+   120 days at 6–24 h horizons with 2 entries a day (80 for twenty traders at
+   half an entry a day; useless; ~700 at 1 h) [Final review F9: was "1–14
+   votes"; `sim-e2-S*.txt`, `sim-e2-h*.txt`]. One vote a day held
    1.5–4.3% in every 120-day scenario, including 24 h horizons. Use fixed-
    horizon d there too: with mirrored exits the daily vote reached 4.5–6.75%
    at K = 50 over a year.
@@ -460,12 +462,17 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
    6 h, 24 h) nearest the trader's median holding time over the 30 days before
    following; fewer than 10 closed positions → 6 h. A short horizon that
    matches the edge is far more powerful: a 30 bps edge that plays out over an
-   hour, 2 entries a day, 120 days → votes 60.5% positive and E ≥ 20 in 60% of
-   runs at h = 1 h, 57% / 23% at 6 h, 54% / 3.8% at 24 h (E2 S6,
+   hour, 2 entries a day, 120 days → entries 60.5% positive (merged votes
+   61.0%) and E ≥ 20 in 60% of runs at h = 1 h, 57% (58.3%) / 23% at 6 h,
+   54% (56.7%) / 3.8% at 24 h [Final review F9: the shares were of entries,
+   called votes; merged-vote shares from a re-run,
+   `workers/R3-REVIEW/out/check-e2-merged-S6-h*.txt`] (E2 S6,
    `sim-e2-h60.txt`, `sim-e2-h1440.txt`).
 7. **Two-sided, as the lab's:** a "worse than random" verdict is information
-   too. The one-sided version (valid for P(vote > 0) ≤ ½) needs ~10–20% fewer
-   votes (E3) — a variation, not the recommendation.
+   too. The one-sided version (valid for P(vote > 0) ≤ ½) needs 12–18% fewer
+   votes at the bar of 20 and 7–9% fewer at 400 (E3) [Final review F9: was
+   "~10–20% fewer votes"; `workers/R3-REVIEW/out/check-arith.txt`] — a
+   variation, not the recommendation.
 8. **The trader's long/short habit.** With the tape's taker sides as the
    nulls' directions (A9), a no-skill trader who is always long in a strongly
    rising market (+0.25% a day) gets 52.3% positive votes at h = 24 h and
@@ -489,7 +496,7 @@ exits, long bias in a mild bull market; `out/sim-e2-365-*.txt`):
 | K = 50, 600 paths | the same, family bar 1,000 | 3.1% / 2.8% / 3.3% |
 | K = 50, no drift (400) / no herding either (400) | family / pooled daily | 2.75% / 1.75%; 3.25% / 1.75% |
 | K = 50, mirrored exits instead (contrast) | a null trader / the family | ~15% / 100% |
-| K = 20, 2 traders with a 30 bps edge (1 h decay), 500 paths | each edge trader ever E ≥ 20 / ≥ 400 within the year | 78.8% / 53.9% (votes 59% positive, 429 merged votes) |
+| K = 20, 2 traders with a 30 bps edge (1 h decay), 500 paths | each edge trader ever E ≥ 20 / ≥ 400 within the year | 78.8% / 53.9% (entries 59% positive [Final review F9: was "votes 59% positive"], 429 merged votes) |
 | K = 20, all 20 with a 15 bps edge, 500 paths | each ever ≥ 400 / pooled daily ever ≥ 20 | 3.6% / 82.4% |
 
 (The 100-path K = 50 runs scatter 0–7% on the pooled board by chance; the
@@ -510,8 +517,10 @@ The exact one-look sign test needs 786 / 199 / 90 / 49 at 0.55 / 0.6 / 0.65 /
 0.7: being allowed to look every day costs 1.7–2.1× the votes at the bar of 20
 (the supervisor's check: KL(0.6‖0.5) ≈ 0.020 nats a vote). What P(vote > 0) an
 edge buys: in the simulated market a 30 bps edge per entry that plays out over
-an hour gives 0.605 at h = 1 h and 0.57 at 6 h; 15 bps gives 0.536 at 6 h
-(E2). **Days to a verdict** (`out/an-power-days.txt`, arithmetic from E3 and
+an hour gives 0.61 a merged vote at h = 1 h and 0.58 at 6 h; 15 bps gives 0.54
+at 6 h (E2) [Final review F9: was "0.605 at h = 1 h and 0.57 at 6 h; 15 bps
+gives 0.536", the shares of entries; E3's P is a merged vote's;
+`workers/R3-REVIEW/out/check-e2-merged-S*.txt`]. **Days to a verdict** (`out/an-power-days.txt`, arithmetic from E3 and
 E2's merged votes per entry): at 2 entries a day and h = 6 h, P = 0.6 → 506
 days at K = 20 (318 alone); P = 0.65 → 209 (134); at h = 1 h, 334 (210) and
 138 (88). So **a per-trader verdict at K = 20 takes months to years** even for
@@ -522,10 +531,14 @@ an edge three times the fees; the pooled board is faster (twenty traders with
 
     Trader 0x7a3f…c91e · directional · h = 6 h · followed since 2026-12-01
       42 votes (from 77 entries): 23 better than random, 19 worse
-      E = 0.6 — a verdict needs 400 (20 traders tested) — no verdict
+      E = 0.23 — a verdict needs 400 (20 traders tested) — no verdict
       beside it: E against the trader's own long/short habit 0.5
       paper P&L, exits mirrored, $1,000 an entry: −$41.20 net (77 entries)
-    All favourites, pooled · 30 days: 17 better, 13 worse · E = 0.5 of 20
+    All favourites, pooled · 30 days: 17 better, 13 worse · E = 0.29 of 20
+
+[Final review F9: the example's E values were 0.6 and 0.5; the lab's formula
+gives 0.23 for 23 of 42 and 0.29 for 17 of 30,
+`workers/R3-REVIEW/out/check-arith.txt`.]
 
 **For R8 (one look).** A11 (iii), "one vote per trader, its mean d", with
 mirrored exits is biased for traders with few entries: zero-skill disposition
@@ -609,8 +622,9 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
   for money.
 - **Own-direction (A9) vs matched-direction nulls.** A9 kept for the vote (R8
   and the forward log measure one thing); matched shown beside it.
-- **Two-sided vs one-sided e-process.** Two-sided kept; one-sided needs ~10–20%
-  fewer votes.
+- **Two-sided vs one-sided e-process.** Two-sided kept; one-sided needs 7–18%
+  fewer votes, the fewer the higher the bar [Final review F9: was "~10–20%
+  fewer votes"].
 - **e-BH vs e-Bonferroni.** e-Bonferroni (time-uniform, any dependence,
   almost the same as e-BH when nothing is real [Final review F5: was
   "identical to e-BH when nothing is real"]); revisit only if several traders
@@ -922,3 +936,9 @@ replaced.
 | F6 | E4's "63.4% of single comparisons (200,000 trials)" and its n-entry shares are each a share of 4,000 resamples of the trials (±0.8 point): the run reproduces them exactly, but the exact share is 62.85%, and at 20 and 50 entries the bias is 52.6% and 51.4%, not 53.6% and 50.5% — so "count only traders with ≥ 50 entries" does not remove it | Q6 item 1 and the A11 (iii) paragraph corrected; `out/check-e4-exact.txt` |
 | F7 | The code-rule candidate (rules broken 1, §4, §6 item 7) said to "pace by the *next* call's weight"; replaying the 1,796 calls' weights, spacing by the next call's weight reaches 54 in a trailing minute exactly as spacing by the previous one does — only the admission check in its parenthesis (trailing 60 s plus the next call within the share) holds 50 | the three places reworded to the admission check; `out/check-pacing.txt` |
 | F8 | §8, for external-apis: "Docs changed since R1 — asyncapi 407,493 bytes (R1 407,525), openapi 382,865 (R1 383,007)". `dl-docs.mjs` printed `body.length`, a JavaScript string's UTF-16 length, as bytes; the saved files are 407,525 and 383,007 bytes, R1's own sizes, so there is no evidence of a change | the bullet corrected; `out/check-docs-bytes.txt` |
+
+**Low — a slip; no conclusion changes**
+
+| # | Finding | Fix |
+|---|---|---|
+| F9 | Q6's figures: "1–14 votes" when merged across traders (the outputs show 1–12 at 2 entries a day, 80 at half an entry); one-sided "~10–20% fewer votes" (12–18% at the bar of 20, 7–9% at 400, the bar recommended); the 30 bps and 15 bps edges' shares are of entries, used as the merged-vote P of E3 (merged votes: 61.0, 58.3, 56.7% at 1, 6, 24 h; 54.2% for 15 bps); the owner's-view example's E (0.6, 0.5) does not match its counts (0.23, 0.29) | corrected in Q6 items 5–7, the power paragraph, the year table, the example and §2; `out/check-e2-merged-S*.txt`, `out/check-arith.txt` |
