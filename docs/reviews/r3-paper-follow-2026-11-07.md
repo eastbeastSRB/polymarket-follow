@@ -36,7 +36,9 @@ could not be rendered on this machine (no PDF tools), so Wang & Ramdas was read
 through its ar5iv HTML with the fetch tool, which returns a small model's
 extract; the e-BH rule and its Theorem 2 below are quoted from that extract
 and agree with the rule implemented in `scripts/sim-lib.cjs`, but no page of
-the PDF was seen. (4) A draft used a gendered pronoun for the owner;
+the PDF was seen. [Final review F5: added — the Final review read the PDF's
+text (the file R3's fetch saved at 00:57Z) and found the rule, Theorem 2 and
+§7's condition as quoted; Q6 item 4.] (4) A draft used a gendered pronoun for the owner;
 corrected here (the supervisor's note). Nothing outside my worker folder was opened in the
 supervisor folder; polymarket-lab was read only (three files).
 
@@ -415,15 +417,28 @@ paths with daily looks and 5–50 traders, and on stated effects (`out/sim-e1.tx
    K0·α/K under any dependence (Theorem 2) — at one decision time, with
    e-values valid at that time; their sequential case (§7 of the paper) needs
    each null's increments valid given all earlier information, which two
-   traders holding the same instrument at once break. e-Bonferroni needs only
+   traders holding the same or correlated instruments at overlapping times
+   break [Final review F5: was "the same instrument at once"]. [Final review
+   F5: added — the rule (the paper's eq. 1 and eq. 5), Theorem 2 and §7's
+   condition (its Table 1: E[X_j^k | G] ≤ 1, G the information available
+   before X_j^k is observed) were checked against the paper's own text, the
+   arXiv v5 PDF that R3's fetch saved, read with a text extractor
+   (`workers/R3-REVIEW/scripts/pdf-text.cjs`); they are as quoted. The paper
+   never mentions Bonferroni or FWER; e-Bonferroni's guarantee below needs
+   no paper — Ville's inequality and a union bound.] e-Bonferroni needs only
    each trader's own e-process: Ville gives P(a null trader ever reaches
    20·K) ≤ 1/(20·K), and the union over traders gives **P(any null trader is
    ever flagged, however often the owner looks) ≤ 5%**, under any dependence
    between traders. Measured with idealised votes, 365 days, daily looks
    (E1, 4,000 paths): uncorrected E ≥ 20 crowns a null trader in 11–13% of
    runs at K = 5, 21–25% at 10, 38–43% at 20, 70–77% at 50; e-Bonferroni
-   2.3–2.9%. Under the global null e-BH is the same rule (its first rejection
-   needs K/α); with real traders present its "ever" family error rose to
+   2.3–2.9%. Under the global null e-BH nearly always acts as e-Bonferroni,
+   but not always: it rejects r traders at once when each passes K/(r·α),
+   below K/α (the paper's self-consistency condition) — in E1's 60,000 null
+   paths, 5 times on a day no E had reached 20·K, once where e-Bonferroni
+   never rejected (`workers/R3-REVIEW/out/check-e1-ebh.txt`) [Final review
+   F5: was "Under the global null e-BH is the same rule (its first rejection
+   needs K/α)"]; with real traders present its "ever" family error rose to
    2.3–9.8% (e-Bonferroni 1.2–2.5% in the same runs) for little gain, since
    real edges are expected to be rare. In the market simulation, fixed horizon
    and merged: 1.3–3.0% in every scenario (E2).
@@ -587,7 +602,8 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
 - **Two-sided vs one-sided e-process.** Two-sided kept; one-sided needs ~10–20%
   fewer votes.
 - **e-BH vs e-Bonferroni.** e-Bonferroni (time-uniform, any dependence,
-  identical to e-BH when nothing is real); revisit only if several traders
+  almost the same as e-BH when nothing is real [Final review F5: was
+  "identical to e-BH when nothing is real"]); revisit only if several traders
   cross the Bonferroni bar.
 - **A sign e-process vs a betting e-process on the mean.** The mean is immune to
   exit habits but had no power with valid caps; kept out of the verdict.
@@ -885,3 +901,4 @@ replaced.
 | F2 | Q5 and Q6 item 2 take the vote's d against the median of the 3 nulls; A9 fixes d against their mean, so this changes a rule the owner fixed, yet neither the status paragraph nor any question in §7 said so — a "yes" to question 3 would not cover it | the median added to the status paragraph and to question 3 (the question changes: the supervisor's note to the owner needs it) |
 | F3 | "The 1-second mark history that R8 would read is the live mark" and "R8 needs no tape to price" rest on one 1,000 s window (01:23:50–01:40:30Z, six instruments) read 2.5 hours later; whether 1 s buckets exist for September–October, R8's period, was never read, and R8's rule and cost depend on it | stated in Q1, §3 item 4 and §8, with the one read that settles it; the "sub-second timing" claim checked (±1 s shift: 97–100% agree, `out/check-markhist.txt`) |
 | F4 | The rule against A5: headline 1's "5–15× less noisy" — the mean absolute error ratio is 1.7× (commodities) to 15× (small coins), under 5× on commodities, indices and equities; and question 1's reason set the rule's mean error (±1.6) against A5's mean absolute error (1.7–19.5), two different measures | headline 1 and question 1 corrected (the rule's mean absolute error is 0.3–4.9 bps a side outside the pre-IPO; A5's mean reaches ±6.4); `out/check-arith.txt` |
+| F5 | Q6 item 4 and §2: "Under the global null e-BH is the same rule (its first rejection needs K/α)" is false — e-BH rejects r hypotheses when each passes K/(r·α) (the paper's own self-consistency condition); E1's re-run found it rejecting on a day no E had reached 20·K in 5 of 60,000 null paths, once where e-Bonferroni never did. The choice of e-Bonferroni stands (time-uniform, any dependence). Also "the same instrument at once" should read the same or correlated instruments at overlapping times | corrected in Q6 item 4 and §2; the paper's rule, Theorem 2 and §7's condition verified against its own text (rules broken 3; `scripts/pdf-text.cjs`, `out/check-e1-ebh.txt`) |
