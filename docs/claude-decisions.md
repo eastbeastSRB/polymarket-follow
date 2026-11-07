@@ -1,5 +1,52 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (R3 accepted, and the pre-test's rules amended — the owner, on the
+supervisor's recommendations): **THE FOLLOWER IS PRICED AT THE MARK PLUS THE
+MEASURED COST, AND A TRADER IS JUDGED OVER A FIXED HORIZON, NEVER BY THE
+TRADER'S OWN EXITS.** R3's report (`docs/reviews/r3-paper-follow-2026-11-07.md`)
+was Final-reviewed by a fresh subagent (R3-REVIEW: 12 corrections marked in
+place, none high; R3's seeded simulations reproduced exactly; the statistics'
+source checked on the paper's text) and checked by the supervisor (the exit
+bias analytically; spreads live; the 1 s mark history complete on 2026-09-15
+for BTC and NVDA). **Why the change:** a trader with no skill who takes profit
+at +0.5% and stops at −2% wins about 80% of trades by arithmetic and nothing on
+average; a sign vote on the trader's own exits would have crowned such a
+trader in 79% of simulated runs — the leaderboard's own trap — and on this thin
+market the next public trade after an alert comes 1.4 to 24 minutes late.
+**The owner approved all seven proposals (R3 §7):** (1) **A5 is replaced:** the
+follower's price at an instant is the 1 s mark × (1 + s × (the instrument's
+mean quoted half-spread + its mean depth cost for $1,000)), from R3's
+per-instrument table, on both legs, for the tracked entries and their nulls
+alike (s = +1 when the follower buys); A5's first-trade price is printed as a
+check, and the half-spread and depth doubled as a sensitivity. (2) **Pre-IPO
+entries are left out of R8's primary cell** and reported in a secondary (no
+rule priced ANT within ±20 bps). (3) **The vote:** each entry's d is the
+follower's net return over a fixed horizon h minus the MEDIAN of its three
+nulls' net returns over the same h (A9's mean stays for A11 (i) and (ii));
+h is 1 h, 6 h or 24 h, the class nearest the trader's median holding time
+over the 30 days before following (under 10 closed positions: 6 h); A11
+(iii)'s sign test runs on these fixed-horizon d; the trader's own exits are
+shown as paper money, never voted on. (4) **The scoreboard's statistics
+(v1):** entries whose windows overlap are merged into one vote; per trader the
+two-sided sign e-process E_n = 2ⁿ·k!(n−k)!/(n+1)!, a verdict only at
+**E ≥ 20·K with K = 20 trader slots (E ≥ 400; e-Bonferroni, valid however
+often the owner looks and under any dependence between traders)**; **the pooled
+board of all favourites comes first,** one vote per UTC day, a verdict at
+E ≥ 20; ties (|d| < 0.1 bps) dropped; late entries recorded, never voted. The
+honest cost: a verdict on one trader needs months to about a year of
+following even for a real edge; the pooled board answers sooner. (5) **A
+2-hour weekday measurement in US hours, Monday 2026-11-09 14:30–16:30Z,** with
+R3's scripts, before R8's numbers are frozen — the rule table is one Saturday
+morning's, and spreads and the weekend premium moved by the hour. (6) **Paper
+size $1,000 an entry, $10,000 stored beside it** (the live log stores the book,
+so any size can be priced later). (7) **A matched-direction e-process**
+(nulls drawn with the trader's own long share) **beside each vote,** to tell
+skill from a long habit in a rising market. **The live log (v1):** the paper
+entry is priced at the book's VWAP for $1,000 at the follow instant (the
+alert + 60 s), with the book, bbo and ticker stored as read then. **Costs:**
+the base-tier taker fee, 0.04% a leg (ANT 0.02% by its fee override); funding
+every whole hour at the published rate.
+
 2026-11-07 (the blind labels fixed — the supervisor): **R2-LABELS'S 100
 LABELS ARE FINGERPRINTED BEFORE ANY CLASSIFIER OUTPUT EXISTS.** R2-LABELS
 (Sonnet 5.5, xhigh; report `docs/reviews/r2-labels-2026-11-07.md`, `c63c39e`)
