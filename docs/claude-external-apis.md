@@ -202,8 +202,12 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   first trade at every interval, 1s included. **Mark history
   `/v1/info/mark-history`**: `[bucket_ms, last_mark]`, from 2026-05-28T01:26Z,
   1,000 a page. **Funding `/v1/info/funding`**: `{funding_rate, timestamp}`, one
-  per hour for every instrument, 100 a page returned NEWEST FIRST (page back
-  with `end_timestamp`); positive rate = longs pay shorts (docs).
+  per hour for every instrument, at most 100 a page, returned NEWEST FIRST.
+  Without `start_timestamp` the reply held 24 rows (the last 24 hours; 22:55Z
+  on 2026-11-06 and, in the supervisor's read, ~00:10Z on 2026-11-07; the spec
+  does not state the default). With `start_timestamp=0` the newest 100 rows came
+  back with `more` true and no cursor; paging back with `end_timestamp` was not
+  tested. Positive rate = longs pay shorts (docs).
 - **Now-only reads:** `/v1/info/bbo`, `/book` (depth 10 | 100 | 500 | 1000; 50 → 400),
   `/tickers`, `/statistics`, `/index`, `/fees`, `/instruments`, `/exchange`:
   server-cached 1–2 s (`cache-control: public, max-age=1..2`); a past instant
