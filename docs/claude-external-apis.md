@@ -14,8 +14,8 @@ day; it LAGS the live API and the changelog: `/v2/info/pnl`, `/v1/info/pnl`,
 `/v1/info/equity`, `/v1/info/markets` and `/v1/info/stock-splits` answer live
 but are not in it), the WebSocket spec (`asyncapi-perps.json`, 407,525 bytes,
 identical), the changelog (`docs.polymarket.com/changelog/perps.md`, read
-2026-11-06), the docs pages and live calls 2026-11-06 22:16Z to 2026-11-07
-00:xxZ. Evidence (scripts, outputs, raw replies, the docs as downloaded): the
+2026-11-06), the docs pages (downloaded 22:16Z on) and live calls from
+2026-11-06 22:19Z to 2026-11-07 00:07Z. Evidence (scripts, outputs, raw replies, the docs as downloaded): the
 supervisor folder's `workers/R1-API/`; the report is
 `docs/reviews/r1-perps-api-2026-11-07.md`.
 Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
