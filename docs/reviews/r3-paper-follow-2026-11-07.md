@@ -835,10 +835,11 @@ the supervisor to copy; nothing here was written to external-apis.
   ask, last trade if recent), C3 = an aggregate of external mark feeds;
   recomputed every 200 ms, snapped to the tick; each candidate falls back to
   the index. **Measured:** ANT-USD's mark equalled its index 32.8% of the
-  seconds 00:53–05:21Z and otherwise sat between the index and the book mid
-  (between them 92.7% of seconds; equal to the ticker mid 8.4%, within 2 bps
-  of it 13.1%) [Final review F11: was "and at other times followed the
-  book"; `workers/R3-REVIEW/out/check-data-counts.txt`]
+  seconds 00:53–05:21Z and in most other seconds sat between the index and
+  the book mid (92.7% of all seconds lay between them, the index included;
+  equal to the ticker mid 8.4%, within 2 bps of it 13.1%) [Final review F11:
+  was "and at other times followed the book";
+  `workers/R3-REVIEW/out/check-data-counts.txt`]
   (`out/an-ticks.txt`, `out/an-ant.txt`).
 - **Index price** (docs): a weighted average of external feeds (Pyth, Chainlink
   Data Streams, Hyperliquid named) chosen by the market's session; every
