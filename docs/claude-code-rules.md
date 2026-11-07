@@ -33,6 +33,11 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   for all callers together, never more than 30 in a burst (decisions
   2026-11-07, wave 1 closed). No cron tick that fires many reads at once. On a
   429: drop the tick, back off at least 2 s, never retry in a loop.
+- **Admit each request before sending it:** the tokens spent in the trailing
+  60 s plus this request's weight must fit the share, and the trailing 5 s plus
+  it must stay within 30. Spacing alone — by the previous call's weight or by
+  the next one's — overran a trailing minute in a replay of 1,796 real calls
+  (R3 report, Final review F7).
 - **Schemas tolerate new fields:** `z.object()` (never `.strict()`) on external
   replies, a daily log of unknown keys; closed lists (`z.enum`) only where an
   unknown value would do harm, and then decide whether one bad row drops the
