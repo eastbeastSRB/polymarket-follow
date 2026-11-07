@@ -33,7 +33,7 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   scrape or otherwise remove data from the Site, any other Interface, or
   Features"; the terms set no separate API rules and say Limits may be imposed;
   data may not be resold to professional capital-markets entities. Whether the
-  public API counts as an "Interface" is not stated — an owner question.
+  public API counts as an "Interface" is not stated.
 - **Geography:** order placement is barred in the US, Canada, Cuba, Iran, North
   Korea, Syria, Crimea, Donetsk, Luhansk; "read-only market data is not subject
   to these restrictions" (docs, Geographic Restrictions page, 2026-11-06).
@@ -49,11 +49,13 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   `{"status":"err","error":"ip_rate_limited"}` with `retry-after: 1`
   (spec, docs). Weights per the spec: ping, time, registered, competitions 1;
   exchange, assets, instruments, tickers, statistics, bbo, index, fees,
-  limit-tiers, markets 2; klines, mark-history, portfolio, leaderboard 5; trades,
-  funding, fills, position-fills, exchange-stats 10; book 2 / 5 / 10 / 20 at
-  depth 10 / 100 / 500 / 1000. Cached reads cost 1 (fills, position-fills 2 s;
-  leaderboard, mark-history 2-5 s; exchange-stats 5 min). Unpublished: `/v1/info/pnl`,
-  `/v2/info/pnl`, `/v1/info/equity` (the fit puts pnl at ~13-15).
+  limit-tiers 2; klines, mark-history, portfolio, leaderboard 5; trades, funding,
+  fills, position-fills, exchange-stats 10; book 2 / 5 / 10 / 20 at depth 10 /
+  100 / 500 / 1000. `/v1/info/markets` weighs 2 (changelog 2026-11-05; the
+  route is not in the spec). Cached reads cost 1 (fills, position-fills,
+  mark-history 2 s; leaderboard 5 s; exchange-stats 5 min). Unpublished:
+  `/v1/info/pnl`, `/v2/info/pnl`, `/v1/info/equity` (a fit of the 2026-11-06
+  429s puts pnl at ~13-15; report Q2).
 - **It is a token bucket with a burst, not a 60-second sum.** 2026-11-06
   22:52:40Z, after 132 s idle, fills reads for distinct addresses at 2 a second:
   52 answered, the 53rd (26.0 s in) got the 429; with the published weight 10
@@ -62,7 +64,7 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   (~145 tokens) while the 60-second sum was only 165. After a 120 s pause the first
   read answered 200. Steady load 22:40:30–22:50:29Z, 50 accounts once a minute,
   one read every 1.2 s (500 tokens a minute): 500 of 500 answered 200, latency
-  median 306 ms. **Rule: pace evenly, never a burst of more than ~5 fills reads.**
+  median 306 ms.
 - Replies carry no rate-limit header. The 429 reply carries `retry-after: 1`;
   the repeat of the same fills read inside ~2 s is byte-identical (cached, shared
   across pods); the portfolio is never cached.
