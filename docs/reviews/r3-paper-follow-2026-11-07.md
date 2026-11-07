@@ -782,10 +782,14 @@ supervisor on 2026-11-07 ~05:30Z, recommendation "yes" on all six).
 New facts, each dated and sourced (this worker's `docs/`, `raw/`, `out/`). For
 the supervisor to copy; nothing here was written to external-apis.
 
-- **Docs changed since R1 (2026-11-06):** `asyncapi-perps.json` 407,493 bytes on
-  2026-11-07 00:47Z (R1: 407,525); `perps-openapi.json` 382,865 bytes at 01:09Z
-  (R1: 383,007) — `docs/` (not diffed: R1's copies are outside this worker's
-  folder).
+- **No sign the specs changed since R1 (2026-11-06):** the saved
+  `asyncapi-perps.json` (2026-11-07 00:47Z) is 407,525 bytes and
+  `perps-openapi.json` (01:09Z) 383,007 bytes, R1's sizes — `docs/` (not
+  diffed: R1's copies are outside this worker's folder) [Final review F8:
+  was "Docs changed since R1 … 407,493 bytes … 382,865 bytes" —
+  `scripts/dl-docs.mjs` printed a JavaScript string's length (UTF-16 units)
+  as bytes; the files hold 16 and 73 non-ASCII characters;
+  `workers/R3-REVIEW/out/check-docs-bytes.txt`].
 - **Mark price** (docs, Mark Price, read 2026-11-07 00:47Z): the median of
   C1 = index + an EMA over 150 s of (mid − index), C2 = median(best bid, best
   ask, last trade if recent), C3 = an aggregate of external mark feeds;
@@ -917,3 +921,4 @@ replaced.
 | F5 | Q6 item 4 and §2: "Under the global null e-BH is the same rule (its first rejection needs K/α)" is false — e-BH rejects r hypotheses when each passes K/(r·α) (the paper's own self-consistency condition); E1's re-run found it rejecting on a day no E had reached 20·K in 5 of 60,000 null paths, once where e-Bonferroni never did. The choice of e-Bonferroni stands (time-uniform, any dependence). Also "the same instrument at once" should read the same or correlated instruments at overlapping times | corrected in Q6 item 4 and §2; the paper's rule, Theorem 2 and §7's condition verified against its own text (rules broken 3; `scripts/pdf-text.cjs`, `out/check-e1-ebh.txt`) |
 | F6 | E4's "63.4% of single comparisons (200,000 trials)" and its n-entry shares are each a share of 4,000 resamples of the trials (±0.8 point): the run reproduces them exactly, but the exact share is 62.85%, and at 20 and 50 entries the bias is 52.6% and 51.4%, not 53.6% and 50.5% — so "count only traders with ≥ 50 entries" does not remove it | Q6 item 1 and the A11 (iii) paragraph corrected; `out/check-e4-exact.txt` |
 | F7 | The code-rule candidate (rules broken 1, §4, §6 item 7) said to "pace by the *next* call's weight"; replaying the 1,796 calls' weights, spacing by the next call's weight reaches 54 in a trailing minute exactly as spacing by the previous one does — only the admission check in its parenthesis (trailing 60 s plus the next call within the share) holds 50 | the three places reworded to the admission check; `out/check-pacing.txt` |
+| F8 | §8, for external-apis: "Docs changed since R1 — asyncapi 407,493 bytes (R1 407,525), openapi 382,865 (R1 383,007)". `dl-docs.mjs` printed `body.length`, a JavaScript string's UTF-16 length, as bytes; the saved files are 407,525 and 383,007 bytes, R1's own sizes, so there is no evidence of a change | the bullet corrected; `out/check-docs-bytes.txt` |
