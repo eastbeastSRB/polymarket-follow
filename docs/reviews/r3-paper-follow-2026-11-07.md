@@ -335,8 +335,10 @@ through the price itself (Q1).**
   is null on all 90 instruments (2026-11-07 00:50Z), so nothing more is
   applied; if it ever becomes non-null, test whether the published rate
   already includes it before using it. The settled rate equals the ticker's
-  rolling rate 5 s before the hour (eight instruments, 01:00 and 02:00Z, to
-  three digits; `out/an-checks.txt`). Funding is not always small: over the 24
+  rolling rate 5 s before the hour (eight instruments, 01:00 and 02:00Z,
+  within 0.2% — ZEC 5.470e-6 against 5.480e-6, KAITO −7.682e-5 against
+  −7.695e-5, the rest closer or equal [Final review F11: was "to three
+  digits"]; `out/an-checks.txt`). Funding is not always small: over the 24
   hours to 03:00Z a long paid 0.169% on ANT-USD (settled rates −1.1e-4 to
   +2.9e-4 an hour; the ticker's rolling rate touched 5.6e-4 an hour on
   Saturday morning) and received 0.183% on KAITO-USD, against 0.030% on BTC
@@ -671,7 +673,8 @@ step 6 is the **audit** of the historical rule, kept for every real follow.
    second present (`out/an-checks.txt`); the tape is needed only for the nulls.
    [Final review F3: added — shown on one recent 1,000 s window; that 1 s
    marks exist for R8's period is not checked (Q1).]
-5. **The settled funding equals the ticker's rate 5 s before the hour**, so the
+5. **The settled funding equals the ticker's rate 5 s before the hour**
+   (within 0.2% [Final review F11: added]), so the
    forward log can take funding from the stream and check it against
    `/v1/info/funding` later.
 6. **A permanent audit of the historical rule:** the forward log reads the book
@@ -821,7 +824,10 @@ the supervisor to copy; nothing here was written to external-apis.
   ask, last trade if recent), C3 = an aggregate of external mark feeds;
   recomputed every 200 ms, snapped to the tick; each candidate falls back to
   the index. **Measured:** ANT-USD's mark equalled its index 32.8% of the
-  seconds 00:53–05:21Z and at other times followed the book
+  seconds 00:53–05:21Z and otherwise sat between the index and the book mid
+  (between them 92.7% of seconds; equal to the ticker mid 8.4%, within 2 bps
+  of it 13.1%) [Final review F11: was "and at other times followed the
+  book"; `workers/R3-REVIEW/out/check-data-counts.txt`]
   (`out/an-ticks.txt`, `out/an-ant.txt`).
 - **Index price** (docs): a weighted average of external feeds (Pyth, Chainlink
   Data Streams, Hyperliquid named) chosen by the market's session; every
@@ -836,7 +842,8 @@ the supervisor to copy; nothing here was written to external-apis.
   end of each 1-hour window on every open position. **Measured:** at rest
   crypto shows 0.0000125 an hour and non-crypto 0.00000625 (the scale is inside
   the published rate); the settled rate (`/v1/info/funding`) equals the
-  ticker's `fr` 5 s before the hour (8 instruments, 01:00 and 02:00Z
+  ticker's `fr` 5 s before the hour within 0.2% [Final review F11: "within
+  0.2%" added] (8 instruments, 01:00 and 02:00Z
   2026-11-07); `nxf` is the next whole hour (`out/an-checks.txt`).
 - **`funding_multiplier` is null on all 90 instruments; ANT-USD (pre_ipo) has a
   `fee_override`:** from 2026-10-29T15:23:35.757Z, no end; tiers from taker
@@ -955,3 +962,4 @@ replaced.
 |---|---|---|
 | F9 | Q6's figures: "1–14 votes" when merged across traders (the outputs show 1–12 at 2 entries a day, 80 at half an entry); one-sided "~10–20% fewer votes" (12–18% at the bar of 20, 7–9% at 400, the bar recommended); the 30 bps and 15 bps edges' shares are of entries, used as the merged-vote P of E3 (merged votes: 61.0, 58.3, 56.7% at 1, 6, 24 h; 54.2% for 15 bps); the owner's-view example's E (0.6, 0.5) does not match its counts (0.23, 0.29) | corrected in Q6 items 5–7, the power paragraph, the year table, the example and §2; `out/check-e2-merged-S*.txt`, `out/check-arith.txt` |
 | F10 | Q1's details: the trade-anchored rules were called worse "on equities", where two of them had less bias than the mark (and more noise); the category table sets medians from two samples side by side (bbo snapshots, rotating books), so ANT's crossing median sits below its half-spread median although crossing includes it; the rule table's $10,000 column is not usable for PRL-USD (half its book sides could not fill $10,000, the rest 343–581 bps) or fully for NCLD-USD, and each depth cost rests on 13–14 books — none of it stated | the three stated in Q1; `out/check-data-counts.txt` |
+| F11 | Facts proposed for external-apis: the settled funding "equals" the ticker's rate "to three digits" — ZEC (5.470e-6 against 5.480e-6) and KAITO (−7.682e-5 against −7.695e-5) differ in the third digit, all within 0.2%; ANT-USD's mark "at other times followed the book" — it equalled the ticker mid in 8.4% of seconds and sat between index and book in 92.7% | Q4, §3 item 5 and §8 corrected; `out/check-data-counts.txt` |
