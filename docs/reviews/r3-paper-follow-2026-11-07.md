@@ -276,7 +276,8 @@ the e-process. Why: the vote tests one fixed strategy (follow within the
 normal delay); an outage of this PC is unrelated to what the trader's market
 does next, so leaving those entries out of the vote cannot bias it; an alert
 late because the exchange's data lagged (and an entry under "data stale", §4)
-may fall in fast markets, so for those this is not shown [Final review F12:
+may fall in fast markets, so for those it is not shown that leaving them
+out cannot bias the vote [Final review F12:
 was "an outage is unrelated to what the trader's market does next, so
 leaving those entries out of the vote cannot bias it", which holds for the
 PC's own outages only]; putting them in
@@ -962,7 +963,7 @@ replaced.
 | F3 | "The 1-second mark history that R8 would read is the live mark" and "R8 needs no tape to price" rest on one 1,000 s window (01:23:50–01:40:30Z, six instruments) read 2.5 hours later; whether 1 s buckets exist for September–October, R8's period, was never read, and R8's rule and cost depend on it | stated in Q1, §3 item 4 and §8, with the one read that settles it; the "sub-second timing" claim checked (±1 s shift: 97–100% agree, `out/check-markhist.txt`) |
 | F4 | The rule against A5: headline 1's "5–15× less noisy" — the mean absolute error ratio is 1.7× (commodities) to 15× (small coins), under 5× on commodities, indices and equities; and question 1's reason set the rule's mean error (±1.6) against A5's mean absolute error (1.7–19.5), two different measures | headline 1 and question 1 corrected (the rule's mean absolute error is 0.3–4.9 bps a side outside the pre-IPO; A5's mean reaches ±6.4); `out/check-arith.txt` |
 | F5 | Q6 item 4 and §2: "Under the global null e-BH is the same rule (its first rejection needs K/α)" is false — e-BH rejects r hypotheses when each passes K/(r·α) (the paper's own self-consistency condition); E1's re-run found it rejecting on a day no E had reached 20·K in 5 of 60,000 null paths, once where e-Bonferroni never did. The choice of e-Bonferroni stands (time-uniform, any dependence). Also "the same instrument at once" should read the same or correlated instruments at overlapping times | corrected in Q6 item 4 and §2; the paper's rule, Theorem 2 and §7's condition verified against its own text (rules broken 3; `scripts/pdf-text.cjs`, `out/check-e1-ebh.txt`) |
-| F6 | E4's "63.4% of single comparisons (200,000 trials)" and its n-entry shares are each a share of 4,000 resamples of the trials (±0.8 point): the run reproduces them exactly, but the exact share is 62.85%, and at 20 and 50 entries the bias is 52.6% and 51.4%, not 53.6% and 50.5% — so "count only traders with ≥ 50 entries" does not remove it | Q6 item 1 and the A11 (iii) paragraph corrected; `out/check-e4-exact.txt` |
+| F6 | E4's "63.4% of single comparisons (200,000 trials)" and its n-entry shares are each a share of 4,000 resamples of the trials (±0.8 point): the run reproduces them exactly, but the exact share is 62.85%, and at 20 and 50 entries the shares are 52.6% and 51.4%, not 53.6% and 50.5% — so "count only traders with ≥ 50 entries" does not remove it | Q6 item 1 and the A11 (iii) paragraph corrected; `out/check-e4-exact.txt` |
 | F7 | The code-rule candidate (rules broken 1, §4, §6 item 7) said to "pace by the *next* call's weight"; replaying the 1,796 calls' weights, spacing by the next call's weight reaches 54 in a trailing minute exactly as spacing by the previous one does — only the admission check in its parenthesis (trailing 60 s plus the next call within the share) holds 50 | the three places reworded to the admission check; `out/check-pacing.txt` |
 | F8 | §8, for external-apis: "Docs changed since R1 — asyncapi 407,493 bytes (R1 407,525), openapi 382,865 (R1 383,007)". `dl-docs.mjs` printed `body.length`, a JavaScript string's UTF-16 length, as bytes; the saved files are 407,525 and 383,007 bytes, R1's own sizes, so there is no evidence of a change | the bullet corrected; `out/check-docs-bytes.txt` |
 
@@ -974,3 +975,83 @@ replaced.
 | F10 | Q1's details: the trade-anchored rules were called worse "on equities", where two of them had less bias than the mark (and more noise); the category table sets medians from two samples side by side (bbo snapshots, rotating books), so ANT's crossing median sits below its half-spread median although crossing includes it; the rule table's $10,000 column is not usable for PRL-USD (half its book sides could not fill $10,000, the rest 343–581 bps) or fully for NCLD-USD, and each depth cost rests on 13–14 books — none of it stated | the three stated in Q1; `out/check-data-counts.txt` |
 | F11 | Facts proposed for external-apis: the settled funding "equals" the ticker's rate "to three digits" — ZEC (5.470e-6 against 5.480e-6) and KAITO (−7.682e-5 against −7.695e-5) differ in the third digit, all within 0.2%; ANT-USD's mark "at other times followed the book" — it equalled the ticker mid in 8.4% of seconds and sat between index and book in 92.7% | Q4, §3 item 5 and §8 corrected; `out/check-data-counts.txt` |
 | F12 | Two justifications that do not follow: Q6 item 3's "returns over disjoint windows are independent whatever the instruments' correlation" (false under volatility clustering, which E2's own market has; what the merge needs is that each vote stays a fair coin, which E2 shows); Q2's "an outage … cannot bias it", true for this PC's outages but not for alerts late because the exchange's data lagged, which the same rule (and §4's "data stale") leaves out of the vote | both qualified in place |
+
+No finding is High: no conclusion changes, no Iron Rule was broken, and every
+rule R3 broke is listed by R3 itself. Commits: F1 `9537a2c` · F2 `bef03d9` ·
+F3 `e75f3a8` · F4 `8c0e682` · F5 `f55a294` · F6 `c8b85af` · F7 `7edd02c` and
+`8a81308` (the third place, missed by the first) · F8 `e861bca` · F9
+`3092a40` · F10 `c57ba88` · F11 `004f64e` · F12 `c31bc76`; this section's end
+and a wording fix inside F12's marker: the commit after them.
+
+**The supervisor's five points.**
+
+1. **Reproduced exactly.** R3's seeded scripts, copied byte-identical
+   (SHA-256) and re-run with R3's seeds — E4 (200,000 trials, seed 5), E1
+   (4,000 paths), E2 S3_disposition and S1_basket (400 paths), and also E5
+   (seed 9) and E2 S7 — print every number of R3's saved outputs, E4's 63.4%
+   included (F6 says what it measures) and E1's uncorrected 11–13% / 70–77%
+   against e-Bonferroni's 2.3–2.9%. The S-runs' headers differ by one space:
+   `sim-e2.cjs` gained a header field after those runs; no number moved.
+2. **The statistics' sources.** e-BH's rule, Theorem 2 and §7's condition are
+   as R3 quoted, read in the paper's own text (F5). e-Bonferroni's guarantee
+   needs no paper: each null trader's sign e-process starts at 1 and is a
+   test martingale in its own votes, so Ville's inequality gives P(ever ≥
+   20·K) ≤ 1/(20·K), and a union bound over the K slots gives 5% under any
+   dependence. The one wrong statistical claim was R3's own (F5).
+3. **The pricing table's caveat** is now beside every use of the rule (F1).
+4. **No outcome read.** `out/calls.jsonl` holds market-data routes only — bbo
+   413, book 1,227, trades 140, funding 8, mark-history 6, instruments 1,
+   statistics 1 — no fills, positions, portfolio or leaderboard read; no
+   script holds an address or reads another worker's data; the WebSocket
+   channels were `tickers::all` and `book::<iid>` (the probe also
+   `trades::6`); the supervisor's access scan agrees (0 outside, 0 outcome
+   hits).
+5. **§7's questions, reviewed, not decided.** 1: sound; its reason is now
+   stated as measured (F1, F4), and its input for R8's period is unverified
+   (F3). 2: sound. 3: sound but incomplete — the median of the nulls (F2), so
+   the question put to the owner at ~05:30Z needs that addition. 4: sound;
+   note that the pooled board is a second test with its own 5%. 5, 6 and 7:
+   sound.
+
+**Checked and found right** (besides the above): Q1's tables against
+`an-q1a.txt`, `an-q1b-N1000.txt`, `-N10000.txt` and `an-ticks.txt`; Q2's delay
+arithmetic; Q4's funding and fee facts against `raw/`; Q6's E1, E2, E3 and E5
+figures and the year table; the budget figures; E5's one high cell (7.3%,
+jumps −2%, long-only, 6 h) is chance — 3.0% and 3.3% at seeds 10 and 11
+(`out/check-e5-seed*.txt`); the mark history's "sub-second timing" (F3).
+
+**Left, with the reason.**
+- R3's scripts are evidence as they ran, in its folder, which this review may
+  not write. Found there: `dl-docs.mjs` labels a UTF-16 length "bytes" (F8's
+  cause); `sim-e4.cjs` estimates every share from 4,000 resamples (F6's);
+  `lib.mjs`'s `lastCost` is set and never read; `an-q1b.cjs`'s `hsMed` and
+  `depthMed` hold means while its header says medians; `sim-e2.cjs`'s
+  `{ ...e, start: e.start }` copies nothing new; `an-checks.cjs`'s
+  `within1tick` is a 0.5 bps test; `an-load.cjs` and `sim-lib.cjs` carry two
+  quantile functions; `an-power-days.cjs`'s 24 h column needs more days at 2
+  entries a day than at 1, an interpolation artefact the report does not
+  cite; the R8 delay
+  formula leaves out the 0.3 s processing the live one counts (0.3 of ~78 s).
+- R3's drafts sent at the planned stop (`drafts/q1-pricing-rule.md`,
+  `drafts/q6-statistics.md`) carry F4's "5–15×", F5's "same rule", F6's
+  63.4%, F9's "1–14" and "~10–20%": R8's numbers are to be taken from this
+  corrected report, not from the drafts.
+- "An edge three times the fees" (headline 4, Q6, §6): the simulated edge is
+  30 bps against a 10 bps round trip of fees and half-spreads, 3.75 times the
+  8 bps fee; no decision rests on the word.
+
+**Notes for later phases** (no code now).
+- R8: one 1 s mark-history read of a September window before relying on the
+  rule (F3); the weekday table of question 5 before its numbers are frozen; a
+  rule for an entry whose book cannot fill the notional (PRL-USD at $10,000,
+  F10).
+- The scoreboard: a slot is used once per run — a replacement takes a free
+  slot or starts a run — or the bound covers more than K e-processes; each
+  new run spends its own 5%; with the pooled board beside it, a false verdict
+  somewhere is possible up to 10% under the global null. Say so on the page.
+- The scoreboard: a merged vote's sign (summed d) is not exactly a fair coin
+  the way one entry against the median of its nulls is; comparing the group's
+  summed tracked return with the median of its 3 summed null baskets keeps it
+  exact — for the build to weigh. Show how many entries the vote left out
+  (late, data stale) by hour (F12).
+- The client: F7's admission check is the code-rule to copy.
