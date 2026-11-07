@@ -1,5 +1,24 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (R2's holdout fixed — the supervisor, at R2-STYLE's first stop):
+**THE STYLE LABEL WILL BE SCORED ON 100 ACCOUNTS R2 NEVER ANALYSES, DRAWN BY
+THE SUPERVISOR BEFORE ANY CLASSIFIER EXISTS.** R2 read the pool — 1,702
+accounts: the all-time notional and PnL top 1,000 (overlapping on only 320)
+and the PnL top 100 of day, week and month, 2026-11-07 00:48–00:51Z. The
+supervisor drew the holdout from leaderboard fields only, with its own script
+(`verify/R2-STYLE/draw-holdout.cjs` in the supervisor folder; seed 61107;
+re-run identical): R2's six strata by all-time notional rank — N1 ranks 1–50
+(10 drawn), N2 51–200 (15), N3 201–500 (20), N4 501–1,000 (20), and accounts
+off the notional board split at their median notional, N5 upper (15) and N6
+lower (20) — leaving out the 60 accounts R2 had already probed and the two
+anchors (`0x4c4f…22b4`, the founding check's all-time PnL #1, and
+`0x7930…d132`, notional #1), whose behaviour is already known and so cannot
+be tested blind. `holdout.json`, drawn 2026-11-07T01:01:31Z, SHA-256
+`c57b17d36b42f6827daf8f69b169cb315faae375ad88b1a2013fa6f224086345`. R2's pull
+saves those accounts apart, its analysis scripts skip them, R2-LABELS labels
+them blind from their raw fills, and the supervisor scores the frozen
+classifier against those labels.
+
 2026-11-07 (the owner's PC — the owner's answer to R4's question 2): **THE PC
 IS ALWAYS ON AND THE OWNER ALWAYS SIGNED IN, SO THE POLLER AND THE NOTIFIER
 START AT SIGN-IN.** The owner: "i don't turn off my pc and do not switch
