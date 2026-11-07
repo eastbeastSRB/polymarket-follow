@@ -13,4 +13,5 @@ plan page or external-apis — or it does not exist.
 |---|---|---|
 | `r1-perps-api-2026-11-07.md` | R1-API: the Perps API in full — endpoints, the token-bucket limit, fills semantics, the tape, history depth, the feasibility table; 14 Final-review corrections (§8) | decisions 2026-11-07, wave 1 closed |
 | `r4-notifications-2026-11-06.md` | R4-NOTIFY: Windows notifications from the poller — PowerShell toasts, sessions under Task Scheduler, silent failures, alert noise; the owner test sheet in the supervisor folder; 11 corrections | decisions 2026-11-07, wave 1 closed |
+| `r3-paper-follow-2026-11-07.md` | R3-PAPER: the follower's price on a thin market (the mark plus the measured cost), the fixed-horizon vote against random trades, e-Bonferroni and the pooled board, proven on simulations; 12 corrections by a fresh reviewer (R3-REVIEW) | decisions 2026-11-07, R3 accepted |
 | `r5-existing-tools-2026-11-06.md` | R5-TOOLS: existing trackers, copy-trading metrics and the evidence on copying, published bot and market-maker classifiers, competitions and rewards; 9 corrections (§8) | decisions 2026-11-07, wave 1 closed |

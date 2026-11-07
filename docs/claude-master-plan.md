@@ -26,8 +26,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-07, through decisions 2026-11-07 (wave 1
-closed).*
+*Brought in step on 2026-11-07, through decisions 2026-11-07 (R3
+accepted).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -35,11 +35,16 @@ closed).*
   everything v1 needs is public and keyless, with history back to launch.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
-- The research phase runs in four waves; wave 1 (R1, R4, R5) is closed and
-  wave 2 (R2, R3) is running (decisions 2026-11-07). Before v1 is planned,
-  R8 asks once, on the past, whether following pays and whether the
-  leaderboard is skill or luck (decisions 2026-11-06, the pre-test and waves
-  2–4 approved).
+- The research phase runs in four waves; wave 1 (R1, R4, R5) is closed; in
+  wave 2 R3 is accepted and R2 is running, its blind labels done (decisions
+  2026-11-07). Before v1 is planned, R8 asks once, on the past, whether
+  following pays and whether the leaderboard is skill or luck, by rules the
+  owner amended with R3 (decisions 2026-11-06, the pre-test and waves 2–4
+  approved; 2026-11-07, R3 accepted).
+- **How a trader is judged** (decisions 2026-11-07, R3 accepted): over a fixed
+  horizon against random trades, never by the trader's own exits; a verdict
+  only at E ≥ 400 for one of 20 followed traders, the pooled board of all
+  favourites first.
 
 ## The plan — the next steps
 
@@ -87,7 +92,7 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   volume by instrument category, competition players and reward farmers,
   and the pool's fill histories that R8 reuses (decisions 2026-11-06, the
   pre-test and waves 2–4 approved).
-- 🔵 **R3 — The paper-follow method:** the entry price after the alert's
+- ✅ **R3 — The paper-follow method:** the entry price after the alert's
   delay, fees, funding, slippage by instrument and hour, the exit; the
   after-following scoreboard and its null (polymarket-lab's F9 design:
   decisions 2026-11-06); the scoreboard's statistics valid however often the
@@ -107,6 +112,9 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   alert feed, the paper-follow log; the ports, clear of the lab's 3000 and
   4000. After R8: its verdict decides whether v1 is a copy-alert tool or a
   watching tool.
+- ⏳ **R8's weekday measurement:** R3's scripts for two hours in US trading
+  hours, Monday 2026-11-09 14:30–16:30Z, before R8's numbers are frozen
+  (decisions 2026-11-07, R3 accepted). Trigger: that time.
 - ⬜ **R8 — Does following pay, and is the leaderboard skill or luck?** One
   retrospective study, one look, its rules fixed in decisions before it
   (decisions 2026-11-06, the pre-test and waves 2–4 approved). If following
@@ -141,6 +149,10 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Done lately
 
+- ✅ 11-07 **R3 — the paper-follow method:** the mark-plus-cost price, the
+  fixed-horizon vote, e-Bonferroni and the pooled board; Final-reviewed by a
+  fresh subagent; seven proposals approved (decisions 2026-11-07, R3
+  accepted).
 - ✅ 11-07 **Wave 1 — R1 (the API), R4 (notifications), R5 (existing
   tools):** verified on the supervisor's path, Final-reviewed (34 marked
   corrections); the operating budget set at 250 tokens a minute; the v1
