@@ -1,5 +1,18 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-07 (the owner's PC — the owner's answer to R4's question 2): **THE PC
+IS ALWAYS ON AND THE OWNER ALWAYS SIGNED IN, SO THE POLLER AND THE NOTIFIER
+START AT SIGN-IN.** The owner: "i don't turn off my pc and do not switch
+logged user, all the time it is turned on. from time to time quick restarts
+because of update (i do manually that)." So both processes are "at log on,
+run only when the user is logged on" tasks (R4 Q3), which can show
+notifications; no boot-started poller is needed. A manual restart leaves a gap
+until the owner signs in again: the poller catches up on the fills it missed
+and shows them as one late summary, never as fresh alerts, and paper-follow
+prices them at the moment they could really be acted on (R4 Q8; R3 decides
+the details). The machine's own facts (uptime 16.9 days, never sleeps on mains
+power, measured 2026-11-06) agree.
+
 2026-11-07 (wave 1 closed — the owner, on the supervisor's recommendations):
 **R1, R4 AND R5 ARE ACCEPTED, AND THE PROJECT RUNS AT A QUARTER OF THE
 PUBLISHED RATE LIMIT.** The reports (`docs/reviews/r1-perps-api-2026-11-07.md`,
