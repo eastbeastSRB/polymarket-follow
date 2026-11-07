@@ -158,9 +158,9 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   Cycles of 119 fills were seen (page 2 with the fresh cursor: 19 rows).
   **A cursor read after the position changed → HTTP 400
   `{"status":"err","error":"cursor no longer matches the current position"}`**
-  (met twice, 23:12Z and 23:15Z: any new fill on that instrument, even an add,
-  invalidates it; the page read straight after page 1 answered 200). Restart
-  from page 1.
+  (met twice, 2026-11-06 23:12Z and 23:15Z, after a new fill on that
+  instrument; whether the cycle itself changed was not checked; the page read
+  straight after page 1 answered 200).
 
 ### Portfolio, equity and PnL history
 
