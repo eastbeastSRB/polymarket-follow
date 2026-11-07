@@ -90,15 +90,16 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   sum of `/v1/info/pnl` buckets over the window exactly (checked to 4 decimals
   on four accounts, 2026-11-06 23:0xZ). **Windows are UTC calendar:** day from
   00:00Z, week from Monday 00:00Z, month from the 1st, `all` from launch
-  (verified by those sums; the day reset is checked at 00:00Z — see the report).
+  (verified by those sums; the day board reset at 2026-11-07 00:00Z: total
+  6,739 at 23:58:59Z → 6,191 at 00:01:01Z, top pnl $198,077 → $108).
 - `roi` = pnl / max(100, starting equity + peak net deposits), a decimal
   fraction; the ROI sort has no minimum equity: emptied accounts (account_value
   ~1e-7) and $100-class accounts top it (2026-11-06).
 - **Freshness:** each (window, sort) is a snapshot with its own `timestamp`;
-  at read time day, week and month were 2–58 s old (median 29–43 s), `all`
-  18–257 s (median 141 s). Several pods serve different snapshots: `timestamp`
-  can go back between reads, and the address row can flap between values 6–59 s
-  old. 22:21–23:10Z.
+  at read time day, week and month were 0–60 s old (median 29–36 s), `all`
+  6–281 s (median 143 s). Several pods serve different snapshots: `timestamp`
+  can go back between reads (−67 s seen), and the address row can flap between
+  values 6–59 s old. 169 reads 22:21Z–00:07Z, 2026-11-06/07.
 
 ### Fills — `GET /v1/info/fills?address=`
 
