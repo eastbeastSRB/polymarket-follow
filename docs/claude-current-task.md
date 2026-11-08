@@ -39,7 +39,7 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 ## Next up — IN ORDER
 
 1. **Monday 2026-11-09 14:30–16:30Z:** the weekday measurement (R3-WEEKDAY).
-2. **R8** (does following pay; skill or luck): its numbers, from R1, R2, R3's
+2. **R8** (does following pay; skill or luck): its numbers are approved (decisions 2026-11-08, R8's numbers approved) but for the price table; started 2026-11-09 after the owner's weekly usage resets; its numbers, from R1, R2, R3's
    corrected report and Monday's measurement, shown to the owner and recorded
    in decisions before its one look.
 3. **Wave 4:** R7 (the pages), after R8's verdict.

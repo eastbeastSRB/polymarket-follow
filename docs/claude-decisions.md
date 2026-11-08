@@ -1,5 +1,27 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-08 (R8's numbers approved — the owner, on the supervisor's
+recommendations): **R8 STARTS FROM 2026-09-26, WITH A FOLLOWER WHO WATCHES
+ABOUT 20 TRADERS.** The owner approved the numbers of the supervisor's draft
+(`drafts/r8-brief-draft.md` in the supervisor folder), completing R8's rules
+(decisions 2026-11-06, the pre-test and waves 2–4 approved, A1–A13 and B1–B4;
+2026-11-07, R3 accepted; 2026-11-07, the classifier's ruling; 2026-11-08, R2
+and R2-LABELS accepted): **T0 = 2026-09-26** (the 30-day selection window
+holds the public launch; a 6-week measured period to T1 = 2026-11-07T00:00Z);
+the tracked set — v1-directional on the 14 days before T0, ≥ $25,000 notional
+and ≥ 10 closed positions in the window, the top 50 by realized PnL net of
+fees (secondary: by PnL ÷ notional; sensitivity: R2's "doubt" rule); **the
+delay D = U·T + 1.5 + 0.3 + 0.34 + 60 s with T = 33.3 s** (about 20
+favourites at the budget; sensitivity T = 100 s); the base-tier taker fee
+0.04% a leg; funding hourly; pre-IPO out of the primary cell; the verdict as
+amended. **The one open number:** the price table — R3's Saturday table, the
+weekday table or a session-aware pair — chosen after the weekday measurement
+of 2026-11-09 14:30–16:30Z by R3-WEEKDAY's recommendation checked by the
+supervisor, recorded here before R8's one look. **Timing:** nothing new starts
+before the owner's weekly usage resets (the owner, 2026-11-08: at 98%); R8 is
+started on 2026-11-09 to prepare its data and code, and makes its one look only
+after the price table is recorded.
+
 2026-11-08 (R6 accepted, and where backups go — the owner, on the
 supervisor's recommendations): **BACKUPS GO TO E: AND F:, NEVER D:.** R6's
 report (`docs/reviews/r6-storage-2026-11-08.md`, 13 Final-review corrections

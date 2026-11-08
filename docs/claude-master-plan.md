@@ -24,10 +24,22 @@ No heading carries a date: "Where it stands" carries one "Brought in step on"
 line instead. After every finished task the supervisor brings this file in
 step with the record; only the supervisor sets a marker.
 
+**Two "v1"s — words used here:**
+- **v1 (the app):** the first working version of the tool the owner uses —
+  leaderboards with style labels, favourites, Windows alerts, trader
+  statistics, the paper-follow log. It is planned after the research is
+  complete ("The v1 plan" below), then built in parts on a skeleton.
+- **The style classifier v1 / v2:** versions of the rule that labels each
+  account directional, algorithm, market maker, churner or unclassified (R2).
+  Classifier v1 was scored blind and is used for the research; classifier v2
+  fixes its two weak spots and must pass a forward blind test after
+  2026-11-21 before the app ships with it (decisions 2026-11-07, the
+  classifier's ruling).
+
 ## Where it stands
 
-*Brought in step on 2026-11-08, through decisions 2026-11-08 (R6
-accepted, and where backups go).*
+*Brought in step on 2026-11-08, through decisions 2026-11-08 (R8's
+numbers approved).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -36,7 +48,7 @@ accepted, and where backups go).*
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
 - The research phase runs in four waves; waves 1 (R1, R4, R5) and 2 (R2 with
-  its blind labels, R3) are closed; in wave 3 R6 is closed and R8 waits for
+  its blind labels, R3) are closed; in wave 3 R6 is closed and R8's numbers are approved; it waits for
   Monday's weekday measurement (decisions 2026-11-07, 2026-11-08). **The
   boards' tops are mostly algorithms, market makers and inactive accounts**
   (R2). Before v1 is planned, R8 asks once, on the past, whether
