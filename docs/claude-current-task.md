@@ -49,11 +49,8 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Open questions — the research answers them
 
-- How to tell an algorithm or market maker from a directional trader, proven
-  blind (R2).
-- A follower's realistic price on a thin tape (BTC: a page of 100 trades spans
-  50–140 minutes), the delay, fees and funding; statistics valid however often
-  the owner looks (R3).
+- Whether the corrected style classifier (v2) passes its forward blind test
+  (after 2026-11-21).
 - Whether following pays at all, and whether the leaderboard is skill or luck
   (R8).
 - Storage per day, and E:'s room (R6).
