@@ -328,7 +328,7 @@ non-holdout):
   20, 37–63% at 50, 40–60% at 100.
 - **Shrinkage:** across accounts with ≥ 10 cycles, the mean win rate is 50.6%
   with sd 20 points. A beta prior worth ~7 pseudo-cycles (α 3.8, β 3.7) pulls
-  4/4 = 100% to ~69%.
+  4/4 = 100% to 68% [Final review F5: was "~69%", the 10-page prior].
 - **Hold:** per-account median p50 6.9 h. **Leverage** (gross position
   notional ÷ equity; the API has no leverage field): p50 3.7×, p90 15.4×.
 - **Drawdown — never from equity alone,** which moves with deposits and
