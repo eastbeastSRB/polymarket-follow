@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-08 (R6 accepted, and where backups go — the owner, on the
+supervisor's recommendations): **BACKUPS GO TO E: AND F:, NEVER D:.** R6's
+report (`docs/reviews/r6-storage-2026-11-08.md`, 13 Final-review corrections
+marked in place) is accepted; the supervisor checked its machine facts itself:
+the shared MongoDB server (8.3) keeps its data on C:, listens only on
+127.0.0.1, without authentication; C: and E: are two partitions of one NVMe
+drive, D: a separate SATA SSD, F: a separate hard disk (1.5 TB free). **The
+owner: D: "is not working properly so we should avoid any backups there."**
+So R6's suggestion of D: is dropped and the founding decision stands, as the
+lab does: our database on the shared server (C:); the backup's first copy on
+E: (`E:\backups\polymarket-follow\`, quick to restore, guards against
+mistakes but not against the drive failing) and its second on F: (the copy
+that survives the C:/E: drive). **Approved with it (v1-plan defaults):** a
+daily Node dump script like the lab's (no Database Tools installed), at 06:20
+local, clear of the lab's jobs, a weekly test restore into a scratch database;
+leaderboard history as one daily copy of the top 1,000 of 8 boards (~0.4–0.6
+GB a year); the full order book stored at every paper-follow instant; the
+per-call API log as rolling files (14–30 days) with hourly aggregates in the
+database; one digest row an hour in the alert feed for favourites labelled
+algorithm or market maker (their fills still stored); disk alarms — warn at 15
+GB free on C:, stop our writes at 6 GB. **Sizes (modelled, ±25%):** about 0.17
+GB a year for 20 typical favourites; the ceiling, every favourite as busy as
+the busiest captured account, is 8 / 32 / 79 / 159 GB a year for 5 / 20 / 50 /
+100 favourites — C: would fill in about 7 months at 50. Whether our database
+stays on the shared server or gets its own on F: is a question for the v1
+plan. The research data no API can re-read (R3's live books and the boards as
+read, ~10 MB) gets a second copy with a hash list on E:.
+
 2026-11-08 (R2 and R2-LABELS accepted, and the display defaults — the owner,
 on the supervisor's recommendations): **THE BOARDS' TOPS ARE MOSTLY
 ALGORITHMS, MARKET MAKERS AND INACTIVE ACCOUNTS, AND THE APP SHOWS EVERY LABEL

@@ -28,7 +28,7 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   the research; v2 is frozen and the app ships only if it passes the forward
   blind test after 2026-11-21 (decisions 2026-11-07, the classifier's
   ruling).
-- **Wave 3:** R6 (storage) runs since 2026-11-08 00:12Z.
+- **Wave 3:** R6 (storage) is accepted (decisions 2026-11-08, R6 accepted): backups on E: and F:, never D: (the owner: D: is unreliable).
 - **Monday 2026-11-09 14:30–16:30Z:** a two-hour weekday measurement in US
   hours before R8's numbers are frozen.
 - **The v1 defaults are approved** (same entry): the owner chose them before
@@ -38,7 +38,7 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **R6's report,** verified and walked through with the owner.
+1. (R6 done.)
 2. **Monday 2026-11-09 14:30–16:30Z:** the weekday measurement (R3-WEEKDAY).
 3. **R8** (does following pay; skill or luck): its numbers, from R1, R2, R3's
    corrected report and Monday's measurement, shown to the owner and recorded
@@ -53,7 +53,7 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   (after 2026-11-21).
 - Whether following pays at all, and whether the leaderboard is skill or luck
   (R8).
-- Storage per day, and E:'s room (R6).
+
 
 ## How this file works
 
