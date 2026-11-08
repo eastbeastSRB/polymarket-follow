@@ -376,6 +376,11 @@ non-holdout):
   - Otherwise it says "not captured", never "no fills".
   - At T0 = 2026-10-10: 1,542 accounts from the capture, 63 from window
     samples, 10 not captured.
+  - [Final review F6] The helper first dated a window sample by its newest
+    fill, so a sample ending at T0 whose newest fill was older than the
+    window would have read "not captured" instead of "no fills in window".
+    It now uses the sample's own `end_timestamp` (2026-11-08 ~00:10Z; sha256
+    afcf67da…). The re-run test is unchanged: 1,542 / 63 / 10.
   - Holdout accounts are skipped unless `--include-holdout` (R8's or the
     supervisor's call).
 - **The notional floor against dormant accounts: $25k in the 30-day selection
