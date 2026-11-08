@@ -114,9 +114,11 @@ most maker notional (207–336 hours covered each):
 - **They lose on fills:** −$10.5k to −$13.8k each over the span, on
   $11–15M of maker notional (about −1 bp) — consistent with makers paid by the
   rewards; an inference, not proven.
-- **In fills:** 100% maker, a rebate on every fill (the top fee tier), side
-  switches ~75%, positions touched on 20+ instruments, cycles of seconds
-  (`out/cal-features.txt`). **A rebate marks the fee tier, not maker-ness:**
+- **In fills, one example** (0x84f31a30…, not shown to be among the five):
+  100% maker, a rebate on every fill (the top fee tier), side switches ~75%,
+  positions touched on 20+ instruments, cycles of seconds
+  (`out/cal-features.txt`) [Final review F3: was "In fills:", as if the
+  class's figures]. **A rebate marks the fee tier, not maker-ness:**
   base-tier makers pay a positive fee (`out/ex-probe.txt`).
 - 30 non-holdout accounts are labelled market maker in the window
   (`out/label-accounts-full.tsv`).
