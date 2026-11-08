@@ -1,5 +1,29 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-08 (R2 and R2-LABELS accepted, and the display defaults — the owner,
+on the supervisor's recommendations): **THE BOARDS' TOPS ARE MOSTLY
+ALGORITHMS, MARKET MAKERS AND INACTIVE ACCOUNTS, AND THE APP SHOWS EVERY LABEL
+WITH ITS EVIDENCE.** R2's report (`docs/reviews/r2-trader-style-2026-11-08.md`,
+8 Final-review corrections marked in place) and R2-LABELS's
+(`r2-labels-2026-11-07.md`) are accepted; the supervisor re-ran the frozen
+classifier on all 1,615 non-holdout accounts and joined it with the board
+ranks itself — all-time notional top 100: 6 directional, 67 non-directional,
+26 with no fill in the two weeks to 2026-11-07 (the first directional at #47);
+all-time PnL top 100: 15 / 32 / 40; all 54 competition-disqualified accounts
+non-directional. Each week's top 50 by realized PnL (rebuilt inside the pool,
+six weeks to 2026-11-02) kept only 18–32 of 50 positive the next week. The
+leaderboard's PnL most likely excludes the liquidity rewards (not proven: the
+rewards' recipients are not public). **Display defaults for the v1 plan:**
+every style label shown with its window, its coverage and its reason; realized
+and unrealized PnL side by side with an "underwater" flag; accounts with no
+fill in 30 days greyed; "disqualified" a flag, never an automatic label; a win
+rate shown only from 20 closed positions, with its interval and shrinkage.
+**For R8** (its numbers, shown to the owner before they are frozen): the
+capture `F:\polymarket-follow-research\R2-STYLE\` (T_CAP 2026-11-07T00:00Z),
+`scripts/r8-pret0.mjs` (v1 on pre-T0 fills only), a $25k notional floor in the
+30-day selection window, and R2's written rule for "an account a careful
+reader would doubt" (R2 §1 Q10).
+
 2026-11-08 (the style classifier v2 frozen for the forward blind test — the
 supervisor): **V2 IS FINGERPRINTED BEFORE THE DATA IT WILL BE TESTED ON
 EXISTS.** R2 froze it at 2026-11-08T00:07:16Z, built and checked on

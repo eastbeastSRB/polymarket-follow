@@ -26,8 +26,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-07, through decisions 2026-11-07 (R3
-accepted).*
+*Brought in step on 2026-11-08, through decisions 2026-11-08 (R2 and
+R2-LABELS accepted).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -35,9 +35,11 @@ accepted).*
   everything v1 needs is public and keyless, with history back to launch.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
-- The research phase runs in four waves; wave 1 (R1, R4, R5) is closed; in
-  wave 2 R3 is accepted and R2 is running, its blind labels done (decisions
-  2026-11-07). Before v1 is planned, R8 asks once, on the past, whether
+- The research phase runs in four waves; waves 1 (R1, R4, R5) and 2 (R2 with
+  its blind labels, R3) are closed; in wave 3 R6 runs and R8 waits for
+  Monday's weekday measurement (decisions 2026-11-07, 2026-11-08). **The
+  boards' tops are mostly algorithms, market makers and inactive accounts**
+  (R2). Before v1 is planned, R8 asks once, on the past, whether
   following pays and whether the leaderboard is skill or luck, by rules the
   owner amended with R3 (decisions 2026-11-06, the pre-test and waves 2–4
   approved; 2026-11-07, R3 accepted).
@@ -79,7 +81,7 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   history (its parameters: a first call answered 400), instruments, funding,
   fees; each read's real weight; freshness; what a 429 looks like; the
   public WebSocket channels.
-- 🔵 **R2 — Trader analytics:** what to measure per trader (win rate, average
+- ✅ **R2 — Trader analytics:** what to measure per trader (win rate, average
   hold, leverage, drawdown, PnL by market, trades per day), and which
   statistics stay honest at small samples. **A v1 requirement:** a style
   label on every account — algorithm or market maker versus directional
@@ -105,7 +107,7 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   later phone and email.
 - ✅ **R5 — Existing tools:** trackers that already follow perps or similar
   exchanges' traders, what they show, and what this project does differently.
-- ⬜ **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
+- 🔵 **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
   50 and 100 followed traders (fill rates from R2); what to keep; the backup
   in its own folder on E: and F: (E: 92% full, 16 GB free, on 2026-11-06).
 - ⬜ **R7 — The pages:** the leaderboard, a trader's page, favourites, the
@@ -154,6 +156,10 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Done lately
 
+- ✅ 11-08 **R2 — the style label and trader statistics** (with R2-LABELS,
+  the blind labels): v1 scored blind (trap 2 of 23, both anchors caught), v2
+  frozen for the forward test, the population of the boards' tops, the
+  display defaults (decisions 2026-11-07, 2026-11-08).
 - ✅ 11-07 **R3 — the paper-follow method:** the mark-plus-cost price, the
   fixed-horizon vote, e-Bonferroni and the pooled board; Final-reviewed by a
   fresh subagent; seven proposals approved (decisions 2026-11-07, R3
