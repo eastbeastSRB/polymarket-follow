@@ -28,8 +28,10 @@ entered the day boards at 23:50Z).
 3. **"Underwater" is real at the top:** the PnL board's highest-ranked
    directional account (#4) had $179k realized and −$281k unrealized on open
    positions when read (`out/q5-top.txt`).
-4. **The PnL routes exclude the liquidity rewards,** and the largest market
-   makers lost $10–14k each on their fills in two weeks (Q2).
+4. **The PnL routes show no liquidity reward for the five largest makers** —
+   so rewards, if paid to them (likely; quoting is not public), are not
+   counted — and those makers lost $10–14k each on their fills in two weeks
+   (Q2). [Final review F1: was "The PnL routes exclude the liquidity rewards".]
 5. **Most of the pool is inactive or emptied:** 798 of 1,702 accounts held
    under $1 at the read (`out/an-pool.txt`); 579 of 1,615 non-holdout
    accounts made no fill in the 30 days before 2026-11-07 (`out/q5-flags.txt`).
@@ -94,14 +96,18 @@ window 2026-10-24 → 11-07, on the calibration data (up to 10 pages,
 
 **Answer: a reward-scale maker is maker on every fill, holds 2–15% of its
 instruments' volume, and loses money on its fills; the board's PnL and
-`/v1/info/pnl` exclude the rewards.** `out/q2-rewards.txt` (2026-11-07
+`/v1/info/pnl` show no reward for these makers — excluded, if they were
+paid.** [Final review F1: was "exclude the rewards".] `out/q2-rewards.txt` (2026-11-07
 23:56Z, 19 calls, 145 tokens): the five non-holdout market makers with the
 most maker notional (207–336 hours covered each):
 - **The PnL route equals the fills:** `/v1/info/pnl` hourly = realized PnL net
   of fees from the fills, within $0.06–$9.51 over the whole span (the
   residual is funding — small, as inventory is small), and **zero at the
   12:00Z reward period every day.** As the board's PnL is the sum of those
-  buckets (R1), the board excludes the rewards too. Whether the rewards
+  buckets (R1), the board shows none either. This proves exclusion only if
+  these makers were paid: the 1% gate makes it likely, but quoting within 20
+  bps and uptime are not public [Final review F1: was "the board excludes the
+  rewards too"]. Whether the rewards
   appear in equity was not tested (equity moves with unrealized PnL).
 - **The 1% gate:** each maker's maker notional was 2–15% of its top
   instruments' volume over the span (hourly klines, volume × close).
@@ -508,8 +514,9 @@ non-holdout):
   2026-11-07 01:08Z).
 - **`/v1/info/pnl` = the fills' realized PnL net of fees plus funding:**
   within $0.06–$9.51 over 207–336 hours for five market makers. It shows no
-  step at the 12:00Z liquidity-reward period, so it and the board's PnL
-  exclude the rewards (`out/q2-rewards.txt`, 2026-11-07 23:56Z).
+  step at the 12:00Z liquidity-reward period: rewards, if these makers were
+  paid, are in neither it nor the board's PnL [Final review F1: was "so it and
+  the board's PnL exclude the rewards"] (`out/q2-rewards.txt`, 2026-11-07 23:56Z).
 - `competition/account` fields: competition_id, status, updated_at,
   next_update_at, account, qualified, score, pnl, realized_pnl,
   unrealized_pnl, fees, funding, volume, boosted_volume, first_fill_at,
