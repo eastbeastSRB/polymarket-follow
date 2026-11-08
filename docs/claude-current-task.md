@@ -38,13 +38,12 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. (R6 done.)
-2. **Monday 2026-11-09 14:30–16:30Z:** the weekday measurement (R3-WEEKDAY).
-3. **R8** (does following pay; skill or luck): its numbers, from R1, R2, R3's
+1. **Monday 2026-11-09 14:30–16:30Z:** the weekday measurement (R3-WEEKDAY).
+2. **R8** (does following pay; skill or luck): its numbers, from R1, R2, R3's
    corrected report and Monday's measurement, shown to the owner and recorded
    in decisions before its one look.
-4. **Wave 4:** R7 (the pages), after R8's verdict.
-5. **The owner says the research is complete;** then the v1 plan, approved
+3. **Wave 4:** R7 (the pages), after R8's verdict.
+4. **The owner says the research is complete;** then the v1 plan, approved
    and registered in decisions; then the skeleton and v1 in parts.
 
 ## Open questions — the research answers them
