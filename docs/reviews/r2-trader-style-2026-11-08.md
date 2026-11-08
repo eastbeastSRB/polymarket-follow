@@ -452,10 +452,14 @@ non-holdout):
 | Top accounts emptied or underwater | flags beside the label, never hidden |
 | The holdout must stay unseen for the forward test | the guard in every script; only the supervisor runs the classifier on it |
 | Makers' PnL understates their income (rewards excluded) | say so beside a maker's PnL |
+| [Final review F2, added] A bot active on one or two days of a fully captured window: v1 and v2 average its decisions over all 14 days, and busy hours catch it only above 30 decisions an hour — a possible trap in the forward test | disclosed here; v1 and v2 stay frozen; a v3 would measure tempo per active day |
 
 ## 5. What stays unknown, and what would settle it
 
 - **Whether v2 passes:** the forward blind test on 2026-11-07 → 11-21.
+- [Final review F2, added] **How many traps the diluted tempo makes** (a bot
+  active on few days of the window, §4): the forward test's traps will show
+  it; a v3 measured per active day on non-holdout accounts would size it.
 - **The two traps' identity:** unknown to me by design.
 - **Whether the rewards are credited to equity** (they are not in PnL): an
   hourly equity series around 12:00Z for a maker, compared with its
