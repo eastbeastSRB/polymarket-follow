@@ -538,9 +538,11 @@ non-holdout):
   cursors saved hours earlier (06:16Z → 19:23Z) with no refusal and no
   re-anchoring (`out/pull-audit.txt`).
 - **The pull's load:** 200 weighted tokens a minute, one request at a time,
-  for 22.7 hours (2026-11-07 01:09:53Z → 23:53:43Z) — 21,404 calls in all,
-  every one HTTP 200, no 429, the largest 60-second total 200
-  (`out/pull-audit.txt`).
+  for 22.7 hours (2026-11-07 01:09:53Z → 23:53:43Z) — 21,249 calls by the
+  pull (21,404 in the whole log with the pool, probe and shapes reads), every
+  one HTTP 200, no 429, the largest 60-second total 200
+  (`out/pull-audit.txt`, `out/pull-heartbeat.log`) [Final review F4: was
+  "21,404 calls in all" as the pull's].
 
 ## Evidence list
 
