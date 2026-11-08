@@ -1,5 +1,22 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-08 (the style classifier v2 frozen for the forward blind test — the
+supervisor): **V2 IS FINGERPRINTED BEFORE THE DATA IT WILL BE TESTED ON
+EXISTS.** R2 froze it at 2026-11-08T00:07:16Z, built and checked on
+non-holdout accounts only (decisions 2026-11-07, the classifier's ruling):
+v1 plus an order-level fixed-size sign and "at least 8 decisions or 3 closed
+cycles" before "directional"; v1's files unchanged (hashes re-checked).
+`classifier-v2.json` SHA-256
+`96f99e1ad4a40c6479748bc3ffb6bfbcf490f82bb68e5c70edcb39c3a35d133e`,
+`scripts/classifier-v2.mjs` `1ff0383f…13cb2`, `scripts/label-accounts-v2.mjs`
+`19301cbf…7cff` (in `workers/R2-STYLE/`; copies in
+`verify/R2-STYLE/frozen-classifier-v2/`). On non-holdout accounts: D 236 · N 192
+· U 391 · no fill 796 (v1: 293 directional). R2's Final review disclosed one
+more weakness, kept for a v3 and not fixed in v2: tempo is averaged over the
+whole window, so a bot active on only one or two days reads slower than it is.
+The test: after 2026-11-21, the holdout's fills for 2026-11-07 to 2026-11-21,
+labelled blind by a fresh labeller, v2 scored by the frozen rules.
+
 2026-11-07 (the classifier's ruling — the owner, on the supervisor's
 recommendations; and the supervisor's prior before R8): **V1 OF THE STYLE
 CLASSIFIER IS USED FOR THE RESEARCH; THE APP SHIPS ONLY WITH A V2 THAT PASSES
