@@ -619,6 +619,21 @@ exactly (`out/label-accounts-v2-check.tsv`).
 | F7 | 3 | Dead or misleading code: `lib.mjs` `setRate` (no caller); `ana.mjs` `isHoldout` (no caller); `classifier.mjs` computes `instruments` and `nForced`, which no rule reads (frozen); `q10-doubt.mjs` keeps an unused `cov30` and a comment saying the doubt rule "names" a counterparty criterion it does not have; `v2-measure.mjs`'s `groupClip` is a one-line wrapper; `probe.mjs` imports `node:fs` twice; `q89-stats.mjs` tests the crypto majors twice; `q3-pairs.mjs` prints "up to 10 pages each" though its last run read up to 50 | left as they ran: the outputs cite these scripts, and the frozen files cannot change |
 | F8 | 3 | The rules I broke are not all in this report: one listing of the supervisor folder's root (2026-11-07 00:40Z), three `node -e` (00:56Z an inspection; a no-op in a 09:5xZ command; a JSON check and a no-op in the v2 build, 11-08 00:06Z), the definitions header stamped "05:05Z" from an estimate, the 09:38Z progress edit that failed unnoticed | listed in the evidence list |
 
+**Commits:**
+
+| Change | Commit |
+|---|---|
+| This section | 4614c21 |
+| F1 | 6c14729 |
+| F2 | db4f9e1 |
+| F3 | 0be4009 |
+| F4 | ba4f9af |
+| F5 | 0d1e3f7 |
+| F6 | f514138 |
+| F8 | 9dfc5b7 |
+
+F7 is left as it ran, for the reason in its row.
+
 **For later phases (notes only, no code):** (1) one module that reads
 decisions — events by `(order_id, previous_size)`, orders, action groups,
 cycles — with tests on synthetic timelines; these scripts hold it twice
