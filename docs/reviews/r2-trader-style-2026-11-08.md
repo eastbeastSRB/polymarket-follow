@@ -580,8 +580,17 @@ All in `workers/R2-STYLE/` unless F: is named.
     `out/q6-stability.txt`, `out/q6-cost.txt`, `out/q7-population.txt`,
     `out/q7-population-late.txt`, `out/q89-stats.txt`, `out/q9-equity.txt`,
     `out/q10-doubt.txt`, `out/r8-pret0-test-1010.tsv`, `out/v2-measure.txt`.
-- **The record:** `progress.md`, which lists the rules I broke: one `node -e`,
-  one listing of F:\, a misstamped header, and one failed progress edit.
+- **The record:** `progress.md`. [Final review F8: this line first listed
+  only "one `node -e`, one listing of F:\, a misstamped header, and one
+  failed progress edit".] **The rules I broke, all of them:**
+  - one listing of the supervisor folder's root, names only (2026-11-07
+    00:40Z);
+  - one listing of `F:\` (00:46Z);
+  - three `node -e` commands: an inspection at 00:56Z, a no-op in a
+    09:5xZ command, and a JSON check plus a no-op in the v2 build
+    (2026-11-08 00:06Z);
+  - the definitions header stamped "05:05Z" from an estimate, not `date -u`;
+  - the 09:38Z progress edit that failed unnoticed until 09:43Z.
 
 ---
 
