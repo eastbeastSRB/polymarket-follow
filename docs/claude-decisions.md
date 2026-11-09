@@ -1,5 +1,41 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (R8's rules file frozen — the supervisor, at R8-PRETEST's first
+stop): **EVERY RULE OF R8 IS FINGERPRINTED BEFORE IT DOWNLOADS ANY MARKET
+DATA.** R8 wrote its rules file from the approved numbers (decisions
+2026-11-08, R8's numbers approved, and the entries it completes) with every
+threshold, seed and file path and each detail the rules left open:
+`workers/R8-PRETEST/rules.json` in the supervisor folder, SHA-256
+`5ae15c85dd37e1b7bae07d7a1432d86167e5a1418d71ce609b8005fc8a575841`, written
+2026-11-09 09:14Z; its selection `out/selection.json` `c20c3f80…ef68c`.
+**Three calls inside the approval, by the supervisor:** (1) the three
+directional pool accounts whose history R2's 50-page cap cut short are read
+back to their first fill (132 calls) instead of being dropped — dropping
+them would bias the selection against the busiest directional accounts; one,
+the board's highest-ranked directional account (all-time notional #47), now
+enters both arms in place of the 50th; (2) "the horizon class nearest the
+trader's median holding time" is nearest on a log scale (boundaries √6 h ≈
+2.45 h and 12 h): if an edge builds over the hold and the price is a random
+walk, two horizons' votes are equally sensitive at those holds; 7 of the 50
+traders get a longer class than "nearest in hours" would give; fixed before
+any outcome is seen; (3) the session-aware pair, one of the three candidate
+price tables, is defined: R3-WEEKDAY's table at instants in US regular hours
+(Mon–Fri 09:30–16:00 New York), R3's Saturday table at every other instant,
+for all instruments. A test cohort of 11 accounts outside both arms proves the
+analysis on real data and is never part of a result. **Verified on the
+supervisor's own path** (`verify/R8-PRETEST/select-check.mjs`, written from
+the rules, not from R8's code; outputs `select-check-stop1.out.txt` and
+`select-check-stop1b.out.txt`): the frozen classifier v1's hashes; the same 50
+traders and the same ratio arm; 194 directional at T0 → 180 at or above
+$25,000 → 104 with 10 closed positions; 1,272 entries in [T0, T1), 1,256
+voted, 38 traders with at least 5 — far above TOO FEW's 20 traders and 300
+entries; no per-trader difference. Before T0 the 50 made $88,018 net of fees
+on $71.7M. **Still open:** the price table, chosen after R3-WEEKDAY's report
+(2026-11-09 14:30–16:30Z) and recorded here, with the capture's manifest and
+the analysis script's hash, before R8's one look. A secondary that decides
+nothing may still be added before the look, recorded here with the file's new
+hash; nothing changes after it.
+
 2026-11-08 (R8's numbers approved — the owner, on the supervisor's
 recommendations): **R8 STARTS FROM 2026-09-26, WITH A FOLLOWER WHO WATCHES
 ABOUT 20 TRADERS.** The owner approved the numbers of the supervisor's draft
