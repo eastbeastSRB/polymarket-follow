@@ -1,5 +1,24 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (the fast track — the owner, on the supervisor's
+recommendation): **ROUND 2'S STUDIES FIND IN PARALLEL NOW, THE FIRST EXAM
+RUNS ABOUT 2026-11-30, AND THE V1 PLAN STARTS IN EARLY DECEMBER BESIDE THE
+FINAL EXAMS.** The owner asked why "research complete" would wait until
+mid-December when the data, the parallel subagents and the credits are
+there. The supervisor's answer: the work is fast, the calendar is not —
+every idea must be confirmed on trading it has never seen (decisions
+2026-11-09, the road to v1, M2), and that data arrives a day at a time after
+2026-11-07 (about 3 weeks by 2026-11-30, about 6 by mid-December, R8's
+length); the clean past since the public launch is about 9 weeks, and R8
+used its last 6. The owner chose the fast track: (1) this week the "find"
+studies in parallel and the collector (C1) built and started; (2) about
+2026-11-30 the first exam on the new weeks, with the dated checks D1 and D2
+— it catches false patterns well, while a small real edge may not show yet;
+(3) from early December the v1 plan, the final exams running beside it on
+more weeks, whatever passes later added to v1. The owner: "we will work
+every day and we will see how we will progress … maybe we will [be]
+faster".
+
 2026-11-09 (the road to v1 — the owner, with the supervisor): **RESEARCH
 ROUND 2 AND A SMALL DATA COLLECTOR COME BEFORE V1, AND EVERY POINT RAISED IS
 RECORDED SO NONE IS FORGOTTEN.** The owner: "why to work v1, maybe we will

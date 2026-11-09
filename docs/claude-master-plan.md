@@ -81,10 +81,10 @@ v1).*
 | | When | What | Who |
 |---|---|---|---|
 | 🔵 | since 2026-11-09 23:38Z | **Phase 0 — preparation:** P0-1 the record and P0-2 the second copies (R3-WEEKDAY's and R8's data on E:, hash-checked) done; P0-3 DOCS-SWEEP and P0-4 IDEAS-REVIEW running ("The road to v1") | the supervisor; two subagents |
-| ⬜ | after Phase 0 | **Phase 1 — the collector (C1):** a short plan, the owner's yes, a small build, a Windows task | a plan and a build subagent |
-| ⬜ | after Phase 0, beside Phase 1 | **Phase 2 — research round 2:** the hypothesis register (the owner approves), then the studies H1–H13, the dated checks D1 and D2 | research subagents |
-| ⏳ | the owner's word | "Research complete": both rounds done | the owner |
-| ⬜ | after the research | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 earns; the owner approves; registered in decisions | a plan subagent |
+| ⬜ | this week, after DOCS-SWEEP | **Phase 1 — the collector (C1):** a short plan, the owner's yes, a small build, a Windows task | a plan and a build subagent |
+| ⬜ | this week, after IDEAS-REVIEW, beside Phase 1 | **Phase 2 — research round 2, FIND:** the hypothesis register (the owner approves), then the studies H1–H13 in parallel on data up to 2026-11-07 | research subagents |
+| ⏳ | about 2026-11-30 | **The first exam (CONFIRM)** on the weeks after 2026-11-07, with the dated checks D1 (after 11-21) and D2 (after 11-30) | research subagents; the supervisor |
+| ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
 

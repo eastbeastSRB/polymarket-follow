@@ -50,12 +50,13 @@ road to v1): every point with its ID. Nothing starts before the owner's go.
 
 1. **Phase 0 — preparation:** P0-2 a second copy of R3-WEEKDAY's live books
    on E:; P0-3 DOCS-SWEEP; P0-4 IDEAS-REVIEW (fresh eyes, Fable 5.1).
-2. **Phase 1 — the collector (C1)** and **Phase 2 — research round 2**
-   (the hypothesis register, then H1–H13), side by side; the dated checks
-   D1 after 2026-11-21 and D2 after 2026-11-30.
-3. **The owner's word "research complete"** (both rounds); then the v1
-   plan (R7's pages, the rulings, V1–V7, what round 2 earns), the skeleton
-   and v1 in parts.
+2. **This week (the fast track, decisions 2026-11-09):** Phase 1, the
+   collector (C1), after DOCS-SWEEP; Phase 2, round 2's FIND studies in
+   parallel (the hypothesis register first), after IDEAS-REVIEW.
+3. **About 2026-11-30:** the first exam on the weeks after 2026-11-07, with
+   D1 (after 11-21) and D2 (after 11-30).
+4. **Early December:** the v1 plan (R7's pages, the rulings, V1–V7, what
+   round 2 has earned), the final exams beside it; then the skeleton and v1.
 
 ## Open questions — the research answers them
 
