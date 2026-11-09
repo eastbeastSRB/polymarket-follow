@@ -45,17 +45,17 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The owner's word "research complete"** — the first research phase is
-   finished (R7 accepted, decisions 2026-11-09). The owner first pushes and
-   checks the work (2026-11-09: "once we agree we will continue").
-2. **The v1 plan** — a watching and analysis tool, from the research and the
-   owner's rulings (R7's pages, R8's verdict, the v1 defaults); approved and
-   registered in decisions; then the skeleton and v1 in parts.
-3. **Dated checks:** after 2026-11-21 the style classifier v2's forward
-   blind test; after 2026-11-30 B2's confirmation (weeks 9–12, its plan
-   recorded in decisions first).
-4. **Research round 2** (the plan page's backlog: five leads, the agreed
-   method) — on the owner's word, alongside the v1 build.
+The road is on the plan page, "The road to v1" (decisions 2026-11-09, the
+road to v1): every point with its ID. Nothing starts before the owner's go.
+
+1. **Phase 0 — preparation:** P0-2 a second copy of R3-WEEKDAY's live books
+   on E:; P0-3 DOCS-SWEEP; P0-4 IDEAS-REVIEW (fresh eyes, Fable 5.1).
+2. **Phase 1 — the collector (C1)** and **Phase 2 — research round 2**
+   (the hypothesis register, then H1–H13), side by side; the dated checks
+   D1 after 2026-11-21 and D2 after 2026-11-30.
+3. **The owner's word "research complete"** (both rounds); then the v1
+   plan (R7's pages, the rulings, V1–V7, what round 2 earns), the skeleton
+   and v1 in parts.
 
 ## Open questions — the research answers them
 

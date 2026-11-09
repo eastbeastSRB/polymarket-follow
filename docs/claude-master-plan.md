@@ -29,10 +29,12 @@ step with the record; only the supervisor sets a marker.
   leaderboards with style labels, favourites, Windows alerts, trader
   statistics, the paper-follow log. It is planned after the research is
   complete ("The v1 plan" below), then built in parts on a skeleton.
-- **"Research complete":** the owner's word that closes the first research
-  phase (R1–R8 and R7), after which the v1 plan starts (decisions 2026-11-06,
-  three more of the owner's requirements). **Research round 2** (the owner's
-  "search v2") is a later, separate research track (backlog below).
+- **"Research complete":** the owner's word that closes the research, after
+  which the v1 plan starts (decisions 2026-11-06, three more of the owner's
+  requirements). The first phase (R1–R8, R7) is finished; **research round 2**
+  (the owner's "search v2") and a small data collector come first, then the
+  word (decisions 2026-11-09, the road to v1). "The road to v1" below lists
+  every point.
 - **The style classifier v1 / v2:** versions of the rule that labels each
   account directional, algorithm, market maker, churner or unclassified (R2).
   Classifier v1 was scored blind and is used for the research; classifier v2
@@ -42,8 +44,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-09, through decisions 2026-11-09 (R7
-accepted).*
+*Brought in step on 2026-11-09, through decisions 2026-11-09 (the road to
+v1).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -65,6 +67,10 @@ accepted).*
   following pays and whether the leaderboard is skill or luck, by rules the
   owner amended with R3 (decisions 2026-11-06, the pre-test and waves 2–4
   approved; 2026-11-07, R3 accepted).
+- **The road (the owner, 2026-11-09):** research round 2 and a small data
+  collector come before v1, so v1 is built once with what round 2 finds
+  (decisions 2026-11-09, the road to v1); every point is listed in "The road
+  to v1" below, so that none is forgotten.
 - **How a trader is judged** (decisions 2026-11-07, R3 accepted): over a fixed
   horizon against random trades, never by the trader's own exits; a verdict
   only at E ≥ 400 for one of 20 followed traders, the pooled board of all
@@ -74,8 +80,11 @@ accepted).*
 
 | | When | What | Who |
 |---|---|---|---|
-| ⏳ | the owner's word | "Research complete": the research phase, R1–R8 (below), all four waves done | the owner |
-| ⬜ | after the research | The v1 plan: what v1 does, what waits; the owner approves; registered in decisions | a plan subagent |
+| 🟢 | the owner's go | **Phase 0 — preparation:** the record (done), P0-2 a second copy of R3-WEEKDAY's live data, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW ("The road to v1") | the supervisor; two subagents |
+| ⬜ | after Phase 0 | **Phase 1 — the collector (C1):** a short plan, the owner's yes, a small build, a Windows task | a plan and a build subagent |
+| ⬜ | after Phase 0, beside Phase 1 | **Phase 2 — research round 2:** the hypothesis register (the owner approves), then the studies H1–H13, the dated checks D1 and D2 | research subagents |
+| ⏳ | the owner's word | "Research complete": both rounds done | the owner |
+| ⬜ | after the research | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 earns; the owner approves; registered in decisions | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
 
@@ -138,26 +147,126 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   ships only with a v2 that passes (decisions 2026-11-07, the classifier's
   ruling). Trigger: 2026-11-21.
 
+## The road to v1 — every point, so none is forgotten
+
+*Recorded 2026-11-09 with the owner (decisions 2026-11-09, the road to v1):
+the five leads after R8, the owner's thirteen points of that evening, the
+supervisor's additions. Each item keeps its ID; when one is done it moves to
+"Done lately" with its decisions entry.*
+
+**From the API to the screen** (what v1 will be; the poller is the one API
+client):
+
+```mermaid
+flowchart TD
+  API["Polymarket Perps public API<br/>keyless reads · 250 tokens a minute, all callers"] --> P["The poller (its first part: the collector)<br/>a Windows task at sign-in · the one API client"]
+  P --> DB[("Our data<br/>boards every day · the universe · fills · prices · books")]
+  DB --> L["The style label<br/>directional · algorithm · market maker · unclassified"]
+  L --> Q["Trader statistics<br/>quality score · style · risk profile · evidence"]
+  Q --> PL["Paper log<br/>profiles with frozen rules · e-process verdicts"]
+  Q --> UI["Pages and alerts<br/>favourites · boards · trader · alerts<br/>data, never advice"]
+  PL --> UI
+```
+
+**How a round-2 idea earns a place in the app:**
+
+```mermaid
+flowchart LR
+  I["An idea<br/>(the list below)"] --> R["The hypothesis register<br/>its test written first · the owner approves"]
+  R --> F{"FIND<br/>on data up to 2026-11-07"}
+  F -->|"nothing"| X["Recorded and dropped"]
+  F -->|"something"| C{"CONFIRM<br/>on data after 2026-11-07,<br/>never touched by the search"}
+  C -->|"fails"| X
+  C -->|"holds"| S["Account-level check<br/>drawdowns · losing streaks · sizing"]
+  S --> PP["A paper profile, live<br/>its rules frozen"]
+  PP --> V{"Forward verdict<br/>E at the bar"}
+  V -->|"not yet"| PP
+  V -->|"yes"| A["May join the app<br/>as measured evidence, never advice"]
+```
+
+**Method — for every item** (R1–R8's way of working, kept): **M1** a
+hypothesis register — every idea and its test written and recorded before it
+runs; **M2** the data after 2026-11-07 stays untouched by any search, kept to
+confirm; **M3** each study a fresh subagent with its own report and Final
+review, the supervisor re-computing on its own path what decides.
+
+**Phase 0 — preparation**
+- **P0-1** Record every point (this section; done 2026-11-09).
+- **P0-2** A second copy, with hashes, of R3-WEEKDAY's live books on E:
+  (they cannot be re-read; R3's are already copied).
+- **P0-3 DOCS-SWEEP** (the owner's points 10 and 11): every page of
+  Polymarket's perps documentation and the specs, against what we know — the
+  public routes R1's table lacks (assets, index, limit tiers, invite,
+  competition widget; the POST share-card route stays off-limits), order
+  types and TP/SL (another account's are private), liquidation rules,
+  rewards, fee tiers, sessions, which blockchain deposits and withdrawals use.
+- **P0-4 IDEAS-REVIEW** (point 12): a fresh subagent (Fable 5.1, max) reads
+  every doc and report and proposes ideas ranked by impact and testability,
+  first blind, then merged with this list and DOCS-SWEEP's findings.
+
+**Phase 1 — the collector**
+- **C1** (points 1 and 2, the "tiny collector"): a Windows task, not a
+  subagent (a restart of the Claude app stops subagents), that keeps what can
+  never be re-read — every board's top 1,000 each day (16 boards), best
+  prices and books on a schedule — and **the universe**: every account ever
+  seen on a board, kept and refreshed after it drops off; backups on E: and
+  F: (decisions 2026-11-08, R6 accepted).
+
+**Phase 2 — research round 2** (each through the register, M1–M3)
+- **H1** Weak persistence: B2's confirm pair, weeks 9–12, rebuilt after
+  2026-11-30 (lead 1; decisions 2026-11-09, R8 accepted, (3)) — the dated
+  check **D2**.
+- **H2** Long track records: traders judged on months of the universe, not
+  one month's top (lead 2, point 2).
+- **H3** An honest quality score (point 6): shrinkage, the probabilistic and
+  deflated Sharpe ratio, the minimum track-record length, profit factor,
+  expectancy, consistency (share of positive weeks), drawdown measures;
+  tested on whether it predicts the next weeks.
+- **H4** Trading style as a filter (point 4): scalp, intraday, swing,
+  position — does following slower traders survive the delay and costs?
+- **H5** A risk-discipline profile (point 3): win against loss size, how far
+  price went against a position before its close (and in its favour),
+  stop-like habits, liquidations — from fills and the 1 s marks (another
+  trader's TP/SL orders are private).
+- **H6** Which trades: size unusual for the trader, adding to a winner
+  (lead 3).
+- **H7** Consensus: several directional traders entering one instrument in
+  one direction within a short window (lead 3, point 8).
+- **H8** Why #47's entries could not be copied at a profit while it made
+  $109,386 — exits, sizing, patience (lead 4).
+- **H9** Market context: multi-day horizons, funding, open interest,
+  liquidation waves, sessions, order books (lead 5, an addition).
+- **H10** Big players (point 7): algorithms, market makers and whales —
+  their net positioning over hours as a signal; how the liquidity rewards
+  shape them; an "algorithm" label is not "no skill".
+- **H11** AI, honestly (point 9): an AI's rating of entries, made without
+  outcomes, tested in its own paper profile; a confidence figure from an AI
+  is never shown as fact (Iron Rule 6 — changing it is the owner's call).
+- **H12** The account-level check for anything that passes: drawdowns,
+  losing streaks, sizing (an addition; prop platforms set drawdown limits).
+- **H13** On-chain (point 11): deposits and withdrawals, the same address
+  elsewhere (a longer record) — after DOCS-SWEEP names the chain; public,
+  pseudonymous data only, no identities.
+- **D1** The style classifier v2's forward blind test, after 2026-11-21
+  (decisions 2026-11-07, the classifier's ruling).
+
+**For the v1 plan** (recorded now, planned after "research complete")
+- **V1** Favourites from zero, added over time; a per-trader alert switch on
+  the trader's page — a favourite without alerts is watched only (point 1).
+- **V2** The universe on its own page beside the boards (point 2).
+- **V3** Paper-log profiles chosen in the header, each with rules frozen at
+  creation; their number counts in the statistics (point 13).
+- **V4** Charts to compare traders — profit, win rate, style (point 5; the
+  library is the plan's choice, d3 or one built on it).
+- **V5** The pages designed with the owner's "Claude design" skill, from
+  R7's wireframes (point 14).
+- **V6** An AI's plain-words description of a trader from our measured
+  statistics, cheap per trader (point 9; optional).
+- **V7** R7's pages and the owner's twelve rulings (decisions 2026-11-09, R7
+  accepted).
+
 ## Later — the backlog
 
-- 🅿️ **Research round 2 — the search for a "win combination"** (the owner,
-  2026-11-09, after R8 failed: the right trader, the right trades, the right
-  instruments, the right moment; not a 10/10 record, a pattern that pays over
-  many trades). The five leads recorded with the owner: (1) the weak
-  persistence R8's B2 found (4-week profit per dollar traded predicted the
-  next 4 weeks; not at the top) — its confirm pair needs weeks 9–12, rebuilt
-  from fills read after 2026-11-30; (2) choosing traders on months of track
-  record, consistency and small drawdowns instead of one month's top PnL;
-  (3) choosing trades, not only traders — size unusual for the trader,
-  several directional traders entering one market together, adding to a
-  winner; (4) why #47's entries could not be copied at a profit while it made
-  $109k (exits, sizing, patience); (5) other horizons and signals —
-  multi-day holds for slow traders, order books, funding, prediction markets.
-  More may be added then. **The method, agreed:** every hypothesis written
-  down before it is tested; found on one stretch of past data and confirmed
-  on another the search never touched (the data after 2026-11-07 is unread);
-  then watched in the forward paper-follow log before any money relies on
-  it. Trigger: the research phase complete (R7), and the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
   daily top-50 leaderboard since late August 2026 is worth a one-time

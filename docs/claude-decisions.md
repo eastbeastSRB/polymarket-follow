@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (the road to v1 — the owner, with the supervisor): **RESEARCH
+ROUND 2 AND A SMALL DATA COLLECTOR COME BEFORE V1, AND EVERY POINT RAISED IS
+RECORDED SO NONE IS FORGOTTEN.** The owner: "why to work v1, maybe we will
+get more with search 2 round and then will improve this v1 … let's work on
+that once we have all documentation, tests"; then thirteen points (staying
+in step with the boards; favourites from zero with a per-trader alert
+switch; every account ever on a board kept as a universe; stop-loss and
+take-profit; trading style as a signal; charts; statistical formulas for
+filtering; how bots, market makers and whales work; consensus among
+favourites; AI for confirmation or description; whether the documentation
+was read whole; block-explorer lookups; a fresh-eyes ideas subagent;
+paper-log profiles; the "Claude design" skill) — "please record all of
+them, we should cover them all". **Recorded on the plan page, "The road to
+v1"**, with IDs: Phase 0 (P0-1 the record, P0-2 a second copy of
+R3-WEEKDAY's live books, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW), Phase 1 (C1
+the collector — a Windows task, not a subagent, keeping what cannot be
+re-read and the universe), Phase 2 (H1–H13 and the dated checks D1, D2),
+and the v1 items V1–V7; the method M1–M3 (a hypothesis register before any
+test; the data after 2026-11-07 untouched until it confirms; a fresh
+subagent per study, the supervisor re-computing what decides). **Facts
+checked by the supervisor in the stored specs (2026-11-09):** an order may
+carry a TP or SL trigger, but TP/SL updates go only to the authenticated
+account, so another trader's stops are never visible; the spec's public
+`/info` routes not in R1's table are minor (assets, index, limit tiers,
+invite, competition widget) plus a POST "share card" route that stays
+off-limits (reads only); withdrawals are on-chain. "Research complete" is
+said after round 2. Nothing starts before the owner's go.
+
 2026-11-09 (R7 accepted, and the pages' rules — the owner, on the
 supervisor's and R7-PAGES's recommendations): **V1'S PAGES ARE DESIGNED FOR A
 WATCHING AND ANALYSIS TOOL.** R7's report (`docs/reviews/r7-pages-2026-11-09.md`,
