@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (R8 accepted — the owner, on the supervisor's recommendations):
+**FOLLOWING THE LEADERBOARD'S TOP DIRECTIONAL TRADERS DID NOT PAY; V1 IS
+PLANNED AS A WATCHING AND ANALYSIS TOOL.** R8's report
+(`docs/reviews/r8-pretest-2026-11-09.md`, 13 corrections by a fresh
+subagent's Final review, R8-REVIEW, marked in place) is accepted. The
+supervisor re-computed the primary cell with its own code (identical counts
+and means) and rebuilt 1,010 of the null draws independently (identical).
+**The verdict, by the frozen rules: FAILS** — (i) the follower's net return
+−16.6 bps an entry, trader-clustered 95% interval about [−30, −6], below
+zero for 200 of 200 bootstrap seeds; (ii) d −13.6 bps against random trades
+in the same instrument and hour, its intervals reaching about zero: no
+better than random, "worse" not shown; (iii) 21 of 47 traders positive,
+p 0.56; 1,249 entries; every secondary fails or is too few to tell. **B:**
+no confirmed skill — B1 killed in its find half; B2's find pair passed
+(Spearman 0.20, p 0.011) but not at the top, its confirmation needs weeks
+9–12. The 50 made $88,018 net of fees in the 30 days before T0 and $92,121
+in the 42 days after; without #47 ($109,386 after) the other 49 went from
+$72,738 to −$17,266. **The owner's rulings** (R8 §7 and R3-WEEKDAY §7): (1)
+v1 is planned as a watching and analysis tool without the copy framing (the
+ruling of 2026-11-06 for FAILS); alerts still fire, as information; a pattern
+that research round 2 finds and that passes its tests may be added later;
+(2) the forward paper-follow log stays as designed, the matched-direction
+null and the day clustering shown beside the vote; (3) B2's confirmation:
+weeks 9–12 (2026-11-02 to 11-30) rebuilt from a fills read after 2026-11-30
+by the frozen rules, the plan recorded here before it runs; (4) #47's exits
+are shown only as data on its own page, never as a signal; (5) R3-WEEKDAY's
+week of bbo snapshots is folded into v1 and round 2 (the live log stores the
+book at every paper entry), not run as a separate job.
+
 2026-11-09 (the owner's direction after R8 — the owner, recorded by the
 supervisor): **THE PROJECT CONTINUES: FINISH THE PLANNED RESEARCH, THEN A
 SECOND ROUND THAT SEARCHES FOR A "WIN COMBINATION".** R8 found that copying

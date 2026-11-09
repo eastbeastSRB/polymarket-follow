@@ -29,6 +29,10 @@ step with the record; only the supervisor sets a marker.
   leaderboards with style labels, favourites, Windows alerts, trader
   statistics, the paper-follow log. It is planned after the research is
   complete ("The v1 plan" below), then built in parts on a skeleton.
+- **"Research complete":** the owner's word that closes the first research
+  phase (R1–R8 and R7), after which the v1 plan starts (decisions 2026-11-06,
+  three more of the owner's requirements). **Research round 2** (the owner's
+  "search v2") is a later, separate research track (backlog below).
 - **The style classifier v1 / v2:** versions of the rule that labels each
   account directional, algorithm, market maker, churner or unclassified (R2).
   Classifier v1 was scored blind and is used for the research; classifier v2
@@ -38,8 +42,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-09, through decisions 2026-11-09 (R8's price
-table chosen).*
+*Brought in step on 2026-11-09, through decisions 2026-11-09 (R8
+accepted).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -47,10 +51,14 @@ table chosen).*
   everything v1 needs is public and keyless, with history back to launch.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
-- The research phase runs in four waves; waves 1 (R1, R4, R5) and 2 (R2 with
-  its blind labels, R3) are closed; in wave 3 R6 and the weekday price measurement are closed and R8 runs, its
-  rules and its price table frozen (decisions 2026-11-07, 2026-11-08,
-  2026-11-09). **The
+- The research phase runs in four waves; waves 1 (R1, R4, R5), 2 (R2 with its
+  blind labels, R3) and 3 (R6, the weekday price measurement, R8) are closed;
+  only R7 is left (decisions 2026-11-07, 2026-11-08, 2026-11-09). **R8: copying
+  the top directional traders about 80 s late lost money and was no better
+  than random trades, so v1 is planned as a watching and analysis tool**
+  (decisions 2026-11-09, R8 accepted); the owner continues with a second
+  research round afterwards (decisions 2026-11-09, the owner's direction after
+  R8). **The
   boards' tops are mostly algorithms, market makers and inactive accounts**
   (R2). Before v1 is planned, R8 asks once, on the past, whether
   following pays and whether the leaderboard is skill or luck, by rules the
@@ -123,24 +131,15 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 - ✅ **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
   50 and 100 followed traders (fill rates from R2); what to keep; the backup
   in its own folder on E: and F: (E: 92% full, 16 GB free, on 2026-11-06).
-- ⬜ **R7 — The pages:** the leaderboard, a trader's page, favourites, the
+- 🟢 **R7 — The pages:** the leaderboard, a trader's page, favourites, the
   alert feed, the paper-follow log; the ports, clear of the lab's 3000 and
-  4000. After R8: its verdict decides whether v1 is a copy-alert tool or a
-  watching tool.
+  4000. R8 has decided: pages for a watching and analysis tool, without the
+  copy framing (decisions 2026-11-09, R8 accepted).
 - ⏳ **The classifier v2's forward blind test:** the 100 holdout accounts'
   fills for 2026-11-07 to 2026-11-21, labelled blind by a fresh labeller, v2
   (frozen beforehand on non-holdout accounts) scored by the same rules; the app
   ships only with a v2 that passes (decisions 2026-11-07, the classifier's
   ruling). Trigger: 2026-11-21.
-- 🔵 **R8 — Does following pay, and is the leaderboard skill or luck?** One
-  retrospective study, one look, its rules fixed in decisions before it
-  (decisions 2026-11-06, the pre-test and waves 2–4 approved). Running since
-  2026-11-09: 50 traders, 1,256 entries to judge; its rules file frozen
-  before any market data (decisions 2026-11-09, R8's rules file frozen); the
-  one look waits for the price table. If following
-  fails or there are too few to tell, v1 is planned as a watching and
-  analysis tool, and the forward paper-follow log is the real test.
-
 ## Later — the backlog
 
 - 🅿️ **Research round 2 — the search for a "win combination"** (the owner,
@@ -187,6 +186,11 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Done lately
 
+- ✅ 11-09 **R8 — does following pay; skill or luck:** FAILS — following the
+  top 50 directional traders about 80 s late lost 16.6 bps an entry and was
+  no better than random trades; no confirmed skill (B2's confirmation needs
+  weeks 9–12); v1 becomes a watching and analysis tool (decisions 2026-11-09,
+  R8 accepted).
 - ✅ 11-09 **R3-WEEKDAY — the follower's price on a weekday:** two hours in
   US trading hours beside R3's Saturday table; costs higher on the weekday
   morning for majors, commodities and indices; R8 prices with the weekday
