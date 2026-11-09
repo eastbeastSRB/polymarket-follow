@@ -204,7 +204,7 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   1,000 a page; at `interval=1s` R8's period is covered with short holes:
   10,918 windows of 1,000 s (2026-09-26 → 11-07, 80 instruments, 9,724,424
   distinct seconds) miss 770 s in 62 runs on 18 instruments, the longest 73 s
-  (2026-10-20 15:12:21Z on several instruments; R8-PRETEST's capture, counted
+  (from 2026-10-20 15:12:22Z on several instruments; R8-PRETEST's capture, counted
   by R8-REVIEW 2026-11-09) — a reader takes the last mark at or before the
   instant and sets a staleness limit (R8: 300 s). **Funding `/v1/info/funding`**: `{funding_rate, timestamp}`, one
   per hour for every instrument, at most 100 a page, returned NEWEST FIRST.
