@@ -137,6 +137,7 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   (frozen beforehand on non-holdout accounts) scored by the same rules; the app
   ships only with a v2 that passes (decisions 2026-11-07, the classifier's
   ruling). Trigger: 2026-11-21.
+
 ## Later — the backlog
 
 - 🅿️ **Research round 2 — the search for a "win combination"** (the owner,
