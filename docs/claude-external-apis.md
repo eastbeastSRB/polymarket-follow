@@ -96,7 +96,13 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   6,739 at 23:58:59Z → 6,191 at 00:01:01Z, top pnl $198,077 → $108).
 - `roi` = pnl / max(100, starting equity + peak net deposits), a decimal
   fraction; the ROI sort has no minimum equity: emptied accounts (account_value
-  ~1e-7) and $100-class accounts top it (2026-11-06).
+  ~1e-7) and $100-class accounts top it (2026-11-06). `roi` is a 6-decimal
+  string, so `pnl ÷ roi` recovers that base to about 0.05% when |roi| ≥ 0.001
+  (R7-PAGES, three day-board rows 2026-11-09 20:21Z; the supervisor, 12 stored
+  all-time rows).
+- **No name or username in an API row** (R7-PAGES, 2026-11-09): the web
+  leaderboard (polymarket.com/perps/leaderboard) shows a "User" column with
+  usernames linking to profile pages; the API gives only the address.
 - **Freshness:** each (window, sort) is a snapshot with its own `timestamp`;
   at read time day, week and month were 0–60 s old (median 29–36 s), `all`
   6–281 s (median 143 s). Several pods serve different snapshots: `timestamp`
@@ -229,7 +235,12 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   Halted; "each market has its own schedule", with no hours or time zone given.
 - **Instruments:** 90 enabled (41 crypto, 38 equity, 6 index, 4 commodity, 1
   pre_ipo); max leverage 3–50 by instrument; `funding_interval` "1h" everywhere;
-  `price_decimals`/`quantity_decimals` give tick and lot; no session field.
+  `price_decimals`/`quantity_decimals` give tick and lot; no session field;
+  `display_symbol` can differ from `symbol` (SP500-USD shows as USA500-USD;
+  R7-PAGES, 2026-11-09).
+- **Tickers** (`/v1/info/tickers`, 2026-11-09 20:21Z, R7-PAGES): each row also
+  carries integer `long_count` and `short_count`; what they count is not
+  stated in the spec text read — unverified, used by nothing.
 - **Fees** (`/v1/info/fees`): the $0 tier pays taker 0.04%, maker 0.0125% of
   notional, the top tier ($1B/30 days) taker 0.02% and maker −0.005%.
 - **Exchange stats** `/v1/info/exchange-stats`: window ≤ 31 days (32 → 400).
