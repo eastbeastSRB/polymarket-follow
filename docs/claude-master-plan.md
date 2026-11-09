@@ -80,7 +80,7 @@ v1).*
 
 | | When | What | Who |
 |---|---|---|---|
-| 🟢 | the owner's go | **Phase 0 — preparation:** the record (done), P0-2 a second copy of R3-WEEKDAY's live data, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW ("The road to v1") | the supervisor; two subagents |
+| 🔵 | since 2026-11-09 23:38Z | **Phase 0 — preparation:** P0-1 the record and P0-2 the second copies (R3-WEEKDAY's and R8's data on E:, hash-checked) done; P0-3 DOCS-SWEEP and P0-4 IDEAS-REVIEW running ("The road to v1") | the supervisor; two subagents |
 | ⬜ | after Phase 0 | **Phase 1 — the collector (C1):** a short plan, the owner's yes, a small build, a Windows task | a plan and a build subagent |
 | ⬜ | after Phase 0, beside Phase 1 | **Phase 2 — research round 2:** the hypothesis register (the owner approves), then the studies H1–H13, the dated checks D1 and D2 | research subagents |
 | ⏳ | the owner's word | "Research complete": both rounds done | the owner |
@@ -192,8 +192,9 @@ review, the supervisor re-computing on its own path what decides.
 
 **Phase 0 — preparation**
 - **P0-1** Record every point (this section; done 2026-11-09).
-- **P0-2** A second copy, with hashes, of R3-WEEKDAY's live books on E:
-  (they cannot be re-read; R3's are already copied).
+- **P0-2** ✅ A second copy, with hashes, of R3-WEEKDAY's live books on E:
+  (they cannot be re-read; R3's are already copied) — done 2026-11-09 with
+  R8's capture too, in `E:backupspolymarket-followesearch-capture-2026-11-10`.
 - **P0-3 DOCS-SWEEP** (the owner's points 10 and 11): every page of
   Polymarket's perps documentation and the specs, against what we know — the
   public routes R1's table lacks (assets, index, limit tiers, invite,
