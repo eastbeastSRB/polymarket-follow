@@ -1,5 +1,38 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (R8's capture and analysis fingerprinted before the one look — the
+supervisor, at R8-PRETEST's second stop): **EVERYTHING R8'S ONE LOOK READS IS
+FINGERPRINTED BEFORE IT RUNS.** The capture ran 09:18–19:03Z: with the
+morning's probes and the completed accounts, 17,526 calls today, every one
+answered 200, never more than 200 tokens in a minute or 25 in five seconds
+(the supervisor's own count, `verify/R8-PRETEST/rate-stop2.out.txt`). By R8's
+log: nulls drawn for 1,933 of 1,946 entry groups (13 have none even after
+widening — left out of d and counted), 10,284 one-second mark windows,
+funding and hourly marks for 80 instruments. **Fingerprints (SHA-256), each
+re-checked by the supervisor:** the capture's manifest
+`F:\polymarket-follow-research\R8-PRETEST\capture\MANIFEST.sha256`
+`fed04beac251616f9c9a6950af361842413a706d54d4beccef84f4dd939fe15f` (474
+files, 53 MB, every file verified) and the code-and-outputs manifest
+`workers/R8-PRETEST/out/manifest-e.sha256` `f6e2136a…eb62` (97 files, every
+file verified); `rules.json`
+`4c20eebccdaf5944d5e4b6406a92191df7f54cec95b4fb12b14f73cd51ecd332` — the
+frozen `5ae15c85` with only the table and the three secondaries this log
+records (trader-weighted (i) and (ii); the weekday table at every instant;
+without five unreliable instruments); `price-table.json` (session_pair)
+`9f559b4a…f6dd`; `price-table-weekday.json` `485ada74…ad4d`; `analyze.mjs`
+`6d15d24f…0d3e`, `b-skill.mjs` `bac79138…2843`, `stats.mjs` `f88afbed…5f59`,
+`price.mjs` `0985eb4d…b9a3`, `nulls.mjs` `41923511…b08e`, `draw.mjs`
+`22092f5b…198e`, `store.mjs` `aab4ac5e…0c94`, `lib-r8.mjs` `baf5a4da…0e8f`.
+**Its tests:** with no edge, PAYS came out in 0 of 400 simulated runs;
+planted edges of 20 and 40 bps were found in every run; 12 of 12 deliberately
+broken versions were caught; on 11 accounts outside both arms the whole chain
+re-drew exactly the captured trades with no unpriced leg. **A correction to
+the entry below:** at R8's share of legs in US hours (33%), the choice of
+table is worth up to 0.43 bps a round trip (commodities), not "under 0.25"
+(R3-WEEKDAY's Final review F3) — still small against about 8 bps of fees.
+Now the one look; the supervisor re-computes the primary cell with its own
+script from the capture before the verdict goes to the owner.
+
 2026-11-09 (R8's price table chosen — the supervisor, by the procedure the
 owner approved on 2026-11-08): **R8 PRICES THE FOLLOWER WITH THE WEEKDAY
 TABLE IN US MARKET HOURS AND THE SATURDAY TABLE AT EVERY OTHER INSTANT.**
