@@ -194,7 +194,7 @@ review, the supervisor re-computing on its own path what decides.
 - **P0-1** Record every point (this section; done 2026-11-09).
 - **P0-2** ✅ A second copy, with hashes, of R3-WEEKDAY's live books on E:
   (they cannot be re-read; R3's are already copied) — done 2026-11-09 with
-  R8's capture too, in `E:backupspolymarket-followesearch-capture-2026-11-10`.
+  R8's capture too, in `E:\backups\polymarket-follow\research-capture-2026-11-10\`.
 - **P0-3 DOCS-SWEEP** (the owner's points 10 and 11): every page of
   Polymarket's perps documentation and the specs, against what we know — the
   public routes R1's table lacks (assets, index, limit tiers, invite,
