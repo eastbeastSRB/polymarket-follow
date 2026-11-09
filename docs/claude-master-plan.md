@@ -38,8 +38,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-08, through decisions 2026-11-08 (R8's
-numbers approved).*
+*Brought in step on 2026-11-09, through decisions 2026-11-09 (R8's rules
+file frozen).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -48,8 +48,9 @@ numbers approved).*
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
 - The research phase runs in four waves; waves 1 (R1, R4, R5) and 2 (R2 with
-  its blind labels, R3) are closed; in wave 3 R6 is closed and R8's numbers are approved; it waits for
-  Monday's weekday measurement (decisions 2026-11-07, 2026-11-08). **The
+  its blind labels, R3) are closed; in wave 3 R6 is closed and R8 runs, its rules frozen; its one look waits
+  for Monday's weekday measurement (decisions 2026-11-07, 2026-11-08,
+  2026-11-09). **The
   boards' tops are mostly algorithms, market makers and inactive accounts**
   (R2). Before v1 is planned, R8 asks once, on the past, whether
   following pays and whether the leaderboard is skill or luck, by rules the
@@ -134,9 +135,12 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 - ⏳ **R8's weekday measurement:** R3's scripts for two hours in US trading
   hours, Monday 2026-11-09 14:30–16:30Z, before R8's numbers are frozen
   (decisions 2026-11-07, R3 accepted). Trigger: that time.
-- ⬜ **R8 — Does following pay, and is the leaderboard skill or luck?** One
+- 🔵 **R8 — Does following pay, and is the leaderboard skill or luck?** One
   retrospective study, one look, its rules fixed in decisions before it
-  (decisions 2026-11-06, the pre-test and waves 2–4 approved). If following
+  (decisions 2026-11-06, the pre-test and waves 2–4 approved). Running since
+  2026-11-09: 50 traders, 1,256 entries to judge; its rules file frozen
+  before any market data (decisions 2026-11-09, R8's rules file frozen); the
+  one look waits for the price table. If following
   fails or there are too few to tell, v1 is planned as a watching and
   analysis tool, and the forward paper-follow log is the real test.
 
