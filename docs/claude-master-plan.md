@@ -38,8 +38,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-09, through decisions 2026-11-09 (R8's rules
-file frozen).*
+*Brought in step on 2026-11-09, through decisions 2026-11-09 (R8's price
+table chosen).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -48,8 +48,8 @@ file frozen).*
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
 - The research phase runs in four waves; waves 1 (R1, R4, R5) and 2 (R2 with
-  its blind labels, R3) are closed; in wave 3 R6 is closed and R8 runs, its rules frozen; its one look waits
-  for Monday's weekday measurement (decisions 2026-11-07, 2026-11-08,
+  its blind labels, R3) are closed; in wave 3 R6 and the weekday price measurement are closed and R8 runs, its
+  rules and its price table frozen (decisions 2026-11-07, 2026-11-08,
   2026-11-09). **The
   boards' tops are mostly algorithms, market makers and inactive accounts**
   (R2). Before v1 is planned, R8 asks once, on the past, whether
@@ -132,9 +132,6 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
   (frozen beforehand on non-holdout accounts) scored by the same rules; the app
   ships only with a v2 that passes (decisions 2026-11-07, the classifier's
   ruling). Trigger: 2026-11-21.
-- ⏳ **R8's weekday measurement:** R3's scripts for two hours in US trading
-  hours, Monday 2026-11-09 14:30–16:30Z, before R8's numbers are frozen
-  (decisions 2026-11-07, R3 accepted). Trigger: that time.
 - 🔵 **R8 — Does following pay, and is the leaderboard skill or luck?** One
   retrospective study, one look, its rules fixed in decisions before it
   (decisions 2026-11-06, the pre-test and waves 2–4 approved). Running since
@@ -172,6 +169,11 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Done lately
 
+- ✅ 11-09 **R3-WEEKDAY — the follower's price on a weekday:** two hours in
+  US trading hours beside R3's Saturday table; costs higher on the weekday
+  morning for majors, commodities and indices; R8 prices with the weekday
+  table in US hours and the Saturday table otherwise (decisions 2026-11-09,
+  R8's price table chosen).
 - ✅ 11-08 **R6 — storage and backup:** small data for real traders (~0.17 GB a year for 20), a ceiling of 79 GB a year at 50 machine-speed favourites; backups on E: and F:, never D: (decisions 2026-11-08, R6 accepted).
 - ✅ 11-08 **R2 — the style label and trader statistics** (with R2-LABELS,
   the blind labels): v1 scored blind (trap 2 of 23, both anchors caught), v2

@@ -201,7 +201,9 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   strings); only populated candles; 1,000 a page with `more`; history from the
   first trade at every interval, 1s included. **Mark history
   `/v1/info/mark-history`**: `[bucket_ms, last_mark]`, from 2026-05-28T01:26Z,
-  1,000 a page. **Funding `/v1/info/funding`**: `{funding_rate, timestamp}`, one
+  1,000 a page; at `interval=1s` every second is there in R8's period (BTC
+  2026-09-15 and 09-28, NVDA 09-15 and 10-12: 1,000 of 1,000 buckets; the
+  supervisor and R3-WEEKDAY, 2026-11-07 and 11-09). **Funding `/v1/info/funding`**: `{funding_rate, timestamp}`, one
   per hour for every instrument, at most 100 a page, returned NEWEST FIRST.
   Without `start_timestamp` the reply held 24 rows (the last 24 hours; 22:55Z
   on 2026-11-06 and, in the supervisor's read, ~00:10Z on 2026-11-07; the spec
@@ -211,7 +213,17 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
 - **Now-only reads:** `/v1/info/bbo`, `/book` (depth 10 | 100 | 500 | 1000; 50 → 400),
   `/tickers`, `/statistics`, `/index`, `/fees`, `/instruments`, `/exchange`:
   server-cached 1–2 s (`cache-control: public, max-age=1..2`); a past instant
-  cannot be asked.
+  cannot be asked. Served through CloudFront: on 2026-11-09 420 of 1,366 reads
+  were cache hits (bbo and book `age` ≤ 1 s), and `/instruments` once came with
+  `age: 393` — a reply can be minutes old (R3-WEEKDAY, 14:10:59Z).
+- **Thin names' books can be stale or holey** (2026-11-09, R3-WEEKDAY):
+  NCLD-USD's book stood 540 bps wide from 14:30Z to ~14:40Z; two of 22 PRL-USD
+  book sides had a hole 1,454–2,491 bps beyond the half-spread for $1,000.
+  SKHYNIX and SAMSUNG marks sat ~70–100 bps under their books while Korea was
+  closed.
+- **Market sessions** (docs `perps/learn-about-trading/market-sessions`, read
+  2026-11-09 14:20Z): five states — Regular, Overnight, Weekend, Disrupted,
+  Halted; "each market has its own schedule", with no hours or time zone given.
 - **Instruments:** 90 enabled (41 crypto, 38 equity, 6 index, 4 commodity, 1
   pre_ipo); max leverage 3–50 by instrument; `funding_interval` "1h" everywhere;
   `price_decimals`/`quantity_decimals` give tick and lot; no session field.
@@ -241,5 +253,10 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   closes the connection, but an idle connection (no subscribe, no message)
   stayed open 68 s and two 120–150 s connections ran without a drop. One
   connect took 61.8 s to open (others ~1.0 s).
+- **A connection can go silent with no close and no error** (2026-11-09,
+  R3-WEEKDAY): after 44 minutes of ~920 frames a second (`tickers::all` + two
+  `book::<iid>`), the last frame came at 15:13:59Z and nothing followed for
+  7 m 56 s while HTTP kept answering; a new connection worked. Detect "no frame
+  for 15 s" and reconnect.
 - Every fills-channel, orders, balances and backstop channel is private
   (authentication needed) and was not touched.

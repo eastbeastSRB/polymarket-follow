@@ -29,9 +29,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   blind test after 2026-11-21 (decisions 2026-11-07, the classifier's
   ruling).
 - **Wave 3:** R6 (storage) is accepted (decisions 2026-11-08, R6 accepted): backups on E: and F:, never D: (the owner: D: is unreliable).
-- **Monday 2026-11-09 14:30–16:30Z:** a two-hour weekday measurement in US
-  hours before R8's numbers are frozen.
-- **The v1 defaults are approved** (same entry): the owner chose them before
+- **The weekday measurement is done** (R3-WEEKDAY, 2026-11-09): R8 prices
+  the follower with the weekday table in US hours, the Saturday table otherwise
+  (decisions 2026-11-09, R8's price table chosen).
+- **The v1 defaults are approved** (decisions 2026-11-07, wave 1 closed): the owner chose them before
   the plan; the plan subagent starts from them.
 - **The repository holds docs only:** no package.json, no code, no CI.
   GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
@@ -41,12 +42,12 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 1. **R8** (does following pay; skill or luck) — **running since 2026-11-09
    08:30Z**: 50 traders, 1,256 entries to judge; its rules file frozen before
    any market data (decisions 2026-11-09, R8's rules file frozen); it captures
-   market data now. Its one look waits for the price table.
-2. **Monday 2026-11-09 14:30–16:30Z:** the weekday measurement (R3-WEEKDAY);
-   from its report the supervisor picks the price table and records it in
-   decisions before R8's one look.
-3. **Wave 4:** R7 (the pages), after R8's verdict.
-4. **The owner says the research is complete;** then the v1 plan, approved
+   market data now. The price table is chosen (decisions 2026-11-09, R8's
+   price table chosen, from R3-WEEKDAY's measurement of that day); at its
+   second stop the capture and the analysis are fingerprinted in decisions,
+   then the one look.
+2. **Wave 4:** R7 (the pages), after R8's verdict.
+3. **The owner says the research is complete;** then the v1 plan, approved
    and registered in decisions; then the skeleton and v1 in parts.
 
 ## Open questions — the research answers them

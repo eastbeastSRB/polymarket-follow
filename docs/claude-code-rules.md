@@ -52,6 +52,11 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **Addresses are stored lower-case** (the API returns them checksum-cased).
 - **Time windows:** `start_timestamp` inclusive, `end_timestamp` exclusive;
   after the first read, resume from the last seen time and dedupe by key.
+- **A WebSocket reader needs a no-frame watchdog:** a connection went silent
+  for 8 minutes with no close or error event while the recorder kept writing
+  its last-seen values as new rows (R3-WEEKDAY, 2026-11-09). Reconnect after
+  15 s without a frame; judge liveness and freshness by the data (the newest
+  frame's event time), never by the process or the socket being open.
 
 ## Tests
 
