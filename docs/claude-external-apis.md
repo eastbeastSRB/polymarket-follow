@@ -201,9 +201,12 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   strings); only populated candles; 1,000 a page with `more`; history from the
   first trade at every interval, 1s included. **Mark history
   `/v1/info/mark-history`**: `[bucket_ms, last_mark]`, from 2026-05-28T01:26Z,
-  1,000 a page; at `interval=1s` every second is there in R8's period (BTC
-  2026-09-15 and 09-28, NVDA 09-15 and 10-12: 1,000 of 1,000 buckets; the
-  supervisor and R3-WEEKDAY, 2026-11-07 and 11-09). **Funding `/v1/info/funding`**: `{funding_rate, timestamp}`, one
+  1,000 a page; at `interval=1s` R8's period is covered with short holes:
+  10,918 windows of 1,000 s (2026-09-26 → 11-07, 80 instruments) held 67
+  missing seconds-runs in 42 windows, 927 s in all, the longest 73 s
+  (2026-10-20 15:12:21Z on several instruments; R8-PRETEST's capture, checked
+  by R8-REVIEW 2026-11-09) — a reader takes the last mark at or before the
+  instant and sets a staleness limit (R8: 300 s). **Funding `/v1/info/funding`**: `{funding_rate, timestamp}`, one
   per hour for every instrument, at most 100 a page, returned NEWEST FIRST.
   Without `start_timestamp` the reply held 24 rows (the last 24 hours; 22:55Z
   on 2026-11-06 and, in the supervisor's read, ~00:10Z on 2026-11-07; the spec
