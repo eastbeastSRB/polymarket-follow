@@ -143,6 +143,24 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Later — the backlog
 
+- 🅿️ **Research round 2 — the search for a "win combination"** (the owner,
+  2026-11-09, after R8 failed: the right trader, the right trades, the right
+  instruments, the right moment; not a 10/10 record, a pattern that pays over
+  many trades). The five leads recorded with the owner: (1) the weak
+  persistence R8's B2 found (4-week profit per dollar traded predicted the
+  next 4 weeks; not at the top) — its confirm pair needs weeks 9–12, rebuilt
+  from fills read after 2026-11-30; (2) choosing traders on months of track
+  record, consistency and small drawdowns instead of one month's top PnL;
+  (3) choosing trades, not only traders — size unusual for the trader,
+  several directional traders entering one market together, adding to a
+  winner; (4) why #47's entries could not be copied at a profit while it made
+  $109k (exits, sizing, patience); (5) other horizons and signals —
+  multi-day holds for slow traders, order books, funding, prediction markets.
+  More may be added then. **The method, agreed:** every hypothesis written
+  down before it is tested; found on one stretch of past data and confirmed
+  on another the search never touched (the data after 2026-11-07 is unread);
+  then watched in the forward paper-follow log before any money relies on
+  it. Trigger: the research phase complete (R7), and the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
   daily top-50 leaderboard since late August 2026 is worth a one-time

@@ -1,5 +1,23 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (the owner's direction after R8 — the owner, recorded by the
+supervisor): **THE PROJECT CONTINUES: FINISH THE PLANNED RESEARCH, THEN A
+SECOND ROUND THAT SEARCHES FOR A "WIN COMBINATION".** R8 found that copying
+the top 50 directional traders' entries about 80 s late lost money and was no
+better than random trades (its report, Final-reviewed by R8-REVIEW; the
+supervisor's own re-computation agrees). The owner: disappointed, does not
+give up — "let's complete what we started, then we will talk about research
+round 2"; the aim is "right trader, right trades, right pairs, right
+momentum", a pattern that pays over many trades, not a perfect record. The
+five leads the owner approved for round 2 are kept on the plan page
+(backlog, "Research round 2"), with the method: each hypothesis written
+before it is tested, found on one stretch of data and confirmed on another
+the search never touched, then watched in the forward paper-follow log
+before any money relies on it. The app stays watch-only and never advises
+(Iron Rules 1 and 6). Whether v1 is planned as a watching tool now, under
+the owner's ruling of 2026-11-06, is settled at the walkthrough of R8's
+report.
+
 2026-11-09 (R8's capture and analysis fingerprinted before the one look — the
 supervisor, at R8-PRETEST's second stop): **EVERYTHING R8'S ONE LOOK READS IS
 FINGERPRINTED BEFORE IT RUNS.** The capture ran 09:18–19:03Z: with the
