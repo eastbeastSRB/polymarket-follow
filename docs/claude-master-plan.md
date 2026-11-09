@@ -42,7 +42,7 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-09, through decisions 2026-11-09 (R8
+*Brought in step on 2026-11-09, through decisions 2026-11-09 (R7
 accepted).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
@@ -51,9 +51,10 @@ accepted).*
   everything v1 needs is public and keyless, with history back to launch.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
-- The research phase runs in four waves; waves 1 (R1, R4, R5), 2 (R2 with its
-  blind labels, R3) and 3 (R6, the weekday price measurement, R8) are closed;
-  only R7 is left (decisions 2026-11-07, 2026-11-08, 2026-11-09). **R8: copying
+- **The first research phase is finished:** all four waves are closed — 1
+  (R1, R4, R5), 2 (R2 with its blind labels, R3), 3 (R6, the weekday price
+  measurement, R8), 4 (R7, the pages) (decisions 2026-11-07 to 2026-11-09).
+  The owner's word "research complete" opens the v1 plan. **R8: copying
   the top directional traders about 80 s late lost money and was no better
   than random trades, so v1 is planned as a watching and analysis tool**
   (decisions 2026-11-09, R8 accepted); the owner continues with a second
@@ -73,7 +74,7 @@ accepted).*
 
 | | When | What | Who |
 |---|---|---|---|
-| 🔵 | now | The research phase, R1–R8 (below), in four waves | subagents, one report each |
+| ⏳ | the owner's word | "Research complete": the research phase, R1–R8 (below), all four waves done | the owner |
 | ⬜ | after the research | The v1 plan: what v1 does, what waits; the owner approves; registered in decisions | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
@@ -131,10 +132,6 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 - ✅ **R6 — Storage, retention and backup:** bytes per fill and per day at 5,
   50 and 100 followed traders (fill rates from R2); what to keep; the backup
   in its own folder on E: and F: (E: 92% full, 16 GB free, on 2026-11-06).
-- 🟢 **R7 — The pages:** the leaderboard, a trader's page, favourites, the
-  alert feed, the paper-follow log; the ports, clear of the lab's 3000 and
-  4000. R8 has decided: pages for a watching and analysis tool, without the
-  copy framing (decisions 2026-11-09, R8 accepted).
 - ⏳ **The classifier v2's forward blind test:** the 100 holdout accounts'
   fills for 2026-11-07 to 2026-11-21, labelled blind by a fresh labeller, v2
   (frozen beforehand on non-holdout accounts) scored by the same rules; the app
@@ -186,6 +183,10 @@ bulk research data goes gzip-compressed to `F:\polymarket-follow-research\`.
 
 ## Done lately
 
+- ✅ 11-09 **R7 — the pages:** eight pages of a watching and analysis tool
+  (Watch first, Boards, Trader, Alerts, Paper log, Status, Method, Settings);
+  the pages read only the database; ports 3300 and 4300; the owner's twelve
+  rulings (decisions 2026-11-09, R7 accepted).
 - ✅ 11-09 **R8 — does following pay; skill or luck:** FAILS — following the
   top 50 directional traders about 80 s late lost 16.6 bps an entry and was
   no better than random trades; no confirmed skill (B2's confirmation needs

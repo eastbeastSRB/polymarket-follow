@@ -35,6 +35,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   v1 is planned as a watching and analysis tool; the owner continues with a
   second research round (decisions 2026-11-09, the owner's direction after
   R8).
+- **Wave 4 is closed: R7, the pages** (decisions 2026-11-09, R7 accepted):
+  eight pages of a watching and analysis tool; the pages read only the
+  database; ports 3300 and 4300.
 - **The v1 defaults are approved** (decisions 2026-11-07, wave 1 closed): the owner chose them before
   the plan; the plan subagent starts from them.
 - **The repository holds docs only:** no package.json, no code, no CI.
@@ -42,17 +45,17 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **R7 (the pages)** — the last research topic: what each page of a
-   watching and analysis tool shows and how (R8 decided it: decisions
-   2026-11-09, R8 accepted).
-2. **The owner says the research is complete;** then the v1 plan (a watching
-   and analysis tool), approved and registered in decisions; then the
-   skeleton and v1 in parts.
+1. **The owner's word "research complete"** — the first research phase is
+   finished (R7 accepted, decisions 2026-11-09). The owner first pushes and
+   checks the work (2026-11-09: "once we agree we will continue").
+2. **The v1 plan** — a watching and analysis tool, from the research and the
+   owner's rulings (R7's pages, R8's verdict, the v1 defaults); approved and
+   registered in decisions; then the skeleton and v1 in parts.
 3. **Dated checks:** after 2026-11-21 the style classifier v2's forward
    blind test; after 2026-11-30 B2's confirmation (weeks 9–12, its plan
    recorded in decisions first).
 4. **Research round 2** (the plan page's backlog: five leads, the agreed
-   method) — after the research is complete, on the owner's word.
+   method) — on the owner's word, alongside the v1 build.
 
 ## Open questions — the research answers them
 

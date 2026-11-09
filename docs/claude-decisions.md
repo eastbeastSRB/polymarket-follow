@@ -1,5 +1,36 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (R7 accepted, and the pages' rules — the owner, on the
+supervisor's and R7-PAGES's recommendations): **V1'S PAGES ARE DESIGNED FOR A
+WATCHING AND ANALYSIS TOOL.** R7's report (`docs/reviews/r7-pages-2026-11-09.md`,
+12 corrections by its own Final review marked in place; a one-page summary
+for the owner at its top; the cut-line between what v1 builds and what waits
+in its Q1 table) is accepted. The supervisor checked the ports free on this
+machine and the ROI base on stored board rows. **Eight pages:** Watch (the
+favourites; the first screen), Boards, Trader, Alerts, Paper log, Status,
+Method, Settings; **the pages read only the database** — the poller is the
+one client of the API, and a page's fresh read is queued to the poller's
+50-token reserve, the owner's requests first. **The owner's rulings (R7 §7,
+all as recommended):** (1) ports 3300 (development server) and 4300 (the API
+and the built app); (2) times in UTC with local time beside them; (3) ROI
+shown only on a base of $1,000 or more (tightening "above $100" of
+2026-11-07); (4) red only for failures and liquidations, never for a trader's
+loss, and every state also has a word or a shape; (5) the page is called
+"Paper log", and "follow" and "copy" stay off the screen; (6) "thin
+evidence" on a directional label with fewer than 8 decisions and fewer than 3
+closed positions (classifier v2's own minimum); (7) the poller labels the top
+100 of boards the owner has viewed, at the lowest priority, from what the
+reserve has left; (8) a 95% range clustered by day among the paper log's
+secondary figures, shown from 20 days (or traders); (9) the paper log starts
+with K = 20 trader slots; (10) a liquidation of any favourite always raises a
+banner; (11) a dismissible first-run note of three dated findings; (12) the
+leaderboard's turnover line and CSV export later, after 30 days of stored
+snapshots. **Two technical calls for the v1 plan (the supervisor):** the
+favourites' unused share may be lent to the reserve, the total staying 250 a
+minute; R4's freshness check reads the public trades WebSocket (no tokens).
+The first research phase (R1–R8, R7) is finished; the owner's word "research
+complete" opens the v1 plan.
+
 2026-11-09 (R8 accepted — the owner, on the supervisor's recommendations):
 **FOLLOWING THE LEADERBOARD'S TOP DIRECTIONAL TRADERS DID NOT PAY; V1 IS
 PLANNED AS A WATCHING AND ANALYSIS TOOL.** R8's report
