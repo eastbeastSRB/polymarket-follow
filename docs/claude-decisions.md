@@ -1,5 +1,35 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-09 (R8's price table chosen — the supervisor, by the procedure the
+owner approved on 2026-11-08): **R8 PRICES THE FOLLOWER WITH THE WEEKDAY
+TABLE IN US MARKET HOURS AND THE SATURDAY TABLE AT EVERY OTHER INSTANT.**
+R3-WEEKDAY measured 2026-11-09 14:30–16:30Z (09:30–11:30 New York) with R3's
+scripts (`docs/reviews/r3-weekday-2026-11-09.md`); its table
+`workers/R3-WEEKDAY/out/rule-table-weekday.json` in the supervisor folder,
+SHA-256 `2578475e8e54237be6b9860ea01b04a98399418fbcf862bd329b1cfb3b5e3dc0`,
+is in R3's format (90 instruments, 246 bbo snapshots, 982 books). **Checked
+on the supervisor's own path:** the mean half-spread re-computed from the raw
+snapshots matches the table to 0.000000 bps for all 90 instruments, field for
+field in R3's format (`verify/R3-WEEKDAY/spreads-check.out.txt`); the
+subagent's access was clean. **The choice: `session_pair`** (defined in
+decisions 2026-11-09, R8's rules file frozen), R3-WEEKDAY's recommendation:
+each table is used only in the kind of hours it was measured in (R3's
+"Saturday" window was Friday evening in New York, off-hours). On the weekday
+morning the Saturday table understated a round trip by about 0.7 bps on
+majors and 1.4 bps on commodities; across R8's entries the choice is worth
+under 0.25 bps a round trip, against about 8 bps of fees. R8's voted entries
+have 33% of their legs in US regular hours (the supervisor's count of times
+only, `verify/R8-PRETEST/select-check-sessions.out.txt`). **Two secondaries
+added, deciding nothing:** the weekday table at every instant (the choice
+that cannot make following look cheaper in any measured hour), and the
+primary cell without the instruments whose measured cost or mark is
+unreliable — PRL-USD (two holey books gave a depth cost of 181 bps), NCLD-USD
+(a stale book), SKHYNIX, SAMSUNG and CXMT (marks away from the book while
+their home markets are closed): 8 of the 1,256 voted entries, 4 with a leg in
+US hours. The table is used as measured, its means unchanged (the rule:
+decisions 2026-11-07, R3 accepted). The capture's manifest and the analysis
+script's hash are recorded at R8's second stop, then the one look.
+
 2026-11-09 (R8's rules file frozen — the supervisor, at R8-PRETEST's first
 stop): **EVERY RULE OF R8 IS FINGERPRINTED BEFORE IT DOWNLOADS ANY MARKET
 DATA.** R8 wrote its rules file from the approved numbers (decisions
