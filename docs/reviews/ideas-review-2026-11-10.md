@@ -928,8 +928,9 @@ matters is that each is written into its entry before any outcome is seen.
 
 ### A.1 — First measurements
 
-Counts that fix the "smallest visible effect" lines. From fills alone: no
-calls, no outcomes.
+What is measured before any test: seven counts that fix the "smallest
+visible effect" lines (from fills alone) and the map (from R8's hourly
+marks and the two price tables). No calls, no outcomes.
 
 1. Openings and flips of accounts ever labelled directional — by population,
    hold class and week. (The supervisor, 2026-11-10: not measured yet.)
@@ -940,6 +941,24 @@ calls, no outcomes.
 6. Entries per week at UTC 12–16 and 00–04 for the frozen lists (entry 10).
 7. On R8's stored entries: the variance of d against the variance of the
    tracked return — how much three drawn trades add (foundation B).
+8. **The map** (study 3) [Final review F7: moved here from entry 3, part
+   (a)]. For each market × horizon (1 h, 6 h, 24 h, 72 h) × cost setting:
+   the cost ÷ the mean absolute move; the break-even share of right calls,
+   ½ + cost ÷ (2 × mean absolute move); funding by direction added at 24 h
+   and 72 h; two half-periods printed. **Rule fixed now:** a cell whose
+   break-even share is above 55% is "closed" — it may be reported, but no
+   entry takes it as its primary cell.
+
+### The ten entries, in one format
+
+[Final review F7: the ten entries now share eleven fields in one order —
+hypothesis, unit, FIND data, CONFIRM data, statistic, pass line for FIND,
+pass line for CONFIRM with what the entry adds to the batch, smallest
+visible effect, main way it could fool us with its guard, cost, and what
+is fixed in the entry before the look. Was: fields and order differed from
+entry to entry; entry 3 also held the map, which is a measurement and now
+stands in A.1; FIND lines were written three ways. The first version is in
+commit `09acdf8`.]
 
 ### Entry 1 — Traders differ (the gate) [H2; I-05, I-08, I-09]
 
@@ -951,36 +970,42 @@ calls, no outcomes.
   fill; the horizon nearest the trader's median hold in the weeks before
   each entry (1 h, 6 h or 24 h; 72 h printed). Two populations, each its
   own test: **P1** directional by classifier v1; **P2** slow systematic —
-  labelled algorithm or mixed, with at most N decisions a day, a median
-  hold of an hour or more, a maker share under 50% and at least four quiet
-  hours (numbers fixed before any outcome).
-- **CONFIRM data.** The top fifth and the bottom fifth by FIND's shrunken
-  result (traders with at least 20 entries), frozen; their entries after
-  2026-11-07; 3.3 weeks, then 6.
-- **Statistic and pass line.** *FIND:* the rank correlation between each
-  trader's mean d in odd weeks and in even weeks (traders with at least 10
-  entries in each). PASS if it is above zero with a permutation p below
-  0.05 **and** the top fifth formed on odd weeks beats the bottom fifth on
-  even weeks, and the reverse. Printed beside: the between-trader spread
-  with its interval; the five-by-five table. *CONFIRM:* the top fifth's
-  mean d minus the bottom fifth's; the two-look rule. Each fifth's own net
-  result is printed under the three cost settings; a list "pays" only if
-  its own net mean is above zero by the same rule.
+  labelled algorithm or mixed, with few decisions a day, holds of an hour
+  or more, a low maker share and quiet hours.
+- **CONFIRM data.** Per population: the top fifth and the bottom fifth by
+  FIND's shrunken result (traders with at least 20 entries), frozen; their
+  entries after 2026-11-07; 3.3 weeks at the first exam, 6 at the final.
+- **Statistic.** FIND: the rank correlation between each trader's mean d in
+  odd weeks and in even weeks (traders with at least 10 entries in each).
+  CONFIRM: the top fifth's mean d minus the bottom fifth's. Printed beside,
+  deciding nothing: the between-trader spread with its interval; the
+  five-by-five table; each fifth's own net result under the three cost
+  settings.
+- **Pass line, FIND.** The correlation above zero with a permutation p
+  below 0.05, **and** the top fifth formed on odd weeks beats the bottom
+  fifth on even weeks, and the reverse. If it fails: entry 6 does not run,
+  and "which trader" is closed for this venue until the universe holds six
+  more months (question 4).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 2 in the
+  batch — one per population that passed FIND.
 - **Smallest visible effect.** FIND: a split-half correlation near 0.2 with
   200 such traders — a between-trader spread of roughly 15–20 bps at 20
   entries a half [arithmetic; my stage-1 "8–10" was too optimistic].
   CONFIRM: top minus bottom of roughly 40 bps at the first exam, 30 at the
   final [arithmetic, from R8's standard error scaled by entries].
-- **How it could fool us → guard.** Accounts chosen by outcome → the
-  primary population comes from the notional board. A lucky cluster of
-  days → trader-days as votes, and odd against even weeks. Labels and hold
-  classes learned on the tested weeks → taken from earlier weeks (point
-  2.22). The competition → A.0-8. A bottom fifth that stops trading →
-  count who is left.
-- **If it fails.** Entry 6 does not run; "which trader" is closed for this
-  venue until the universe holds six more months (question 4).
-- **Cost.** FIND: none beyond the panel. CONFIRM: about 120 accounts' new
-  fills — 3,000–6,000 tokens inside the exam's capture.
+- **Main way it could fool us → guard.** A lucky cluster of days looks like
+  a trader's skill → trader-days as votes, and odd against even weeks.
+  Also: accounts chosen by outcome → the primary population comes from the
+  notional board; labels and hold classes learned on the tested weeks →
+  taken from earlier weeks (point 2.22); the competition → A.0-8; a bottom
+  fifth that stops trading → the list is judged whole, and who is left is
+  counted.
+- **Cost.** FIND: no calls beyond the panel. CONFIRM: about 120 accounts'
+  new fills — 3,000–6,000 tokens (12–24 minutes) inside the exam's capture.
+- **Fixed in the entry before the look.** P2's four numbers (decisions a
+  day, median hold, maker share, quiet hours); the minimum entries (10 a
+  half; 20 for a list); the horizon classes; the two lists per population
+  with their hashes.
 
 ### Entry 2 — Where the money comes from [H8; I-06; DS Q4]
 
@@ -992,66 +1017,88 @@ calls, no outcomes.
 - **FIND data.** (a) #47; (b) the 50; (c) the all-time profit board's top
   100 with fills in the period. Fills from the first fill to 2026-11-07;
   the panel; one-second marks where R8's capture holds them.
+- **CONFIRM data.** The same accounts' fills after 2026-11-07; 3.3 weeks at
+  the first exam, 6 at the final.
 - **Statistic.** Per account, in dollars: *execution* = Σ signed quantity ×
   (mark at the fill − fill price); *fee gap* = fees at the base tier (4 bps
   taken, 1.25 bps resting) − fees paid; *holding by age* = Σ position ×
   mark change, by the position's age (0–2 min, 2 min–1 h, 1–6 h, 6–24 h,
   beyond); *funding*. "Followable profit" = holding between 2 min and 24 h
-  minus base-tier fees on those trades. The pooled followable share = Σ
-  followable ÷ Σ board profit over the list.
-- **Pass line.** The hypothesis holds if the pooled share's 95% upper bound
-  (resampling accounts) is below one half. Also fixed now: "board profit is
-  a poor guide" if the rank correlation between board profit and followable
-  profit has an upper bound below 0.5.
-- **CONFIRM data.** The same accounts, 2026-11-07 → 11-30 and → 12-19: the
-  rank correlation of followable profit per traded dollar between FIND and
-  CONFIRM (does it persist? — it feeds entry 6); the two-look rule.
+  minus base-tier fees on those trades. FIND: the pooled followable share =
+  Σ followable ÷ Σ board profit over the list. CONFIRM: the rank
+  correlation of followable profit per traded dollar between FIND's weeks
+  and the new weeks (does it persist? — it feeds entry 6). Printed beside:
+  the rank correlation between board profit and followable profit.
+- **Pass line, FIND.** The pooled share's 95% upper bound (resampling
+  accounts) below one half.
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** The shares are descriptions. For the
   persistence check with 50–150 accounts: a rank correlation of 0.25–0.4.
-- **How it could fool us → guard.** A one-minute mark is not the price at
-  the fill's second → one-second marks for #47 and the 50 where held, the
-  one-minute figure beside them to size the error. A mark off the book →
-  A.0-7. A list chosen by outcome → by design: the list is the thing being
-  explained. An account's fee tier → never assumed; only the `fee` amounts
-  are used (point 2.21); ANT, with its fee override, left out.
-- **Cost.** None. Optional: one-second marks for #47's fills outside R8's
-  windows — at most 10,000 tokens (40 minutes).
+- **Main way it could fool us → guard.** A one-minute mark is not the price
+  at the fill's second, so "execution" is noisy → one-second marks for #47
+  and the 50 where held, the one-minute figure beside them to size the
+  error. Also: a mark off the book → A.0-7; a list chosen by outcome → by
+  design, the list is the thing being explained; an account's fee tier →
+  never assumed, only the `fee` amounts are used (point 2.21); ANT, with
+  its fee override, left out.
+- **Cost.** No calls. Optional: one-second marks for #47's fills outside
+  R8's windows — at most 10,000 tokens (40 minutes).
+- **Fixed in the entry before the look.** The three lists with their
+  hashes; the age buckets; the base-tier rates; the definition of
+  followable profit.
 
-### Entry 3 — Horizon and cost [H4; I-04; H9]
+### Entry 3 — Slow traders against the null [H4; I-04; H9]
 
-- **Part (a), a measurement with a rule, no pass line: the map.** For each
-  market × horizon × cost setting: cost ÷ mean absolute move; the
-  break-even share of right calls, ½ + cost ÷ (2 × mean absolute move);
-  funding by direction added at 24 h and 72 h; two half-periods printed.
-  **Rule fixed now:** a cell whose break-even share is above 55% is
-  "closed" — it may be reported, but no entry takes it as its primary
-  cell.
-- **Part (b), hypothesis.** Entries of directional accounts whose usual
-  hold is six hours or more beat their matched null at 24 hours.
+- **Hypothesis.** Entries of directional accounts whose usual hold is six
+  hours or more beat their matched null at 24 hours.
 - **Unit.** The trader-day vote; the entry for means.
 - **FIND data.** P1 accounts whose median hold over the prior weeks is six
-  hours or more; h = 24 h primary; 6 h and 72 h printed.
+  hours or more; only cells the map (A.1, measurement 8) leaves open.
 - **CONFIRM data.** The same rule, the hold class frozen at 2026-11-07, on
-  new entries; 3.3 weeks, then 6.
-- **Statistic and pass line.** *FIND:* mean d at 24 h above zero with t ≥ 2
-  under both clusterings. *CONFIRM:* the two-look rule. The net result is
-  printed under the three cost settings.
+  new entries; 3.3 weeks at the first exam, 6 at the final.
+- **Statistic.** Mean d at 24 h. Printed beside, deciding nothing: 6 h and
+  72 h; the net result under the three cost settings.
+- **Pass line, FIND.** Above zero at a two-sided p below 0.05 (A.0-6).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** FIND roughly 25–35 bps on a day's move of
   250–400 bps per entry [arithmetic; fixed by first measurement 1]; first
   exam 40–55; final 30–40.
-- **How it could fool us → guard.** Long-biased traders in a trending
-  market → the matched null. Overlapping one- to three-day windows →
-  trader-day votes and day clustering. Funding on long holds → net figures
+- **Main way it could fool us → guard.** Long-biased traders in a trending
+  market → the matched null. Also: overlapping one- to three-day windows →
+  trader-day votes and the day test; funding on long holds → net figures
   carry it by direction.
-- **Cost.** None; part (a) needs no panel either (R8's hourly marks and the
-  two price tables).
+- **Cost.** No calls.
+- **Fixed in the entry before the look.** The six-hour class boundary; the
+  24-hour horizon; the list of slow accounts at 2026-11-07 with its hash.
 
 ### Entry 4 — Kinds of entries [H6; I-12; I-25]
 
 - **Hypothesis.** At least one of eleven properties fixed in advance splits
   directional entries into halves whose matched-null results differ.
-- **The eleven** (each threshold written into the entry before any
-  outcome; these are proposals): (1) taken — at least half the opening
+- **Unit.** The entry.
+- **FIND data.** P1, every entry, at the trader's class horizon.
+- **CONFIRM data.** At most two splits, direction and threshold frozen;
+  entries after 2026-11-07; 3.3 weeks at the first exam, 6 at the final.
+- **Statistic.** Per split, the difference in mean d between the two
+  halves, compared within market category and four-hour block. Printed
+  beside, as a covariate: "on a boosted market during a competition".
+- **Pass line, FIND.** A two-sided p below 0.05 after Holm's correction
+  over the eleven (A.0-6).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as up to 2 in
+  the batch.
+- **Smallest visible effect.** FIND a difference of roughly 15–20 bps for
+  an even split after the correction; first exam 20–30; final 15–22
+  [arithmetic; fixed by first measurement 1]. Uneven splits see less.
+- **Main way it could fool us → guard.** Thresholds tuned to the result →
+  written first. Also: a split that is really a market or an hour →
+  compared within category and block; a split that "works" on random
+  trades too → the placebo must show nothing; the competition → A.0-8.
+- **Cost.** No calls. Optional, for a "position ÷ equity" form of (4): the
+  equity series, 15,000 tokens (an hour).
+- **Fixed in the entry before the look.** The eleven, each with its
+  threshold (these are proposals): (1) taken — at least half the opening
   notional as taker — or resting; (2) with or against the last hour's
   move; (3) after a jump — the prior 15 minutes moved more than three
   usual 15-minute moves; (4) large for the trader — above twice the
@@ -1063,85 +1110,71 @@ calls, no outcomes.
   pays funding, where the rate is above five times the floor; (10) against
   the trader's usual side — a long share of 70% or more going short, or
   the reverse; (11) large for the market — above 5% of the market's volume
-  in that hour. And beside them, as a covariate: on a boosted market
-  during a competition.
-- **Unit.** The entry; clustered by trader and by day.
-- **FIND data.** P1, every entry, at the trader's class horizon.
-- **CONFIRM data.** At most two splits, direction and threshold frozen;
-  3.3 weeks, then 6.
-- **Statistic and pass line.** *FIND:* per split, the difference in mean d
-  between the halves, compared within market category and four-hour block;
-  Holm's correction at 5% over the eleven. *CONFIRM:* the two-look rule.
-- **Smallest visible effect.** FIND a difference of roughly 15–20 bps for
-  an even split after the correction; first exam 20–30; final 15–22
-  [arithmetic; fixed by first measurement 1]. Uneven splits see less.
-- **How it could fool us → guard.** Thresholds tuned to the result →
-  written first. A split that is really a market or an hour → compared
-  within category and block. A split that "works" on random trades too →
-  the placebo must show nothing. The competition → A.0-8.
-- **Cost.** None. Optional, for a "position ÷ equity" form of (4): the
-  equity series, 15,000 tokens (an hour).
+  in that hour.
 
 ### Entry 5 — The price path around an entry [I-15]
 
 - **Hypothesis.** In the 60 seconds after their fill, the 50's entries move
   the mark in their direction by more than random public trades in the
   same market and hour do.
-- **Unit.** The entry; clustered by trader and by day.
+- **Unit.** The entry.
 - **FIND data.** R8's capture: 1,272 entries, their drawn random trades,
   one-second marks from 300 s before each follow instant. A second look at
   a capture already used once — logged as exploring.
-- **Statistic and pass line.** The mean signed mark move from the fill's
-  second to +60 s, entries minus random trades; PASS if t ≥ 2 under both
-  clusterings. Printed, deciding nothing: the path second by second from
-  −180 s to +750 s; the +5 s to +60 s move (against a one-second
-  misalignment); the signed move over the 60 minutes before the fill (from
-  the panel).
 - **CONFIRM data.** The 50's entries after 2026-11-07, from one-second
-  marks (about 14,000 tokens) or the collector's recorded prices; the
-  two-look rule.
+  marks (about 14,000 tokens) or the collector's recorded prices; 3.3
+  weeks at the first exam, 6 at the final.
+- **Statistic.** The mean signed mark move from the fill's second to +60 s,
+  entries minus random trades. Printed beside, deciding nothing: the path
+  second by second from −180 s to +750 s; the +5 s to +60 s move (against a
+  one-second misalignment); the signed move over the 60 minutes before the
+  fill (from the panel).
+- **Pass line, FIND.** Above zero at a two-sided p below 0.05 (A.0-6).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** About 2–3 bps [arithmetic: a minute's move
   is 5–30 bps by market; 1,272 entries].
-- **How it could fool us → guard.** The mark trails the local book (point
-  2.20) → the result is about the outside price, and the report says so;
-  the collector's best prices show the local push from its first day.
-- **What each answer means.** Yes: the information is real and gone within
-  a minute — no use at a person's speed. No: these entries carry nothing
-  even at once.
-- **Cost.** FIND: none.
+- **Main way it could fool us → guard.** The mark trails a local push
+  (point 2.20) → the result is read as news about the outside price, and
+  the report says so. Also: the collector's best prices show the local
+  push from its first day.
+- **Cost.** FIND: no calls. CONFIRM: about 14,000 tokens (an hour).
+- **Fixed in the entry before the look.** The 60-second window; the list
+  (the 50); the random trades as R8 drew them.
 
 ### Entry 6 — A race between ranking rules [H3, H5; I-07] — only if entry 1 passes FIND
 
 - **Hypothesis.** One of six ranking rules, computed on four weeks, picks a
   top fifth whose entries over the following weeks beat the rest's.
-- **The six** (each a fixed formula in the entry): (1) banked profit after
-  the account's own fees — R8's rule, the baseline; (2) whole profit with
-  open positions marked, at base-tier fees, per traded dollar; (3)
-  followable holding profit per traded dollar (entry 2); (4) the shrunken
-  mean d (entry 1); (5) steadiness — the probabilistic Sharpe ratio of
-  daily whole profit per dollar of gross position; (6) risk discipline —
-  one index: median loss ÷ median win of closed cycles, and the share of
-  losing cycles closed before the adverse move passed twice the trader's
-  median win.
-- **Unit.** The trader; clustered by formation date and by day.
+- **Unit.** The trader.
 - **FIND data.** Formation windows of four weeks ending 2026-10-10 and
   2026-10-24, measured on the two weeks after each — the only two clean
   dates since the launch.
 - **CONFIRM data.** Formation: the four weeks to 2026-11-07. Measure: the
-  new weeks; 3.3, then 6.
-- **Statistic and pass line.** *FIND:* top fifth minus the rest, mean d in
-  the measure window; the best of the six judged against the resampled
-  best of six, so that choosing among six is paid for; p below 0.05. The
-  trader's own next profit is printed beside. *CONFIRM:* the two-look rule,
-  for the one winning rule.
+  new weeks; 3.3 at the first exam, 6 at the final.
+- **Statistic.** Top fifth minus the rest, mean d in the measure window.
+  Printed beside, deciding nothing: the trader's own next profit.
+- **Pass line, FIND.** The best of the six judged against the resampled
+  best of six, so that choosing among six is paid for; p below 0.05.
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11), for the one winning
+  rule; counts as 1 in the batch.
 - **Smallest visible effect.** FIND 30–40 bps; first exam about 35; final
   about 25 [arithmetic].
-- **How it could fool us → guard.** A rule made of the thing it predicts
-  (rule 4) → reported as entry 1's persistence again, not as a new
-  finding. Lower fees inside profit → base-tier re-pricing. The trader's
-  own profit persisting through execution → the follower's d is the
-  target.
-- **Cost.** None.
+- **Main way it could fool us → guard.** A rule made of the thing it
+  predicts (rule 4) → reported as entry 1's persistence again, not as a new
+  finding. Also: lower fees inside profit → base-tier re-pricing; the
+  trader's own profit persisting through execution → the follower's d is
+  the target.
+- **Cost.** No calls.
+- **Fixed in the entry before the look.** The six rules, each as a formula:
+  (1) banked profit after the account's own fees — R8's rule, the
+  baseline; (2) whole profit with open positions marked, at base-tier
+  fees, per traded dollar; (3) followable holding profit per traded dollar
+  (entry 2); (4) the shrunken mean d (entry 1); (5) steadiness — the
+  probabilistic Sharpe ratio of daily whole profit per dollar of gross
+  position; (6) risk discipline — one index: median loss ÷ median win of
+  closed cycles, and the share of losing cycles closed before the adverse
+  move passed twice the trader's median win.
 
 ### Entry 7 — Algorithms working a large order [H10; I-21]
 
@@ -1149,54 +1182,65 @@ calls, no outcomes.
   one market within 30 minutes, with gaps under 10 minutes, the price moves
   further that way over the next 30 minutes by more than a taker's round
   trip.
-- **Unit.** The run (one account, market and side); clustered by account
-  and by day; one vote per account beside.
+- **Unit.** The run (one account, market and side); one vote per account
+  beside.
 - **FIND data.** Every pool account's captured fills (for the busiest, only
-  what their 5,000-fill cap holds — state the weeks covered per account).
-  The follower enters at the fifth order + D and leaves at +30 minutes;
-  +60 minutes and "silent for 10 minutes" printed.
+  what their 5,000-fill cap holds — the weeks covered are stated per
+  account). The follower enters at the fifth order + D and leaves 30
+  minutes later.
 - **CONFIRM data.** The accounts with at least 10 runs in FIND, frozen;
-  their fills after 2026-11-07 (about 62,000 tokens for 30 such accounts);
-  priced by the mark rule, the recorded book beside as the audit; 3.3
-  weeks, then 6.
-- **Statistic and pass line.** *FIND:* the mean net result at a taker's
-  cost above zero with t ≥ 2 under both clusterings. Printed beside: the
-  gross d against random trades; the reversal over the following hour.
-  *CONFIRM:* the two-look rule.
+  their fills after 2026-11-07; priced by the mark rule, the recorded book
+  beside as the audit; 3.3 weeks at the first exam, 6 at the final.
+- **Statistic.** The mean net result at a taker's cost. Printed beside,
+  deciding nothing: the gross d against random trades; leaving at +60
+  minutes and at "silent for 10 minutes"; the reversal over the following
+  hour.
+- **Pass line, FIND.** Above zero at a two-sided p below 0.05, by account
+  and by day (A.0-6).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** Fixed by first measurement 3. With 2,000
   runs and a half-hour move of 40–80 bps, roughly 11–17 bps when a few
   dozen accounts carry the runs [arithmetic] — about the size of the cost.
-- **How it could fool us → guard.** The follower's own order and faster
-  machines are not in past data → a doubled-cost run, and the recorded
-  book at CONFIRM. Runs farmed for a competition's volume → A.0-8. A few
-  accounts carry everything → one vote per account.
-- **Cost.** FIND: none. The whole histories of the 20 busiest taker
-  accounts (250,000 tokens, 16.7 h) only if FIND shows a drift.
+- **Main way it could fool us → guard.** The follower's own order and
+  faster machines are not in past data → a doubled-cost run, and the
+  recorded book at CONFIRM. Also: runs farmed for a competition's volume →
+  A.0-8; a few accounts carry everything → one vote per account.
+- **Cost.** FIND: no calls. CONFIRM: about 62,000 tokens (4 hours) for 30
+  such accounts. The whole histories of the 20 busiest taker accounts
+  (250,000 tokens, 16.7 h) only if FIND shows a drift.
+- **Fixed in the entry before the look.** Five orders, 30 minutes, gaps
+  under 10 minutes; the 30-minute exit; the list of accounts with its hash.
 
 ### Entry 8 — Funding [H9; I-16]
 
 - **Hypothesis.** On market-days whose funding is above five times the
   floor, the side that receives funding ends the next 24 hours ahead after
-  costs: price result plus funding received minus a round trip is above
-  zero.
-- **Unit.** The market-day; clustered by day.
+  costs.
+- **Unit.** The market-day.
 - **FIND data.** R8's funding rows and hourly marks, 80 markets, 2026-09-26
   → 11-07 (held; no calls); the earlier weeks once the panel exists.
 - **CONFIRM data.** Funding and marks after 2026-11-07, inside the exam's
-  capture; 3.3 weeks, then 6.
-- **Statistic and pass line.** *FIND:* the mean of [the receiving side's
-  signed 24-hour mark return + funding received − a taker's round trip]
-  above zero with t ≥ 2 by day; printed again without the five markets
-  that have the most such days. *CONFIRM:* the two-look rule.
+  capture; 3.3 weeks at the first exam, 6 at the final.
+- **Statistic.** The mean of [the receiving side's signed 24-hour mark
+  return + funding received − a taker's round trip]. Printed beside,
+  deciding nothing: the same without the five markets that have the most
+  such days.
+- **Pass line, FIND.** Above zero at a two-sided p below 0.05 by day
+  (A.0-6).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** With a few hundred such market-days over 42
   days, roughly 40–70 bps [arithmetic; fixed by first measurement 5].
   Effects here can be that large: 5 bps an hour is 120 a day.
-- **How it could fool us → guard.** Extreme funding sits on markets that
-  cannot be priced → A.0-7 and the "without five" print. Funding *is* the
-  premium, and the premium collapsing is the receiving side's loss → the
-  mark carries the smoothed premium, so the loss is in the result. The
-  charging rule → point 2.19 settled first.
-- **Cost.** None.
+- **Main way it could fool us → guard.** Extreme funding sits on markets
+  that cannot be priced → A.0-7 and the "without five" print. Also:
+  funding *is* the premium, and the premium collapsing is the receiving
+  side's loss → the mark carries the smoothed premium, so the loss is in
+  the result; the charging rule → point 2.19 settled first.
+- **Cost.** No calls.
+- **Fixed in the entry before the look.** "Five times the floor"; the
+  24-hour horizon; the markets left out.
 
 ### Entry 9 — Agreement [H7; I-13]
 
@@ -1204,53 +1248,64 @@ calls, no outcomes.
   same side of one market within 60 minutes, and no directional account
   opens the other side in that time, the price moves that way over the
   next six hours by more than after matched random instants.
-- **Unit.** The event (overlapping events on one market merged); clustered
-  by day.
+- **Unit.** The event (overlapping events on one market merged).
 - **FIND data.** P1 accounts. "No visible link" = no pair with 20 or more
   shared trades [record: R2 Q3], not in R2's prefix clusters, no copy
   pattern (study 12: B within 60 s of A ten times or more).
-- **CONFIRM data.** The same rule on new fills; 3.3 weeks, then 6.
-- **Statistic and pass line.** *FIND:* mean d at 6 h from the third entry +
-  D, above zero with t ≥ 2 by day; 24 h printed; the signed move over the
-  hour before the first of the entries printed (a herd after news?).
-  *CONFIRM:* the two-look rule.
+- **CONFIRM data.** The same rule on new fills; 3.3 weeks at the first
+  exam, 6 at the final.
+- **Statistic.** Mean d at 6 h from the third entry + D. Printed beside,
+  deciding nothing: 24 h; the signed move over the hour before the first of
+  the entries (a herd after news?).
+- **Pass line, FIND.** Above zero at a two-sided p below 0.05 by day
+  (A.0-6).
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** Fixed by first measurement 4; with 500
   events roughly 30 bps [arithmetic].
-- **How it could fool us → guard.** Hidden entities → "no visible link" in
-  every sentence, never "independent". Events bunch on news days → day
-  clustering and the hour-before print. The count and the window tuned →
-  fixed first.
-- **Cost.** None.
+- **Main way it could fool us → guard.** Hidden entities → "no visible
+  link" in every sentence, never "independent". Also: events bunch on news
+  days → the day test and the hour-before print; the count and the window
+  tuned → fixed first.
+- **Cost.** No calls.
+- **Fixed in the entry before the look.** Three accounts, 60 minutes, six
+  hours; the three link tests.
 
 ### Entry 10 — R8's US-open cell [H9; I-18]
 
 - **Hypothesis.** Directional entries opened at UTC 12:00–16:00 do worse
-  than their matched null. [Final review F4: was two hypotheses — "(A) …
-  12:00–16:00 do worse … (B) … 00:00–04:00 do better". B is now printed
-  beside and decides nothing: its find was 125 entries of 19 traders, under
-  R8's own count bar, with an interval that held zero.]
-- **Unit.** The entry; clustered by trader and by day.
+  than random trades in the same market and hour. [Final review F4: was
+  two hypotheses — "(A) … 12:00–16:00 do worse … (B) … 00:00–04:00 do
+  better". B is now printed beside and decides nothing: its find was 125
+  entries of 19 traders, under R8's own count bar, with an interval that
+  held zero.]
+- **Unit.** The entry.
 - **FIND data.** Done — R8's secondary: d −38.35 bps [−66.23, −11.05], 387
   entries of 37 traders [record: R8 §1.2] — one of about 25 cuts.
 - **CONFIRM data.** The 50 (the same list; primary) and every account on
-  the frozen directional list (secondary); entries after 2026-11-07 at each
-  trader's class horizon, against the exact null with a random direction —
-  shown first, on R8's own cell, to agree with R8's drawn trades; 3.3
-  weeks, then 6.
-- **Statistic and pass line.** The cell's mean d; the two-look rule.
-  Printed beside, deciding nothing: the UTC 00:00–04:00 cell (R8: +28.99
-  bps [−0.19, +66.89], 125 entries).
+  the frozen directional list (secondary); entries after 2026-11-07 at
+  each trader's class horizon; 3.3 weeks at the first exam, 6 at the final.
+- **Statistic.** The cell's mean d against the exact null with a random
+  direction, as R8's was — shown first, on R8's own cell, to agree with
+  R8's drawn trades. Printed beside, deciding nothing: the UTC 00:00–04:00
+  cell (R8: +28.99 bps [−0.19, +66.89], 125 entries); "the two hours after
+  the US open".
+- **Pass line, FIND.** Met by R8's secondary: both of its intervals below
+  zero.
+- **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
+  batch.
 - **Smallest visible effect.** The 50: about 50 bps at the first exam, 40
   at the final. All directional accounts: about 20, then 15 [arithmetic
   from R8's cell — a standard error of 14 bps on 387 entries]. FIND's −38
   was picked from 25 cuts and is likely too large: plan for half of it.
-- **How it could fool us → guard.** The boosted stocks trade in the US
+- **Main way it could fool us → guard.** The boosted stocks trade in the US
   session, so competition churn lands in this cell → printed without
-  boosted markets and without competition days. The US open moved from 13:30 to
-  14:30 UTC when the clocks changed on 2026-11-01 → the cell stays fixed in
-  UTC as R8 had it, and "the two hours after the US open" is printed
-  beside.
-- **Cost.** None beyond the exam's capture.
+  boosted markets and without competition days. Also: the US open moved
+  from 13:30 to 14:30 UTC when the clocks changed on 2026-11-01 → the cell
+  stays fixed in UTC as R8 had it.
+- **Cost.** No calls beyond the exam's capture.
+- **Fixed in the entry before the look.** The cell (UTC 12:00–16:00); the
+  two lists with their hashes.
 
 ### The foundations as build entries (done when …)
 
