@@ -243,7 +243,8 @@ from the files — a test proves it — and an outage of the shared server
 costs no board. This is the one exception to R6's "parsed records, not raw
 replies"; it costs a few MB a day.
 
-**Files:** `F:\polymarket-follow\collector\<UTC date>\`
+**Files:** `F:\polymarket-follow\recordings\<UTC date>\` [Final review F7:
+was `…\collector\…`]
 - `book-<HH>.jsonl.br`, `trades-<HH>.jsonl.br`, `rest-<HH>.jsonl.br` — one
   line per frame or reply: our receive time (ms), then the text exactly as
   received; for REST also the path, the status and the `date` and `age`
@@ -340,7 +341,7 @@ CONFIRM list of this batch.
 3. **Everything else** — board and competition rows with their values, the
    stream files, the ticker replies, the audits' figures — stays where no
    research brief points: the other collections and
-   `F:\polymarket-follow\collector\`, never under
+   `F:\polymarket-follow\recordings\`, never under
    `F:\polymarket-follow-research\`.
 4. **The collector computes no research figure.** Its health code reads values
    only to say "agree" or "disagree" (the audits) and to count.
@@ -372,8 +373,14 @@ CONFIRM list of this batch.
 | Recorded | the decided default (decisions 2026-11-07, the owner's PC; R4 Q3) | — | not needed then | — |
 
 **Recommended: at sign-in, as decided;** a start-up task only if an
-unattended restart costs data (question 8). The parts:
-1. **Task "polymarket-follow collector":** at sign-in of the owner's account;
+unattended restart costs data (question 8). **Names:** the program, its
+tasks and its folders are named for what they stay — the poller, v1's one
+API client; "the collector" is this first part's name on the plan page.
+[Final review F7: the tasks were "polymarket-follow collector" and
+"… collector check", the check script `collector-check.ps1`, the files'
+folder `F:\polymarket-follow\collector\` — beside `apps/poller`; registered
+tasks and data folders are costly to rename once v1 runs.] The parts:
+1. **Task "polymarket-follow poller":** at sign-in of the owner's account;
    run only when the user is logged on; run level Limited (the collector
    needs no rights; R4: an elevated process can drop notifications); action
    `tools\launch-hidden.exe node <run copy>\dist\index.js`. The launcher is
@@ -404,11 +411,11 @@ unattended restart costs data (question 8). The parts:
    (time, process id, each connection's last frame, each job's last success,
    tokens in the last minute), and the same in `collector_state`. The file
    works when MongoDB does not.
-4. **Task "polymarket-follow collector check":** at sign-in and every 5
+4. **Task "polymarket-follow poller check":** at sign-in and every 5
    minutes, a short PowerShell script, started by the same launcher (so no
    window flashes every 5 minutes). If the heartbeat is older than 2
-   minutes, it ends the node process whose command line is the collector's,
-   starts the collector task, appends a line to `…-run\var\check.log` and shows a
+   minutes, it ends the node process whose command line is the poller's,
+   starts the poller task, appends a line to `…-run\var\check.log` and shows a
    Windows notification (R4's route: PowerShell's own app ID, nothing
    installed). Task Scheduler restarts a crash, not a hang (R4 §5); this is
    what catches a hang. It is the project's first notification: R4's owner
@@ -504,10 +511,10 @@ apps/poller/          the one API client (the plan page: "the poller (its first 
   src/schedule.ts     pure: next run times in UTC, the nightly window
   test/               vitest; fixtures trimmed from this plan's replies, dated 2026-11-10
 tools/                backup.cjs, restore.cjs, launch-hidden.cs (compiled by the in-box csc.exe),
-                      deploy.ps1 (the run copy), collector-check.ps1, register-tasks.ps1
+                      deploy.ps1 (the run copy), poller-check.ps1, register-tasks.ps1
 
 outside the repository: E:\polymarket-follow-run\poller\ (the run copy), E:\polymarket-follow-run\var\
-                      (heartbeat, lock, logs); F:\polymarket-follow\collector\ (the files)
+                      (heartbeat, lock, logs); F:\polymarket-follow\recordings\ (the files)
 ```
 
 **Technical calls, for the supervisor to record:**
@@ -819,7 +826,7 @@ Failures at run time are in §1.7; these concern the plan.
 6. **Does this yes also allow the first app code and its packages in the
    repository** (an exception to decisions 2026-11-06, "no app code and no
    package installs until the owner approves the v1 plan") **and three
-   Windows tasks** (collector, check, backup — persistent settings you
+   Windows tasks** (poller, poller check, backup — persistent settings you
    register with a prepared script)? *Recommendation:* yes; the fast track
    (decisions 2026-11-09) already plans the build this week.
 7. **Pause the collector's REST reads in polymarket-lab's nightly window
