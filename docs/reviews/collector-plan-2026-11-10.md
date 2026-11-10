@@ -47,82 +47,60 @@ unit of Windows' free-space figures).
 
 ## For the owner, in one page
 
+[Final review F6: rewritten to fit a page; the questions one line each, the
+recommendation first. The first version is in commit `f12787d`.]
+
 **What it records.**
-1. **Every market's order book, each second it changes, and every trade** —
-   from Polymarket's public WebSocket, which costs no rate-limit tokens. The
-   best bid and ask are the book's first line, so they come with it. A past
-   book can never be read back; trades can, but recording them is free.
+1. **Every market's order book, each second it changes, and every trade**,
+   from Polymarket's public WebSocket, which costs no tokens. The best bid
+   and ask are the book's first line. A past book can never be read back.
 2. **Once a day, all 16 leaderboards' top 1,000** (four windows × four
-   sorts), read in the last 20 minutes of the UTC day, and **the competition
-   table** (about 4,700 accounts). Standings exist only "now".
-3. **The universe:** every address ever seen on a board or in the
-   competition table, kept after it drops off. Nothing more is read per
-   account: an account's trades and profit history can be read back to its
-   first trade whenever a study needs them.
-4. **Small reads:** the ticker each minute (open interest, funding rate, how
-   many accounts are long and short), the exchange's maintenance flag every
-   5 minutes, the market list every 10 minutes, splits and fees daily.
-5. **One audit that proves the record honest:** every 10 minutes the
-   recorded best prices against the API's own. [Final review F3: the hourly
-   trade audit and the daily exchange statistics are cut — §1.8, "The cut".]
+   sorts), in the last 20 minutes of the UTC day, and **the competition
+   table** (about 4,700 accounts): standings exist only "now".
+3. **The universe:** every address ever seen there, kept after it drops off.
+   Nothing more is read per account; its history can be read back later.
+4. **Small reads:** the ticker each minute, the maintenance flag every 5
+   minutes, the market list every 10, splits and fees daily — and every 10
+   minutes an audit of the recorded best prices against the API's own.
 
-**What it costs.** About **3 tokens a minute** on average (1.3% of the 250);
-never more than 50 in a minute — only during the 17-minute board read
-before midnight UTC — and never more than 30 in 5 seconds. Research keeps its
-200. The streams download **about 25 GB a day** (about 0.8 TB a month,
-a steady 2–3 Mbit/s), nearly all of it the books, whose frames come every
-tenth of a second whether or not anything changed. The computer's share is
-small: reading the books costs about 1% of one processor core (measured
-offline; the schema checks add a little), compressing an hour of them about
-2 seconds.
+**What it costs.** About **3 tokens a minute** (1.3% of the 250), at most 50
+in a minute during the 17-minute board read before midnight UTC; research
+keeps its 200. **About 25 GB of download a day**, nearly all of it the
+books (§1.1, "The download, plainly", with lighter choices). About 1% of one
+processor core.
 
-**Where it lives.** Streams and every raw reply go to **files on F:** (the 2 TB
-disk, 1,555 GiB free): one compressed file per hour and kind, **about
-0.4–0.6 GB a day** (140–220 GB a year), with a daily list of hashes. Boards,
-the competition table, the universe and the "rule book" go to **our own
-database** on the shared MongoDB (C:), about 2 GB a year. Backups: the
-database daily to E: and F:; the last 7 days of stream files also on E:.
-Older stream files have one copy, on F: (question 5).
+**Where it lives.** Streams and raw replies: hourly compressed files on F:,
+about 0.4–0.6 GB a day, with a daily list of hashes. Boards, competition
+table, universe, rule book: our own MongoDB database (C:), at most about 2 GB
+a year. Backups: the database daily to E: and F:; the last 7 days of files
+also on E:.
 
-**How it runs.** A Windows task starts it **a minute after Windows starts**,
-outside your session (no window, no sign-in needed), and restarts it after a
-crash; a second small task checks every 5 minutes that it is alive and
-restarts it if it hangs, writing down each restart. It never needs a Claude
-session. A silent connection is caught within 15
-seconds and reopened; every gap is written down. In polymarket-lab's nightly
-window (02:35–03:50 UTC) it pauses its REST reads; the streams keep running.
+**How it runs.** A Windows task starts it a minute after Windows starts,
+outside your session — no window, no sign-in — and restarts it after a
+crash; a second task restarts it if it hangs. Every gap is written down. It
+needs no Claude session. In the lab's nightly window (02:35–03:50 UTC) its
+REST reads pause; the streams keep running.
 
-**What research may see.** Everything it stores is after 2026-11-07, so it is
-closed to the "find" studies, except addresses from boards sorted by
-activity and the rule book (IDEAS-REVIEW's rule, A.0-9). Its storage layout
-makes that rule a query, not a matter of care.
+**What research may see:** only addresses from boards sorted by activity,
+and the rule book (IDEAS-REVIEW, A.0-9); the storage layout makes that a
+query.
 
-**Built** in eight parts by one build subagent, each tested and checked by
-the supervisor, then a fresh Final review — about two days. The streams can
-start recording after the third part, before the rest is finished, if you
-agree (question 10): every day without them is lost for good. **You install
-nothing** (Node 24.13 and pnpm 11.20 are on the PC; MongoDB runs); you
-register three Windows tasks with a prepared script.
+**Built** in eight parts (§1.8, with what the first version leaves out) by
+one build subagent, each checked by the supervisor, then a Final review:
+about two days. You install nothing; you register three Windows tasks once,
+from an elevated PowerShell.
 
-**Your questions** (section 7, each with my recommendation in brackets):
-1. Keep two public streams open around the clock — about 25 GB of download a
-   day; is your internet free of a data cap? (*Yes, if there is no cap.*)
-2. Also record the separate best-price and fast-ticker streams? (*No.*)
-3. Read the competition table with its unqualified accounts daily? (*Yes.*)
-4. Read the exchange's maintenance flag every 5 minutes, not every
-   minute? (*Yes.*)
-5. Stream files on F:, the last 7 days also on E:; a monthly copy to an
-   external disk if you have one? (*Yes.*)
-6. Does this yes also allow the first app code, its packages and three
-   Windows tasks? (*Yes.*)
-7. Pause the collector's REST reads in the lab's nightly window? (*Yes, for
-   now.*)
-8. Start the poller with Windows, outside your session, instead of at
-   sign-in? (*Yes.*)
-9. Once the exam lists are frozen, also store those accounts' new fills
-   weekly, unread? (*Yes.*)
-10. Start recording as soon as the streams are built and checked, before
-    the last parts and the Final review? (*Yes.*)
+**Your questions** (§7), the recommendation first:
+1. **Yes, if your line has no data cap:** stream the books and trades of all 90 markets (about 25 GB a day).
+2. **No:** do not also record the separate best-price and fast-ticker streams.
+3. **Yes:** read the competition table with its unqualified accounts daily.
+4. **Every 5 minutes, not every minute:** read the exchange's maintenance flag.
+5. **Yes:** files on F:, the last 7 days also on E: (and a monthly copy to an external disk, if you have one).
+6. **Yes:** this approval also covers the first app code, its packages and three Windows tasks.
+7. **Yes, for now:** pause the REST reads in the lab's nightly window.
+8. **Yes:** start the poller with Windows, outside your session, not at sign-in.
+9. **Yes:** once the exam lists are frozen, store those accounts' new fills weekly, unread.
+10. **Yes:** start recording once the streams are built and checked, before the last parts.
 
 ---
 
