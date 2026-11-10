@@ -1,4 +1,4 @@
-| 0dcaec2 || 458aae0 || 601dee0 || 0a2bc9e || bb98ae9 || 79f25ef || 9c081b5 || 7feb7d0 || 2bcbd70 || e28c1c0 |# DOCS-SWEEP — everything Polymarket documents about Perps, against what we know
+# DOCS-SWEEP — everything Polymarket documents about Perps, against what we know
 
 DOCS-SWEEP (Sonnet 5.5, xhigh), plan item P0-3, written 2026-11-09 23:33Z – 2026-11-10 00:12Z, the Final review (§9) included (UTC, every time from
 `date -u`) for polymarket-follow's supervisor. **Evidence** is in the supervisor folder
@@ -554,21 +554,21 @@ rows; exchange-stats fees $170,275.93 for 2026-11-02 00:00Z to 2026-11-09 00:00Z
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F1 | The competition board was described without its parameter in the headline, Q8-H2, §2, §3, §4 and §7; "all 4,737 participants" contradicts the competition's own 10,019 "participants"; the counts drift (109 → 110 qualified; 4,736 → 4,738 listed) and were not dated | pending |
-| F2 | Rewards against fees: window written "2026-11-02..08" (the read window is 2026-11-02 00:00Z to 2026-11-09 00:00Z, end exclusive); $75,000 a day is the docs' budget, not a measured payment; "the recipients are not public" was not said in the headline; "R2's finding is structural" and the "health ratio" line over-reached | pending |
-| F3 | "Rolling and settled funding agree to 0.03%" is true for CASHCAT (0.026%) and **wrong for XRP (0.195%)**; the absolute gap is 5e-8 an hour at most | pending |
-| F4 | The six contradictions were not quoted with both sources and read times; two said "stale" (an inference about which source is old) | pending |
-| F5 | "Live but not in the spec": `builder-stats` is listed among live routes but was never read; `markets` was read for 1 instrument only (the 50 limit and `curated_list` are changelog text); the widget `address` form, the ticker `symbol` filter, `book::50`, 1 s klines, `corporate-actions` and the statistics open rule are changelog or docs text, not tested | pending |
-| F6 | H13: the report listed "the EOA's own wallet on Polygon" among allowed paths and called it "allowed by the brief"; the brief allowed only an explorer look at one address's deposits and withdrawals; the owner has not ruled | pending |
+| F1 | The competition board was described without its parameter in the headline, Q8-H2, §2, §3, §4 and §7; "all 4,737 participants" contradicts the competition's own 10,019 "participants"; the counts drift (109 → 110 qualified; 4,736 → 4,738 listed) and were not dated | e28c1c0 |
+| F2 | Rewards against fees: window written "2026-11-02..08" (the read window is 2026-11-02 00:00Z to 2026-11-09 00:00Z, end exclusive); $75,000 a day is the docs' budget, not a measured payment; "the recipients are not public" was not said in the headline; "R2's finding is structural" and the "health ratio" line over-reached | 2bcbd70 |
+| F3 | "Rolling and settled funding agree to 0.03%" is true for CASHCAT (0.026%) and **wrong for XRP (0.195%)**; the absolute gap is 5e-8 an hour at most | 7feb7d0 |
+| F4 | The six contradictions were not quoted with both sources and read times; two said "stale" (an inference about which source is old) | 9c081b5 |
+| F5 | "Live but not in the spec": `builder-stats` is listed among live routes but was never read; `markets` was read for 1 instrument only (the 50 limit and `curated_list` are changelog text); the widget `address` form, the ticker `symbol` filter, `book::50`, 1 s klines, `corporate-actions` and the statistics open rule are changelog or docs text, not tested | 79f25ef |
+| F6 | H13: the report listed "the EOA's own wallet on Polygon" among allowed paths and called it "allowed by the brief"; the brief allowed only an explorer look at one address's deposits and withdrawals; the owner has not ruled | bb98ae9 |
 
 **Severity 2 — evidence or wording that does not carry its weight**
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F7 | Derived numbers (55 of 90 on the floor, 3.1×, 5.7×, 2.88 bp, $5.9M, 10.95%, the dates) came from inline `node -e` with no saved script | pending |
-| F8 | The explorer facts came from a summarising fetch tool; nothing was saved | pending |
-| F9 | Wrong figures and stamps: the FAQ has **33** questions, not 40; the four extra pages were fetched 23:46:31Z, not "~23:45Z"; placeholder stamps "23:3xZ" and "23:3x–23:4xZ"; "every figure names its output file" is not true; "in 90 s" is 95 s | pending |
-| F10 | Inferences written as facts: fee rate → tier (untested); `perps-whitelist` "is not the registration gate"; "no earlier data was shaped by a competition"; "excluded from the board's win counts"; `liquidation_fee` read as a fraction; the FAQ "keyed by your EOA" quote was not exact | pending |
+| F7 | Derived numbers (55 of 90 on the floor, 3.1×, 5.7×, 2.88 bp, $5.9M, 10.95%, the dates) came from inline `node -e` with no saved script | 0a2bc9e |
+| F8 | The explorer facts came from a summarising fetch tool; nothing was saved | 601dee0 |
+| F9 | Wrong figures and stamps: the FAQ has **33** questions, not 40; the four extra pages were fetched 23:46:31Z, not "~23:45Z"; placeholder stamps "23:3xZ" and "23:3x–23:4xZ"; "every figure names its output file" is not true; "in 90 s" is 95 s | 458aae0 |
+| F10 | Inferences written as facts: fee rate → tier (untested); `perps-whitelist` "is not the registration gate"; "no earlier data was shaped by a competition"; "excluded from the board's win counts"; `liquidation_fee` read as a fraction; the FAQ "keyed by your EOA" quote was not exact | 0dcaec2 |
 
 **Severity 3 — hygiene (scripts left as they ran, on R1's precedent, except F12)**
 
