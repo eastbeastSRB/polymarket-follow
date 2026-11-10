@@ -65,8 +65,9 @@ recommendation first. The first version is in commit `f12787d`.]
 
 **What it costs.** About **3 tokens a minute** (1.3% of the 250), at most 50
 in a minute during the 17-minute board read before midnight UTC; research
-keeps its 200. **About 25 GB of download a day**, nearly all of it the
-books (§1.1, "The download, plainly", with lighter choices). About 1% of one
+keeps its 200. **About 24–31 GB of download a day**, nearly all of it the
+books (§1.1, "The download, plainly": how it was measured, and lighter
+choices of 7 or 2.5 GB). About 1% of one
 processor core.
 
 **Where it lives.** Streams and raw replies: hourly compressed files on F:,
@@ -91,7 +92,7 @@ about two days. You install nothing; you register three Windows tasks once,
 from an elevated PowerShell.
 
 **Your questions** (§7), the recommendation first:
-1. **Yes, if your line has no data cap:** stream the books and trades of all 90 markets (about 25 GB a day).
+1. **Yes, if your line has no data cap:** stream the books and trades of all 90 markets (24–31 GB a day; lighter choices in §1.1).
 2. **No:** do not also record the separate best-price and fast-ticker streams.
 3. **Yes:** read the competition table with its unqualified accounts daily.
 4. **Every 5 minutes, not every minute:** read the exchange's maintenance flag.
@@ -121,10 +122,39 @@ each frame deflated alone as the server's compression does it):
 | Statistics (`statistics::all`) | 15.5 (each market every ~5.8 s) | — | 23.8% | 1,502 B | 512 B | 0.7 GB |
 | Book, top 50 (`book::<iid>::50`), 5 markets | 49.8 | 9.96 | 67.2% | 1,769 B | 582 B | 2.5 (all 90: 45) |
 
-The wire column assumes deflate level 6 (level 1 adds 7% on books); TLS and
-WebSocket framing add an estimated 1–3 GB a day, not measured. Books and
-tickers are pushed every 100 ms whatever happens, so their download is
-about the same at every hour; best prices and trades grow in busy hours.
+**The download, plainly** [Final review F1: was one number, "about 25 GB a
+day", with its method and range unsaid, and no lighter choice priced].
+- *What it is:* the books of all 90 markets, which the server sends ten
+  times a second whether or not they change, each frame compressed on its
+  own (§8). Trades add about 0.01 GB a day; what we send (pings) is nothing.
+- *How it was measured:* each book frame of the 300 s capture was
+  compressed again on its own, at the common deflate level 6 (the server's
+  level is unknown; level 1 would add 7%): **23.5 GB a day of compressed
+  frames**. Not in that figure: the WebSocket and TLS wrapping of each frame
+  (by the protocols' fixed sizes, 2–30 bytes a frame: up to 2.3 GB a day)
+  and the packets' own IP and TCP headers, which a provider's meter also
+  counts (about 3% if the server fills its packets, up to about 12% if each
+  frame travels alone).
+- *How sure:* the frame rate is fixed by the server and does not change
+  with the hour; frame sizes move little (853 B of text on average, 20
+  levels a side in 62% of frames). So **24–31 GB a day** — 23.5 to 25.1 of
+  payload (level 6 or 1), plus 0.3–2.3 of wrapping, plus 3–12% of packet
+  headers — **about 0.7–0.9 TB a month, a steady 2.3–2.9 Mbit/s.**
+
+**Lighter choices, if the line has a cap or is shared** (payload from the
+capture's frames, `out/options-download-floor.txt`; the same wrapping and
+packet headers come on top):
+
+| Choice | Download a day | What it loses for round 2 | What it loses for v1 |
+|---|---|---|---|
+| **A. Books and trades of all 90 markets (recommended)** | 23.5 GB of payload | — | — |
+| B. Books of the 20 markets with the most 24-hour volume (78.6% of it at 00:59Z), best prices of the other 70, trades of all | 7.0 GB of payload | the depth beyond the best price in the 70 thinner markets — where a follower's cost is highest; their 100 ms liveness (a best price can stand still for minutes); their books for later studies (IDEAS-REVIEW study 16) and for the exams' audit | a paper entry in one of the 70 reads a REST book (2 tokens at depth 10) |
+| C. Best prices and trades of all 90, no books | 2.5 GB of payload | all depth; the books of study 16 and of the backlog's "thinning books"; the exams' audit becomes a best-price audit | a REST book for every paper entry (2–5 tokens) |
+| D. No streams: trades read back later, a REST book of every market every 10 minutes (1.8 tokens a minute) | under 0.1 GB | the second a trader acted: books 10 minutes apart; the forward clock of every book-based test | the same REST reads as C |
+
+B picks its 20 markets by their 24-hour volume, the market's own figure.
+"The markets the universe trades" would aim better, but those come from
+board rows after 2026-11-07, closed to everyone before the exams (§1.3).
 
 **What else the run showed.**
 - **The book holds the best price.** Its first level equals the latest
@@ -727,9 +757,8 @@ following.
   millisecond of changes; (S3) + the ticker stream: +9.8 GB of download for a
   sub-minute index and open interest; (S4, IDEAS-REVIEW's wording) best
   prices each second and a book every 10 s — the book stream is needed
-  anyway, and 10 s loses the second a trader acted; (S0) trades only, plus a
-  REST book of every market every 10 minutes (1.8 tokens a minute), if the
-  download meets a data cap.
+  anyway, and 10 s loses the second a trader acted; and the lighter choices
+  B–D for a capped line (§1.1).
 - **How often a book is stored** (gzip, a day; `out/ws-measure.txt` and
   `out/offline-analysis.txt` §4): every frame 18.0 GB; every change 3.3; once
   a second when changed 1.2 (Brotli 0.37); every 2 s 0.70; every 5 s 0.33;
@@ -793,7 +822,7 @@ Failures at run time are in §1.7; these concern the plan.
 
 | Problem | Handling |
 |---|---|
-| The download (about 25 GB a day) meets a data cap | question 1; S0 is the fallback (§2) |
+| The download (24–31 GB a day) meets a data cap, or a shared line | question 1; the lighter choices B–D (§1.1) |
 | Stream files older than 7 days have one copy | question 5 |
 | C: is shrinking, not by us (§1.2) | our share is at most about 2 GB a year; the alarm at 15 GiB; if C: keeps falling, the owner and the lab's supervisor look at what grows; moving our database (R6's trigger) would need a disk other than D: |
 | Windows Update resumes after 2026-11-18 and may restart the PC at night | the start-up tasks run a minute after the restart (§1.4, question 8); the minute of the restart is a logged gap |
@@ -822,8 +851,10 @@ Failures at run time are in §1.7; these concern the plan.
   *Settles:* the first week's overlap of their rows (counted, not read: §1.3
   item 7); if they repeat, 13 boards would do, which is the owner's call
   since C1 names 16. [Final review F13: unsaid.]
-- **The server's compression level and the TLS overhead,** so the download is
-  an estimate to about ±15%. *Settles:* part 2's byte count.
+- **The download's exact size:** the server's compression level, the
+  wrapping a frame and the packets' headers make it 24–31 GB a day.
+  *Settles:* the bytes read from the network socket (a short sample after
+  this review's quiet window; then part 2 over a whole day).
 - **Whether a CloudFront cache hit spends tokens** (it changes only our
   accounting; we count it), and **how long CloudFront keeps `exchange`**
   (213–446 s seen).
@@ -860,11 +891,13 @@ C: trend (§1.2, §4).]
 1. **May the collector keep two public streams open around the clock — the
    books (top 20) and trades of all 90 markets?** They need no key, sit far
    inside the 50 connections allowed, cost no rate-limit tokens, and download
-   about 25 GB a day (about 0.8 TB a month), nearly all of it the books. This
-   is IDEAS-REVIEW's question 2 (it named three streams; the measurement
-   shows the book already holds the best prices). **Is your internet free of
-   a data cap?** *Recommendation:* yes, if there is no cap; with a cap,
-   trades only and a book of every market every 10 minutes (§2, S0).
+   24–31 GB a day (0.7–0.9 TB a month), nearly all of it the books. This is
+   IDEAS-REVIEW's question 2 (it named three streams; the measurement shows
+   the book already holds the best prices). **Is your internet free of a
+   data cap, and not shared with someone a steady 2–3 Mbit/s would bother?**
+   *Recommendation:* yes, if so; otherwise choice B — the books of the 20
+   busiest markets and the best prices of the rest, about 7 GB a day of
+   payload — or C, best prices only, about 2.5 (§1.1, with what each loses).
 2. **Also record the best-price stream (+2.5 GB of download and 0.39 GB of
    disk a day at the night's rate) and the ticker stream at ten a second
    (+9.8 GB of download)?** [Final review F2: the disk was "0.4–1 GB", the 1
