@@ -128,7 +128,7 @@ and the BLP entries. Ping and the six public channel pages (trades, bbo, book, k
 | `/v1/info/competition/widget` (1) | live competition at a glance: `competition_id`, `end_time` (2026-11-16T14:30Z), `min_volume`; with `address` the account's rank and qualification progress (spec text, **not tested**) | read without address (`a1-widget`) |
 | `/v1/info/markets` (2; changelog, not in spec) | **batched snapshot**: `instrument_ids` (≤50), `curated_list`, `include=sparkline,totals` → per market mark, open price, volume, 24 sparkline points; `totals` = volume $88.4M, open interest $117.3M, 90 markets | read (`a1-markets`) |
 | `/v1/info/stock-splits` (?) | `{"events":[],"sequence":…}` — empty until a split is scheduled | read (`a2-stock-splits`) |
-| `/v1/info/perps-whitelist?address=` (?) | `{"status":"ok","whitelisted":false}` for the day-board #1 account (a trading account), so it is **not** the registration gate; meaning unknown. Without `address`: 400 | read (`a2-perps-whitelist`, `a6-whitelist`) |
+| `/v1/info/perps-whitelist?address=` (?) | `{"status":"ok","whitelisted":false}` for the day-board #1 account (a registered, trading account); I infer it is not the registration gate; meaning unknown. Without `address`: 400 | read (`a2-perps-whitelist`, `a6-whitelist`) |
 | `/v1/info/builder-stats?address=&period=` (10 on a miss; changelog) | a builder's users, volume, exchange fee, builder fee per market; periods 1d/1w/1m/1y/alltime (changelog 2026-10-22 text only) | **not read — unverified** (needs a builder address; none known) |
 
 **A2. Verification status of every "live but not in the spec" item** [Final review F5] (I searched both spec files for the
@@ -213,9 +213,9 @@ limits, partial TP/SL closes, trailing stops, synthetic pricing, odds orders.
   ordinary `order_id`; its fill is a taker reduce (market) or maker/taker (limit). The `orders` and `tpsl` channels
   are private. H5 can only *infer* stop-like habits (a taker reduce right after the *mark* touched a level).
 - **Liquidation: yes.** `liquidation: true`; since 2026-08-11 **both maker and taker** fills inside the account's
-  liquidation scope carry it (older rows are unchanged: maker legs read false). Those maker legs are excluded from
-  the board's win counts. The fill also pays an extra liquidation fee: `FillFee = notional × (maker/taker rate +
-  0.005)` (0.5% on all 90 markets now).
+  liquidation scope carry it (older rows are unchanged: maker legs read false). The changelog (2026-08-11) says such maker legs are excluded from "leaderboard win counts"; the public leaderboard API has no
+  win-count field. The fill also pays an extra liquidation fee: `FillFee = notional × (maker/taker rate +
+  0.005)` (`liquidation_fee` "0.005" on all 90 markets, read here as a fraction; the spec does not state the unit).
 - **ADL: yes.** `adl: true` on **both** legs since 2026-08-10 (before that the counterparty leg read
   `liquidation: true`). ADL fills have no fee. The `position_deleveraged` notification is private.
 - **Settlement: yes.** `settlement: true` on fills and on the tape; no fee, no liquidation fee.
@@ -250,8 +250,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   $1M 3.7 / 1.0; $5M 3.5 / 0.8; $25M 3.0 / 0.5; $100M 2.7 / 0.2; $500M 2.5 / 0.0; $1B 2.0 / **−0.5** (the only rebate).
   Beta accounts sit on the top schedule for now. Fee = |price × quantity| × rate. A per-market `fee_override` replaces
   the schedule inside its window (ANT-USD: about half). Builder fee on top, up to 10 bp, trader-approved. Account
-  groups can aggregate volume. *Shows in public data:* every fill's `fee`; **`|fee| / (price × quantity)` reveals the
-  trader's tier** (a rebate means top tier or beta), unless the market has an override.
+  groups can aggregate volume. *Shows in public data:* every fill's `fee`; **`|fee| / (price × quantity)` might reveal the
+  trader's tier** (a rebate would mean top tier or beta) — an inference, **untested on fills** [Final review F10]; use `fee`, not
+  `total_fee`; liquidation fills pay an extra fee; override markets differ.
 - **Maker rebates:** only the top tier or beta accounts earn them; R1 saw 838 of 4,063 fills with a rebate.
 - **Liquidity rewards** (docs `liquidity-rewards`): **$75,000 a day** split evenly over active markets (+$1,000 on a new
   market's first day), periods 12:00–12:00 UTC labelled by the end date, paid in pUSD to the account. Score =
@@ -282,8 +283,8 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   counts, positive PnL required, boosted markets (now ANT 3×; AMD, ARM, SOXL 2×); wash trading, self-trading and
   multi-accounting disqualify all linked accounts; `row_state` live | provisional | disqualified | final | paid. *Makes a trader churn
   volume on boosted markets.* The day-board #1 account reads `disqualified` (`a7-comp-acct`), as R1's all-time #1 did —
-  a free flag for any address at weight 1 (reason not given). The first competition began 2026-11-02, so **no earlier
-  data was shaped by one**.
+  a free flag for any address at weight 1 (reason not given). `/v1/info/competitions` (23:41:16Z) lists only this one (number 1), so no earlier competition shows in the API; one outside
+  that list cannot be ruled out [Final review F10].
 
 ### Q5. Markets
 
@@ -333,7 +334,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **Visible on an explorer?** The contract's transactions are public by nature. For **one** account I could not confirm
   it: the address page loaded but its "2 token transfers" were not rendered by my fetch tool (§5). It did show the
   account's *own wallet* holds 15,759.49 pUSD outside the exchange and 0 POL (incidental, from a summarising fetch tool, not saved; **not a data path for H13 unless the owner rules**, see the rule below).
-- **Same address elsewhere?** The Perps account is **the signer's EOA** ("keyed by your EOA base address, not a Safe", FAQ);
+- **Same address elsewhere?** The Perps account is **the signer's EOA** (FAQ, fetched 23:34:53Z: "Your account is keyed by your EOA base address, the externally-owned account that signs `createProxy`, not a Safe smart-contract wallet address.");
   an EOA has the same address on every EVM chain (the page showed a 29-chain portfolio). Polymarket's prediction markets
   use a **derived smart wallet** (Deposit Wallet / Proxy / Safe) controlled by that signer — a different address that the
   SDK "derives"; the link formula is not documented and not verified. Hyperliquid and other EVM-keyed venues would show
@@ -425,7 +426,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 3. Ticker `long_count`/`short_count`: free crowd breadth on 90 markets every 2 s.
 4. `/v1/info/exchange` (weight 2): `cancel_only` and `engine_version` mark maintenance windows and deploys; the changelog
    says order placement pauses and WebSocket connections drop at each rollout.
-5. Fee rate per fill → the trader's volume tier and beta status.
+5. Fee rate per fill → the trader's volume tier and beta status (an inference, untested) [Final review F10].
 6. `exchange-stats` per day: volume, fees, open interest — the context series for H9.
 7. Retired markets by id (`instrument_id=51` returns the settlement); `close_only` as an early delisting flag.
 8. Public portfolio → approximate cross-margin ratio (isolated accounts excluded).
