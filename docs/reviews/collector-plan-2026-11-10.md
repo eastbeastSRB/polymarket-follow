@@ -853,8 +853,10 @@ Failures at run time are in §1.7; these concern the plan.
   since C1 names 16. [Final review F13: unsaid.]
 - **The download's exact size:** the server's compression level, the
   wrapping a frame and the packets' headers make it 24–31 GB a day.
-  *Settles:* the bytes read from the network socket (a short sample after
-  this review's quiet window; then part 2 over a whole day).
+  *Settles:* the bytes read from the network socket — a 50-second sample
+  (W `scripts/wire-sample.mjs`, its frame parser self-tested offline:
+  `out/wire-sample-selftest.txt`; not run, see the Final review's "What I
+  left") or part 2 over a whole day.
 - **Whether a CloudFront cache hit spends tokens** (it changes only our
   accounting; we count it), and **how long CloudFront keeps `exchange`**
   (213–446 s seen).
@@ -1044,7 +1046,10 @@ In W (`E:\coding\Claude\supervisor\polymarket-follow\workers\COLLECTOR-PLAN\`):
   run), `ws-deflate-check.mjs`, `ws-ext-check.mjs`, `offline-analysis.mjs`,
   `depth-coverage.mjs`, `audit-sim.mjs` (the price audit on the capture),
   `cpu-bench.mjs` (Brotli and parsing costs), `rest-budget-check.cjs`,
-  `disk-free.mjs`, `save-page.mjs` (Microsoft's VBScript page).
+  `disk-free.mjs`, `save-page.mjs` (Microsoft's VBScript page); from the
+  Final review `light-options.mjs`, `options-download.mjs`,
+  `rest-size-bound.mjs`, `read-cost.mjs` and `wire-sample.mjs` (not run on
+  the network; self-tested).
 - **Outputs** (`out/`): `ws-measure.txt` and `ws-main-stdout.txt` (the 300 s
   run), `ws-smoke.txt` and `ws-smoke-stdout.txt` (the 15 s run),
   `ws-samples.jsonl` and `ws-samples-smoke.jsonl` (the first frames of each
@@ -1053,6 +1058,7 @@ In W (`E:\coding\Claude\supervisor\polymarket-follow\workers\COLLECTOR-PLAN\`):
   `cpu-bench.txt`, `ws-deflate-check.txt`, `ws-ext-check.txt`,
   `ws-ua-local-test.txt`, `launcher-facts.txt`, `ms-vbscript-page.txt`,
   `task-facts.txt`, `light-options.txt`, `rest-size-bound.txt`,
+  `options-download-floor.txt`, `read-cost.txt`, `wire-sample-selftest.txt`,
   `async-inspect.txt`, `async-updates.txt`, `rest1.txt`, `rest-calls.jsonl`
   (every REST call), `rest-budget-check.txt`, `disk-free.txt`,
   `dl-docs.txt`.
@@ -1161,6 +1167,10 @@ code-rules' "write scripts to a file"; its result was read back.
   first week has counted their overlap.
 - *The packets' own headers* (3–12% of the download): Node cannot see them;
   part 2's day-long count by the operating system settles them.
+- *The 50-second wire sample:* written and self-tested, not run. This
+  review ran inside polymarket-lab's nightly window (no call until 03:50Z),
+  and its result could only narrow 24–31 GB a day, which already answers
+  question 1 (0.7–0.9 TB a month either way); part 2 measures a whole day.
 - *Whether the start-up task outside the session registers and runs as
   planned* (F15): only a registration, which is a persistent setting and the
   owner's, can prove it; part 3's "done" line requires it, and the
