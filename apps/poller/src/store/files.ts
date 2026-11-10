@@ -12,6 +12,7 @@ import {
   createReadStream,
   createWriteStream,
   mkdirSync,
+  openSync,
   type WriteStream,
 } from "node:fs";
 import { open, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -33,6 +34,25 @@ const MANIFEST_FILE = "manifest.json";
 /** Lines of the hour just ended may arrive this late (the book sampler holds one second). */
 const ROLL_GRACE_MS = 5_000;
 const BROTLI_QUALITY = 5;
+
+/**
+ * A plain hour file a scan may compress: its hour is before the open one and
+ * no stream is open or still closing on it (one queued before a roll can
+ * meet a file whose stream is still flushing).
+ */
+export function isClosedHourFile(
+  name: string,
+  day: string,
+  openFromMs: number,
+  busy: boolean,
+): boolean {
+  const hour = HOUR_FILE.exec(name)?.[2];
+  return (
+    hour !== undefined &&
+    !busy &&
+    Date.parse(`${day}T${hour}:00:00Z`) < openFromMs
+  );
+}
 
 /** A text holding a line break is written as a JSON string, so a line is always one frame or reply. */
 export function formatLine(recvMs: number, text: string): string {
@@ -61,6 +81,8 @@ export class Recorder {
     compressed: 0,
   };
   private readonly files = new Map<string, OpenFile>();
+  /** Files whose stream is open or still closing: no scan compresses one. */
+  private readonly busy = new Set<string>();
   private readonly entries = new Map<string, ManifestEntry[]>();
   private openFromMs = 0;
   private rollTimer: NodeJS.Timeout | undefined;
@@ -140,7 +162,10 @@ export class Recorder {
     this.files.set(file, opened);
     try {
       mkdirSync(path.dirname(file), { recursive: true });
-      const stream = createWriteStream(file, { flags: "a" });
+      // Created now, not when the stream gets round to it, so a scan never misses it.
+      const stream = createWriteStream(file, { fd: openSync(file, "a") });
+      this.busy.add(file);
+      stream.on("close", () => this.busy.delete(file));
       stream.on("error", (err) => {
         opened.stream = null;
         this.log.error({ err, file }, "recording file failed");
@@ -197,9 +222,11 @@ export class Recorder {
           await rm(file, { force: true });
           continue;
         }
-        const hour = HOUR_FILE.exec(name)?.[2];
-        if (hour === undefined) continue;
-        if (Date.parse(`${day}T${hour}:00:00Z`) >= this.openFromMs) continue;
+        if (
+          !isClosedHourFile(name, day, this.openFromMs, this.busy.has(file))
+        ) {
+          continue;
+        }
         await this.dropCutLine(file);
         try {
           const entry = await compressHourFile(file);

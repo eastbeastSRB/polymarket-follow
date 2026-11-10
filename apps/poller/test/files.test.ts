@@ -16,6 +16,7 @@ import {
   LineScan,
   Recorder,
   formatLine,
+  isClosedHourFile,
   truncateCutLine,
 } from "../src/store/files.js";
 
@@ -63,6 +64,30 @@ describe("LineScan", () => {
         last: 1_794_272_400_900,
       });
     }
+  });
+});
+
+describe("isClosedHourFile", () => {
+  it("lets a scan compress only a plain hour file before the open hour with no stream on it", () => {
+    const open = at("2026-11-10T14:00:00Z");
+    expect(isClosedHourFile("book-13.jsonl", "2026-11-10", open, false)).toBe(
+      true,
+    );
+    expect(isClosedHourFile("book-13.jsonl", "2026-11-10", open, true)).toBe(
+      false,
+    );
+    expect(isClosedHourFile("book-14.jsonl", "2026-11-10", open, false)).toBe(
+      false,
+    );
+    expect(isClosedHourFile("rest-23.jsonl", "2026-11-09", open, false)).toBe(
+      true,
+    );
+    expect(
+      isClosedHourFile("book-13.jsonl.br", "2026-11-10", open, false),
+    ).toBe(false);
+    expect(isClosedHourFile("coverage.jsonl", "2026-11-09", open, false)).toBe(
+      false,
+    );
   });
 });
 
@@ -175,6 +200,31 @@ describe("Recorder", () => {
       false,
     );
   });
+
+  it("leaves a file whose stream is open or closing to the roll, even when the day turns during the start-up scan", async () => {
+    // A large hour, written just before the day turns, with the start-up scan still queued.
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(at("2026-11-10T23:59:58Z"));
+    const recorder = new Recorder(root, log);
+    await recorder.start();
+    const body = `{"pad":"${"x".repeat(180)}"}`;
+    const count = 100_000;
+    for (let i = 0; i < count; i += 1) {
+      recorder.write("book", at("2026-11-10T23:59:58.100Z"), body);
+    }
+    recorder.write("trades", at("2026-11-10T23:59:58.500Z"), '{"t":1}');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await recorder.close();
+
+    const day = "2026-11-10";
+    const manifest = JSON.parse(read(day, "manifest.json").toString()) as {
+      files: { name: string; lines: number }[];
+    };
+    expect(manifest.files.map((f) => [f.name, f.lines])).toEqual([
+      ["book-23.jsonl.br", count],
+      ["trades-23.jsonl.br", 1],
+    ]);
+  }, 60_000);
 
   it("at start, drops a cut last line, compresses an earlier run's closed hours, deletes a half-written .br and builds the missing manifest", async () => {
     const day = path.join(root, "2026-11-09");

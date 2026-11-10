@@ -12,9 +12,7 @@ export function tickersJob(client: RestClient): Job {
   return {
     name: "tickers",
     schedule: { everyMs: MINUTE_MS, offsetMs: 5 * SECOND_MS },
-    run: async () => {
-      await client.get("tickers");
-    },
+    run: async () => (await client.get("tickers")).ok,
   };
 }
 
@@ -26,7 +24,7 @@ export function exchangeJob(client: RestClient, log: Logger): Job {
     schedule: { everyMs: 5 * MINUTE_MS, offsetMs: 80 * SECOND_MS },
     run: async () => {
       const reply = await client.get("exchange");
-      if (!reply.ok) return;
+      if (!reply.ok) return false;
       const { cancel_only, engine_version } = reply.data;
       if (
         last &&
@@ -39,6 +37,7 @@ export function exchangeJob(client: RestClient, log: Logger): Job {
         );
       }
       last = { cancel_only, engine_version };
+      return true;
     },
   };
 }

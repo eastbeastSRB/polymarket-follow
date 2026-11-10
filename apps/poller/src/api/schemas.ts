@@ -75,6 +75,10 @@ export const InstrumentsReply = z.array(
     max_leverage: z.unknown().optional(),
     risk_tiers: z.unknown().optional(),
     ui_live_time: z.unknown().optional(),
+    /** Live but not in the spec (2026-11-10 15:16Z, COLLECTOR-BUILD). */
+    fee_override: z.unknown().optional(),
+    funding_multiplier: z.unknown().optional(),
+    logo: z.unknown().optional(),
   }),
 );
 
@@ -89,6 +93,67 @@ export const BboReply = z.array(
     timestamp: ms,
   }),
 );
+
+/**
+ * The WebSocket (asyncapi-perps.json). The books are the recording, so a book
+ * frame needs only what the sampler and the price audit read: its channel,
+ * its server time and two lists of levels, each level at least a price and a
+ * size. Every other field is named so the unknown-keys log sees new ones.
+ */
+const level = z.array(z.string()).min(2);
+
+export const BookFrame = z.object({
+  ch: z.string().regex(/^book::\d+$/),
+  ts: ms,
+  ets: ms.optional(),
+  sq: z.number().int().optional(),
+  data: z.object({ b: z.array(level), a: z.array(level) }),
+});
+
+export const TradesFrame = z.object({
+  ch: z.string().regex(/^trades::\d+$/),
+  ts: ms,
+  ets: ms.optional(),
+  sq: z.number().int().optional(),
+  data: z.array(
+    z.object({
+      tid: id,
+      iid: id,
+      side: z.unknown().optional(),
+      p: z.unknown().optional(),
+      qty: z.unknown().optional(),
+      ts: z.unknown().optional(),
+      hash: z.unknown().optional(),
+      settlement: z.unknown().optional(),
+      liquidation_details: z.unknown().optional(),
+    }),
+  ),
+});
+
+/** The reply to a `sub` or `unsub`: one status per channel, in the request's order. */
+export const SubReply = z.object({
+  id: z.number().int(),
+  data: z.array(
+    z.object({
+      status: z.string(),
+      error: z.string().optional(),
+      arts: z.unknown().optional(),
+      ts: z.unknown().optional(),
+      ref: z.unknown().optional(),
+    }),
+  ),
+});
+
+export const PongReply = z.object({
+  id: z.number().int().optional(),
+  data: z.object({ status: z.literal("ok"), ts: ms, sq: z.number().int() }),
+});
+
+/** A request the server refused, `message_rate_limited` among them. */
+export const ErrorReply = z.object({
+  id: z.number().int().optional(),
+  data: z.object({ status: z.literal("err"), error: z.string() }),
+});
 
 /** Key paths in `value` that `schema` does not name; arrays are written `[]`. */
 export function unknownKeyPaths(
