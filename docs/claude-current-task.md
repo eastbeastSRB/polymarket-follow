@@ -48,8 +48,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 The road is on the plan page, "The road to v1" (decisions 2026-11-09, the
 road to v1): every point with its ID. Nothing starts before the owner's go.
 
-1. **Phase 0 — preparation:** P0-2 a second copy of R3-WEEKDAY's live books
-   on E:; P0-3 DOCS-SWEEP; P0-4 IDEAS-REVIEW (fresh eyes, Fable 5.1).
+1. **Phase 0 is done** (DOCS-SWEEP, IDEAS-REVIEW, the second copies).
+   Round 2's rule book and the collector are approved (decisions 2026-11-10,
+   round 2's rules and the collector approved); both start on the owner's go.
 2. **This week (the fast track, decisions 2026-11-09):** Phase 1, the
    collector (C1), after DOCS-SWEEP; Phase 2, round 2's FIND studies in
    parallel (the hypothesis register first), after IDEAS-REVIEW.

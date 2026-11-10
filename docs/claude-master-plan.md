@@ -44,8 +44,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-09, through decisions 2026-11-09 (the road to
-v1).*
+*Brought in step on 2026-11-10, through decisions 2026-11-10 (round 2's rules
+and the collector approved).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -80,9 +80,9 @@ v1).*
 
 | | When | What | Who |
 |---|---|---|---|
-| 🔵 | since 2026-11-09 23:38Z | **Phase 0 — preparation:** P0-1 the record and P0-2 the second copies (R3-WEEKDAY's and R8's data on E:, hash-checked) done; P0-3 DOCS-SWEEP and P0-4 IDEAS-REVIEW running ("The road to v1") | the supervisor; two subagents |
-| ⬜ | this week, after DOCS-SWEEP | **Phase 1 — the collector (C1):** a short plan, the owner's yes, a small build, a Windows task | a plan and a build subagent |
-| ⬜ | this week, after IDEAS-REVIEW, beside Phase 1 | **Phase 2 — research round 2, FIND:** the hypothesis register (the owner approves), then the studies H1–H13 in parallel on data up to 2026-11-07 | research subagents |
+| ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
+| 🟢 | 2026-11-10, on the owner's go | **Phase 1 — the collector (C1):** the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
+| 🟢 | 2026-11-10, on the owner's go, beside Phase 1 | **Phase 2 — research round 2, FIND:** by the approved rule book (IDEAS-REVIEW Appendix A.0): the research kit and the first measurements (A.1), then the top ten studies on data up to 2026-11-07; the batch frozen about 2026-11-20 | research subagents |
 | ⏳ | about 2026-11-30 | **The first exam (CONFIRM)** on the weeks after 2026-11-07, with the dated checks D1 (after 11-21) and D2 (after 11-30) | research subagents; the supervisor |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
@@ -268,6 +268,7 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Later — the backlog
 
+- ⏳ **The owner's own execution venue and costs** — where the owner acts on what the tool shows and what a round trip costs there (the owner will explain and show; decisions 2026-11-10, round 2's rules and the collector approved). Until then every table uses Polymarket Perps' measured taker costs. Trigger: the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
   daily top-50 leaderboard since late August 2026 is worth a one-time

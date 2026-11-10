@@ -1,5 +1,59 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-10 (round 2's rules and the collector approved — the owner, on the
+recommendations of IDEAS-REVIEW, DOCS-SWEEP, COLLECTOR-PLAN and the
+supervisor): **ROUND 2 RUNS BY ONE RULE BOOK WITH TWO EXAMS, AND THE COLLECTOR
+IS BUILT NOW, RECORDING EVERYTHING ONTO F:.** Phase 0 is complete (P0-1 to
+P0-4: `docs/reviews/docs-sweep-2026-11-10.md`, `ideas-review-2026-11-10.md`,
+each Final-reviewed). The owner approved all eleven recommendations ("i
+agree with your recommendation (eleven of them)"): **(1)** round 2 follows
+IDEAS-REVIEW's rule book (its Appendix A.0 as of commit `1e35202` and later
+corrections marked in place): one 5% budget for any false pass across the
+whole batch — 0.5% at the first exam (about 2026-11-30: pass at p ≤
+0.005 ÷ m, drop on a wrong sign, else open), 4.5% by Holm at the final exam
+(2026-12-19); p from t-tests on day means and on trader means, the larger
+deciding; the batch and m frozen about 2026-11-20 with their t values
+recomputed then; the "blind store" by field (after 2026-11-07 FIND may take
+only `account` from boards sorted by notional or account value and from the
+competition table, plus the rule book); the competition of 2026-11-02 →
+11-16 a covariate in every test; **round 2 ends at the final exam**; **(2)**
+if study 1 finds no difference between traders, ranking traders stops for
+now, to be reopened after six months; **(3)** the same address's record on
+another venue: not now, ruled after study 1; **(4)** trader quality as a
+short list of tested measures, not one score; an AI's rating only forward,
+as a paper profile beside the owner's own "would have taken it" mark;
+**(5)** on-chain lookups only for deposits, withdrawals and wallet balances
+of favourites, after one more explorer check; **(6)** the collector reads
+the competition table with `include_unqualified=true` daily, `exchange`
+every 5 minutes, no separate best-price or ticker streams; **(8)** this
+approval covers the first app code (`apps/poller` in a pnpm workspace), its
+packages and three Windows tasks — an exception to "no code before the v1
+plan" (decisions 2026-11-06); **(9)** REST reads pause in the lab's nightly
+window, the streams keep running, and the poller starts **with Windows,
+outside the owner's session** (S4U, no password stored), changing the
+sign-in default of 2026-11-07 for the poller; **(10)** once the exam lists
+are frozen, their new fills are stored weekly, unread until an exam;
+**(11)** recording starts once build part 3 is verified, before the
+collector's Final review. **The collector** follows
+`docs/reviews/collector-plan-2026-11-10.md` (15 Final-review corrections;
+its deviations from CLAUDE.md's Stack, D1–D14 in its table, are accepted:
+no Turborepo or shared package yet, no node-cron, Node's built-in WebSocket,
+a run copy outside the working tree, among them). **No data cap** ("full
+speed 24h 365days"), so the **full recording**: top-20 books of all 90
+markets at most once a second when changed, every trade (24–31 GB a day of
+download). **(7) Storage, amending decisions 2026-11-08 (R6 accepted) for
+the collector** (E: has ~20 GB free and shrinking; D: is never used): the
+recordings on F: only (`F:\polymarket-follow\recordings\`, about 0.4–0.6 GB a
+day, 150–220 GB a year; F: ~1.5 TB free); the database on C: (about 2 GB a
+year); its dumps daily to F: (`F:\backups\polymarket-follow\db\`, 14 daily
+and 8 weekly kept) and only the newest dump on E:; an external disk or
+cloud copy later, by the owner. The stated risk: until that copy, an F:
+failure loses the recordings. **The follower's costs:** Polymarket Perps'
+measured taker costs are the default in every table (about 9–13 bps a round
+trip); where the owner acts and at what cost is to be talked through later
+(the owner: "this is specific topic and i can explain and show how am doing
+… that can come later").
+
 2026-11-09 (the fast track — the owner, on the supervisor's
 recommendation): **ROUND 2'S STUDIES FIND IN PARALLEL NOW, THE FIRST EXAM
 RUNS ABOUT 2026-11-30, AND THE V1 PLAN STARTS IN EARLY DECEMBER BESIDE THE
