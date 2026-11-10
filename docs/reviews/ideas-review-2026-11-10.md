@@ -293,8 +293,10 @@ horizons; DS on the funding floor.*
 setting, the round trip's cost against the usual move, and the share of
 right calls needed to break even. An illustration with assumed volatility:
 a major coin moving 40 bps in a usual hour and 200 in a usual day, at 9 bps
-a round trip, needs about 61% right at one hour and 52% at a day
-[arithmetic]. A crypto long also pays about 3 bps a day in funding at the
+a round trip, needs about 61% right at one hour and 52% at a day; a small
+coin moving 100 bps in a usual hour, at 13 bps a round trip, about 57%
+[arithmetic on assumed moves; Final review F8: the small-coin line
+added]. A crypto long also pays about 3 bps a day in funding at the
 floor rate (10.95% a year [record: DS Q5]). (b) H4's test: do the entries
 of traders who hold six hours or more, scored at 24 h and 72 h, beat random
 trades — on all directional accounts, not the 50? **Why third:** the map
@@ -529,12 +531,21 @@ times in five only at about 25 bps [arithmetic]. An edge of 12–15 bps —
 enough to pay the costs and leave a little — would most likely have been
 missed. The sign test needed about 31 of 47 traders positive. So FAILS was
 the expected word for any small real edge. The sentence that carries the
-information is the estimate: "before costs, about −5 bps, between −19 and
-+5".
+information is the estimate: "before fees and spread, about −5 bps, between
+about −19 and +5". [Final review F8: was "before costs, about −5 bps,
+between −19 and +5". Two things stand behind the figure and belong beside
+it. It adds R8's mean cost, 11.15 bps, to the mean (−16.60) and to both
+ends of its interval (−29.98, −5.87) — as if every entry cost the same.
+And that cost is fees and spread only: funding, which R8 does not print
+apart, is still inside. Neither changes the picture.]
 
 **2.3 — The horizon** (C-3, C-10). 27 of 50 traders were scored at one hour,
-where a taker needs about six right calls in ten to break even (study 3;
-illustrative until the map is measured). And the class came from each
+where — by study 3's illustration — a taker needs about six right calls in
+ten on a major coin to break even, and somewhat fewer on a small coin; the
+map (A.1, measurement 8) measures it for every market [Final review F8:
+was "where a taker needs about six right calls in ten to break even" — the
+major-coin illustration, printed as if for every market; #47, the busiest
+of the 27, traded small coins only]. And the class came from each
 trader's own median hold, which the exit habit shapes (winners closed
 early — R3's own finding). Score every entry at every horizon and read the
 curve.
