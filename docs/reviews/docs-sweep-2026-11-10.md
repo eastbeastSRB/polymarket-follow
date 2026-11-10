@@ -1,6 +1,6 @@
 # DOCS-SWEEP — everything Polymarket documents about Perps, against what we know
 
-DOCS-SWEEP (Sonnet 5.5, xhigh), plan item P0-3, written 2026-11-09 23:33Z – 2026-11-10 (UTC, every time from
+DOCS-SWEEP (Sonnet 5.5, xhigh), plan item P0-3, written 2026-11-09 23:33Z – 2026-11-10 00:01Z (UTC, every time from
 `date -u`) for polymarket-follow's supervisor. **Evidence** is in the supervisor folder
 `E:\coding\Claude\supervisor\polymarket-follow\workers\DOCS-SWEEP\` (paths below are relative to it): `docs/pages/`
 (144 docs pages as downloaded), `docs/specs/` (current index, specs, changelog), `docs/condensed/` (the same pages
@@ -13,7 +13,7 @@ the stored pool"; no pool was among my inputs, so I took **one public address fr
 with a shell heredoc (`check-pages.cjs`); it broke on backslashes, I deleted it and rewrote it with the Write tool.
 (3) My API scripts ran in separate processes, so the "one request at a time" rule held inside each script and
 between them (they never overlapped), and the trailing-60-second total stayed at **48 assumed tokens at most**
-(`out/an-calls.txt`, which also counts 0 calls in 02:35–03:50Z, 0 POSTs, 0 non-`/info/` routes, **0 × 429**).
+(`out/an-calls.txt`: 47 calls 23:41:14Z–00:00:40Z, 45 × 200 and 2 × 400 [two shape probes: `perps-whitelist` without `address`, competition `limit=1000`], 0 calls in 02:35–03:50Z, 0 POSTs, 0 non-`/info/` routes, **0 × 429**).
 (4) Unpublished weights were charged 10; the real weights of `stock-splits`, `account-tiers` and `perps-whitelist`
 are unknown.
 
@@ -134,7 +134,7 @@ and the BLP entries. Ping and the six public channel pages (trades, bbo, book, k
   (crypto 0.0000125 = 0.0001/8, others 0.00000625), 35 are off it. This is the "implied rate published continuously"
   of the FAQ; the FAQ's "5-second premium sample" is in **no** field of either spec.
 - **Instruments:** `fee_override` (only ANT-USD, id 97, since 2026-10-29: taker 2.0 bp → 1.0 bp, maker +0.625 bp →
-  −0.5 bp by tier), `funding_multiplier` (none now), `logo`, `max_order_count` 200, `price_bounds` 0.02–0.333 (the
+  −0.5 bp by tier), `funding_multiplier` (none now), `logo`, `max_order_count` 200, `price_bounds` 0.02–0.333 (probably the
   trade price band), `liquidation_fee` 0.005 on all, `close_only` false on all, `isolated_only` false on all, risk
   tiers (BTC: 50× to $250K, 25×, 20×, 15×, 12×, 5×, 2× from $10M), `ui_live_time` advisory. Instrument 51 is
   **KIOXIA-USD, retired**: `close_only` true and `settlement` {price 353.87, `insurance_debit` 0,
@@ -187,9 +187,10 @@ limits, partial TP/SL closes, trailing stops, synthetic pricing, odds orders.
 - **ADL: yes.** `adl: true` on **both** legs since 2026-08-10 (before that the counterparty leg read
   `liquidation: true`). ADL fills have no fee. The `position_deleveraged` notification is private.
 - **Settlement: yes.** `settlement: true` on fills and on the tape; no fee, no liquidation fee.
-- **Backstop liquidation: yes, partly.** Fills of the insurance-fund and BLP accounts carry
-  `liquidation_details.method = "backstop"`, `mark`, and `liquidated_user`; the anonymous tape omits
-  `liquidated_user`. System-generated backstop and ADL fills have order id 0. None was seen live in this sweep.
+- **Backstop liquidation: yes, partly.** Per the changelog (2026-08-24) fills and trades from backstop liquidations carry an
+  optional `liquidation_details` {`mark`, `method` "backstop", `liquidated_user`} on account fills, position fills and public
+  trades; the anonymous tape omits `liquidated_user`; the spec's public `trades` row does not list the object. Backstop and ADL fills are
+  system-generated with order id 0. None was seen live in this sweep.
 
 **How a liquidation works** (docs `liquidation-mechanics`, `margin`, `faq`):
 1. **Trigger:** `MarginRatio = Equity / MM < 1`; cross and isolated are checked separately; `MM = notional × 0.5 / maxLeverage`
@@ -363,8 +364,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   a transaction page (more evidence, outside the limit). I stayed inside.
 - **Where to take the explorer address:** a leaderboard address (done) against waiting for the pool. The pool was not mine to open.
 - **Reading the private pages:** page by page against mapping them to the spec. They are signed routes we never call.
-- **Settling the "rolling funding" question:** a second ticker read minutes later (done, cheap) against waiting for a
-  settlement; the settlement comparison is queued (`scripts/api4.mjs`, result in §8 if it finished).
+- **Settling the "rolling funding" question:** a second ticker read minutes later (cheap, shows it moves) against waiting for
+  a settlement (shows it converges). I did both: 23:59:50Z rolling rate against the 00:00Z settled rate, 2 markets
+  (`out/api4.txt`) — they agree to 0.03%.
 
 ## 3. Possibilities found
 
@@ -378,7 +380,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 6. `exchange-stats` per day: volume, fees, open interest — the context series for H9.
 7. Retired markets by id (`instrument_id=51` returns the settlement); `close_only` as an early delisting flag.
 8. Public portfolio → approximate cross-margin ratio (isolated accounts excluded).
-9. Rolling implied funding (ticker) as a live carry measure; baseline floor means most majors charge longs 10.95% a year.
+9. Rolling implied funding (ticker, WebSocket `fr`) is a **live forecast of the next settlement**: at 23:59:50Z it read
+   −0.00019312 (CASHCAT) and −0.0000206 (XRP); the hour settled at −0.00019317 and −0.00002056 at 00:00:00.09Z
+   (`raw/a4-funding-*.json`). The baseline floor means most majors charge longs 10.95% a year.
 10. WebSocket `book::<iid>::50`, 1 s klines, the `corporate-actions` channel.
 11. The exchange contract's pUSD balance (explorer) next to exchange open interest as a health ratio ($81.6M vs $116.6M one-sided OI).
 12. `/v1/info/competition/widget?address=`: qualification progress of one address, weight 1.
@@ -413,7 +417,8 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **How the smart-wallet address is derived from the signer** (H13's link to the prediction markets): *settle* by computing it
   for a pair polymarket-lab already knows.
 - **Whether R1's saved pages differ from today's:** a hash diff by the supervisor.
-- **Whether the ticker rate converges to the settled rate:** `scripts/api4.mjs` (§8).
+- **Whether the ticker rate matches the settled rate in every market:** two markets agree to 0.03% (`out/api4.txt`); a
+  scan of all 90 around one settlement would settle it (weight 2 + 90 × 10 for the history, or the WebSocket `fr` plus one funding read each).
 
 ## 6. Beyond the brief
 
@@ -457,8 +462,15 @@ Each fact: date, source. (UTC; reads from my IP, user agent `polymarket-follow-r
 - **23:42Z `/v1/info/stock-splits`:** `{"events":[],"sequence":101602959840}`. **`/v1/info/perps-whitelist`:** 400 `invalid query parameters: missing field `address``; with an address: `{"status":"ok","whitelisted":false}`, `cache-control: private, max-age=30`.
 - **23:41Z `/v1/info/competition/widget`, `/competitions`; 23:45Z `/competition`, `/competition/leaderboard`, `/competition/account`:** competition 1 (2026-11-02T14:30Z → 2026-11-16T14:30Z), 109 ranked, 4,737 with `include_unqualified=true`, 10,019 participants; `limit` max 100 (`limit must be between 1 and 100`); **offset 4,700 answers** (no 1,000 cap). `competition/account` rows add `fees`, `funding`, `locked_positions`, `row_state`.
 - **23:46Z `/v1/info/exchange-stats`:** 2026-11-02..08 volume $591,101,131, fees $170,275.93, OI (one-sided) $116,556,434; 2026-11-08 volume $39,712,771, fees $13,155.66.
+- **2026-11-09 23:59:20Z–2026-11-10 00:00:40Z, ticker against settlement:** CASHCAT-USD (id 70) rolling `funding_rate`
+  −0.00019287 (23:59:20Z), −0.00019312 (23:59:50Z); settled −0.00019317 at 00:00:00.093Z. XRP-USD (id 33) −0.00002069,
+  −0.0000206; settled −0.00002056 at 00:00:00.090Z. `/v1/info/funding` rows are hourly, stamped 50–95 ms after the hour;
+  with `start_timestamp` the reply held 3 rows and `more: false`.
 - **Docs, 23:3x–23:4xZ:** fee tiers by trailing 30-day volume; MM = notional × 0.5 / maxLeverage; backstop below 2/3 of MM; ADL index = profit ratio × notional / equity; funding formula and 4% hourly cap; mark = median of three, 200 ms; Pyth/Chainlink Data Streams/Hyperliquid; liquidity rewards $75,000/day, 1% of 7-day maker volume, 12:00–12:00 UTC; OI rewards 6% APR on gross OI, entity ≥ $5M; referral 20%; delisting = close-only ≥ 30 min then 30-minute index TWAP; 20 ms taker delay; TP/SL watch the mark; fills' `liquidation` is true for maker and taker legs since 2026-08-11, `adl` on both legs since 2026-08-10; backstop `liquidation_details`.
 - **Explorer, 23:43Z (Polygonscan, via the fetch tool):** the exchange contract is an ERC-1967 proxy, implementation `0xF92018EeCaF1585De6B6d4989F51482C3E90cCE5`, pUSD balance 81,671,523.51, 194,750 transactions, latest 25 are "Process Withdraw…" and "Commit State Root"; the day-board #1 address page shows 15,759.49 pUSD in its own wallet and "2 token transfers" not rendered.
+- **Spec parameters (2026-11-09, inputs identical to 2026-11-06):** `klines` and `mark-history` require `start_timestamp`
+  (and `instrument_id`, `interval`); `funding` has none required; `exchange-stats` requires both timestamps and can answer
+  408 and 413; `competition/leaderboard` has `include_unqualified`; `tickers` and `statistics` take `instrument_id`.
 - **Terms/geography:** not re-read; unchanged since R1.
 
 ---
