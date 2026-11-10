@@ -9,21 +9,29 @@ import type { Recorder } from "../store/files.js";
 
 /**
  * `run` resolves true when the job did its work (its read answered and
- * passed its schema). `waitForSlot`: no run at start, only on the schedule.
+ * passed its schema). `catchUpMs`: a start runs the job at once only within
+ * this long after a slot (0: never at start, only on the schedule); without
+ * it, every start runs it.
  */
 export type Job = {
   name: string;
   schedule: Schedule;
   run: () => Promise<boolean>;
-  waitForSlot?: true;
+  catchUpMs?: number;
 };
 
 export type JobStatus = { lastRunAt: number | null; lastOkAt: number | null };
 
+/** Whether a start at `now` runs the job at once. */
+export function runsAtStart(job: Job, now: number): boolean {
+  if (job.catchUpMs === undefined) return true;
+  const lastSlot = nextRun(job.schedule, now) - job.schedule.everyMs;
+  return now - lastSlot < job.catchUpMs;
+}
+
 /**
- * Each job once at start (unless it waits for its slot), then on its
- * schedule; a tick that finds the previous run still going is skipped, never
- * stacked.
+ * Each job at start (see `runsAtStart`), then on its schedule; a tick that
+ * finds the previous run still going is skipped, never stacked.
  */
 export function startJobs(
   jobs: readonly Job[],
@@ -53,7 +61,7 @@ export function startJobs(
           running = false;
         });
     };
-    tick(Date.now(), job.waitForSlot);
+    tick(Date.now(), !runsAtStart(job, Date.now()));
   });
   return {
     stop: () => timers.forEach((t) => clearTimeout(t)),

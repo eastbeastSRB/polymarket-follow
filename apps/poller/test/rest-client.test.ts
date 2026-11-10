@@ -70,7 +70,10 @@ describe("RestClient", () => {
         }),
     );
     const out = await w.client.get("tickers");
-    expect(out.ok).toBe(true);
+    expect(out).toMatchObject({
+      ok: true,
+      served: { date: "Tue, 10 Nov 2026 12:00:00 GMT", age: "1" },
+    });
     expect(w.calls[0]!.url).toBe(`${API_BASE}/v1/info/tickers`);
     expect(w.calls[0]!.init.method).toBe("GET");
     expect(w.calls[0]!.init.headers).toEqual({
@@ -197,6 +200,21 @@ describe("RestClient", () => {
     expect(w.calls.map((c) => c.at).slice(14, 17)).toEqual([0, 5_000, 5_000]);
     expect(w.calls[25]!.at).toBe(60_000);
     expect(w.client.counts).toMatchObject({ peakMinute: 50, peakBurst: 30 });
+  });
+
+  it("drops a request whose turn in the queue comes after its deadline", async () => {
+    let advance = (_ms: number): number => 0;
+    const w = world(() => {
+      advance(20_000);
+      return new Response(TICKERS, { status: 200 });
+    });
+    advance = w.advance;
+    const slow = w.client.get("tickers");
+    const queued = w.client.get("tickers", {}, 10_000);
+    expect((await slow).ok).toBe(true);
+    expect(await queued).toEqual({ ok: false, reason: "budget" });
+    expect(w.calls).toHaveLength(1);
+    expect(w.client.counts.dropped).toBe(1);
   });
 
   it("drops a request that could not be sent before its deadline", async () => {

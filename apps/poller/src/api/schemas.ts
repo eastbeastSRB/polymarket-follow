@@ -94,6 +94,135 @@ export const BboReply = z.array(
   }),
 );
 
+/** As the API writes it (checksum-cased); stored lower-cased (code-rules). */
+const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+
+/** One page of a board; each page carries its own snapshot `timestamp`. */
+export const LeaderboardPage = z.object({
+  window: z.string(),
+  sort_by: z.string(),
+  timestamp: ms,
+  total: z.number().int(),
+  entries: z.array(
+    z.object({
+      rank: z.number().int(),
+      account: address,
+      pnl: z.string(),
+      notional: z.string(),
+      account_value: z.string(),
+      roi: z.string(),
+      /** The `address` row's fields (external-apis), named for the unknown-keys log. */
+      instruments_traded: z.unknown().optional(),
+      top_instrument_ids: z.unknown().optional(),
+    }),
+  ),
+  account: z.unknown().optional(),
+});
+
+/** Only what the competition pass uses is required; the rest is named for the unknown-keys log. */
+export const CompetitionsReply = z.object({
+  timestamp: z.unknown().optional(),
+  live_competition_id: z.unknown().optional(),
+  landing_competition_id: z.unknown().optional(),
+  competitions: z.array(
+    z.object({
+      competition_id: id,
+      number: z.unknown().optional(),
+      name: z.unknown().optional(),
+      status: z.string(),
+      start_time: ms,
+      end_time: ms,
+      sector_label: z.unknown().optional(),
+      prize_pool: z.unknown().optional(),
+      prize_asset_id: z.unknown().optional(),
+      internal: z.unknown().optional(),
+    }),
+  ),
+});
+
+export const CompetitionReply = z.object({
+  competition_id: id,
+  status: z.string(),
+  start_time: ms,
+  end_time: ms,
+  all_markets: z.boolean(),
+  /** All markets count: the boosted ones; otherwise every counted market with its boost. */
+  markets: z.array(z.object({ instrument_id: id, boost: z.string() })),
+  number: z.unknown().optional(),
+  name: z.unknown().optional(),
+  sector_label: z.unknown().optional(),
+  boost_description: z.unknown().optional(),
+  min_volume: z.unknown().optional(),
+  count_unrealized: z.unknown().optional(),
+  prize_pool: z.unknown().optional(),
+  prize_asset_id: z.unknown().optional(),
+  prize_tiers: z.unknown().optional(),
+  paid_places: z.unknown().optional(),
+  internal: z.unknown().optional(),
+  start_trading_instrument_id: z.unknown().optional(),
+  updated_at: z.unknown().optional(),
+  ranked: z.unknown().optional(),
+  participants: z.unknown().optional(),
+  prize_cutoff_score: z.unknown().optional(),
+  final_results: z.unknown().optional(),
+  scoring_version: z.unknown().optional(),
+});
+
+/** With `include_unqualified=true` the table has no 1,000 cap (external-apis, DOCS-SWEEP). */
+export const CompetitionLeaderboardPage = z.object({
+  competition_id: id,
+  status: z.string(),
+  updated_at: ms.optional(),
+  total: z.number().int(),
+  offset: z.number().int(),
+  final_results: z.boolean(),
+  entries: z.array(
+    z.object({
+      rank: z.number().int().optional(),
+      account: address,
+      score: z.string(),
+      pnl: z.string(),
+      realized_pnl: z.string(),
+      unrealized_pnl: z.string(),
+      volume: z.string(),
+      boosted_volume: z.string(),
+      first_fill_at: ms.optional(),
+      qualified: z.boolean().optional(),
+      prize: z.string().optional(),
+      row_state: z.string(),
+      payout_tx_hash: z.string().optional(),
+      paid_at: ms.optional(),
+    }),
+  ),
+  /** Live but not in the spec (COLLECTOR-PLAN §8). */
+  cohort: z.unknown().optional(),
+  next_update_at: z.unknown().optional(),
+});
+
+export const FeesReply = z.object({
+  fee_schedule: z.array(
+    z.object({
+      instrument_type: z.string(),
+      category: z.string(),
+      taker_fee_rate: z.string(),
+      maker_fee_rate: z.string(),
+      tiers: z.array(
+        z.object({
+          min_volume_30d: z.string(),
+          taker_fee_rate: z.string(),
+          maker_fee_rate: z.string(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** Live but not in the spec; no event has been seen, so an event is kept as received (external-apis). */
+export const StockSplitsReply = z.object({
+  events: z.array(z.unknown()),
+  sequence: z.number().int(),
+});
+
 /**
  * The WebSocket (asyncapi-perps.json). The books are the recording, so a book
  * frame needs only what the sampler and the price audit read: its channel,

@@ -105,6 +105,7 @@ describe("the heartbeat", () => {
       rest: {},
       streams: {},
       files: {},
+      db: {},
       audit: null,
       memory: {
         rssMb: 0,

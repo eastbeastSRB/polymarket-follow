@@ -6,6 +6,7 @@
 import type { RestClient } from "../api/rest-client.js";
 import type { Logger } from "../log.js";
 import { MINUTE_MS, SECOND_MS } from "../schedule.js";
+import type { Store } from "../store/db.js";
 import type { Job } from "./run.js";
 
 export function tickersJob(client: RestClient): Job {
@@ -16,8 +17,16 @@ export function tickersJob(client: RestClient): Job {
   };
 }
 
-/** Every 5 minutes, not every minute: CloudFront serves it minutes old (decisions 2026-11-10, (6)). */
-export function exchangeJob(client: RestClient, log: Logger): Job {
+/**
+ * Every 5 minutes, not every minute: CloudFront serves it minutes old
+ * (decisions 2026-11-10, (6)). The maintenance flag and the engine version
+ * go into the rule book with the reply's `date` and `age`.
+ */
+export function exchangeJob(
+  client: RestClient,
+  store: Pick<Store, "noteRule">,
+  log: Logger,
+): Job {
   let last: { cancel_only: boolean; engine_version: string } | undefined;
   return {
     name: "exchange",
@@ -26,6 +35,13 @@ export function exchangeJob(client: RestClient, log: Logger): Job {
       const reply = await client.get("exchange");
       if (!reply.ok) return false;
       const { cancel_only, engine_version } = reply.data;
+      store.noteRule(
+        "exchange",
+        "marks",
+        { cancel_only, engine_version },
+        reply.recvMs,
+        reply.served,
+      );
       if (
         last &&
         (last.cancel_only !== cancel_only ||

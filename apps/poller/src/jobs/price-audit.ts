@@ -85,7 +85,7 @@ export function priceAuditJob(
     name: "price-audit",
     schedule: { everyMs: 10 * MINUTE_MS, offsetMs: 470 * SECOND_MS },
     /** At start the streams have no book yet: every row would be "no book". */
-    waitForSlot: true,
+    catchUpMs: 0,
     totals,
     last: () => last,
     run: async () => {

@@ -5,6 +5,7 @@ import type { Reply, RestClient } from "../api/rest-client.js";
 import type { Clock } from "../clock.js";
 import type { Logger } from "../log.js";
 import { MINUTE_MS, SECOND_MS } from "../schedule.js";
+import type { Store } from "../store/db.js";
 import { reconnectDelayMs } from "../ws/connection.js";
 import type { Job } from "./run.js";
 
@@ -108,12 +109,25 @@ export async function awaitFirstList(
 }
 
 /**
- * The market list every 10 minutes; it drives the subscriptions. A market
- * that leaves the list is read once by id, so its settlement is in the record
- * (COLLECTOR-PLAN §1.1).
+ * A market's row as the rule book keeps it: a settlement's price and
+ * insurance debit are values, not rules (IDEAS-REVIEW A.0-9), so only its
+ * time and sequence stay.
+ */
+export function instrumentRule(row: Reply<"instruments">[number]) {
+  const { settlement, ...rule } = row;
+  if (settlement == null) return rule;
+  const { sequence, timestamp } = settlement;
+  return { ...rule, settlement: { sequence, timestamp } };
+}
+
+/**
+ * The market list every 10 minutes; it drives the subscriptions, and each
+ * change of it goes into the rule book. A market that leaves the list is
+ * read once by id, so its settlement is in the record (COLLECTOR-PLAN §1.1).
  */
 export function instrumentsJob(
   client: RestClient,
+  store: Pick<Store, "noteRule">,
   log: Logger,
   onList: (live: number[]) => void,
 ): Job {
@@ -125,6 +139,13 @@ export function instrumentsJob(
     run: async () => {
       const reply = await client.get("instruments");
       if (!reply.ok) return false;
+      store.noteRule(
+        "instruments",
+        "list",
+        reply.data.map(instrumentRule),
+        reply.recvMs,
+        reply.served,
+      );
       const now = new Set(reply.data.map((i) => i.instrument_id));
       if (listed) {
         const added = [...now].filter((id) => !listed?.has(id));
@@ -135,7 +156,17 @@ export function instrumentsJob(
         for (const id of left) {
           if (readById.has(id)) continue;
           readById.add(id);
-          await client.get("instruments", { instrument_id: id });
+          const byId = await client.get("instruments", { instrument_id: id });
+          if (!byId.ok) continue;
+          for (const row of byId.data) {
+            store.noteRule(
+              "instrument",
+              String(row.instrument_id),
+              instrumentRule(row),
+              byId.recvMs,
+              byId.served,
+            );
+          }
         }
       }
       listed = now;

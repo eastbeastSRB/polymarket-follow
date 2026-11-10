@@ -46,6 +46,7 @@ function world(outcomes: Outcome<Reply<"instruments">>[]) {
 const listed = (...ids: number[]): Outcome<Reply<"instruments">> => ({
   ok: true,
   recvMs: 0,
+  served: { date: null, age: null },
   data: ids.map((instrument_id) => ({ instrument_id, symbol: "S" })),
 });
 

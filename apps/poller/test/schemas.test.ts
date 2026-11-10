@@ -7,15 +7,22 @@ import { describe, expect, it } from "vitest";
 import {
   BboReply,
   BookFrame,
+  CompetitionLeaderboardPage,
+  CompetitionReply,
+  CompetitionsReply,
   ErrorReply,
   ExchangeReply,
+  FeesReply,
   InstrumentsReply,
+  LeaderboardPage,
   PongReply,
+  StockSplitsReply,
   SubReply,
   TickersReply,
   TradesFrame,
   unknownKeyPaths,
 } from "../src/api/schemas.js";
+import { boardPage, tablePage } from "./fixtures.js";
 
 const ticker = {
   instrument_id: 1,
@@ -203,5 +210,116 @@ describe("the WebSocket schemas", () => {
     expect(PongReply.safeParse(refused).success).toBe(false);
     expect(ErrorReply.safeParse(refused).success).toBe(true);
     expect(ErrorReply.safeParse(pong).success).toBe(false);
+  });
+});
+
+describe("the pass schemas", () => {
+  const board = boardPage("day", "pnl", 0, 1_794_272_237_289, 6_096, 2);
+  const table = tablePage(1, 0, 4_746, 2, 1_794_272_167_000);
+  const list = {
+    timestamp: 1,
+    live_competition_id: 1,
+    competitions: [
+      {
+        competition_id: 1,
+        number: 1,
+        name: "C",
+        sector_label: "",
+        status: "live",
+        start_time: 1,
+        end_time: 2,
+        prize_pool: "1",
+        prize_asset_id: 1,
+        internal: false,
+      },
+    ],
+  };
+  const competition = {
+    competition_id: 1,
+    status: "live",
+    start_time: 1,
+    end_time: 2,
+    all_markets: true,
+    markets: [{ instrument_id: 3, boost: "2" }],
+    min_volume: "1000",
+  };
+  const fees = {
+    fee_schedule: [
+      {
+        instrument_type: "perpetual",
+        category: "crypto",
+        taker_fee_rate: "0.0004",
+        maker_fee_rate: "0.000125",
+        tiers: [
+          {
+            min_volume_30d: "0",
+            taker_fee_rate: "0.0004",
+            maker_fee_rate: "0.000125",
+          },
+        ],
+      },
+    ],
+  };
+  const splits = { events: [], sequence: 101_655_028_994 };
+
+  it("take each reply with an unknown key added, and name the key", () => {
+    const cases = [
+      [LeaderboardPage, { ...board, cursor: "x" }, "$.cursor"],
+      [
+        LeaderboardPage,
+        { ...board, entries: [{ ...board.entries[0]!, name: "n" }] },
+        "$.entries[].name",
+      ],
+      [CompetitionsReply, { ...list, page: 1 }, "$.page"],
+      [CompetitionReply, { ...competition, tags: [] }, "$.tags"],
+      [
+        CompetitionLeaderboardPage,
+        { ...table, entries: [{ ...table.entries[0]!, badge: "b" }] },
+        "$.entries[].badge",
+      ],
+      [FeesReply, { ...fees, tiers_version: 2 }, "$.tiers_version"],
+      [StockSplitsReply, { ...splits, more: false }, "$.more"],
+    ] as const;
+    for (const [schema, reply, path] of cases) {
+      expect(schema.safeParse(reply).success, path).toBe(true);
+      expect(unknownKeyPaths(schema, reply)).toContain(path);
+    }
+  });
+
+  it("names no key of the spec as unknown", () => {
+    expect(unknownKeyPaths(LeaderboardPage, board)).toEqual([]);
+    expect(unknownKeyPaths(CompetitionsReply, list)).toEqual([]);
+    expect(unknownKeyPaths(CompetitionReply, competition)).toEqual([]);
+    expect(
+      unknownKeyPaths(CompetitionLeaderboardPage, {
+        ...table,
+        cohort: 1,
+        next_update_at: 2,
+      }),
+    ).toEqual([]);
+    expect(unknownKeyPaths(FeesReply, fees)).toEqual([]);
+    expect(unknownKeyPaths(StockSplitsReply, splits)).toEqual([]);
+  });
+
+  it("refuse a row whose account is not an address, or whose money is not a string", () => {
+    const bad = (entry: Record<string, unknown>) => ({
+      ...board,
+      entries: [{ ...board.entries[0]!, ...entry }],
+    });
+    expect(LeaderboardPage.safeParse(bad({ account: "0x12" })).success).toBe(
+      false,
+    );
+    expect(LeaderboardPage.safeParse(bad({ pnl: 12.5 })).success).toBe(false);
+    expect(
+      CompetitionLeaderboardPage.safeParse({
+        ...table,
+        entries: [{ ...table.entries[0]!, account: "someone" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      CompetitionReply.safeParse({ ...competition, markets: [{ boost: "2" }] })
+        .success,
+    ).toBe(false);
+    expect(StockSplitsReply.safeParse({ events: [] }).success).toBe(false);
   });
 });

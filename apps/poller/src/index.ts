@@ -8,6 +8,9 @@ import { loadConfig, parseRunFor, type Config } from "./config.js";
 import { readLastHeartbeat, startHeartbeat } from "./health/heartbeat.js";
 import { startProcessStats } from "./health/process-stats.js";
 import { watchTestSwitches } from "./health/test-switches.js";
+import { boardPassJob } from "./jobs/board-pass.js";
+import { competitionPassJob } from "./jobs/competition-pass.js";
+import { dailyReadsJob } from "./jobs/daily-reads.js";
 import {
   awaitFirstList,
   instrumentsJob,
@@ -19,6 +22,8 @@ import { priceAuditJob } from "./jobs/price-audit.js";
 import { startJobs, startPauseMarks, type JobStatus } from "./jobs/run.js";
 import { releaseLock, takeLock } from "./lock.js";
 import { createLog } from "./log.js";
+import { missedSlots, utcDate } from "./schedule.js";
+import { Store } from "./store/db.js";
 import { Recorder } from "./store/files.js";
 import { Streams } from "./ws/streams.js";
 
@@ -52,14 +57,34 @@ if (!lock.taken) {
 }
 
 const recorder = new Recorder(config.RECORDINGS_ROOT, log);
+const store = Store.open(config.MONGO_URI, config.MONGO_DB, log);
 const client = new RestClient(COLLECTOR_SHARE, recorder, log);
-const streams = new Streams(recorder, log);
+/** A server's close of a connection is also a maintenance mark in the rule book (COLLECTOR-PLAN §1.3 item 2). */
+const streams = new Streams(
+  {
+    write: (kind, recvMs, text) => recorder.write(kind, recvMs, text),
+    coverage: (event) => {
+      recorder.coverage(event);
+      if (event.event === "ws_close" && event.cause === "server close") {
+        store.noteEvent(
+          "connection_drop",
+          event.conn,
+          { code: event.code, reason: event.reason },
+          Date.now(),
+        );
+      }
+    },
+  },
+  log,
+);
 const audit = priceAuditJob(
   client,
   (rows) => streams.audit(rows),
   log,
   realClock,
 );
+const competitionPass = competitionPassJob(client, store, log, realClock);
+const boardPass = boardPassJob(client, store, recorder, log, realClock);
 let jobs: { stop: () => void; status: () => Record<string, JobStatus> } = {
   stop: () => {},
   status: () => ({}),
@@ -94,6 +119,7 @@ const heartbeat = startHeartbeat(
       rest: client.counts,
       streams: { ...streams.stats, stalledMarkets: health.stalledMarkets },
       files: recorder.counts,
+      db: store.counts,
       audit: audit.last(),
       memory: {
         rssMb: memory.rssMb,
@@ -113,6 +139,22 @@ recorder.coverage({
   pid: process.pid,
   lastHeartbeatAt,
 });
+if (lastHeartbeatAt !== null) {
+  for (const pass of [competitionPass, boardPass]) {
+    for (const slot of missedSlots(
+      pass.schedule,
+      pass.catchUpMs ?? 0,
+      lastHeartbeatAt,
+      Date.now(),
+    )) {
+      recorder.coverage({
+        event: "pass_missed",
+        pass: pass.name,
+        passDate: utcDate(slot),
+      });
+    }
+  }
+}
 const stopMarks = startPauseMarks(recorder);
 const stopSwitches = watchTestSwitches(
   config.STATE_DIR,
@@ -135,12 +177,14 @@ async function stop(reason: string): Promise<void> {
   streams.stop();
   recorder.coverage({ event: "process_stop", pid: process.pid, reason });
   await recorder.close();
+  await store.close();
   releaseLock(config.STATE_DIR);
   const summary = {
     reason,
     seconds: Math.round((Date.now() - startedAt) / 1_000),
     rest: client.counts,
     files: recorder.counts,
+    db: store.counts,
     streams: streams.stats,
     connections: streams.connectionStats(),
     bookLinesPerMarket: spread([...streams.linesByMarket.values()]),
@@ -188,9 +232,12 @@ if (listed && !stopping) {
   jobs = startJobs(
     [
       tickersJob(client),
-      exchangeJob(client, log),
-      instrumentsJob(client, log, useMarkets),
+      exchangeJob(client, store, log),
+      instrumentsJob(client, store, log, useMarkets),
       audit,
+      competitionPass,
+      boardPass,
+      dailyReadsJob(client, store),
     ],
     log,
   );

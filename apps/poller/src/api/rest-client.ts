@@ -18,8 +18,14 @@ import {
 } from "./admission.js";
 import {
   BboReply,
+  CompetitionLeaderboardPage,
+  CompetitionReply,
+  CompetitionsReply,
   ExchangeReply,
+  FeesReply,
   InstrumentsReply,
+  LeaderboardPage,
+  StockSplitsReply,
   TickersReply,
   unknownKeyPaths,
 } from "./schemas.js";
@@ -30,7 +36,11 @@ export const REQUEST_TIMEOUT_MS = 15_000;
 /** The collector's share of the 250 a minute (decisions 2026-11-07, wave 1 closed; COLLECTOR-PLAN §1.1). */
 export const COLLECTOR_SHARE = 50;
 
-/** Weights from the spec (external-apis, "Rate limit — measured"). */
+/**
+ * Weights from the spec (external-apis, "Rate limit — measured"); a cached
+ * read may cost less, and is charged in full. `stock-splits` publishes none
+ * and is charged 10 (COLLECTOR-PLAN §1.1).
+ */
 export const ROUTES = {
   tickers: { path: "/v1/info/tickers", weight: 2, schema: TickersReply },
   exchange: { path: "/v1/info/exchange", weight: 2, schema: ExchangeReply },
@@ -40,6 +50,32 @@ export const ROUTES = {
     schema: InstrumentsReply,
   },
   bbo: { path: "/v1/info/bbo", weight: 2, schema: BboReply },
+  leaderboard: {
+    path: "/v1/info/leaderboard",
+    weight: 5,
+    schema: LeaderboardPage,
+  },
+  competitions: {
+    path: "/v1/info/competitions",
+    weight: 1,
+    schema: CompetitionsReply,
+  },
+  competition: {
+    path: "/v1/info/competition",
+    weight: 1,
+    schema: CompetitionReply,
+  },
+  "competition/leaderboard": {
+    path: "/v1/info/competition/leaderboard",
+    weight: 1,
+    schema: CompetitionLeaderboardPage,
+  },
+  fees: { path: "/v1/info/fees", weight: 2, schema: FeesReply },
+  "stock-splits": {
+    path: "/v1/info/stock-splits",
+    weight: 10,
+    schema: StockSplitsReply,
+  },
 } as const;
 
 export type RouteName = keyof typeof ROUTES;
@@ -54,8 +90,12 @@ export type Failure =
   | "network"
   | "rejected";
 
+/** `served`: the reply's `date` and `age` headers (CloudFront can serve a reply minutes old). */
+export type Served = { date: string | null; age: string | null };
+
 export type Outcome<T> =
-  { ok: true; data: T; recvMs: number } | { ok: false; reason: Failure };
+  | { ok: true; data: T; recvMs: number; served: Served }
+  | { ok: false; reason: Failure };
 
 /** After a 429 from 2 s, after any other failure from 1 s, doubling to 60 s; a success resets it. */
 export function nextBackoffMs(
@@ -141,15 +181,17 @@ export class RestClient {
       if (restPaused(this.clock.wall())) return { ok: false, reason: "paused" };
       const now = this.clock.monotonic();
       const wait = Math.max(
+        0,
         this.backoffUntil - now,
         admissionDelay(this.spends, now, weight, this.share),
       );
-      if (wait <= 0) break;
+      // Also a request whose turn in the queue came after its deadline.
       if (now + wait > deadline) {
         this.counts.dropped += 1;
         this.log.warn({ route, waitMs: Math.round(wait) }, "request dropped");
         return { ok: false, reason: "budget" };
       }
+      if (wait === 0) break;
       await this.clock.sleep(wait);
     }
 
@@ -248,7 +290,7 @@ export class RestClient {
     }
     this.counts.ok += 1;
     this.noteUnknownKeys(route, schema, json, recvMs);
-    return { ok: true, data: parsed.data as Reply<R>, recvMs };
+    return { ok: true, data: parsed.data as Reply<R>, recvMs, served: meta };
   }
 
   private backOff(rateLimited: boolean): void {

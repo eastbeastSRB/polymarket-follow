@@ -23,6 +23,7 @@ export type Heartbeat = {
   rest: Record<string, number>;
   streams: Record<string, number>;
   files: Record<string, unknown>;
+  db: Record<string, number>;
   audit: Record<string, number> | null;
   memory: {
     rssMb: number;

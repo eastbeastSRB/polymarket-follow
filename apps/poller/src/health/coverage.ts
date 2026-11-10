@@ -27,6 +27,8 @@ export type CoverageEvent =
   | { event: "sub_refused"; conn: string; channel: string; error: string }
   | { event: "market_stall"; iid: number; lastFrameAt: number | null }
   | { event: "market_resume"; iid: number; gapMs: number | null }
+  | { event: "boards_missed"; passDate: string; boards: string[] }
+  | { event: "pass_missed"; pass: string; passDate: string }
   | { event: "test_switch"; name: string }
   | { event: "cut_line_dropped"; file: string; bytes: number }
   | { event: "compression_failed"; file: string; reason: string }

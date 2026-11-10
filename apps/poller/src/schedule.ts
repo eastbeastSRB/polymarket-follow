@@ -42,6 +42,32 @@ export function nextNightlyEdge(wallMs: number): {
   return start < end ? { at: start, starts: true } : { at: end, starts: false };
 }
 
+/**
+ * The slots whose whole window `[slot, slot + windowMs)` lay inside a gap of
+ * the process, from `lastAt` to `now`: their job could not run (§1.4 item 8:
+ * a missed pass is lost and logged, never filled from a later read).
+ */
+export function missedSlots(
+  schedule: Schedule,
+  windowMs: number,
+  lastAt: number,
+  now: number,
+): number[] {
+  const missed: number[] = [];
+  for (
+    let slot = nextRun(schedule, lastAt);
+    slot + windowMs <= now;
+    slot += schedule.everyMs
+  ) {
+    missed.push(slot);
+  }
+  return missed;
+}
+
+export function dayStart(wallMs: number): number {
+  return Math.floor(wallMs / DAY_MS) * DAY_MS;
+}
+
 export function utcDate(wallMs: number): string {
   return new Date(wallMs).toISOString().slice(0, 10);
 }
