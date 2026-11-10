@@ -483,3 +483,45 @@ route filter), `api1.mjs` … `api10.mjs`, `api4.mjs` (timed funding check), `sp
 (every API call), `an-calls.txt`, `spec-inventory-all.txt`, `async-public.txt`, `check-pages.txt`, `an-api1.txt`, `api1.txt` … `api10.txt`, `api4.txt`.
 Raw replies: `raw/a1-*` … `raw/a10-*`. Docs as downloaded: `docs/pages/`, `docs/specs/`, `docs/condensed/`. Notes: `notes.md`; log: `progress.md`.
 Inputs checked: `inputs/SHA256SUMS` against `docs/specs/` (equal).
+
+---
+
+## 9. Final review (2026-11-10, the owner's request; by DOCS-SWEEP itself)
+
+Scope: my scripts, my numbers and this report. Every claim was checked against its source (the page and its read time
+from `out/fetch-log.jsonl`, or the saved reply in `raw/`) and every number against its unit. One extra explorer read (the
+exchange-contract page, to save it) and no API read were needed. Each fix is its own commit and is marked in place with
+`[Final review Fn]`. The supervisor's own live reads (2026-11-10 ~00:03Z: chain 137 and the contract; `/v1/info/markets` 90
+rows; exchange-stats fees $170,275.93 for 2026-11-02 00:00Z to 2026-11-09 00:00Z, end exclusive; the competition board with
+`include_unqualified=true` answers at offset 4,700, total 4,738, and without it the total is 110) agree with mine.
+
+**Severity 1 — wrong or misleading, could steer a decision**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F1 | The competition board was described without its parameter in the headline, Q8-H2, §2, §3, §4 and §7; "all 4,737 participants" contradicts the competition's own 10,019 "participants"; the counts drift (109 → 110 qualified; 4,736 → 4,738 listed) and were not dated | pending |
+| F2 | Rewards against fees: window written "2026-11-02..08" (the read window is 2026-11-02 00:00Z to 2026-11-09 00:00Z, end exclusive); $75,000 a day is the docs' budget, not a measured payment; "the recipients are not public" was not said in the headline; "R2's finding is structural" and the "health ratio" line over-reached | pending |
+| F3 | "Rolling and settled funding agree to 0.03%" is true for CASHCAT (0.026%) and **wrong for XRP (0.195%)**; the absolute gap is 5e-8 an hour at most | pending |
+| F4 | The six docs-versus-API contradictions were not quoted with both sources and read times; two said "stale" (an inference); the sixth (spec lag) is not a contradiction between two sources | pending |
+| F5 | "Live but not in the spec": `builder-stats` is listed among live routes but was never read; `markets` was read for 1 instrument only (the 50 limit and `curated_list` are changelog text); the widget `address` form, the ticker `symbol` filter, `book::50`, 1 s klines, `corporate-actions` and the statistics open rule are changelog or docs text, not tested | pending |
+| F6 | H13: the report listed "the EOA's own wallet on Polygon" among allowed paths and called it "allowed by the brief"; the brief allowed only an explorer look at one address's deposits and withdrawals; the owner has not ruled | pending |
+
+**Severity 2 — evidence or wording that does not carry its weight**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F7 | Derived numbers (55 of 90 on the floor, 3.1×, 5.7×, 2.88 bp, $5.9M, 10.95%, the dates) came from inline `node -e` with no saved script | pending |
+| F8 | The explorer facts came from a summarising fetch tool; nothing was saved | pending |
+| F9 | Wrong figures and stamps: the FAQ has **33** questions, not 40; the four extra pages were fetched 23:46:31Z, not "~23:45Z"; placeholder stamps "23:3xZ" and "23:3x–23:4xZ"; "every figure names its output file" is not true; "in 90 s" is 95 s | pending |
+| F10 | Inferences written as facts: fee rate → tier (untested); `perps-whitelist` "is not the registration gate"; "no earlier data was shaped by a competition"; "excluded from the board's win counts"; `liquidation_fee` read as a fraction; the FAQ "keyed by your EOA" quote was not exact | pending |
+
+**Severity 3 — hygiene (scripts left as they ran, on R1's precedent, except F12)**
+
+| # | Finding | Handling |
+|---|---|---|
+| F11 | `apilib.mjs` imports `createHash` and never uses it; `spec-inventory.cjs` declares `comps` and never uses it; scripts are named `api1` … `api10` (they say nothing); `dl-pages.mjs` fetches the changelog and rate-limits again after `fetch-index.mjs` did; `out/wait-api4.txt` is a leftover; `api6.mjs` and `api7.mjs` hold one public address | left; a project script would take such values as arguments and have a descriptive name |
+| F12 | `docs/condensed/` was made by an awk command typed once and never saved | saved as `scripts/condense.sh` (pending) |
+
+**How the findings fit later phases (notes).** The collector needs the list in §10. The hypothesis register needs F1 (which
+board, which parameter, which date), F2 (the rewards figure is a budget, income is unseen), F5 (what is tested and what is
+only documented) and F6 (the H13 rule). The v1 plan must not show a rewards or tier figure as fact: both are inferences.
