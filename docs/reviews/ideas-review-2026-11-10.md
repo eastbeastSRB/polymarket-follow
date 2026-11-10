@@ -198,10 +198,13 @@ and questions 1, 4.*
   addresses; do not poll each account — its fills and its daily profit
   series can be read back to its first fill whenever a study needs them
   [record: R8 §8; R1 possibility 1], so nothing is lost by waiting.
-- **Three rules for it.** (a) *A blind store:* rows that carry results of
-  the new weeks — the boards' profit columns, competition scores,
-  portfolios — are written and not opened by any FIND study (point
-  2.10). (b) *Lists frozen today, with hashes:* the 50; every account
+- **Three rules for it.** (a) *A blind store:* everything it writes after
+  2026-11-07 is closed to FIND studies, but for two things — an address
+  from a board sorted by activity, and the rule book (A.0-9) [Final review
+  F3: was "rows that carry results of the new weeks — the boards' profit
+  columns, competition scores, portfolios — are written and not opened by
+  any FIND study": prices and tickers were not named]. (b) *Lists frozen
+  today, with hashes:* the 50; every account
   labelled directional on 2026-11-07; the slow systematic accounts once
   their rule is written (study 1) — so nobody can later choose them by
   outcome. (c) *The watchdog* already in code-rules (a stream went silent
@@ -599,11 +602,16 @@ search" is written about fills. But every board read today (its profit
 columns run to now), the competition table (scores since 11-02), every
 portfolio and every profit series already carry the new weeks' results. The
 collector will store all of them daily, and DOCS-SWEEP's universe seed is
-the competition table itself. A FIND study may take **addresses** from
-such rows — never rank, filter or even look by their result columns. And a
-list found through a later board is a list of accounts still active in
-November: fine for a secondary population, not for the primary one (the
-pool read on 2026-11-07).
+the competition table itself. What a FIND study may read after 2026-11-07
+is written out, field by field, in A.0-9: two things only — an address
+from a board sorted by activity, and the rule book. And a list found
+through a later board is a list of accounts still active in November: fine
+for a secondary population in FIND, not for the primary one (the pool read
+on 2026-11-07), and for no CONFIRM list of this batch. [Final review F3:
+was "A FIND study may take **addresses** from such rows — never rank,
+filter or even look by their result columns" — it named neither the boards
+nor the fields: an address from a board sorted by profit is already a
+result.]
 
 **2.11 — The first exam is short, inside a competition, and one market
 regime** (C-18). By 11-30 the new data is 23 days, the first nine or ten
@@ -913,17 +921,43 @@ matters is that each is written into its entry before any outcome is seen.
    that competition's boosted markets (now ANT, AMD, ARM, SOXL). A result
    that lives only inside competition days or boosted markets is reported
    as "competition only" and does not pass.
-9. **FIND data.** The pool read 2026-11-07 00:48Z (1,702 accounts), fills to
-   2026-11-07T00:00Z; the panel to the same instant. The primary population
-   is the accounts on the all-time notional board (chosen on volume, not on
-   result). Accounts found later through a board or the competition table
-   form a secondary population — addresses only (point 2.10).
+9. **FIND data — and what a FIND study may read at all.** [Final review F3:
+   rewritten. Was: "… Accounts found later through a board or the
+   competition table form a secondary population — addresses only" — which
+   named neither the boards nor the fields, and said nothing of prices.]
+   - **The cut.** A FIND study's inputs end at 2026-11-07T00:00:00Z: fills,
+     marks, klines, funding, the tape. The kit's readers refuse any row
+     stamped at or after it; a profit or equity series is cut there before
+     any analysis sees it.
+   - **The primary population** is the pool read 2026-11-07 00:48Z (1,702
+     accounts), and within it the accounts on the all-time notional board
+     (chosen on volume, not on result).
+   - **From anything read or stored after the cut, a FIND study may take
+     two things only.** (1) *The `account` field* of rows on boards sorted
+     by **notional or account value**, and of the competition table read
+     with `include_unqualified=true` — to learn that an address exists;
+     then that account's fills before the cut. Never from a board sorted
+     by profit or return: being listed there after the cut is itself a
+     result. And no other field of such a row — not rank, profit, return,
+     volume, account value, score, qualification or row state. (2) *The
+     rule book:* the instrument list, the fee schedule, competition dates
+     and boosted markets, maintenance and engine-version marks, splits.
+   - **Never, for FIND:** prices, trades, books, tickers, open interest,
+     funding or counts after the cut; any portfolio; any profit, equity or
+     competition figure after the cut; any fill after the cut.
+   - **Accounts found through (1)** are a secondary population in FIND and
+     enter **no CONFIRM list of this batch**: they were found because they
+     were still active in the new weeks.
+   - **Who checks.** The kit's readers, by construction; and the
+     supervisor's access scan, as now.
 10. **CONFIRM data.** Fills after 2026-11-07T00:00Z of lists frozen with a
     hash before any such fill is read by anyone on the study. First exam: to
     2026-11-30T00:00Z (23 days). Final exam: to 2026-12-19T00:00Z (42 days).
-    One stored capture per exam, read once (section 5, item 5). The
-    classifier's 100 holdout accounts: their fills after 2026-11-07 are D1's
-    unseen data, so no study reads them before D1 is scored.
+    One stored capture per exam, read once (section 5, item 5). A list is
+    judged whole: an account that stops trading stays in it, with whatever
+    entries it made. The classifier's 100 holdout accounts: their fills
+    after 2026-11-07 are D1's unseen data, so no study reads them before D1
+    is scored.
 11. **The two-exam rule.** [Final review F1: rewritten. Was: "PASSES EARLY
     only if t ≥ 3.3 … DROPPED only if t ≤ −1 … the Benjamini–Hochberg line
     at 10% over every hypothesis of the batch". The 3.3 ignored the batch
