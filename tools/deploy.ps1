@@ -28,8 +28,10 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "pnpm verify failed ($LASTEXITCODE): nothing deployed" }
 
   if (Test-Path -LiteralPath $next) { Remove-Item -Recurse -Force -LiteralPath $next }
-  # pnpm 11 deploys a package that is not "injected" only with --legacy.
-  pnpm --filter '@polymarket-follow/poller' --prod deploy --legacy $next
+  # pnpm 11 deploys a package that is not "injected" only with --legacy. Its
+  # usual node_modules links by absolute paths, which the rename below would
+  # break; a hoisted one is plain folders.
+  pnpm --filter '@polymarket-follow/poller' --prod deploy --legacy --config.node-linker=hoisted $next
   if ($LASTEXITCODE -ne 0) { throw "pnpm deploy failed ($LASTEXITCODE): nothing deployed" }
   # The deploy records its --prod install as the workspace's own, and the next
   # pnpm command would then remove the development packages: install again.
