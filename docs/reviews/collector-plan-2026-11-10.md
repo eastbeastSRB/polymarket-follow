@@ -60,14 +60,14 @@ unit of Windows' free-space figures).
    account: an account's trades and profit history can be read back to its
    first trade whenever a study needs them.
 4. **Small reads:** the ticker each minute (open interest, funding rate, how
-   many accounts are long and short), the exchange's maintenance flag each
-   minute, the market list every 10 minutes, splits and fees daily.
+   many accounts are long and short), the exchange's maintenance flag every
+   5 minutes, the market list every 10 minutes, splits and fees daily.
 5. **One audit that proves the record honest:** every 10 minutes the
    recorded best prices against the API's own. [Final review F3: the hourly
    trade audit and the daily exchange statistics are cut — §1.8, "The cut".]
 
-**What it costs.** About **5 tokens a minute** on average (2% of the 250);
-never more than 50 in a minute — only during the 18-minute board read
+**What it costs.** About **3 tokens a minute** on average (1.3% of the 250);
+never more than 50 in a minute — only during the 17-minute board read
 before midnight UTC — and never more than 30 in 5 seconds. Research keeps its
 200. The streams download **about 25 GB a day** (about 0.8 TB a month,
 a steady 2–3 Mbit/s), nearly all of it the books, whose frames come every
@@ -109,7 +109,8 @@ register three Windows tasks with a prepared script.
    day; is your internet free of a data cap? (*Yes, if there is no cap.*)
 2. Also record the separate best-price and fast-ticker streams? (*No.*)
 3. Read the competition table with its unqualified accounts daily? (*Yes.*)
-4. Read the exchange's maintenance flag every minute? (*Yes.*)
+4. Read the exchange's maintenance flag every 5 minutes, not every
+   minute? (*Yes.*)
 5. Stream files on F:, the last 7 days also on E:; a monthly copy to an
    external disk if you have one? (*Yes.*)
 6. Does this yes also allow the first app code, its packages and three
@@ -191,7 +192,7 @@ accounting where none is published):
 | Read | When | Tokens | A minute | Kept |
 |---|---|---|---|---|
 | `tickers` (all 90) | every 60 s | 2 | 2.0 | the raw reply: rolling funding rate, open interest, index, mark, last, mid, `long_count`, `short_count` |
-| `exchange` | every 60 s | 2 | 2.0 | the raw reply; each change of `cancel_only` or `engine_version` in the rule book, with the reply's `date` and `age` (CloudFront served it 213 s and 364 s old) |
+| `exchange` | every 5 min [Final review F4: was every 60 s, 2.0 a minute] | 2 | 0.4 | the raw reply; each change of `cancel_only` or `engine_version` in the rule book, with the reply's `date` and `age` (CloudFront served it 213 s and 364 s old, so a read every minute mostly returns the same copy) |
 | `instruments` | every 10 min | 2 | 0.2 | the raw reply; each change in the rule book; it drives the subscriptions; a market that leaves the list is read once by id for its settlement |
 | `bbo` (all 90) — **the price audit** | every 10 min | 2 | 0.2 | each market's bid and ask against the recorded book within 200 ms of the reply's `timestamp` (one stamp for the whole reply): agree or not |
 | `competitions`, `competition`, `competition/leaderboard?include_unqualified=true&limit=100` (about 48 pages) | daily 23:15Z, while a competition runs and for 7 days after its end | about 50 | 0.03 | raw pages; the parsed table; the universe |
@@ -204,13 +205,14 @@ it guarded a partial stall nobody has seen, of a stream whose content can be
 read back), and the daily `exchange-stats` (the route serves any past window
 up to 31 days, so it is re-readable).]
 
-**Average: about 5 tokens a minute.** The reads every minute and ten minutes
-make 4.4 a minute, 4.17 after the 75-minute nightly pause; the daily passes
-add 862 tokens, 0.60 a minute; together 4.77 [Final review F3: was 4.67,
-4.43, 872, 0.61 and 5.04 with the cut reads]. **Peak:** the board pass
-runs at most 50 tokens in any minute and never more than 30 in 5 s; with the
-minute reads beside it, its 800 tokens take about 17.5 minutes (23:38 → about
-23:56Z), the day boards last. **The collector's share is therefore the 50 a
+**Average: about 3 tokens a minute** (1.3% of the 250). The reads every
+minute, 5 minutes and 10 minutes make 2.8 a minute, 2.65 after the 75-minute
+nightly pause; the daily passes add 862 tokens, 0.60 a minute; together 3.25
+[Final review F3 and F4: was 4.67, 4.43, 872, 0.61 and 5.04 with the cut
+reads and `exchange` every minute]. **Peak:** the board pass runs at most 50
+tokens in any minute and never more than 30 in 5 s; with the other reads
+beside it, its 800 tokens take about 17 minutes (23:38 → about 23:55Z), the
+day boards last. **The collector's share is therefore the 50 a
 minute the budget already reserves for "leaderboard, tickers, retries"**
 (decisions 2026-11-07, wave 1 closed); research keeps up to 200 a minute
 until v1's favourites take them.
@@ -590,7 +592,7 @@ to GitHub as now.
 | A 5xx, a timeout, the network down | the reply, or none within 15 s | the same with back-off from 1 s; minute reads skip a tick; logged and counted |
 | **A silent socket** | no frame, data or pong, for 15 s (pings every 10 s) | close, reopen, resubscribe, back-off; the gap logged from the last frame to the first after |
 | One market's book stops while others flow | no book frame from it for 15 s | a stall logged (start, end); all markets stalled while pongs arrive → reconnect |
-| A deploy, maintenance, cancel-only | the server closes the connection (changelog: "connections drop when the gateway restarts"); `exchange` marks, up to ~7 minutes late through CloudFront | reconnect; the gap's cause "server close" with its code; the marks in the rule book |
+| A deploy, maintenance, cancel-only | the server closes the connection (changelog: "connections drop when the gateway restarts"); `exchange` marks, up to about 12 minutes late (read every 5 minutes, served up to about 7 minutes old by CloudFront) | reconnect; the gap's cause "server close" with its code; the marks in the rule book |
 | A channel refused at subscription | the `sub` reply's `err` | logged; expected for a delisted market; otherwise retried at the next reconnect |
 | `message_rate_limited` | the reply | back-off; pings are 12 a minute and a subscription one message per connection, so only a reconnect storm could reach it, and the back-off bounds that |
 | **A full disk** | the hourly free-space check | §1.2's alarms; a stop is logged and shown by `status` |
@@ -723,10 +725,11 @@ following.
 - **The hour being written:** plain text, compressed at the hour's end
   (recommended: a crash leaves a whole file) against compressing as it goes
   (a crash leaves a truncated stream).
-- **`exchange` every minute** (DOCS-SWEEP) against every 5 minutes: CloudFront
-  served it 213–364 s old, so most minute reads return the same copy; 2
-  tokens a minute is still cheap and catches a change sooner when the cache
-  turns over.
+- **`exchange` every minute** (DOCS-SWEEP) against every 5 minutes
+  (recommended): CloudFront served it 213–446 s old, so most minute reads
+  return the same copy; a minute's read would cost 2 tokens a minute — two
+  fifths of the collector's average — to see a change at most 4 minutes
+  sooner. [Final review F4: every minute was recommended.]
 - **The board pass:** 23:38Z with the day boards last (recommended) against
   after 00:00Z (the day boards have reset) or twice a day (not asked).
   Consistency: flagged when the pages' snapshot stamps span over 10 s, not
@@ -791,7 +794,7 @@ Failures at run time are in §1.7; these concern the plan.
 | A study is tempted to open the stores | §1.3 |
 | The collector and research share the 250 | the collector's cap is 50; research's 200; the owner's browser shares the bucket (no rule; back-off) |
 | The build itself spends tokens | inside the collector's share, one process at a time |
-| The terms of use (R1 Q13) | unchanged from decisions 2026-11-07: personal use, a public documented API, a small steady presence — two connections of the 50 allowed, about 5 tokens a minute |
+| The terms of use (R1 Q13) | unchanged from decisions 2026-11-07: personal use, a public documented API, a small steady presence — two connections of the 50 allowed, about 3 tokens a minute |
 | A deploy changes a message's shape | §1.7: rejected frames kept raw; a schema fix re-reads them |
 | Someone starts a second collector by hand | the lock |
 | A launcher that one day starts nothing (VBScript off by default from about 2027) — the poller and its check would fail together, silently | no launcher at all: the tasks run outside the session (§1.4; Final review F15) |
@@ -866,8 +869,11 @@ Failures at run time are in §1.7; these concern the plan.
    *Recommendation:* yes.
 4. **Should it read `/v1/info/exchange` every minute (2 tokens)** for the
    maintenance flag and the engine version? DOCS-SWEEP's question 4.
-   *Recommendation:* yes, read as a deploy marker that can be up to about 7
-   minutes late (CloudFront); a dropped connection is the live sign.
+   *Recommendation:* every 5 minutes instead — CloudFront served the reply
+   213–446 s old, so a minute's read mostly returns the same copy; 0.4 tokens
+   a minute instead of 2 for the same marks, read as a deploy marker up to
+   about 12 minutes late; a dropped connection is the live sign. [Final
+   review F4: was "yes", every minute.]
 5. **Stream files on F:, the last 7 days also on E:?** Older files then have
    one copy, on F:. *Recommendation:* yes; and if you have an external disk,
    a monthly copy of the closed months (your action, about 12–18 GB a month).
