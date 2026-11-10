@@ -1,8 +1,8 @@
 # COLLECTOR-PLAN — the collector (C1): what it records, where it lives, how it runs, how it is built
 
 COLLECTOR-PLAN (Opus 5.5, effort max), plan item **C1** of "The road to v1"
-(Phase 1), written 2026-11-10 from 00:45Z (UTC, every time from `date -u`)
-for polymarket-follow's supervisor. **A plan, no code.** It stops for the
+(Phase 1), written 2026-11-10 00:45Z – 01:35Z (UTC, every time from
+`date -u`) for polymarket-follow's supervisor. **A plan, no code.** It stops for the
 owner's yes (WORKFLOW: a plan shows its plan first). A review decides
 nothing: what the owner approves is copied into the plan page, decisions and
 code-rules by the supervisor.
@@ -100,8 +100,9 @@ makes that rule a query, not a matter of care.
 **Built** in eight parts by one build subagent, each tested and checked by
 the supervisor, then a fresh Final review — about two days. The streams can
 start recording after the third part, before the rest is finished, if you
-agree (question 10): every day without them is lost for good. **You install nothing** (Node 24.13 and pnpm 11.20 are on the PC;
-MongoDB runs); you register three Windows tasks with a prepared script.
+agree (question 10): every day without them is lost for good. **You install
+nothing** (Node 24.13 and pnpm 11.20 are on the PC; MongoDB runs); you
+register three Windows tasks with a prepared script.
 
 **Your questions** (section 7, each with my recommendation in brackets):
 1. Keep two public streams open around the clock — about 25 GB of download a
@@ -595,7 +596,7 @@ to GitHub as now.
 |---|---|---|---|
 | 0 | the workspace, configuration, CI, one empty app with one test | the CI file mirrors `pnpm verify` | `pnpm verify` green |
 | 1 | the REST client (admission, back-off, nightly pause, allowed routes, call log), the schemas, the minute and ten-minute reads, the file writer (hours, Brotli, manifests, coverage) | the unit tests of §1.6 that apply | a live run of at least 30 minutes across an hour's end: no 429, the call log never above 50 tokens a minute or 30 in 5 s, the closed hour's file compressed and verified |
-| 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price and tape audits | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); the tape audit finds every API trade; CPU, memory and bytes received reported |
+| 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price and tape audits | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); the tape audit finds every API trade outside logged gaps; CPU, memory and bytes received reported |
 | 3 | running on Windows: the heartbeat file, the lock, the launcher, the run copy, the check script, the registration script (prepared, not run by the build) | the launcher returns the program's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); no window appears at sign-in or every 5 minutes; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and notify |
 | 4 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book; loading from files | board order and guards (fake clock), the re-read, the paging stop, the universe rules, a rebuild from files | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
 | 5 | health: `collector_state`, the disk checks and the stop, the clock watch, the frozen-source checks, a `status` command printing every row | thresholds; the status output | `status` prints every row from a live run |
@@ -616,7 +617,7 @@ guard, the sampler, the watchdog, the universe's first seen, the disk stop
 — and a test seen to fail. **Then a fresh Final-review subagent** reads the
 whole code: before the owner registers the tasks, or — if question 10 is
 answered yes — while the early collector runs, its fixes shipped as
-rebuilds. **After start:** the supervisor checks the first 23:38Z board
+deploys. **After start:** the supervisor checks the first 23:38Z board
 pass, the first 05:20Z backup and the first day's manifest; after a week
 the measured sizes replace this plan's estimates in architecture.
 
@@ -951,3 +952,37 @@ In W (`E:\coding\Claude\supervisor\polymarket-follow\workers\COLLECTOR-PLAN\`):
 - **Docs as downloaded** (`docs/`, with `fetch-log.jsonl`), and Microsoft's
   VBScript deprecation page (`docs/ms-vbscript-deprecation.html`, 01:31:03Z).
 - **Log:** `progress.md`.
+
+## My own self-review, before the hand-back
+
+Made between the first full plan (`fe1fcc1`, 01:22Z) and the hand-back, in
+commits `6ba4687` and `c20d747` and the last one; nothing in the brief's
+eight decisions was reversed.
+- **The price audit's line** was "at least 99%"; a simulation on the capture
+  gives 177 of 180 rows within 200 ms, the misses all in the fastest markets,
+  so the line is 97% with every miss explained by timing.
+- **Compression and parsing costs** were unstated; measured offline: Brotli
+  1.7 s of CPU an hour, run in the thread pool (13 ms of loop delay); book
+  parsing about 1% of a core.
+- **Added:** the frozen-source checks (a stale or unchanged board; no book
+  moving for 5 minutes); IDEAS-REVIEW's four "done when" lines mapped; the
+  market list unreadable at start.
+- **The build order:** the Windows part moved from fifth to third, so that
+  recording can start early (question 10, new).
+- **The launcher:** R4's `.vbs` replaced by a windowless launcher compiled by
+  Windows' own `csc.exe` — VBScript is to be off by default around 2027
+  (Microsoft's page saved, the sentence found verbatim).
+- **The run copy:** the task runs a deployed copy outside the working tree,
+  its state beside it, so a build in progress is never what a restart runs.
+- **The blind store:** every check of the collector prints counts and
+  shapes, never values (A.0-11's "by no one"); this plan's own post-cut
+  reads disclosed (§1.3, items 7 and 8).
+- **Corrected:** eight build parts, not seven; part 1 must cross an hour's
+  end; the weekly restore test rebuilds the universe from every day's
+  replies, not one day's; `sq` "refines", not "supersedes", R1's wording;
+  the scratch capture is 88 MB, not "about 130"; the evidence list named a
+  log file that does not exist.
+- **Not re-checked by anyone but me:** every estimate marked "est." (the TLS
+  overhead, busy-hour trades, the REST replies' compressed size, the weekly
+  fills' tokens) and the design choices of §1.4 that only part 3 can prove
+  (no window, no admin needed). A fresh reader should start there.
