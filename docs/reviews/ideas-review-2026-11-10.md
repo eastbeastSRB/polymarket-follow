@@ -50,66 +50,63 @@ the supervisor in my closing message.
 ## For the owner, in one page
 
 [Final review F6: rewritten to stand alone — plain words, one line an item,
-the six questions on the page itself. The first version is in commit
-`09acdf8`.]
+the six questions on the page itself; then cut from about 960 words to 760. The
+first version is in commit `09acdf8`.]
 
-*Three words used below.* A **basis point (bp)** is one hundredth of a
-percent. **A taker's costs** are what anyone pays who trades at once — the
-fee, and the gap between the buying and the selling price: here about 9 to
-13 bps (0.09–0.13%) for getting in and out. **A random trade** is a trade
-picked by chance in the same market and hour: the yardstick every result
-is measured against.
+*Three words.* A **basis point (bp)** is 0.01%. **A taker** trades at once
+and pays the fee and the gap between buying and selling prices — here 9 to
+13 bps in and out. **A random trade** is one picked by chance in the same
+market and hour: the yardstick for every result.
 
 **What I found**
 
-1. R8 tested one way of following — the 50 with the most banked profit, every new position copied, held 1 to 24 hours — and that way failed; it did not test whether anyone is worth watching.
-2. Before costs those copied trades were worth about nothing: −5 bps, give or take 12 [arithmetic; point 2.2].
-3. R8 could only have seen a big edge, about 25 bps a trade, and it scored most traders at one hour — where costs alone ask for about six right calls in ten on a major coin (an illustration; study 3 measures it).
-4. The profit on the boards is not what a follower gets: part of it comes from resting orders, lower fees and careful exits — #47 made $109,386 while its follower lost.
-5. The data we already hold can ask far more, at almost no API cost: every directional account, the best and the worst, holds up to three days, kinds of trades, other players.
-6. Six weeks of new data can confirm only a large effect — about 30 to 50 bps a trade for most tests (A.2); a small real edge will fail this round and need a later one.
-7. My honest guess: one chance in eight that round 2 confirms something that pays after costs here; one in three that it confirms something worth knowing that does not.
+1. R8 tested one way of following, and it failed; it did not test whether anyone is worth watching.
+2. Before costs the copied trades were worth about nothing: −5 bps, give or take 12 (point 2.2).
+3. R8 could only have seen a big edge, about 25 bps a trade — and scored most traders at one hour, where costs alone ask for about six right calls in ten on a major coin (study 3).
+4. Board profit is not a follower's profit: #47 made $109,386 while its follower lost.
+5. The data we hold can ask far more at almost no API cost: every directional account, the best and the worst, holds up to three days.
+6. Six weeks of new data can confirm only a large effect, about 30 to 50 bps a trade (A.2); a small real edge needs a later round.
+7. My guess: one chance in eight that something is confirmed that pays after costs; one in three for something worth knowing that does not.
 
-**Before any study: three foundations**
+**Before any study**
 
-1. The collector records the market itself — best prices each second, the order book, every trade — because a trader's fills can be read back later and the book cannot.
-2. One one-minute price record of every market and one tested set of research tools, shared by every study.
-3. One rule book for every test, written before any result (Appendix A, A.0).
+1. The collector records the market itself — prices each second, the book, every trade: fills can be read back later, the book cannot.
+2. One one-minute price record and one tested set of research tools, for every study.
+3. One rule book, written before any result (Appendix A, A.0).
 
 **The top ten studies**
 
-1. Do traders differ at all — do the best stay better and the worst stay worse from one set of weeks to the next?
-2. Where does a trader's money come from, and how much of it could a follower have had?
-3. Where can following pay at all — cost against the usual price move, by market and holding time — and do slow traders' entries beat random trades?
+1. Do traders differ at all — do the best stay better and the worst stay worse?
+2. Where does a trader's money come from, and how much could a follower have had?
+3. Where can following pay at all — cost against the usual price move — and do slow traders' entries beat random trades?
 4. Which of eleven kinds of entry, fixed in advance, carry anything?
 5. What does the price do in the 60 seconds before a follower can act?
 6. Which way of ranking traders predicts a follower's result? (Only if study 1 finds a difference.)
-7. When an algorithm works a large order in pieces, does the price keep moving its way for the next half hour?
-8. Does the side that is paid extreme funding keep it, or does the price take it back? (Only if a first count shows the test can see anything.)
+7. While an algorithm works a large order, does the price keep moving its way?
+8. Does the side that is paid extreme funding keep it? (Only if a first count shows the test can see anything.)
 9. When three traders with no visible link open the same side within an hour, does the price follow?
 10. Do entries at the US open do worse than random trades, as R8's own table hinted?
 
 **The critique**
 
-1. R8's one word, FAILS, hides its estimate and its blind spot: "worth about nothing before costs; an edge much under 25 bps would probably not have been seen".
-2. Choosing by banked profit is close to a random draw of active traders, tilted by the market's direction that month and by what each account pays in fees.
-3. Our list packs more than thirty tests into thirteen items, with no budget for false alarms and no statement of what each test could see.
-4. The rule "data after 2026-11-07 stays untouched" did not cover boards, the competition table and prices read after that date — which already carry the new weeks' results.
-5. A verdict on a single trader takes months to years; the paper log should judge a few lists with frozen rules instead (V3 already points there).
+1. "FAILS" hides R8's estimate and its blind spot: an edge much under 25 bps would probably not have been seen.
+2. Choosing by banked profit is close to a random draw, tilted by the market's direction and by each account's fees.
+3. Our list packs more than thirty tests into thirteen items, with no budget for false alarms.
+4. "Data after 2026-11-07 stays untouched" did not cover boards, the competition table and prices read after that date.
+5. A verdict on one trader takes months to years; judge a few lists with frozen rules instead (V3).
 
 **The six questions** (my recommendation in brackets; in full in section 6)
 
-1. Where would you act on what the tool shows, and what does a round trip cost you there? (Answer now: it aims the studies; no advice follows from it.)
+1. Where would you act on what the tool shows, and what does a round trip cost there? (Answer now; no advice follows.)
 2. May the collector keep three public data streams open around the clock? (Yes.)
-3. Two exams, 2026-11-30 and 2026-12-19, with at most a 5% chance that the whole batch passes one false pattern — and round 2 ends there? (Yes.)
-4. If study 1 finds that traders do not differ, do we stop ranking traders for now? (Yes.)
-5. May research read the same address's public record on another exchange — the only record of years? (Not now; decide after study 1, about 2026-11-20.)
-6. A short list of tested measures in place of one "quality score", and the AI's rating only forward, beside your own "would have taken it" mark? (Yes to both.)
+3. Two exams, 2026-11-30 and 2026-12-19, at most a 5% chance of one false pass in all — and round 2 ends there? (Yes.)
+4. If traders do not differ, do we stop ranking traders for now? (Yes.)
+5. May research read the same address's public record on another exchange? (Not now; decide after study 1.)
+6. Tested measures in place of one "quality score"; the AI's rating forward only, beside your own mark? (Yes to both.)
 
-**For the supervisor:** Appendix A holds the rule book (A.0), the first
-measurements (A.1), what each test can see (A.2) and the ten draft entries;
-Appendix B shows where every item of the three lists went; the Final review
-is at the end.
+**For the supervisor:** Appendix A — the rule book (A.0), the first
+measurements (A.1), what each test can see (A.2), the ten entries. Appendix
+B — where every item went. The Final review is the last section.
 
 ---
 
