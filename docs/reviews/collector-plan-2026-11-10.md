@@ -986,3 +986,51 @@ eight decisions was reversed.
   overhead, busy-hour trades, the REST replies' compressed size, the weekly
   fills' tokens) and the design choices of §1.4 that only part 3 can prove
   (no window, no admin needed). A fresh reader should start there.
+
+## Final review (2026-11-10, the owner's request; by COLLECTOR-PLAN itself)
+
+Scope: this plan's "code" — its measurements, its numbers and its design —
+read for what the owner asked (dead or unused parts, needless fallbacks,
+wrong names, repetition, simplicity, fit for the next phases) and for the
+supervisor's five points. Started 2026-11-10 02:35Z, inside polymarket-lab's
+nightly window, so no API or WebSocket call before 03:50Z; new figures come
+from the capture already held (W `out/light-options.txt`,
+`out/rest-size-bound.txt`). **Findings first; each fix is its own commit,
+marked in place `[Final review Fn: …]`; the commits are listed at the end.**
+
+**How satisfied am I?** The measurements hold and the eight decisions stand.
+What is weak: the download — the figure the owner's first question rests on —
+was given as one number without its method or range, and no lighter option
+was priced; several "est." figures had no inputs, and one was ten times too
+high; the first version carried about ten parts nobody uses before v1; one
+recommendation (`exchange` every minute) buys almost nothing; one program had
+two names; and the plan repeats itself.
+
+**Severity 1 — wrong or misleading, could steer a decision**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F1 | **The download is given as one number.** "About 25 GB a day" is an estimate: each captured frame re-compressed alone at deflate level 6 (the server's level is unknown; level 1 adds 7%), plus TLS and framing "1–3 GB, not measured", which leaves out the packets' own headers (up to about 5 GB a day if each frame travels alone). And the owner gets no lighter option with its download — only "trades and REST books". | pending |
+| F2 | **"est." figures without inputs, one of them wrong.** Busy-hour trades "0.01–0.02 GB a day" has no basis: 35 B a trade frame compressed (227 frames) at the night's rate gives about 2 MB a day, 23 MB if trading were ten times busier all day. REST replies "a few MB": the measured bound is 7.4 MB. The competition's "0.6 GB a year" assumes a competition always running and R6's modelled ratio, unsaid. The universe's "tens of thousands" is a guess. The best-price option's "0.4–1 GB of disk": the 1 is a guess. | pending |
+| F3 | **The first version is bigger than what works.** Parts nobody reads before v1, or that repeat another: the collections `collector_state`, `health_events`, `api_usage_minute`, `api_usage_hour`, `unknown_keys`, `rejected` (the rejected files hold the same) and `exchange_stats` (the route serves any past window up to 31 days — re-readable, not "now only"); the hourly tape audit (it guards a partial stall nobody has seen, of a stream whose content can be read back); the `/v1/info/time` reads (the books' own timing watches the clock for free); the check task's notification (R4's banner is unverified; notices are v1's notifier's); the command that loads boards from files after a database outage (the files keep them either way); the universe rebuilt from files in the restore test; the "no book changed in 5 minutes" watch (the per-market stall check covers a dead stream). | pending |
+| F4 | **Question 4 buys almost nothing.** It recommends `exchange` every minute, but CloudFront served that reply 213–446 s old: a minute's read mostly returns the same cached copy. Every 5 minutes gives the same marks for 0.4 tokens a minute instead of 2 — two fifths of the collector's whole average. | pending |
+
+**Severity 2 — evidence or wording that does not carry its weight**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F5 | **The deviations from CLAUDE.md's Stack and from decided practice are scattered** over §1.2, §1.4 and §1.6, and some are missing: raw replies kept beside parsed records (R6, decided: "parsed records, not raw replies"); Brotli files; Node's own `.env` reader instead of the lab's dotenv; CI on Node 24 instead of the lab's Node 22 floor; a C# source file and PowerShell scripts in a TypeScript repository. | pending |
+| F6 | **The summary's ten questions** put the question first and the recommendation last, several over two lines; the "one page" runs well past a page. | pending |
+| F7 | **One program, two names:** `apps/poller` and the run copy `…\poller\`, but the task "polymarket-follow collector", `collector-check.ps1`, `collector_state` and `F:\polymarket-follow\collector\`. Registered tasks and data folders outlive C1 and are costly to rename once v1 runs. | pending |
+| F8 | **One fact, several homes:** the book-against-best-price 99.9% three times; Brotli's 3.2 four times; the CloudFront ages three times; the C: trend three times; §3 restates six decisions and §6 four; §5 keeps an unknown about a channel the plan does not use (statistics' cadence). | pending |
+| F9 | **A list that shifts while it is paged** — a board refreshing mid-pass; the competition table grew from 4,738 to 4,746 accounts in an hour — can repeat a row on two pages or skip one; no rule is named. | pending |
+
+**Severity 3 — notes, mostly for the next phases**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F10 | Reading one market at one instant means decompressing a whole hour's all-market file (about 190 MB of text); an exam over a thousand distinct hours spends minutes on it. Unsaid for the research kit. | pending |
+| F11 | Three things v1 will build on are not named as interfaces: the heartbeat file's fields (v1's notifier reads it), the latest book per market held in memory (v1's paper log prices from it), the files' line format (the kit and the exams read it). | pending |
+| F12 | The universe keeps an overall first and last seen beside each source's first and last date; the first two follow from the rest. | pending |
+| F13 | The four account-value boards may largely repeat one ranking (account value is current equity; the window only decides who is eligible): perhaps 200 tokens a day for one list. Unmeasured. | pending |
+| F14 | Small figures: an "18-minute" board read in the summary against "about 17.5" in §1.1; the weekly fills' "about 0.5 tokens a minute" is 0.6 by its own inputs (at least two reads a week for an account's 116 fills); Brotli files need a reader (Node's zlib; Python needs a package). | pending |
