@@ -84,10 +84,11 @@ database** on the shared MongoDB (C:), about 2 GB a year. Backups: the
 database daily to E: and F:; the last 7 days of stream files also on E:.
 Older stream files have one copy, on F: (question 5).
 
-**How it runs.** A Windows task starts it **at sign-in**, hidden, and restarts
-it after a crash; a second small task checks every 5 minutes that it is
-alive and restarts it if it hangs, writing down each restart. It never needs
-a Claude session. A silent connection is caught within 15
+**How it runs.** A Windows task starts it **a minute after Windows starts**,
+outside your session (no window, no sign-in needed), and restarts it after a
+crash; a second small task checks every 5 minutes that it is alive and
+restarts it if it hangs, writing down each restart. It never needs a Claude
+session. A silent connection is caught within 15
 seconds and reopened; every gap is written down. In polymarket-lab's nightly
 window (02:35–03:50 UTC) it pauses its REST reads; the streams keep running.
 
@@ -115,8 +116,8 @@ register three Windows tasks with a prepared script.
    Windows tasks? (*Yes.*)
 7. Pause the collector's REST reads in the lab's nightly window? (*Yes, for
    now.*)
-8. After Windows Update's pause ends (2026-11-18), keep restarts manual?
-   (*Yes.*)
+8. Start the poller with Windows, outside your session, instead of at
+   sign-in? (*Yes.*)
 9. Once the exam lists are frozen, also store those accounts' new fills
    weekly, unread? (*Yes.*)
 10. Start recording as soon as the streams are built and checked, before
@@ -376,39 +377,38 @@ CONFIRM list of this batch.
 
 ### 1.4 How it runs on this PC
 
-| | **At sign-in, hidden launcher (recommended)** | "Whether logged on or not" (S4U) at sign-in | At start-up (boot) | A Windows service |
-|---|---|---|---|---|
-| Runs with nobody signed in | no | no | yes | yes |
-| A window to hide | yes: a small windowless launcher (item 1) | none (non-interactive) | none | none |
-| Registering | the owner, no admin (R4; not tried) | no admin (Learn; not tried) | admin, most likely (R4) | admin, and a service wrapper to install |
-| Recorded | the decided default (decisions 2026-11-07, the owner's PC; R4 Q3) | — | not needed then | — |
+| | At sign-in, in the owner's session | **At start-up, "whether logged on or not", no password stored (S4U) — recommended** | A Windows service |
+|---|---|---|---|
+| Runs after a restart with nobody signed in | no | yes | yes |
+| A window to hide | yes: needs a windowless launcher | none: outside the session | none |
+| Can show a notification | yes | no (none is needed: §1.8, the cut) | no |
+| Registering | the owner, no administrator (R4; not tried) | the owner once, from an elevated PowerShell: the account is an administrator (filtered token) and already runs the lab's worker as a start-up task outside the session (`out/task-facts.txt`) | an administrator, and a service wrapper to install |
+| Recorded | the default decided 2026-11-07 (the owner's PC; R4 Q3) | changes that default for the poller only (question 8) | — |
 
-**Recommended: at sign-in, as decided;** a start-up task only if an
-unattended restart costs data (question 8). **Names:** the program, its
+**Recommended: at start-up, outside the session** [Final review F15: was "at
+sign-in, as decided", with a windowless launcher compiled from 20 lines of
+C# by Windows' own `csc.exe` (present: `out/launcher-facts.txt`) to hide the
+console window — itself chosen over R4's `.vbs` because Microsoft writes
+"Around 2027, the VBScript FODs will no longer be enabled by default"
+(`docs/ms-vbscript-deprecation.html`). Once the check's notification was cut,
+neither task needs the desktop: outside the session there is no window to
+hide, and a start-up trigger records through a night restart by Windows
+Update, paused only to 2026-11-18]. v1's notifier, which must reach the
+screen, stays at sign-in (R4's two processes). **Names:** the program, its
 tasks and its folders are named for what they stay — the poller, v1's one
 API client; "the collector" is this first part's name on the plan page.
 [Final review F7: the tasks were "polymarket-follow collector" and
 "… collector check", the check script `collector-check.ps1`, the files'
 folder `F:\polymarket-follow\collector\` — beside `apps/poller`; registered
 tasks and data folders are costly to rename once v1 runs.] The parts:
-1. **Task "polymarket-follow poller":** at sign-in of the owner's account;
-   run only when the user is logged on; run level Limited (the collector
-   needs no rights; R4: an elevated process can drop notifications); action
-   `tools\launch-hidden.exe node <run copy>\dist\index.js`. The launcher is
-   about 20 lines of C#, compiled from source at build time by the .NET
-   Framework compiler that ships with Windows (`csc.exe`, present here:
-   `out/launcher-facts.txt`, 2026-11-10 01:31Z — nothing installed). It
-   starts the program with no console window at all and **waits**, returning
-   its exit code, so that "restart on failure" sees a crash. **Not R4's
-   `.vbs`:** Microsoft's own timeline says "Around 2027, the VBScript FODs
-   will no longer be enabled by default" (Windows IT Pro blog, 2024-05-22,
-   updated 2024-06-13; saved as `docs/ms-vbscript-deprecation.html`, the
-   sentence found verbatim: `out/ms-vbscript-page.txt`), and a
-   launcher that one day stops starting anything is a silent failure; also,
-   whether a merely hidden console window stays hidden when Windows Terminal
-   is the default console host is unknown here (no explicit setting: Windows
-   decides) — with no window created, neither matters. Restart every minute
-   up to three times; no time limit; one instance (do not start a new one).
+1. **Task "polymarket-follow poller":** at start-up with a 1-minute delay
+   (as the lab's worker); "run whether the user is logged on or not", the
+   password not stored (S4U: local resources only, which is all it uses);
+   run level Limited; action `<run copy>\run-poller.cmd`, which starts
+   `node dist\index.js` and appends its output to `…-run\var\logs\stdout.log`
+   — the lab's `run-worker.bat`, copied — so a crash's last words are kept and
+   node's exit code reaches Task Scheduler; restart every minute up to three
+   times; no time limit; one instance (do not start a new one).
    **The run copy:** the task runs a copy of the built program outside the
    working tree (`E:\polymarket-follow-run\poller\`, written by
    `tools\deploy.ps1` after `pnpm verify` is green), so a build in progress
@@ -423,9 +423,9 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    tokens in the last minute). It works when MongoDB does not. [Final review
    F3: was "and the same in `collector_state`" — the database copy comes with
    v1's Status page.]
-4. **Task "polymarket-follow poller check":** at sign-in and every 5
-   minutes, a short PowerShell script, started by the same launcher (so no
-   window flashes every 5 minutes). If the heartbeat is older than 2
+4. **Task "polymarket-follow poller check":** at start-up and every 5
+   minutes, outside the session like the poller (so no window ever flashes),
+   a short PowerShell script. If the heartbeat is older than 2
    minutes, it ends the node process whose command line is the poller's,
    starts the poller task and appends a line to `…-run\var\check.log`. Task
    Scheduler restarts a crash, not a hang (R4 §5); this is what catches a
@@ -447,8 +447,10 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    streams continue (a separate bucket and host, no tokens; the rate-limits
    page: "Hitting one bucket does not consume another bucket"). No daily job
    is scheduled inside it.
-8. **PC restarts:** the task starts at the next sign-in; the gap is logged. A
-   day's boards missed while the PC was off are lost and logged as missed,
+8. **PC restarts:** the tasks start a minute after the PC does, before
+   anyone signs in [Final review F15: was "at the next sign-in"]; the gap is
+   logged. A day's boards missed while the PC was off are lost and logged as
+   missed,
    never filled from a later read (the lab's lesson: "a lost day is gone").
 9. **The clock:** every record carries the server's time (`ts`, a board's
    `timestamp`) beside our receive time; the daily times are UTC inside the
@@ -466,7 +468,7 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
     `health_events` carry its rows … so the page needs no new collector
     code"]. Until then the `status` command prints them.
 11. **Logs:** pino, JSON lines, one file a UTC day under `…-run\var\logs\`,
-    30 days kept; the launcher's own output file catches a crash's last
+    30 days kept; `run-poller.cmd`'s output file catches a crash's last
     words.
 
 ### 1.5 Backups
@@ -527,7 +529,7 @@ apps/poller/          the one API client (the plan page: "the poller (its first 
   src/health/         heartbeat.ts, disk.ts (pure thresholds), coverage.ts, status.ts (the status command)
   src/schedule.ts     pure: next run times in UTC, the nightly window
   test/               vitest; fixtures trimmed from this plan's replies, dated 2026-11-10
-tools/                backup.cjs, restore.cjs, launch-hidden.cs (compiled by the in-box csc.exe),
+tools/                backup.cjs, restore.cjs, run-poller.cmd (copied into the run copy),
                       deploy.ps1 (the run copy), poller-check.ps1, register-tasks.ps1
 
 outside the repository: E:\polymarket-follow-run\poller\ (the run copy), E:\polymarket-follow-run\var\
@@ -606,7 +608,7 @@ to GitHub as now.
 | **A frozen source** — the API answers, the data stops moving (the lab's leaderboard froze 2026-10-30 to 11-02, R4 §5) | a board's snapshot stamp older than 5 minutes at read time (10 for `all`; R1 saw at most 60 s and 281 s), or its top 100 identical to the day before | the board stored with `stale: true` [Final review F3: the "no book changed in 5 minutes" watch is cut — a dead stream is caught by the per-market stall check; books that arrive but never change are rare and visible in the files afterwards] |
 | The day boards run late | the 23:59:30Z guard | not read after it, logged as missed; a board's day is taken from its snapshot `timestamp`, never from our clock |
 | A competition ends, a new one starts | the daily `competitions` read | each competition is read until 7 days after its end (final and paid rows); its dates and boosts in the rule book (A.0-8) |
-| A crash | the launcher returns node's exit code | Task Scheduler restarts it three times a minute apart; then the check task |
+| A crash | node's exit code, through `run-poller.cmd` | Task Scheduler restarts it three times a minute apart; then the check task |
 | A hang | the heartbeat file older than 2 minutes | the check task ends and restarts it, and logs it |
 | Two collectors | the lock | the second exits |
 | The PC off, asleep or restarted | the time since the last heartbeat, at start | logged as a gap; streams of that time lost; a missed board pass lost and logged |
@@ -621,7 +623,7 @@ to GitHub as now.
 | 0 | the workspace, configuration, one empty app with one test | `pnpm verify` runs build, lint, test, format:check in that order | `pnpm verify` green |
 | 1 | the REST client (admission, back-off, nightly pause, allowed routes, call log), the schemas, the minute and ten-minute reads, the file writer (hours, Brotli, manifests, coverage) | the unit tests of §1.6 that apply | a live run of at least 30 minutes across an hour's end: no 429, the call log never above 50 tokens a minute or 30 in 5 s, the closed hour's file compressed and verified |
 | 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price audit | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); CPU, memory and bytes received reported |
-| 3 | running on Windows: the heartbeat file, the lock, the launcher, the run copy, the check script, the registration script (prepared, not run by the build) | the launcher returns the program's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); no window appears at sign-in or every 5 minutes; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and log it |
+| 3 | running on Windows: the heartbeat file, the lock, `run-poller.cmd`, the run copy, the check script, the registration script (prepared, not run by the build) | `run-poller.cmd` passes node's exit code on (a run that exits 3); the lock refuses a second start | the owner registers the tasks once, elevated (question 10: as early as this); after a restart of the PC both tasks run before anyone signs in; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and log it |
 | 4 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book | board order and guards (fake clock), the re-read, the paging stop, the universe rules | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
 | 5 | health: the disk checks and the stop, the clock watch from the books, the boards' `stale` flag, a `status` command that prints every row from the heartbeat file and the day's folder | thresholds; the status output | `status` prints every row from a live run |
 | 6 | backup and restore | the round trip on `polymarket_follow_test` | a backup to E: and F: and a restore test, both ok |
@@ -653,8 +655,7 @@ needs: the two streams and the book sampler; the watchdog, the stall check
 and `coverage.jsonl`; the board and competition passes; the universe and the
 rule book; the price audit (IDEAS-REVIEW's "done" line); the hourly files and
 their manifests; the rejected files (Iron Rule 3); the lock; the heartbeat
-file and the check task (a hang is otherwise silent); the launcher and the
-run copy (§1.4); the disk checks, the backups and the weekly restore test
+file and the check task (a hang is otherwise silent); the run copy (§1.4); the disk checks, the backups and the weekly restore test
 (R6, decided); the `status` command (the supervisor checks with it).
 
 **Who builds:** one build subagent (Opus 5.5, effort high or max: its code
@@ -732,11 +733,11 @@ following.
   re-read (Final review F3).
 - **The universe:** addresses only (recommended) against a daily address row
   per account (35 tokens a minute for 10,000) or weekly.
-- **The launcher:** R4's `.vbs` (works today; VBScript off by default from
-  about 2027, Microsoft) against a windowless launcher compiled from 20 lines
-  of C# by Windows' own `csc.exe` (recommended: no window is ever created,
-  nothing to install, nothing deprecated) against a "whether logged on or
-  not" task (no window, but no notification from the check either).
+- **Hiding the window:** in the owner's session a console program needs a
+  launcher — R4's `.vbs` (VBScript off by default from about 2027,
+  Microsoft) or one compiled by Windows' own `csc.exe`; outside the session
+  (recommended, Final review F15) there is no window and no launcher. The
+  only thing lost is a notification from the check, which the cut removed.
 - **What the task runs:** the working tree, as the lab does, against a run
   copy refreshed only by a deploy after `pnpm verify` (recommended: a build
   in progress can never be what a crash restart starts).
@@ -785,7 +786,7 @@ Failures at run time are in §1.7; these concern the plan.
 | The download (about 25 GB a day) meets a data cap | question 1; S0 is the fallback (§2) |
 | Stream files older than 7 days have one copy | question 5 |
 | C: is shrinking — 42.8 GiB free on 11-08, 39.1 on 11-10 — not by us | our share is about 2 GB a year; the alarm at 15 GiB; if C: keeps falling, the owner and the lab's supervisor look at what grows; moving our database (R6's trigger) would need a disk other than D: |
-| Windows Update resumes after 2026-11-18 and may restart the PC at night | question 8; the gap is logged either way |
+| Windows Update resumes after 2026-11-18 and may restart the PC at night | the start-up tasks run a minute after the restart (§1.4, question 8); the minute of the restart is a logged gap |
 | The rates were measured for five minutes at night | the sizes carry their ceilings; the first week's manifests give the real figures |
 | A study is tempted to open the stores | §1.3 |
 | The collector and research share the 250 | the collector's cap is 50; research's 200; the owner's browser shares the bucket (no rule; back-off) |
@@ -793,9 +794,9 @@ Failures at run time are in §1.7; these concern the plan.
 | The terms of use (R1 Q13) | unchanged from decisions 2026-11-07: personal use, a public documented API, a small steady presence — two connections of the 50 allowed, about 5 tokens a minute |
 | A deploy changes a message's shape | §1.7: rejected frames kept raw; a schema fix re-reads them |
 | Someone starts a second collector by hand | the lock |
-| A launcher that one day starts nothing (VBScript off by default from about 2027) — the collector and its check would fail together, silently | no VBScript: the compiled launcher (§1.4) |
+| A launcher that one day starts nothing (VBScript off by default from about 2027) — the poller and its check would fail together, silently | no launcher at all: the tasks run outside the session (§1.4; Final review F15) |
 | A later build in the same repository changes what a crash restart runs | the run copy, refreshed only by a deploy after `pnpm verify` (§1.4) |
-| Registering the tasks needs an administrator after all (R4: "not tried") | the registration script says so and stops; the owner runs it once from an elevated PowerShell |
+| Registering a start-up task outside the session needs an administrator | the account is one (filtered token, `out/task-facts.txt`): the owner runs the prepared script once from an elevated PowerShell; nothing else needs elevation |
 | The download and TLS figures are estimates | part 2 reports the bytes the process received |
 
 ## 5. What stays unknown, and what would settle it
@@ -880,10 +881,14 @@ Failures at run time are in §1.7; these concern the plan.
    (02:35–03:50Z), keeping the streams?** *Recommendation:* yes for now — it
    costs a 75-minute hole in the minute reads; v1's poller (alerts) will need
    its own answer.
-8. **After Windows Update's pause ends (2026-11-18), keep restarts manual**,
-   as you do now, so the collector never waits hours for a sign-in?
-   *Recommendation:* yes; if a night restart happens anyway, a start-up task
-   (it would need an administrator once) is the fallback.
+8. **May the poller start with Windows, outside your session, instead of
+   at sign-in** (decided 2026-11-07 for both processes)? *Recommendation:*
+   yes — it needs no window and so no launcher, and when Windows Update's
+   pause ends (2026-11-18) a night restart costs one minute of recording,
+   not the hours until you sign in; you register it once from an elevated
+   PowerShell. v1's notifier, which must reach your screen, stays at sign-in.
+   [Final review F15: was "keep restarts manual after 2026-11-18?", with a
+   start-up task only as the fallback.]
 9. **Once the exam lists are frozen (about 2026-11-20), may the collector
    store those accounts' new fills weekly, unread,** as insurance against a
    history route withdrawn before an exam (IDEAS-REVIEW)? *Recommendation:*
@@ -997,6 +1002,7 @@ In W (`E:\coding\Claude\supervisor\polymarket-follow\workers\COLLECTOR-PLAN\`):
   `offline-analysis.txt`, `depth-coverage.txt`, `audit-sim.txt`,
   `cpu-bench.txt`, `ws-deflate-check.txt`, `ws-ext-check.txt`,
   `ws-ua-local-test.txt`, `launcher-facts.txt`, `ms-vbscript-page.txt`,
+  `task-facts.txt`, `light-options.txt`, `rest-size-bound.txt`,
   `async-inspect.txt`, `async-updates.txt`, `rest1.txt`, `rest-calls.jsonl`
   (every REST call), `rest-budget-check.txt`, `disk-free.txt`,
   `dl-docs.txt`.
