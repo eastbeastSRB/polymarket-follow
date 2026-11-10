@@ -750,7 +750,7 @@ following.
   second a trader acted for a third of gzip's cost.
 - **Book depth:** 20 (recommended) against 50 (twice the bytes, no better
   cover for $1,000–$10,000).
-- **Compressor:** gzip (universal; 3.2 times larger on books); Brotli
+- **Compressor:** gzip (universal; larger on books, §1.2); Brotli
   quality 5 (recommended: in Node's standard library, stable, fast); Brotli 9
   (11% smaller, slower); zstd level 19 (25% smaller than Brotli 5; in this
   Node, 24.13, but newer there); a columnar format (packages, and a reader
@@ -759,10 +759,10 @@ following.
   (recommended: a crash leaves a whole file) against compressing as it goes
   (a crash leaves a truncated stream).
 - **`exchange` every minute** (DOCS-SWEEP) against every 5 minutes
-  (recommended): CloudFront served it 213–446 s old, so most minute reads
-  return the same copy; a minute's read would cost 2 tokens a minute — two
-  fifths of the collector's average — to see a change at most 4 minutes
-  sooner. [Final review F4: every minute was recommended.]
+  (recommended): most minute reads return the same cached copy (§1.1), so
+  they would cost 2 tokens a minute — two fifths of what the average would
+  then be — to see a change at most 4 minutes sooner. [Final review F4:
+  every minute was recommended.]
 - **The board pass:** 23:38Z with the day boards last (recommended) against
   after 00:00Z (the day boards have reset) or twice a day (not asked).
   Consistency: flagged when the pages' snapshot stamps span over 10 s, not
@@ -786,32 +786,19 @@ following.
 
 ## 3. Possibilities found
 
-1. **Each market's book every 100 ms makes liveness exact per market** — a
-   stalled market is visible within 15 s even when its price does not move.
-2. **One tick, one `sq`:** all 90 books of a tick share `sq` and `ts`, so the
+[Final review F8: only what §1 does not already say; items on liveness by the
+book, compression on the wire, Brotli, the universe's cost, the price audit,
+the self-describing day folder, `date`/`age` and the book in memory were
+restatements and are cut — their one home is §1.1, §1.2 and §1.6.]
+
+1. **One tick, one `sq`:** all 90 books of a tick share `sq` and `ts`, so the
    whole exchange can be rebuilt at any tick from the files.
-3. **An exact book audit is possible:** REST books carry a `sequence` (R1's
-   table), comparable with the stream's `sq` (not needed in C1; the best-price
+2. **An exact book audit is possible:** REST books carry a `sequence` (R1's
+   table), comparable with the stream's `sq` (not needed in C1; the price
    audit suffices).
-4. **Per-frame compression is already on:** Node's own client offers it, the
-   server accepts it (`permessage-deflate; server_no_context_takeover;
-   client_no_context_takeover; server_max_window_bits=15`): books cost about
-   2.8 times less download than their JSON.
-5. **Brotli stores books 3.2 times smaller than gzip.**
-6. **A fast board pass reads one snapshot:** four pages of the day board read
+3. **A fast board pass reads one snapshot:** four pages of the day board read
    2.3 s apart carried snapshot stamps within 262 ms of each other
    (`raw/lb-day-pnl-*.json`, 00:57:23–30Z).
-7. **The universe needs no per-account reads:** the boards and the
-   competition table refresh it daily for about 850 tokens.
-8. **The price audit gives each exam a measured quality line** for the record it
-   uses.
-9. **A day folder describes itself** (manifest, coverage): a reader needs
-   neither the database nor this program.
-10. **Every REST record keeps `date` and `age`,** so its true as-of time is
-    known although CloudFront serves `exchange` and `instruments` minutes old.
-11. **v1's paper log gets its book for free:** the book at a follow instant is
-    already in the poller's memory, so no REST book read (2–20 tokens) per
-    alert.
 
 ## 4. Potential problems, and how each would be handled
 
@@ -821,7 +808,7 @@ Failures at run time are in §1.7; these concern the plan.
 |---|---|
 | The download (about 25 GB a day) meets a data cap | question 1; S0 is the fallback (§2) |
 | Stream files older than 7 days have one copy | question 5 |
-| C: is shrinking — 42.8 GiB free on 11-08, 39.1 on 11-10 — not by us | our share is about 2 GB a year; the alarm at 15 GiB; if C: keeps falling, the owner and the lab's supervisor look at what grows; moving our database (R6's trigger) would need a disk other than D: |
+| C: is shrinking, not by us (§1.2) | our share is at most about 2 GB a year; the alarm at 15 GiB; if C: keeps falling, the owner and the lab's supervisor look at what grows; moving our database (R6's trigger) would need a disk other than D: |
 | Windows Update resumes after 2026-11-18 and may restart the PC at night | the start-up tasks run a minute after the restart (§1.4, question 8); the minute of the restart is a logged gap |
 | The rates were measured for five minutes at night | the sizes carry their ceilings; the first week's manifests give the real figures |
 | A study is tempted to open the stores | §1.3 |
@@ -861,31 +848,25 @@ Failures at run time are in §1.7; these concern the plan.
 - **The `corporate-actions::<iid>` channel** (changelog only, untested): not
   subscribed; the daily split read covers splits.
 - **Your internet plan.** Question 1.
-- **Statistics' cadence:** the spec says every second; measured about every
-  5.8 s a market. Not used.
 
 ## 6. Beyond the brief
 
 1. **The forward clock starts with the books** (IDEAS-REVIEW 2.17): from day
    one any paper entry can be checked against a recorded book.
 2. **The price audit's agreement rate is the honest quality line** for any
-   result built on the record; each exam prints them.
-3. **The weekly fills of the frozen lists** (IDEAS-REVIEW's addition): if a
-   history route were withdrawn before an exam, the exam would not be lost.
-   About 0.6 tokens a minute (question 9).
-4. **R4's freshness check should read the books, not the trades:** decisions
+   result built on the record; each exam prints it.
+3. **R4's freshness check should read the books, not the trades:** decisions
    2026-11-09 (R7's technical calls) planned it on the trades stream, which
    goes 20 s quiet at night; the books come every 100 ms.
-5. **The competition table never lists disqualified or under-review
+4. **The competition table never lists disqualified or under-review
    accounts** (the spec's text), so the universe from it misses exactly the
    accounts the competition flags; the boards still list them.
-6. **The changelog page could be hashed daily** (docs host, no tokens) to mark
+5. **The changelog page could be hashed daily** (docs host, no tokens) to mark
    announced changes — for v1, not C1.
-7. **Iron Rule 1 becomes a test** (§1.6), not only a rule.
-8. **Summer time moves nothing in the collector;** only the backup task's UTC
-   hour shifts (R6).
-9. **The C: trend** (3.7 GiB in two days, not ours) deserves a look by the
-   owner whatever happens to this plan.
+
+[Final review F8: four items cut as restatements — the weekly fills
+(question 9), Iron Rule 1 as a test (§1.6), summer time (§1.4 item 9), the
+C: trend (§1.2, §4).]
 
 ## 7. Questions for the owner
 
