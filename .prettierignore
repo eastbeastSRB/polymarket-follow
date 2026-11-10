@@ -1,0 +1,8 @@
+node_modules
+dist
+pnpm-lock.yaml
+
+# Authored prose — formatted by hand, not by Prettier.
+docs
+CLAUDE.md
+README.md

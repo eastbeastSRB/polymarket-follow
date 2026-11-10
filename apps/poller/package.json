@@ -1,0 +1,19 @@
+{
+  "name": "@polymarket-follow/poller",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsc -p tsconfig.json && vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "~6.0.3",
+    "vitest": "5.0.5"
+  }
+}

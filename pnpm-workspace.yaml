@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# A release must be public for 14 days before it is installed, direct or
+# transitive: most poisoned releases are found and pulled within days.
+minimumReleaseAge: 20160
