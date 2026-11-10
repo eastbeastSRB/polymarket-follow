@@ -189,8 +189,15 @@ and questions 1, 4.*
      labelled market makers and the largest accounts (30–100 accounts,
      2.5–8 tokens a minute).
 
-  All together about 6–15 tokens a minute of the 250 [arithmetic]; disk
-  about 0.2 GB a day compressed [arithmetic; measure on day one].
+  All together about 6 tokens a minute of the 250 — the ticker 2, the
+  boards 0.6, DOCS-SWEEP's reads 2.9 [arithmetic from the published
+  weights] — and 8 to 14 with item 5. Disk about 0.2 GB a day compressed:
+  a guess to be measured on day one — 7.8 million best-price rows a day at
+  60–80 bytes, 780,000 book snapshots at about 1 KB, tickers and trades a
+  few MB, all shrunk eight- to ten-fold; the row sizes and the ratio are
+  assumed. [Final review F10: was "about 6–15 tokens a minute … [arithmetic];
+  disk about 0.2 GB a day compressed [arithmetic; measure on day one]" — no
+  inputs were given, and the disk figure is a guess, not arithmetic.]
 - **What I would change in C1 as written.** "Best prices and books on a
   schedule" → continuously, from the stream: a schedule misses the second a
   trader acted, and the stream is free. Add the tape, the ticker and
@@ -724,7 +731,7 @@ before a ruling, and a single composite score (H3).
 | **C1** the collector | **Change** (foundation A) | Books "on a schedule" miss the second a trader acted; the stream is free. Add the tape, the ticker, DOCS-SWEEP's reads. Keep the universe as addresses — an account's fills and profit series can be read back any time, so polling it buys nothing. Add the blind-store rule. |
 | **H1 / D2** B2's confirmation | **Keep, expect little** | It is a promise, frozen. But its measure ranks on banked profit ÷ volume, its find pair showed the top fifth doing worse, and its weeks 9–12 hold the whole competition. Add study 1's five-by-five table as a secondary that decides nothing — "where in the ranks does persistence sit" is the open part. |
 | **H2** long track records | **Merge into study 1** | "All entries since the first fill" is the long record we have. For most accounts that is ten weeks at most (public launch 2026-09-03): say so. A record of years exists only under H13 (c). |
-| **H3** an honest quality score | **Change** (study 6) | (a) Not one number — point 2.16. (b) At most six measures, corrected together. (c) Tested on the *follower's* next result first, the trader's own beside it. (d) Profit at base-tier fees, with open positions. (e) The Sharpe-based measures will say "record too short" for nearly everyone: with 65 days, a record can prove skill only at a yearly Sharpe ratio near 4 [arithmetic from the published formula; memory: Bailey and López de Prado 2012]. That is honest and worth showing as exactly that. |
+| **H3** an honest quality score | **Change** (study 6) | (a) Not one number — point 2.16. (b) At most six measures, corrected together. (c) Tested on the *follower's* next result first, the trader's own beside it. (d) Profit at base-tier fees, with open positions. (e) The Sharpe-based measures will say "record too short" for nearly everyone: with 65 days, a record can prove skill only at a yearly Sharpe ratio near 4 [arithmetic from the published formula; memory: Bailey and López de Prado 2012; Final review F10, the inputs: a one-sided 95% test against a Sharpe ratio of zero, returns taken as normal, 365 trading days a year — 1.645 ÷ √64 = 0.206 a day]. That is honest and worth showing as exactly that. |
 | **H4** style as a filter | **Change** (study 3) | The map first: it says *why* fast styles cannot pay. Add 72 hours. All directional accounts, not the 50. |
 | **H5** risk discipline | **Move** (study 13) | A profile for the trader's page and one fixed index in study 6, not a verdict of its own. Stops cannot be seen; "exits like someone who uses them" is the most that can be said. |
 | **H6** which trades | **Widen** (study 4) | Two kinds picked in advance is a guess at which two; eleven tested together with one correction is a search with a known price. |
@@ -765,6 +772,15 @@ twice.
 | **early December** | The v1 plan, with what stands. Hypotheses still open keep running. | — |
 | **12-19 → 12-20** | **The final exam** on six weeks (a second capture, 11-30 → 12-19). The account-level check (study 14) for what passes; paper profiles. **Round 2 ends here.** | about 110,000 tokens, 7.5 h |
 | **mid-January 2027** | The first FIND on the collector's own series for the studies that have no history (15, 16, 17, 20), each confirmed on the eight weeks after — beside v1, outside "research complete". | none |
+
+**Where the two exams' sums come from** [Final review F10: added; the
+table gave totals only]. First exam: 600 directional accounts × 4 pages of
+new fills (16.6 fills a day [record: R6]) × 10 = 24,000; 30 busy accounts
+for entry 7, each taken as busy as the all-time #1 (37.7 fills an hour
+[record: R1 Q14]) = 62,400 — an upper bound; the panel's 23 new days =
+34,800; one-second marks for entry 5 = 14,000. Final exam, 19 more days:
+19,800 + 51,600 + 28,700 + 11,600. The two counts of accounts (600 and 30)
+are guesses until the lists are frozen.
 
 **What runs side by side:** everything in the second row; every study in
 the third (they make no calls, so they do not compete for the budget).
@@ -1283,7 +1299,9 @@ commit `09acdf8`.]
   the mark in their direction by more than random public trades in the
   same market and hour do.
 - **Unit.** The entry.
-- **FIND data.** R8's capture: 1,272 entries, their drawn random trades,
+- **FIND data.** R8's capture: the primary cell's 1,249 entries with their
+  drawn random trades [Final review F10: was "1,272 entries" — that is
+  every entry of the period; 1,249 were priced with their random trades],
   one-second marks from 300 s before each follow instant. A second look at
   a capture already used once — logged as exploring.
 - **CONFIRM data.** The 50's entries after 2026-11-07, from one-second
@@ -1373,8 +1391,10 @@ commit `09acdf8`.]
   faster machines are not in past data → a doubled-cost run, and the
   recorded book at CONFIRM. Also: runs farmed for a competition's volume →
   A.0-8; a few accounts carry everything → one vote per account.
-- **Cost.** FIND: no calls. CONFIRM: about 62,000 tokens (4 hours) for 30
-  such accounts. The whole histories of the 20 busiest taker accounts
+- **Cost.** FIND: no calls. CONFIRM: at most about 62,000 tokens (4 hours) for
+  30 such accounts, each taken as busy as the all-time #1 [Final review
+  F10: "at most" and its input added]. The whole histories of the 20
+  busiest taker accounts
   (250,000 tokens, 16.7 h) only if FIND shows a drift.
 - **Fixed in the entry before the look.** Five orders, 30 minutes, gaps
   under 10 minutes; the 30-minute exit; the list of accounts with its hash.
