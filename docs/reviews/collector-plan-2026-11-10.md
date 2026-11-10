@@ -555,28 +555,34 @@ outside the repository: E:\polymarket-follow-run\poller\ (the run copy), E:\poly
                       (heartbeat, lock, logs); F:\polymarket-follow\recordings\ (the files)
 ```
 
-**Technical calls, for the supervisor to record:**
-- **No Turborepo and no `packages/shared` yet.** One package gains nothing
-  from either. The schemas the api will share move to `packages/shared` when
-  the api exists — a move, not a rewrite. The skeleton step still brings
-  Turborepo, the docs-size report and the decisions guard (the plan page).
-- **Node 24's own WebSocket, not the `ws` package.** It sends our user agent
-  (`new WebSocket(url, { headers })`, tested against 127.0.0.1:
-  `out/ws-ua-local-test.txt`) and negotiates the server's per-frame
-  compression (`out/ws-ext-check.txt`).
-- **No node-cron.** Two kinds of schedule (every N seconds; daily at HH:MM
-  UTC) feed one queue that admits each request against the budget; a pure
-  "next run" function is tested with a fake clock. CLAUDE.md's Stack line
-  says "a node-cron poller": a deviation to record.
+**Deviations from CLAUDE.md's Stack and from decided practice — one place,
+for decisions** [Final review F5: they were spread over §1.2, §1.4 and §1.6,
+and five were missing]:
+
+| # | The record says | This plan does | Why | Until |
+|---|---|---|---|---|
+| D1 | Stack: "Turborepo + pnpm" | a pnpm workspace without Turborepo | one package gains nothing from Turborepo's caching and ordering | the skeleton step, which brings it (the plan page) |
+| D2 | Stack: "a shared package for Zod schemas and constants" | none yet; the schemas live in `apps/poller` | one user; moving them is a move, not a rewrite | the api, the second user |
+| D3 | Stack: "a node-cron poller" | no node-cron: two kinds of schedule (every N seconds; daily at HH:MM UTC) feed one queue that admits each request against the budget | a pure "next run" function is tested with a fake clock; a cron tick that fires many reads at once is what code-rules warn against | v1, if it needs cron expressions |
+| D4 | Stack names no WebSocket client | Node 24's own `WebSocket`, not the `ws` package | it sends our user agent (`out/ws-ua-local-test.txt`) and negotiates the server's compression (`out/ws-ext-check.txt`); nothing to install | — |
+| D5 | decisions 2026-11-07 (the owner's PC): the poller starts at sign-in, in the owner's session | at start-up, outside the session (S4U), no launcher (§1.4) | no window to hide; a night restart costs a minute, not hours (Final review F15) | the owner's answer to question 8 |
+| D6 | the lab's practice: its task runs the working tree's `dist` | a run copy outside the working tree, refreshed by `tools\deploy.ps1` after `pnpm verify` | a build in progress never becomes what a crash restart runs | — |
+| D7 | decisions 2026-11-08 (R6): "parsed records, not raw replies" | every reply is also kept raw, in the hourly files | a database outage costs no board; a few MB a day | — |
+| D8 | decisions 2026-11-08 (R6): the per-call log as rolling files of 14–30 days, hourly aggregates in the database | the call lines live in the REST files, kept, not rolled; no aggregates yet | at most 7.4 MB a day; nothing reads aggregates before v1 | v1's Status page |
+| D9 | Stack: MongoDB is the store | the streams and raw replies in Brotli files on F:; MongoDB for what is queried | 4.5 GB a day of books would fill C:; Brotli is 3.2 times smaller than gzip on books (§1.2) | — |
+| D10 | the lab: `dotenv` | Node's own `process.loadEnvFile` | nothing to install | — |
+| D11 | the plan page: CI with the skeleton; the lab's CI on Node 22 | no CI in C1; Node 24 when CI comes | the only runtime here is Node 24.13 | the skeleton step |
+| D12 | Stack: TypeScript | also PowerShell (`poller-check.ps1`, `deploy.ps1`, `register-tasks.ps1`), one `.cmd` (`run-poller.cmd`) and the lab's `.cjs` tools (backup, restore) | Windows tasks and a backup that must not break with the build (the lab's rule) | — |
+| D13 | decisions 2026-11-08 (R6): one daily copy of 8 boards | 16 boards | the road to v1 (decisions 2026-11-09) names 16 | the overlap measured (§5) |
+| D14 | decisions 2026-11-07 (R4): a notifier beside the poller says "poller down" | no notifier in C1; the check task restarts and logs | notices are v1's (Final review F3) | v1's notifier |
+
+**Build notes:**
 - **Dependencies:** `zod`, `mongodb` (the driver), `pino`; for development
   `typescript`, `vitest`, `eslint` with `typescript-eslint`, `prettier`,
   `@types/node` — the lab's major versions (zod 4, mongodb 7, pino 10),
-  re-checked against their documentation when installed. No dotenv: Node
-  reads `.env` itself.
-- **The task runs compiled code** (`tsc` into `dist\`), as the lab's does,
-  but from a run copy outside the working tree (§1.4, item 1): a change needs
-  `pnpm verify`, `tools\deploy.ps1` and a restart of the task — so the work
-  of a later build in the same repository (v1's) never runs by accident.
+  re-checked against their documentation when installed.
+- **The task runs compiled code** (`tsc` into `dist\`), from the run copy
+  (D6): a change needs `pnpm verify`, `tools\deploy.ps1` and a restart.
 - **Tests:** unit tests for every rule that decides something — admission
   (the 60 s and 5 s windows, the 50 cap), the 429 back-off, the nightly
   pause, the schedule, the book sampler (once a second when changed; the
