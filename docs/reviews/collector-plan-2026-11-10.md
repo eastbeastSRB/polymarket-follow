@@ -402,7 +402,9 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    (as the lab's worker); "run whether the user is logged on or not", the
    password not stored (S4U: local resources only, which is all it uses);
    run level Limited; action `<run copy>\run-poller.cmd`, which starts
-   `node dist\index.js` and appends its output to `…-run\var\logs\stdout.log`
+   `node dist\index.js` — node.exe named by its full path, since a task
+   outside the session may not see the user's PATH — and appends its output
+   to `…-run\var\logs\stdout.log`
    — the lab's `run-worker.bat`, copied — so a crash's last words are kept and
    node's exit code reaches Task Scheduler; restart every minute up to three
    times; no time limit; one instance (do not start a new one).
@@ -621,7 +623,7 @@ GitHub as now.
 | **A delisting** | `instruments`: `close_only`, then the market leaves the list | marks in the rule book; its settlement read once by id; its channels unsubscribed, no stall alarm after |
 | A new market | `instruments` | subscribed on the open connections (one message each); a mark in the rule book |
 | The market list unreadable at start | the first `instruments` read fails | retried with back-off; the streams open after the first read [Final review F3: was "the last stored list subscribes the streams" — a fallback for an API that is down anyway] |
-| **Clock drift** | the smallest (receive − `ts`) on the books each minute | WATCH over 2 s; records keep the server's time anyway; the program never sets the clock (a system setting) |
+| **Clock drift** | the smallest (receive − `ts`) on the books each minute | the watchdog and every timer measure time with a monotonic clock (`performance.now()`), so a step of the wall clock never fakes a silence; WATCH over 2 s; records keep the server's time anyway; the program never sets the clock (a system setting) |
 | A board read straddles a refresh | its pages' snapshot stamps span more than 10 s | stored with its page stamps and `consistent: false` [Final review F3: was "re-read once if the window allows" — a flag is enough] |
 | A list shifts while it is paged — a board refreshing mid-pass, or the competition table growing (4,738 to 4,746 accounts in an hour on 2026-11-10) | the same account on two pages; fewer rows than `total` | rows kept once per account within a pass (the first page's row); every page's `total` and stamp stored; an account skipped at a page boundary is seen the next day [Final review F9: no rule was named] |
 | **A frozen source** — the API answers, the data stops moving (the lab's leaderboard froze 2026-10-30 to 11-02, R4 §5) | a board's snapshot stamp older than 5 minutes at read time (10 for `all`; R1 saw at most 60 s and 281 s), or its top 100 identical to the day before | the board stored with `stale: true` [Final review F3: the "no book changed in 5 minutes" watch is cut — a dead stream is caught by the per-market stall check; books that arrive but never change are rare and visible in the files afterwards] |
