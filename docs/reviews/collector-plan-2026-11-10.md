@@ -231,10 +231,11 @@ lost (IDEAS-REVIEW foundation 1 and its F14).
 **The universe.** One record per address (lower-case): first and last time
 seen, and for each source — a board's window and sort, or a competition with
 its parameter — the first and last date it was seen there. Refreshed by each
-day's board pass and competition pass; never polled per account. Expected
-size: tens of thousands of addresses within a year (the day board counted
-6,096 accounts at 00:57Z; the competition table 4,746 at 00:56Z,
-`raw/lb-day-pnl-0.json`, `raw/comp-lb-unq-0.json`) — a few MB.
+day's board pass and competition pass; never polled per account. Its size
+is unverified: tens of thousands of addresses within a year is a guess from
+the inputs (16 boards' top 1,000s, which overlap; the competition table's
+4,746 at 00:56Z, `raw/comp-lb-unq-0.json`; R1 saw the all-time board gain
+about 200 accounts a day) — a few MB either way.
 
 ### 1.2 Where it is stored, how big, how long, and the alarms
 
@@ -286,10 +287,14 @@ stable.
 
 | Kind | A day, compressed | A year |
 |---|---|---|
-| Books, once a second when changed | 0.37 GB (the ceiling, every market changing every second: 0.57) | 135–210 GB |
-| Trades | 0.002 GB measured; 0.01–0.02 in busy hours (est.) | under 7 GB |
-| REST replies (about 55 MB raw a day, mostly repeats) | a few MB (est.) | 1–2 GB |
+| Books, once a second when changed | 0.37 GB measured (58.7 changed books a second); the ceiling, all 90 markets changing every second at the same bytes a line: 0.57 | 135–210 GB |
+| Trades | about 2 MB measured (35 B a trade frame compressed, 227 frames in 300 s); 23 MB if trading were ten times busier all day — busy hours unmeasured | 1–8 GB |
+| REST replies (52 MB raw a day) | at most 7.4 MB (each reply compressed alone, `out/rest-size-bound.txt`; a file of many replies is smaller) | under 3 GB |
 | **Total on F:** | **about 0.4–0.6 GB** | **about 140–220 GB** of 1,555 GiB free |
+
+[Final review F2: trades were "0.01–0.02 GB in busy hours (est.)" with no
+basis — five to ten times the figure its own inputs give; REST replies "a
+few MB (est.)".]
 
 **The database:** `polymarket_follow` on the shared server, C: (the founding
 decision; R6's option A, decisions 2026-11-08).
@@ -297,8 +302,8 @@ decision; R6's option A, decisions 2026-11-08).
 | Collection | Holds | Size |
 |---|---|---|
 | `board_snapshots` | one document per board per pass: window, sort, pass date, each page's offset, snapshot `timestamp`, `total` and read time, the 1,000 rows as parsed (API names, money as strings, addresses lower-cased), `consistent`, `complete` | 16 a day; about 1.2 GB a year (R6: 197 B a row on disk) |
-| `competition_snapshots` | one per pass: the competition, `total`, `updated_at`, every row | about 1.9 MB a pass; up to 0.6 GB a year |
-| `universe` | one per address (above) | a few MB |
+| `competition_snapshots` | one per pass: the competition, `total`, `updated_at`, every row | 1.9 MB a pass (4,746 rows at 391 B, `raw/comp-lb-unq-0.json`); about 1.5 MB on disk at R6's modelled ratio for board rows (197 B on disk for 259 B of BSON); 0.6 GB a year only if a competition runs every day (competition 1: 14 days, then 7 days of reads) |
+| `universe` | one per address (above) | unverified: tens of thousands of addresses at a few hundred bytes — a few MB |
 | `rulebook` | each observed change of the market list, fees, exchange marks, splits, competitions (dates, boosts) | small |
 
 [Final review F3: six collections cut from the first version —
@@ -309,7 +314,9 @@ the call lines in the REST files and `backup.log` hold the same facts),
 `rejected` (the `rejected-<HH>` files hold them) and `unknown_keys` (one log
 line a day).]
 
-About **2 GB a year on C:** — which had 39.1 GiB free on 2026-11-10 01:09Z,
+At most about **2 GB a year on C:** (the boards' 1.2 GB on R6's modelled
+row size, the competition's 0.6 if one ran every day) — which had 39.1 GiB
+free on 2026-11-10 01:09Z,
 down from 42.8 GiB on 2026-11-08 (R6), not by us (`out/disk-free.txt`).
 
 **Retention: everything is kept.** No stream, reply or snapshot can be read
@@ -703,7 +710,8 @@ following.
 ## 2. Variations weighed
 
 - **Streams.** (S1, recommended) books and trades; (S2) + the best-price
-  stream: +2.5 GB of download a day and 0.4–1 GB of disk for the exact
+  stream: +2.5 GB of download a day and 0.39 GB of disk a day at the
+  measured night rate (more in busy hours, unmeasured) for the exact
   millisecond of changes; (S3) + the ticker stream: +9.8 GB of download for a
   sub-minute index and open interest; (S4, IDEAS-REVIEW's wording) best
   prices each second and a book every 10 s — the book stream is needed
@@ -858,8 +866,10 @@ Failures at run time are in §1.7; these concern the plan.
    shows the book already holds the best prices). **Is your internet free of
    a data cap?** *Recommendation:* yes, if there is no cap; with a cap,
    trades only and a book of every market every 10 minutes (§2, S0).
-2. **Also record the best-price stream (+2.5 GB of download and 0.4–1 GB of
-   disk a day) and the ticker stream at ten a second (+9.8 GB of download)?**
+2. **Also record the best-price stream (+2.5 GB of download and 0.39 GB of
+   disk a day at the night's rate) and the ticker stream at ten a second
+   (+9.8 GB of download)?** [Final review F2: the disk was "0.4–1 GB", the 1
+   a guess.]
    *Recommendation:* no — the book holds the best prices at 100 ms, and the
    minute ticker read covers the ticker; both can be added later, though
    what they would have recorded meanwhile is lost.
