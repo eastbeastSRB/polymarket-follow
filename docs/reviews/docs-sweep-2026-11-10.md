@@ -329,12 +329,17 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   state root (balances) is committed periodically.
 - **Visible on an explorer?** The contract's transactions are public by nature. For **one** account I could not confirm
   it: the address page loaded but its "2 token transfers" were not rendered by my fetch tool (§5). It did show the
-  account's *own wallet* holds 15,759.49 pUSD outside the exchange (equity there: $2.50M) and 0 POL.
+  account's *own wallet* holds 15,759.49 pUSD outside the exchange and 0 POL (incidental, from a summarising fetch tool, not saved; **not a data path for H13 unless the owner rules**, see the rule below).
 - **Same address elsewhere?** The Perps account is **the signer's EOA** ("keyed by your EOA base address, not a Safe", FAQ);
   an EOA has the same address on every EVM chain (the page showed a 29-chain portfolio). Polymarket's prediction markets
   use a **derived smart wallet** (Deposit Wallet / Proxy / Safe) controlled by that signer — a different address that the
   SDK "derives"; the link formula is not documented and not verified. Hyperliquid and other EVM-keyed venues would show
   the same address — a privacy line for the owner (§7), not tried.
+- **The H13 rule** [Final review F6]: only public, pseudonymous data (an address, its transactions on the exchange contract, what
+  Polymarket's public API says about it); **never an attempt to find who is behind an address** — no name, ENS or social-media
+  search, no tracing of who funded it, no clustering by funder; and **nothing beyond what the owner rules**. This sweep's
+  mandate was one explorer look at one contract and one address; reading an address's own-wallet balance, linking it to its
+  prediction-market wallet or to other venues is **not covered** until the owner rules (§7 question 2).
 
 ### Q7. Changes since 2026-11-06
 
@@ -386,8 +391,10 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **H12 account-level check:** the paper log can use the documented margin law: liquidation when loss exceeds
   `notional × (1/leverage − 0.5/maxLeverage)` (fees and funding aside); liquidation fee 0.5%; reversals reserve margin at the
   worst price; withdrawals keep 10% of notional.
-- **H13 on-chain:** Q6; paths: contract events by account (Dune, Goldsky, Allium, CryptoHouse named by the docs), net capital
-  from `/v2/info/pnl`, the EOA's own wallet on Polygon; internal transfers and groups stay invisible.
+- **H13 on-chain** [Final review F6]: Q6 and its rule (public, pseudonymous data only; no attempt to identify anyone; nothing beyond what the
+  owner rules). Paths that stay inside the rule: net capital from `/v2/info/pnl` (existing API, accounts after 2026-10-20), and the
+  exchange contract's calls and events by account (third-party indexers named by the docs: Dune, Goldsky, Allium, CryptoHouse) —
+  the latter **unconfirmed** for one account. Internal transfers and groups stay invisible.
 
 ---
 
@@ -472,7 +479,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   this says how big the floor is.
 - **The weekly Monday 00:00Z reset, the 12:00Z reward cutoff and the 00:00Z funding settlement** are three clocks that
   shape behavior around the hour; study windows should avoid straddling them blindly.
-- **Public wallet balances** (outside the exchange) are readable for any EOA — more than the brief needs; it is identity-adjacent.
+- **Public wallet balances** (outside the exchange) are readable for any EOA on any explorer. They are pseudonymous but sit close to identification; the sweep did not need them and the H13 rule (Q6) keeps them out unless the owner rules.
 - **Cancel-only windows are announced in the changelog's "Rollout" notes**, so gaps in the collector's tape can be explained after the fact.
 - **A competition prize winner** gets a `payout_tx_hash`: an on-chain event tied to an address (empty until 2026-11-16 +5 days).
 
@@ -481,10 +488,10 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 1. **May the collector read `competition/leaderboard` with `include_unqualified=true` beyond rank 1,000 to grow the universe?** It is
    the same public API at weight 1 a page (without the parameter it lists only the 110 qualified accounts). *Recommendation:* yes, once
    a day while a competition runs, inside the budget.
-2. **Where is the line for study H13?** Allowed by the brief: deposits and withdrawals of an address on Polygon, its
-   own wallet balance. Not allowed: finding who is behind an address. In between: the same EOA on Hyperliquid or other venues, and the
-   derived Polymarket prediction-market wallet. *Recommendation:* allow only deposits, withdrawals and the Polygon wallet
-   balance for favourited accounts; leave cross-venue linking out until you rule on it.
+2. **Where is the line for study H13?** Fixed: only public, pseudonymous data, never an attempt to identify a person. Open, for you
+   to rule: (a) deposits and withdrawals of a favourited address on the exchange contract; (b) that address's own Polygon wallet
+   balance; (c) the same EOA on other venues (e.g. Hyperliquid) and its derived Polymarket prediction-market wallet.
+   *Recommendation:* allow (a) only; leave (b) and (c) out until you rule. Nothing beyond your ruling will be read.
 3. **May a second small explorer step settle Q6?** One transaction page of the exchange contract. *Recommendation:* yes — it shows the logged account.
 4. **Should the collector read `/v1/info/exchange` every minute** (2 tokens) to record maintenance and engine version?
    *Recommendation:* yes.
