@@ -1120,28 +1120,59 @@ two names; and the plan repeats itself.
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F1 | **The download is given as one number.** "About 25 GB a day" is an estimate: each captured frame re-compressed alone at deflate level 6 (the server's level is unknown; level 1 adds 7%), plus TLS and framing "1–3 GB, not measured", which leaves out the packets' own headers (up to about 5 GB a day if each frame travels alone). And the owner gets no lighter option with its download — only "trades and REST books". | pending |
-| F2 | **"est." figures without inputs, one of them wrong.** Busy-hour trades "0.01–0.02 GB a day" has no basis: 35 B a trade frame compressed (227 frames) at the night's rate gives about 2 MB a day, 23 MB if trading were ten times busier all day. REST replies "a few MB": the measured bound is 7.4 MB. The competition's "0.6 GB a year" assumes a competition always running and R6's modelled ratio, unsaid. The universe's "tens of thousands" is a guess. The best-price option's "0.4–1 GB of disk": the 1 is a guess. | pending |
-| F3 | **The first version is bigger than what works.** Parts nobody reads before v1, or that repeat another: the collections `collector_state`, `health_events`, `api_usage_minute`, `api_usage_hour`, `unknown_keys`, `rejected` (the rejected files hold the same) and `exchange_stats` (the route serves any past window up to 31 days — re-readable, not "now only"); the hourly tape audit (it guards a partial stall nobody has seen, of a stream whose content can be read back); the `/v1/info/time` reads (the books' own timing watches the clock for free); the check task's notification (R4's banner is unverified; notices are v1's notifier's); the command that loads boards from files after a database outage (the files keep them either way); the universe rebuilt from files in the restore test; the "no book changed in 5 minutes" watch (the per-market stall check covers a dead stream). | pending |
-| F4 | **Question 4 buys almost nothing.** It recommends `exchange` every minute, but CloudFront served that reply 213–446 s old: a minute's read mostly returns the same cached copy. Every 5 minutes gives the same marks for 0.4 tokens a minute instead of 2 — two fifths of the collector's whole average. | pending |
-| F15 | *Found while fixing F3.* **The launcher is now needless, and so is the wait for a sign-in.** With the check's notification cut, neither task needs the owner's desktop. A task that runs "whether the user is logged on or not" without a stored password (S4U) has no window at all — so no launcher, compiled or `.vbs` — and with a start-up trigger it also records through a night restart by Windows Update (paused only to 2026-11-18), the risk question 8 asked about. This account is an administrator and already runs the lab's worker as a start-up, outside-the-session task (`out/task-facts.txt`). It changes the default decided 2026-11-07 (at sign-in) for the poller only; v1's notifier stays at sign-in. | pending |
+| F1 | **The download is given as one number.** "About 25 GB a day" is an estimate: each captured frame re-compressed alone at deflate level 6 (the server's level is unknown; level 1 adds 7%), plus TLS and framing "1–3 GB, not measured", which leaves out the packets' own headers (up to about 5 GB a day if each frame travels alone). And the owner gets no lighter option with its download — only "trades and REST books". | `fe3919a` |
+| F2 | **"est." figures without inputs, one of them wrong.** Busy-hour trades "0.01–0.02 GB a day" has no basis: 35 B a trade frame compressed (227 frames) at the night's rate gives about 2 MB a day, 23 MB if trading were ten times busier all day. REST replies "a few MB": the measured bound is 7.4 MB. The competition's "0.6 GB a year" assumes a competition always running and R6's modelled ratio, unsaid. The universe's "tens of thousands" is a guess. The best-price option's "0.4–1 GB of disk": the 1 is a guess. | `417ce3b` |
+| F3 | **The first version is bigger than what works.** Parts nobody reads before v1, or that repeat another: the collections `collector_state`, `health_events`, `api_usage_minute`, `api_usage_hour`, `unknown_keys`, `rejected` (the rejected files hold the same) and `exchange_stats` (the route serves any past window up to 31 days — re-readable, not "now only"); the hourly tape audit (it guards a partial stall nobody has seen, of a stream whose content can be read back); the `/v1/info/time` reads (the books' own timing watches the clock for free); the check task's notification (R4's banner is unverified; notices are v1's notifier's); the command that loads boards from files after a database outage (the files keep them either way); the universe rebuilt from files in the restore test; the "no book changed in 5 minutes" watch (the per-market stall check covers a dead stream). | `e3be95b` |
+| F4 | **Question 4 buys almost nothing.** It recommends `exchange` every minute, but CloudFront served that reply 213–446 s old: a minute's read mostly returns the same cached copy. Every 5 minutes gives the same marks for 0.4 tokens a minute instead of 2 — two fifths of the collector's whole average. | `7040119` |
+| F15 | *Found while fixing F3.* **The launcher is now needless, and so is the wait for a sign-in.** With the check's notification cut, neither task needs the owner's desktop. A task that runs "whether the user is logged on or not" without a stored password (S4U) has no window at all — so no launcher, compiled or `.vbs` — and with a start-up trigger it also records through a night restart by Windows Update (paused only to 2026-11-18), the risk question 8 asked about. This account is an administrator and already runs the lab's worker as a start-up, outside-the-session task (`out/task-facts.txt`). It changes the default decided 2026-11-07 (at sign-in) for the poller only; v1's notifier stays at sign-in. | `772c88f` |
 
 **Severity 2 — evidence or wording that does not carry its weight**
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F5 | **The deviations from CLAUDE.md's Stack and from decided practice are scattered** over §1.2, §1.4 and §1.6, and some are missing: raw replies kept beside parsed records (R6, decided: "parsed records, not raw replies"); Brotli files; Node's own `.env` reader instead of the lab's dotenv; CI on Node 24 instead of the lab's Node 22 floor; a C# source file and PowerShell scripts in a TypeScript repository. | pending |
-| F6 | **The summary's ten questions** put the question first and the recommendation last, several over two lines; the "one page" runs well past a page. | pending |
-| F7 | **One program, two names:** `apps/poller` and the run copy `…\poller\`, but the task "polymarket-follow collector", `collector-check.ps1`, `collector_state` and `F:\polymarket-follow\collector\`. Registered tasks and data folders outlive C1 and are costly to rename once v1 runs. | pending |
-| F8 | **One fact, several homes:** the book-against-best-price 99.9% three times; Brotli's 3.2 four times; the CloudFront ages three times; the C: trend three times; §3 restates six decisions and §6 four; §5 keeps an unknown about a channel the plan does not use (statistics' cadence). | pending |
-| F9 | **A list that shifts while it is paged** — a board refreshing mid-pass; the competition table grew from 4,738 to 4,746 accounts in an hour — can repeat a row on two pages or skip one; no rule is named. | pending |
+| F5 | **The deviations from CLAUDE.md's Stack and from decided practice are scattered** over §1.2, §1.4 and §1.6, and some are missing: raw replies kept beside parsed records (R6, decided: "parsed records, not raw replies"); Brotli files; Node's own `.env` reader instead of the lab's dotenv; CI on Node 24 instead of the lab's Node 22 floor; a C# source file and PowerShell scripts in a TypeScript repository. | `ec4a168` |
+| F6 | **The summary's ten questions** put the question first and the recommendation last, several over two lines; the "one page" runs well past a page. | `778c868` |
+| F7 | **One program, two names:** `apps/poller` and the run copy `…\poller\`, but the task "polymarket-follow collector", `collector-check.ps1`, `collector_state` and `F:\polymarket-follow\collector\`. Registered tasks and data folders outlive C1 and are costly to rename once v1 runs. | `8b51021`, `b304ddc`, `3205729` |
+| F8 | **One fact, several homes:** the book-against-best-price 99.9% three times; Brotli's 3.2 four times; the CloudFront ages three times; the C: trend three times; §3 restates six decisions and §6 four; §5 keeps an unknown about a channel the plan does not use (statistics' cadence). | `50a1200` |
+| F9 | **A list that shifts while it is paged** — a board refreshing mid-pass; the competition table grew from 4,738 to 4,746 accounts in an hour — can repeat a row on two pages or skip one; no rule is named. | `0655952` |
 
 **Severity 3 — notes, mostly for the next phases**
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F10 | Reading one market at one instant means decompressing a whole hour's all-market file (about 190 MB of text); an exam over a thousand distinct hours spends minutes on it. Unsaid for the research kit. | pending |
-| F11 | Three things v1 will build on are not named as interfaces: the heartbeat file's fields (v1's notifier reads it), the latest book per market held in memory (v1's paper log prices from it), the files' line format (the kit and the exams read it). | pending |
-| F12 | The universe keeps an overall first and last seen beside each source's first and last date; the first two follow from the rest. | pending |
-| F13 | The four account-value boards may largely repeat one ranking (account value is current equity; the window only decides who is eligible): perhaps 200 tokens a day for one list. Unmeasured. | pending |
-| F14 | Small figures: an "18-minute" board read in the summary against "about 17.5" in §1.1; the weekly fills' "about 0.5 tokens a minute" is 0.6 by its own inputs (at least two reads a week for an account's 116 fills); Brotli files need a reader (Node's zlib; Python needs a package). | pending |
+| F10 | Reading one market at one instant means decompressing a whole hour's all-market file (about 190 MB of text); an exam over a thousand distinct hours spends minutes on it. Unsaid for the research kit. | `84d7b78` |
+| F11 | Three things v1 will build on are not named as interfaces: the heartbeat file's fields (v1's notifier reads it), the latest book per market held in memory (v1's paper log prices from it), the files' line format (the kit and the exams read it). | `bfce735` |
+| F12 | The universe keeps an overall first and last seen beside each source's first and last date; the first two follow from the rest. | `9f9b13b` |
+| F13 | The four account-value boards may largely repeat one ranking (account value is current equity; the window only decides who is eligible): perhaps 200 tokens a day for one list. Unmeasured. | `671b6e1` |
+| F14 | Small figures: an "18-minute" board read in the summary against "about 17.5" in §1.1; the weekly fills' "about 0.5 tokens a minute" is 0.6 by its own inputs (at least two reads a week for an account's 116 fills); Brotli files need a reader (Node's zlib; Python needs a package). | `2ba1bd4` |
+
+**Commits of this review:** the findings `db7a7e2` and `73e4c21` (F15
+added); the fixes as in the tables; two more found on the way and fixed
+alone: `509a177` (the price audit's rule missing from the test list; the
+registration line behind F15) and `9b7d2f9` (two predictions: the watchdog on
+a monotonic clock, so a wall-clock step never fakes a silence; node.exe
+named by its full path for a task outside the session). One edit — filling
+these tables' commit column — was made with an inline `node -e`, against
+code-rules' "write scripts to a file"; its result was read back.
+
+**What I left, and why.**
+- *The 16 boards:* the four account-value boards may be nearly one list
+  (F13), but C1 names 16 and cutting three is the owner's call once the
+  first week has counted their overlap.
+- *The packets' own headers* (3–12% of the download): Node cannot see them;
+  part 2's day-long count by the operating system settles them.
+- *Whether the start-up task outside the session registers and runs as
+  planned* (F15): only a registration, which is a persistent setting and the
+  owner's, can prove it; part 3's "done" line requires it, and the
+  interactive task is the way back.
+- *The self-review section above* stays as written: it is the record of the
+  first pass.
+- *R4's owner sheet* (is a notification drawn?) waits for v1's notifier, now
+  that C1 shows none.
+
+**How the findings fit the next phases.** The build subagent's brief should
+carry §1.8's cut (F3) and the interfaces of §1.6 (F11); the supervisor's
+decisions entry, the deviations D1–D14 (F5); the research kit's builder, the
+reading cost and the line format (F10, F11); v1's plan, the Status page's
+database copies and the notifier that F3 deferred, and the admission classes
+(F11, item 4).
