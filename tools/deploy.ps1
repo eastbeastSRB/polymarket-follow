@@ -20,8 +20,10 @@ $target = Join-Path $RunRoot 'poller'
 $next = Join-Path $RunRoot 'poller.next'
 $old = Join-Path $RunRoot 'poller.old'
 
-# A task's own user gets read only unless granted more; starting it needs
-# execute, or an elevated session (administrators have full access).
+. (Join-Path $PSScriptRoot 'task-access.ps1')
+
+# An elevated session may start any task (administrators have full access);
+# otherwise the task must grant this account execute (register-tasks.ps1 does).
 function Test-CanStartTask([string]$name) {
   $me = [Security.Principal.WindowsIdentity]::GetCurrent()
   $role = [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -29,10 +31,7 @@ function Test-CanStartTask([string]$name) {
   $scheduler = New-Object -ComObject Schedule.Service
   $scheduler.Connect()
   $sddl = $scheduler.GetFolder('\').GetTask($name).GetSecurityDescriptor(4)
-  foreach ($ace in [regex]::Matches($sddl, '\(A;[^;]*;([^;]*);[^;]*;[^;]*;([^)]*)\)')) {
-    if ($ace.Groups[2].Value -eq $me.User.Value -and $ace.Groups[1].Value -match 'GA|GX|FA|FX') { return $true }
-  }
-  return $false
+  return Test-RunGranted $sddl $me.User.Value
 }
 
 $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
