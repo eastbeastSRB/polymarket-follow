@@ -109,8 +109,8 @@ the supervisor in my closing message.
 8. Funding: who pays, who is paid, and does the price take it back?
    [H9, I-16]
 9. Agreement between traders with no visible link. [H7, I-13]
-10. Two cells of R8's own table, tested once on new data: entries at the US
-    open (UTC 12–16), and in the Asian morning (UTC 00–04). [H9, I-18]
+10. One cell of R8's own table, tested once on new data: entries at the US
+    open (UTC 12–16). [H9, I-18]
 
 **The critique in five lines**
 
@@ -371,13 +371,15 @@ other side. Accounts of one entity are invisible [record: DS Q8], so
 "independent" can never be claimed — only "no visible link" (no fixed
 counterparty pair, no shared prefix cluster, no copy pattern). *Prior:* 8%.
 
-**10 — Two cells of R8's own table, tested once.** *H9 (sessions); I-18.*
+**10 — One cell of R8's own table, tested once.** *H9 (sessions); I-18.*
 R8's secondaries held entries at UTC 12–16 at d −38 bps (both intervals
-below zero) and at UTC 00–04 at +29 (touching zero) [record: R8 §1.2] — two
-of about 25 cuts, so chance is a live explanation, and the US-open cell now
-overlaps the hours when the boosted stocks trade. The FIND is done; the
-CONFIRM costs nothing extra at either exam. **Why in the ten:** it is the
-only test that is ready today. *Prior:* the US-open cell holds 25%.
+below zero) [record: R8 §1.2] — one of about 25 cuts, so chance is a live
+explanation, and the cell now overlaps the hours when the boosted stocks
+trade. The UTC 00–04 cell (+29, its interval touching zero, 125 entries) is
+printed beside it and decides nothing [Final review F4: was a second
+hypothesis, "two cells"]. The FIND is done; the CONFIRM costs nothing extra
+at either exam. **Why in the ten:** it is the only test that is ready
+today. *Prior:* the cell holds 25%.
 
 **11 — Holdings instead of entries.** *H10; I-14.* A cohort's net position
 per market at each day's end; the day's change against the next day's
@@ -1220,28 +1222,31 @@ calls, no outcomes.
   fixed first.
 - **Cost.** None.
 
-### Entry 10 — Two cells of R8's own table [H9; I-18]
+### Entry 10 — R8's US-open cell [H9; I-18]
 
-- **Hypotheses** (two in the batch). (A) Directional entries opened at UTC
-  12:00–16:00 do worse than their null. (B) Entries opened at UTC
-  00:00–04:00 do better.
+- **Hypothesis.** Directional entries opened at UTC 12:00–16:00 do worse
+  than their matched null. [Final review F4: was two hypotheses — "(A) …
+  12:00–16:00 do worse … (B) … 00:00–04:00 do better". B is now printed
+  beside and decides nothing: its find was 125 entries of 19 traders, under
+  R8's own count bar, with an interval that held zero.]
 - **Unit.** The entry; clustered by trader and by day.
-- **FIND data.** Done — R8's secondaries: (A) d −38.35 bps [−66.23, −11.05],
-  387 entries; (B) +28.99 [−0.19, +66.89], 125 entries [record: R8 §1.2] —
-  two of about 25 cuts.
+- **FIND data.** Done — R8's secondary: d −38.35 bps [−66.23, −11.05], 387
+  entries of 37 traders [record: R8 §1.2] — one of about 25 cuts.
 - **CONFIRM data.** The 50 (the same list; primary) and every account on
   the frozen directional list (secondary); entries after 2026-11-07 at each
   trader's class horizon, against the exact null with a random direction —
   shown first, on R8's own cell, to agree with R8's drawn trades; 3.3
   weeks, then 6.
-- **Statistic and pass line.** The mean d of each cell; the two-look rule.
+- **Statistic and pass line.** The cell's mean d; the two-look rule.
+  Printed beside, deciding nothing: the UTC 00:00–04:00 cell (R8: +28.99
+  bps [−0.19, +66.89], 125 entries).
 - **Smallest visible effect.** The 50: about 50 bps at the first exam, 40
   at the final. All directional accounts: about 20, then 15 [arithmetic
   from R8's cell — a standard error of 14 bps on 387 entries]. FIND's −38
   was picked from 25 cuts and is likely too large: plan for half of it.
 - **How it could fool us → guard.** The boosted stocks trade in the US
-  session, so competition churn lands in cell A → printed without boosted
-  markets and without competition days. The US open moved from 13:30 to
+  session, so competition churn lands in this cell → printed without
+  boosted markets and without competition days. The US open moved from 13:30 to
   14:30 UTC when the clocks changed on 2026-11-01 → the cell stays fixed in
   UTC as R8 had it, and "the two hours after the US open" is printed
   beside.
