@@ -160,7 +160,7 @@ name: 0 hits for each item marked "not in spec"; "tested" = a saved reply in `ra
   not size. The `instrument_id` filter works (tested); the `symbol` filter is changelog text, untested. `pricing_status` (changelog 2026-10-20) was present on **none** of 90 rows.
 - **Ticker `funding_rate` is the rolling implied hourly rate**, not the last settled one: CASHCAT −0.0001883 →
   −0.00018872 and XRP −0.00002178 → −0.00002157 in 90 s (`out/api3-t0.txt`). 55 of 90 sit exactly on the floor
-  (crypto 0.0000125 = 0.0001/8, others 0.00000625), 35 are off it. This is the "implied rate published continuously"
+  (crypto 0.0000125 = 0.0001/8, others 0.00000625), 35 are off it (`out/an-econ.txt`) [Final review F7]. This is the "implied rate published continuously"
   of the FAQ; the FAQ's "5-second premium sample" is in **no** field of either spec.
 - **Instruments:** `fee_override` (only ANT-USD, id 97, since 2026-10-29: taker 2.0 bp → 1.0 bp, maker +0.625 bp →
   −0.5 bp by tier), `funding_multiplier` (none now), `logo`, `max_order_count` 200, `price_bounds` 0.02–0.333 (probably the
@@ -304,7 +304,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   `F8h = scale × (P + clamp(0.0001 − P, ±0.0005))`, `rate/h = clamp(F8h / 8, ±4%)`, scale 1.0 crypto and 0.5 other,
   settled hourly, no protocol cut, per-market multiplier possible. **The clamp cancels any average premium between −4
   bp and +6 bp**, so the rate is then the fixed interest leg: 0.0000125 per hour for crypto (10.95% a year, longs pay
-  shorts) and 0.00000625 for the rest; 55 of 90 markets show exactly that now. Funding settles even for a position
+  shorts) and 0.00000625 for the rest (5.48% a year, simple); 55 of 90 markets show exactly that now (`out/an-econ.txt`). Funding settles even for a position
   closed just before.
 - **Listing and delisting:** listing rules are not documented (a new market gets a $1,000 reward bonus on day one, an
   advisory `ui_live_time`, possible fee override and funding multiplier). **Delisting:** operator sets close-only
@@ -530,7 +530,7 @@ Each fact: date, source. (UTC; reads from my IP, user agent `polymarket-follow-r
 
 Scripts (`scripts/`): `lib.mjs`, `fetch-index.mjs`, `dl-pages.mjs`, `dl-extra.mjs`, `apilib.mjs` (limiter, 429 stop, quiet window,
 route filter), `api1.mjs` … `api10.mjs`, `api4.mjs` (timed funding check), `spec-inventory.cjs`, `async-public.cjs`, `check-pages.cjs`,
-`an-api1.cjs`, `an-calls.cjs`. Outputs (`out/`): `fetch-log.jsonl` (every docs read: time, bytes, sha256), `api-calls.jsonl`
+`an-api1.cjs`, `an-calls.cjs`, and, added by the Final review, `an-econ.cjs` (every derived number: funding floor, rolling-against-settled gaps, rewards against fees, dates), `explorer-save.mjs`, `condense.sh`. Outputs (`out/`): `an-econ.txt`, `explorer-save.txt`, `fetch-log.jsonl` (every docs read: time, bytes, sha256), `api-calls.jsonl`
 (every API call), `an-calls.txt`, `spec-inventory-all.txt`, `async-public.txt`, `check-pages.txt`, `an-api1.txt`, `api1.txt` … `api10.txt`, `api4.txt`.
 Raw replies: `raw/a1-*` … `raw/a10-*`. Docs as downloaded: `docs/pages/`, `docs/specs/`, `docs/condensed/`. Notes: `notes.md`; log: `progress.md`.
 Inputs checked: `inputs/SHA256SUMS` against `docs/specs/` (equal).
