@@ -1520,8 +1520,10 @@ and foundation A. I-18 → study 10. I-19 → study 19. I-20 → study 20. I-21 
 study 7. I-22 → study 17. I-23 → study 18. I-24 → study 12. I-25 → study 4
 and A.0-8. I-26, I-27 → the v1 plan (I-27 also A.0-3). I-28 → study 23.
 I-29 → study 14. I-30 → study 22. I-31 to I-34 → foundation C. I-35 → study
-6 and the v1 plan. I-36 → study 25. I-37 → study 22 (its dated list of
-releases → study 4, item 3). I-38, I-39 → study 21. I-40 → the v1 plan and
+6 and the v1 plan. I-36 → study 25. I-37 → V6 for the description of a
+trader, study 22 for its test, and its dated list of releases → study 4,
+item 3 [Final review F9: was "I-37 → study 22"; the description itself is
+V6's]. I-38, I-39 → study 21. I-40 → the v1 plan and
 foundation A. I-41 → foundation A and A.0-9.
 
 **Our list.** P0-1, P0-2 done; P0-3 DOCS-SWEEP; P0-4 this report. C1 →
@@ -1532,7 +1534,7 @@ studies 3, 8, 10, 16, 18, 19. H10 → studies 7, 1 (P2), 11, 17. H11 → study
 point 2.14). M1–M3 → foundation C (M3 also B).
 
 **DOCS-SWEEP.** Its possibilities: 1 (the competition table) → foundation A,
-addresses only (point 2.10). 2 (`/markets`) → not needed (its own §10). 3
+addresses only (A.0-9). 2 (`/markets`) → not needed (its own §10). 3
 (long and short counts) → foundation A, study 16. 4 (`exchange`) →
 foundation A. 5 (fee rate → tier) → study 2 uses the fee amounts; the tier
 stays a guess (point 2.21). 6 (exchange statistics) → foundation A. 7
@@ -1545,7 +1547,19 @@ A.0-8, point 2.11. Splits → A.0-7. Stops cannot be seen → study 13. The
 reward budget and the open-interest reward → studies 2, 11, 17. The H13
 rule → study 21, question 5. The funding floor → study 3. The margin law →
 study 14. Its "funding settles even for a position closed just before" →
-point 2.19.
+point 2.19. [Final review F9: the rest of this paragraph was missing.] Its
+§10 list for the collector → foundation A, item 4. Its notes on H1–H13 (its
+Q8) → each in the study that took that H (above). The liquidation and ADL
+flags that changed meaning in August 2026 → study 18. The same address on
+other chains, and the derived prediction-market wallet → study 21. Its
+five questions for the owner: 1 (the competition table for the universe) →
+foundation A, inside A.0-9's limits; 2 (the line for H13) → question 5; 3
+(one more explorer page) → not mine to place; 4 (`exchange` each minute) →
+foundation A; 5 (the competition as a covariate) → A.0-8. **Not used:**
+its six contradictions between the docs and the live API (facts for
+external-apis, not ideas); its "three clocks" (the boards' Monday reset,
+the 12:00Z reward cut-off, the hourly funding) — no entry's window is
+built around them, and a study that splits by the hour should say so.
 
 ---
 
