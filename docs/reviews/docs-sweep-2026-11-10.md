@@ -1,6 +1,6 @@
-# DOCS-SWEEP — everything Polymarket documents about Perps, against what we know
+| 0dcaec2 || 458aae0 || 601dee0 || 0a2bc9e || bb98ae9 || 79f25ef || 9c081b5 || 7feb7d0 || 2bcbd70 || e28c1c0 |# DOCS-SWEEP — everything Polymarket documents about Perps, against what we know
 
-DOCS-SWEEP (Sonnet 5.5, xhigh), plan item P0-3, written 2026-11-09 23:33Z – 2026-11-10 00:01Z (UTC, every time from
+DOCS-SWEEP (Sonnet 5.5, xhigh), plan item P0-3, written 2026-11-09 23:33Z – 2026-11-10 00:12Z, the Final review (§9) included (UTC, every time from
 `date -u`) for polymarket-follow's supervisor. **Evidence** is in the supervisor folder
 `E:\coding\Claude\supervisor\polymarket-follow\workers\DOCS-SWEEP\` (paths below are relative to it): `docs/pages/`
 (144 docs pages as downloaded), `docs/specs/` (current index, specs, changelog), `docs/condensed/` (the same pages
@@ -577,6 +577,8 @@ rows; exchange-stats fees $170,275.93 for 2026-11-02 00:00Z to 2026-11-09 00:00Z
 | F11 | `apilib.mjs` imports `createHash` and never uses it; `spec-inventory.cjs` declares `comps` and never uses it; scripts are named `api1` … `api10` (they say nothing); `dl-pages.mjs` fetches the changelog and rate-limits again after `fetch-index.mjs` did; `out/wait-api4.txt` is a leftover; `api6.mjs` and `api7.mjs` hold one public address | left; a project script would take such values as arguments and have a descriptive name |
 | F12 | `docs/condensed/` was made by an awk command typed once and never saved | saved as `scripts/condense.sh` (fix F12); run into a scratch folder it reproduces all 37 files of `docs/condensed/` byte for byte |
 
+Commits: findings d26bc77; the collector list (§10) a1f3fca; F12 d030436; F11 left, with its reason in the table.
+
 **How the findings fit later phases (notes).** The collector needs the list in §10. The hypothesis register needs F1 (which
 board, which parameter, which date), F2 (the rewards figure is a budget, income is unseen), F5 (what is tested and what is
 only documented) and F6 (the H13 rule). The v1 plan must not show a rewards or tier figure as fact: both are inferences.
@@ -606,5 +608,5 @@ burst, inside the 250-token operating budget (decisions 2026-11-07). Status = te
 20-token-a-minute competition pass for 2.4 minutes a day. **Do not read:** `/v1/info/index` (constituents are empty),
 `/v1/info/markets` (tickers and statistics cover it), `assets`, `invite`, `perps-whitelist`, `account-tiers`,
 `builder-stats` (unverified), `competition/widget`. **Parse rules that follow:** non-strict Zod on every reply; log unknown keys
-once a day (the live replies carry fields the spec lacks); keep `previous` raw values of `max_leverage`, `fee_override`,
-`close_only` with the date so a change is visible; store the competition board with its parameter name and `total`.
+once a day (the live replies carry fields the spec lacks); keep the raw `max_leverage`, `fee_override` and
+`close_only` of each read with its date, so a change is visible; store the competition board with its parameter name and `total`.
