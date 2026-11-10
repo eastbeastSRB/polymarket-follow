@@ -17,10 +17,12 @@ export function createLog(stateDir: string): {
   mkdirSync(dir, { recursive: true });
   const fileOf = (dayMs: number) =>
     path.join(dir, `poller-${utcDate(dayMs)}.log`);
+  // Synchronous: a few lines a minute, none lost to a crash, and the file is
+  // open at once (an exit before an asynchronous open completed threw).
   const destination = pino.destination({
     dest: fileOf(Date.now()),
     mkdir: true,
-    sync: false,
+    sync: true,
   });
   const log = pino(
     { base: { pid: process.pid }, timestamp: pino.stdTimeFunctions.isoTime },
