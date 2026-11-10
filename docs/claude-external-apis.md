@@ -238,12 +238,59 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   `price_decimals`/`quantity_decimals` give tick and lot; no session field;
   `display_symbol` can differ from `symbol` (SP500-USD shows as USA500-USD;
   R7-PAGES, 2026-11-09).
-- **Tickers** (`/v1/info/tickers`, 2026-11-09 20:21Z, R7-PAGES): each row also
-  carries integer `long_count` and `short_count`; what they count is not
-  stated in the spec text read — unverified, used by nothing.
+- **Tickers** (`/v1/info/tickers`): each row also carries `long_count` and
+  `short_count` — the accounts with a nonzero net position on that side,
+  market makers included (the changelog of 2026-10-27; DOCS-SWEEP, sums
+  7,770 / 2,944 at 2026-11-09 23:41Z). `funding_rate` is the rolling implied
+  hourly rate and moves within the hour; settled `/v1/info/funding` rows are
+  stamped 50–95 ms after the hour (2026-11-10 00:00Z on two markets).
 - **Fees** (`/v1/info/fees`): the $0 tier pays taker 0.04%, maker 0.0125% of
   notional, the top tier ($1B/30 days) taker 0.02% and maker −0.005%.
 - **Exchange stats** `/v1/info/exchange-stats`: window ≤ 31 days (32 → 400).
+
+### More routes and rules (DOCS-SWEEP, 2026-11-09 23:34Z – 2026-11-10 00:06Z)
+
+- **The specs and the docs index were byte-identical to the 2026-11-06 copies**
+  (69 paths, 75 operations); the live API is ahead of the spec. Live but not
+  in the spec: `/v1/info/markets` (weight 2: per instrument mark, open,
+  volume, max leverage, optional 24-point sparkline, and `totals` — volume,
+  open interest, 90 markets), `stock-splits` (`{events: [], sequence}`),
+  `account-tiers` (= `limit-tiers`: 4 tiers by 14-day volume, 0 / $1M /
+  $541.8M / $10B), `perps-whitelist` (needs `address`). `builder-stats`,
+  the ticker `symbol` filter and `corporate-actions` are in the changelog
+  only — unverified.
+- **`/v1/info/exchange`:** `chain_id` 137 (Polygon), the exchange contract
+  `0xDCa4af75705dbB50f62437045afF9921947917d2` (an ERC-1967 proxy, about
+  $81.7M pUSD on 2026-11-10 00:06Z, Polygonscan), `cancel_only` (a
+  maintenance flag), `engine_version` "0.0.86". **`/v1/info/assets`:** the
+  collateral pUSD `0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB`, 6 decimals,
+  no withdrawal fee. **`/v1/info/index?asset=`:** the index price with an
+  empty `constituents` list — its sources are not visible. The supervisor
+  re-read `exchange` and `markets` live (2026-11-10 00:02Z).
+- **Instruments:** `max_leverage` 50 on SP500, NAS100, BTC and ETH (the docs'
+  "up to 20x" does not hold for them); KIOXIA-USD (id 51) was retired and
+  settled at 353.87 on 2026-09-28T00:33:01Z; equity perps can split (the
+  `stock-splits` route).
+- **The competition leaderboard with `include_unqualified=true` has no
+  1,000 cap:** 4,738 accounts listed (offset 4,700 answers; `limit` ≤ 100,
+  weight 1; the supervisor's read 2026-11-10 00:02Z); without the parameter
+  only the qualified accounts (110). The competition reports 10,019
+  participants; what selects the listed ones is not stated.
+  `competition/account` rows add `fees`, `funding`, `locked_positions`,
+  `row_state`. Competition 1 runs 2026-11-02T14:30Z → 11-16T14:30Z.
+- **Exchange totals** (`exchange-stats`, [2026-11-02, 2026-11-09)): volume
+  $591.1M, gross fees $170,275.93 (re-read by the supervisor).
+- **Rules in the docs** (read 2026-11-09 23:36–23:48Z): maintenance margin =
+  notional × 0.5 / max leverage; the backstop below 2/3 of it, then ADL;
+  liquidation fills flagged on both legs since 2026-08-11, ADL since
+  2026-08-10; **a TP/SL watches the mark and sends a reduce-only order — its
+  fill cannot be told from any other**; mark = a median of three, every 200
+  ms, from Pyth, Chainlink Data Streams and Hyperliquid; funding capped at 4%
+  an hour; a 20 ms taker delay; delisting = close-only for ≥ 30 min, then a
+  30-minute index TWAP; liquidity rewards a budget of $75,000 a day (1% of 7
+  days' maker volume to qualify; recipients not public), open-interest rewards
+  6% a year on gross OI (entities ≥ $5M), referrals 20% — none of them in
+  board PnL.
 
 ### Competitions, registered, builder
 
