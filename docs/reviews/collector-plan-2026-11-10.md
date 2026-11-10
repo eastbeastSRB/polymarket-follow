@@ -594,6 +594,20 @@ outside the repository: E:\polymarket-follow-run\poller\ (the run copy), E:\poly
 - **`pnpm verify`** = build, lint, test, format:check, in that order (CI's,
   once the skeleton step brings CI), green at the end of every part.
 
+**What later phases build on** — written into architecture by part 7 and
+changed only with a decisions entry [Final review F11: unnamed before]:
+1. **The files' layout and line format** (`recordings\<date>\<kind>-<HH>.jsonl.br`,
+   a line = our receive time, a tab, the text as received; the manifest; the
+   coverage log): the research kit and both exams read them.
+2. **The heartbeat file's fields:** the check task reads it now; v1's
+   notifier reads it to say "poller down" (R4 §5).
+3. **The latest book of each market, held in memory:** v1's paper log prices
+   an entry from it at the follow instant (decisions 2026-11-07, R3
+   accepted), with no REST read.
+4. **Admission by share:** C1 passes one share (50 a minute); v1 adds its
+   classes (favourites 200, the reserve 50: decisions 2026-11-07) by passing
+   more shares to the same function, not by rewriting it.
+
 **What the owner installs: nothing.** Node v24.13.0 and pnpm 11.20.0 are
 installed (`node --version`, `pnpm --version`, 2026-11-10); MongoDB 8.3.7
 runs as a service (R6). The build runs `pnpm install` for the packages above
