@@ -19,6 +19,17 @@ export function parseConfig(env: NodeJS.ProcessEnv): Config {
   return ConfigSchema.parse(env);
 }
 
+/** `--run-for=<seconds>` gives a run its own end (the smoke and the build's live runs); the task's run has none. */
+export function parseRunFor(args: readonly string[]): number | null {
+  const arg = args.find((a) => a.startsWith("--run-for="));
+  if (arg === undefined) return null;
+  const seconds = Number(arg.slice("--run-for=".length));
+  if (!Number.isInteger(seconds) || seconds <= 0) {
+    throw new Error(`${arg}: a whole number of seconds is needed`);
+  }
+  return seconds;
+}
+
 /** A developer's `.env` in the working directory; the run copy gets its values from run-poller.cmd. */
 export function loadConfig(): Config {
   if (existsSync(".env")) process.loadEnvFile(".env");
