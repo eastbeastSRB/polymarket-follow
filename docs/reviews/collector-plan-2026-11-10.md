@@ -285,6 +285,14 @@ back, beyond gzip's 32 KB window and inside Brotli's (`out/offline-analysis.txt`
 stable. A reader needs Brotli too: Node's `zlib` has it; Python's standard
 library does not (the `brotli` package) [Final review F14: unsaid].
 
+**Reading them back.** To see one market at one instant, a reader
+decompresses that hour's file of all 90 markets: 0.21 s for an hour of books
+(186 MB of text, `out/read-cost.txt`), so an exam over 1,000 distinct hours
+spends about 3.5 minutes decompressing — more if it parses every line, so a
+reader picks its market's lines by their `ch` text before parsing them.
+Files per market would make 2,160 files a day for little gain at these
+sizes. [Final review F10: unsaid; a note for the research kit.]
+
 **Sizes** (measured at 00:55Z; busy hours change more books and trades):
 
 | Kind | A day, compressed | A year |
