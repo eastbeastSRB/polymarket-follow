@@ -228,9 +228,10 @@ an account's rank beyond 1,000 can be rebuilt later from its fills and its
 tokens would cost 35 tokens a minute to record nothing that is otherwise
 lost (IDEAS-REVIEW foundation 1 and its F14).
 
-**The universe.** One record per address (lower-case): first and last time
-seen, and for each source — a board's window and sort, or a competition with
-its parameter — the first and last date it was seen there. Refreshed by each
+**The universe.** One record per address (lower-case) holding, for each
+source — a board's window and sort, or a competition with its parameter —
+the first and last date it was seen there; the address's own first and last
+sighting follow from these [Final review F12: they were stored beside them]. Refreshed by each
 day's board pass and competition pass; never polled per account. Its size
 is unverified: tens of thousands of addresses within a year is a guess from
 the inputs (16 boards' top 1,000s, which overlap; the competition table's
