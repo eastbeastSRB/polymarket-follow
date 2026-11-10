@@ -819,6 +819,12 @@ Failures at run time are in §1.7; these concern the plan.
   week's manifests.
 - **Whether a long connection is recycled** after hours or days (none in five
   minutes). *Settles:* the first days' coverage log.
+- **How much the four account-value boards repeat one another.** Account
+  value is the current equity, and the window only decides who is eligible
+  (the spec's text), so the four may be nearly one list — 200 tokens a day.
+  *Settles:* the first week's overlap of their rows (counted, not read: §1.3
+  item 7); if they repeat, 13 boards would do, which is the owner's call
+  since C1 names 16. [Final review F13: unsaid.]
 - **The server's compression level and the TLS overhead,** so the download is
   an estimate to about ±15%. *Settles:* part 2's byte count.
 - **Whether a CloudFront cache hit spends tokens** (it changes only our
