@@ -4,7 +4,11 @@
   green is deployed. The program and its production packages are built into
   <RunRoot>\poller.next and then replace <RunRoot>\poller; a poller running
   from the run copy is ended for the swap and its task started again after.
-  <RunRoot>\var (heartbeat, lock, logs) is never touched.
+  The task is managed only when it runs this run copy (a scratch run root
+  never touches it), and only from a session that may start it again:
+  elevated, or one the task grants execute; otherwise nothing is deployed.
+  Each deploy appends its reason to <RunRoot>\var\deploy.log: the time, the
+  commit, the poller it ended. <RunRoot>\var is otherwise never touched.
 
   Usage, from any folder:  powershell -ExecutionPolicy Bypass -File tools\deploy.ps1
 #>
@@ -15,6 +19,27 @@ $repo = Split-Path $PSScriptRoot -Parent
 $target = Join-Path $RunRoot 'poller'
 $next = Join-Path $RunRoot 'poller.next'
 $old = Join-Path $RunRoot 'poller.old'
+
+# A task's own user gets read only unless granted more; starting it needs
+# execute, or an elevated session (administrators have full access).
+function Test-CanStartTask([string]$name) {
+  $me = [Security.Principal.WindowsIdentity]::GetCurrent()
+  $role = [Security.Principal.WindowsBuiltInRole]::Administrator
+  if ((New-Object Security.Principal.WindowsPrincipal($me)).IsInRole($role)) { return $true }
+  $scheduler = New-Object -ComObject Schedule.Service
+  $scheduler.Connect()
+  $sddl = $scheduler.GetFolder('\').GetTask($name).GetSecurityDescriptor(4)
+  foreach ($ace in [regex]::Matches($sddl, '\(A;[^;]*;([^;]*);[^;]*;[^;]*;([^)]*)\)')) {
+    if ($ace.Groups[2].Value -eq $me.User.Value -and $ace.Groups[1].Value -match 'GA|GX|FA|FX') { return $true }
+  }
+  return $false
+}
+
+$task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+$ours = $null -ne $task -and $task.Actions[0].Execute -ieq (Join-Path $target 'run-poller.cmd')
+if ($ours -and -not (Test-CanStartTask $TaskName)) {
+  throw "this session could not start the task '$TaskName' again after the swap (the task grants this account read only): deploy from an elevated PowerShell; nothing deployed"
+}
 
 Push-Location $repo
 try {
@@ -47,13 +72,14 @@ try {
   Pop-Location
 }
 
-$task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-$wasRunning = $null -ne $task -and $task.State -eq 'Running'
+$wasRunning = $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
 $poller = Join-Path $target 'dist\index.js'
+$ended = @()
 foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'node.exe'") {
   $line = $p.CommandLine
   if ($line -and $line.IndexOf($poller, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
     Stop-Process -Id $p.ProcessId -Force
+    $ended += $p.ProcessId
     Write-Host "ended the running poller (pid $($p.ProcessId)) for the swap"
   }
 }
@@ -76,8 +102,20 @@ function Rename-Retrying([string]$path, [string]$newName) {
 if (Test-Path -LiteralPath $old) { Remove-Item -Recurse -Force -LiteralPath $old }
 if (Test-Path -LiteralPath $target) { Rename-Retrying $target 'poller.old' }
 Rename-Retrying $next 'poller'
+
+$var = Join-Path $RunRoot 'var'
+New-Item -ItemType Directory -Force -Path $var | Out-Null
+$stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+$why = "deploy of $commit; ended poller pid(s) [$($ended -join ', ')] for the swap"
 if ($wasRunning) {
-  Start-ScheduledTask -TaskName $TaskName
+  try {
+    Start-ScheduledTask -TaskName $TaskName
+  } catch {
+    Add-Content -LiteralPath (Join-Path $var 'deploy.log') -Encoding UTF8 -Value "$stamp $why; the task did not start: $($_.Exception.Message)"
+    throw
+  }
+  $why += "; started the task again"
   Write-Host "started the task '$TaskName' again"
 }
+Add-Content -LiteralPath (Join-Path $var 'deploy.log') -Encoding UTF8 -Value "$stamp $why"
 Write-Host "deployed commit $commit to $target"
