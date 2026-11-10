@@ -237,9 +237,11 @@ I-42; M3.*
 **C — The register's rules.** *Sources: M1, M2; I-31 to I-34; DS question
 5.* Appendix A opens with them in full. In short: (1) every entry names
 the smallest effect it can see; (2) exploring old data is free but every
-look is logged; (3) the new weeks are examined twice by lines fixed now —
-2026-11-30 strict, 2026-12-19 final, the batch held at one false discovery
-in ten; (4) every result is printed again without competition days and
+look is logged; (3) the new weeks are examined twice, 2026-11-30 and
+2026-12-19, by lines fixed now from one budget — at most a 5% chance that
+the whole batch passes one false pattern (A.0-11) [Final review F1: was
+"2026-11-30 strict, 2026-12-19 final, the batch held at one false discovery
+in ten"]; (4) every result is printed again without competition days and
 without the boosted markets; (5) a fresh reviewer reads each study's frozen
 rules *before* its look; (6) placebos and leave-one-out on every finding;
 (7) round 2 ends with the final exam.
@@ -583,10 +585,13 @@ five; where that is larger than anything plausible, the test waits for data.
 **2.9 — Two exams look at the same growing weeks.** The fast track examines
 2026-11-07 → 11-30, then "more weeks" that include those. Looking twice at
 one growing set, each time at the usual line, raises the false-alarm rate.
-The standard cure costs almost nothing: a very strict line at the first
-look (p below 0.001), the usual line at the last [memory: the
-Haybittle–Peto rule]; or the e-process the paper log already uses, which
-may be read as often as wanted. Appendix A writes the first one out.
+The standard cure costs almost nothing: spend a small part of the error
+budget at the first look and the rest at the last [memory: group-sequential
+testing; the Haybittle–Peto rule is its simplest form]. A.0-11 writes it
+out, with its lines and a worked example [Final review F1 and F14: was "a
+very strict line at the first look (p below 0.001), the usual line at the
+last …; or the e-process the paper log already uses" — one rule, not
+two].
 
 **2.10 — M2 has a hole.** "The data after 2026-11-07 stays untouched by any
 search" is written about fills. But every board read today (its profit
@@ -713,7 +718,7 @@ before a ruling, and a single composite score (H3).
 | **D1** | **Keep** | Note the competition inside its window. |
 | **V1–V7** | **Keep** | V3 gains a sentence: profiles are where verdicts can come from (point 2.14). Eight additions are listed at the end of section 1. |
 | **M1** the register | **Add** | The count of tests, the smallest visible effect, a prior, a pass line per exam. |
-| **M2** new data untouched | **Add** | The blind store (point 2.10) and the two-look rule (point 2.9). |
+| **M2** new data untouched | **Add** | The blind store (point 2.10) and the two-exam rule (point 2.9; A.0-11). |
 | **M3** a subagent per study | **Add** | The shared kit; a reviewer before the look. |
 
 ---
@@ -822,15 +827,21 @@ traders it has nothing to rank.
    they are a standing presence, and you asked to stay under the radar.
    *Recommendation:* yes — it is the only way to hold real books, and with
    them every later test is priced honestly and needs no poller.
-3. **The exams' lines and the end of round 2.** First exam 2026-11-30: a
-   pattern passes only on very strong evidence (p below 0.001), is dropped
-   only if it points clearly the wrong way, otherwise stays open. Final
-   exam 2026-12-19 (six weeks, R8's length): the usual line, with one false
-   discovery in ten tolerated across the batch — each survivor still faces
-   the account-level check and the paper log. Round 2 ends there; whatever
-   is found later starts a new batch. *Recommendation:* yes. (The stricter
-   choice — at most a 5% chance of any false discovery — costs power; I
-   would not take it while the paper log stands behind the exam.)
+3. **The exams' lines and the end of round 2.** One error budget for the
+   whole batch: at most a 5% chance that even one pattern passes that is
+   not real. First exam 2026-11-30: a pattern passes only on overwhelming
+   evidence, is dropped if it points the wrong way, otherwise stays open.
+   Final exam 2026-12-19 (six weeks, R8's length): the rest of the budget.
+   Each survivor still faces the account-level check and the paper log.
+   Round 2 ends there; whatever is found later starts a new batch with new
+   weeks of its own. *Recommendation:* yes. The rule, its lines and a
+   worked example are in A.0-11. [Final review F1: was "the usual line,
+   with one false discovery in ten tolerated across the batch … (The
+   stricter choice — at most a 5% chance of any false discovery — costs
+   power; I would not take it …)". I recommended the looser line and now
+   recommend the stricter one: it is safe whatever the tests share, and for
+   a batch of five it asks about a tenth more evidence for the first pass —
+   t of 2.8 against 2.5.]
 4. **If study 1 finds no difference between traders, do we stop ranking
    traders for now?** *Recommendation:* yes. The app then shows each
    account's measures with their evidence and makes no ranking of its own;
@@ -882,9 +893,17 @@ matters is that each is written into its entry before any outcome is seen.
 5. **Units.** bps, and risk units: d ÷ the market's mean absolute h-return
    over the trailing 30 days. Pass lines are read in risk units; bps are
    printed beside.
-6. **Two standard errors for every mean** — by trader (or account) and by
-   UTC day. "t" is the estimate over the larger one. Where votes are
-   counted, a trader's entries on one UTC day are one vote.
+6. **Two p-values for every statistic,** each from a plain t-test on
+   cluster means: one mean per UTC day (days − 1 degrees of freedom), and
+   one mean per trader or account (clusters − 1). **The larger p-value
+   decides;** "p" below always means that one. For a difference between
+   two groups: the day's difference, and a two-group test on trader means.
+   A rank correlation takes its p from a permutation of the traders. Where
+   votes are counted, a trader's entries on one UTC day are one vote.
+   **FIND passes at a two-sided p below 0.05;** a study that tries several
+   things corrects among them (Holm). [Final review F1: was "Two standard
+   errors for every mean … 't' is the estimate over the larger one" — a t
+   read on the normal table, although the exams rest on 23 and 42 days.]
 7. **Left out of every primary cell.** The pre-IPO market; PRL, NCLD,
    SKHYNIX, SAMSUNG, CXMT (R8's list); a retired market from the day it
    turned close-only; any market-day with a split.
@@ -904,13 +923,59 @@ matters is that each is written into its entry before any outcome is seen.
     One stored capture per exam, read once (section 5, item 5). The
     classifier's 100 holdout accounts: their fills after 2026-11-07 are D1's
     unseen data, so no study reads them before D1 is scored.
-11. **The two-look rule.** *First exam:* PASSES EARLY only if t ≥ 3.3 in
-    FIND's direction (a two-sided p of about 0.001); DROPPED only if t ≤ −1
-    (clearly against FIND's direction); otherwise OPEN. *Final exam:* PASSES
-    if the estimate is in FIND's direction and its two-sided p-value clears
-    the Benjamini–Hochberg line at 10% over every hypothesis of the batch (a
-    hypothesis dropped at the first exam stays in the count); otherwise NOT
-    CONFIRMED — recorded and dropped.
+11. **The two-exam rule.** [Final review F1: rewritten. Was: "PASSES EARLY
+    only if t ≥ 3.3 … DROPPED only if t ≤ −1 … the Benjamini–Hochberg line
+    at 10% over every hypothesis of the batch". The 3.3 ignored the batch
+    size and the 23 days; the Benjamini–Hochberg line is guaranteed only
+    for tests that are independent or move together.]
+    - **The budget.** At most a 5% chance that the whole batch passes even
+      one pattern that is not real — whatever the tests share (days,
+      accounts) and however the two exams overlap. 0.5% is spent at the
+      first exam, 4.5% at the final.
+    - **The batch size m** is the number of hypotheses frozen for CONFIRM;
+      each entry says what it adds (all ten together: at most 12). It is
+      fixed at the freeze and never lowered.
+    - **First exam** (23 days). A hypothesis PASSES EARLY if it points
+      FIND's way and p ≤ 0.005 ÷ m. It is DROPPED if its estimate points
+      the other way. Otherwise it stays OPEN.
+    - **Final exam** (42 days): Holm's rule at 4.5%. Take the hypotheses
+      that point FIND's way, smallest p first. The first passes if p ≤
+      0.045 ÷ m; then the next if p ≤ 0.045 ÷ (m − 1); and so on; stop at
+      the first that fails. A dropped hypothesis stays in m. Whatever has
+      not passed is NOT CONFIRMED — recorded and dropped.
+    - **Why looking twice is safe.** The chance of any false pass is at
+      most the sum of every line over hypotheses and exams: m × (0.005 ÷
+      m) + 0.045 = 5%. Nothing is assumed about how the tests, or the two
+      exams, hang together. Dropping can only lower it.
+    - **What keeps it safe — and is therefore not allowed otherwise.** The
+      two dates, the lists, the statistic and the analysis code are frozen
+      and fingerprinted before the first exam, and the same code runs the
+      final. The new weeks are read at the two exams and at no other time,
+      by no one, for no reason ("just the sign" is a look). A dropped
+      hypothesis is not revived in this batch; it may enter a later batch
+      with new weeks of its own. m is never lowered. The final exam is not
+      moved once the first has been read. A third exam needs its own
+      share of the 5%, declared before the first.
+    - **The lines** by Student's t on the day means — 22 degrees of freedom
+      at the first exam, 41 at the final [memory: the t table, rounded up
+      to one decimal; recompute at the freeze]:
+
+      | m | first exam: p ≤ | t ≥ | final exam, first step: p ≤ | t ≥ |
+      |---|---|---|---|---|
+      | 1 | 0.005 | 3.2 | 0.045 | 2.1 |
+      | 3 | 0.0017 | 3.6 | 0.015 | 2.6 |
+      | 5 | 0.001 | 3.8 | 0.009 | 2.8 |
+      | 8 | 0.0006 | 4.0 | 0.0056 | 3.0 |
+      | 12 | 0.0004 | 4.2 | 0.0038 | 3.1 |
+
+    - **A worked example.** Five hypotheses are frozen, so m = 5. *First
+      exam:* one shows +30 bps with a standard error of 12, t = 2.5 — under
+      3.8, so no early pass; it points the right way, so it stays open.
+      Another points the wrong way and is dropped. *Final exam:* the open
+      one now shows +27 with a standard error of 9: t = 3.0, p = 0.0046.
+      The five p-values in order: 0.0046, 0.03, 0.2, 0.6, and the dropped
+      one. Holm: 0.0046 ≤ 0.045 ÷ 5 = 0.009 — it passes. 0.03 ≤ 0.045 ÷ 4 =
+      0.011? No — stop. One pattern is confirmed.
 12. **After a pass.** The account-level check (study 14), then a paper
     profile with its rules frozen.
 13. **The smallest visible effect.** 2.8 standard errors — caught four times
