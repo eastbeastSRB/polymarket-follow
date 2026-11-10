@@ -57,10 +57,25 @@ foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'node.exe'") {
     Write-Host "ended the running poller (pid $($p.ProcessId)) for the swap"
   }
 }
-Start-Sleep -Seconds 1
+# A folder cannot be renamed while a process works in it: the ended poller's
+# launcher leaves it a moment later; anything else (a window open in it) stops
+# the deploy here, with the old copy still in place.
+function Rename-Retrying([string]$path, [string]$newName) {
+  for ($try = 1; ; $try++) {
+    try {
+      Rename-Item -LiteralPath $path -NewName $newName
+      return
+    } catch {
+      if ($try -ge 20) {
+        throw "could not rename $path ($($_.Exception.Message)); is a window or program open in it? Nothing was swapped; $next is kept."
+      }
+      Start-Sleep -Milliseconds 500
+    }
+  }
+}
 if (Test-Path -LiteralPath $old) { Remove-Item -Recurse -Force -LiteralPath $old }
-if (Test-Path -LiteralPath $target) { Rename-Item -LiteralPath $target -NewName 'poller.old' }
-Rename-Item -LiteralPath $next -NewName 'poller'
+if (Test-Path -LiteralPath $target) { Rename-Retrying $target 'poller.old' }
+Rename-Retrying $next 'poller'
 if ($wasRunning) {
   Start-ScheduledTask -TaskName $TaskName
   Write-Host "started the task '$TaskName' again"
