@@ -11,6 +11,7 @@ REM  process by it, and must never match another program's.
 REM  Output and a crash's last words go to ..\var\logs\stdout.log; node's exit
 REM  code is this script's, so Task Scheduler sees a failure. Arguments are
 REM  passed on (a test run gives --run-for=<seconds>; the task gives none).
+REM  Exit 4: stdout.log is held by another launcher, so node was not started.
 REM ---------------------------------------------------------------------------
 
 setlocal
@@ -18,5 +19,7 @@ cd /d "%~dp0"
 for %%I in ("%~dp0..\var") do set "STATE_DIR=%%~fI"
 if not defined RECORDINGS_ROOT set "RECORDINGS_ROOT=F:\polymarket-follow\recordings"
 if not exist "%STATE_DIR%\logs" mkdir "%STATE_DIR%\logs"
+REM A log held by another launcher would make cmd skip node and exit 0.
+(type nul >> "%STATE_DIR%\logs\stdout.log") 2>nul || exit /b 4
 "C:\Program Files\nodejs\node.exe" "%~dp0dist\index.js" %* >> "%STATE_DIR%\logs\stdout.log" 2>&1
 exit /b %ERRORLEVEL%

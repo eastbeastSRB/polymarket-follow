@@ -36,6 +36,11 @@ foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'node.exe'") {
     $ended += $p.ProcessId
   }
 }
+# The ended poller's launcher exits right after it; until then a new start would be ignored.
+if ($ended.Count -gt 0) {
+  Wait-Process -Id $ended -Timeout 15 -ErrorAction SilentlyContinue
+  Start-Sleep -Seconds 2
+}
 $ageText = if ($null -eq $age) { 'missing' } else { '{0:N0} s old' -f $age }
 $what = "heartbeat $ageText; ended node process(es) [$($ended -join ', ')]"
 try {
