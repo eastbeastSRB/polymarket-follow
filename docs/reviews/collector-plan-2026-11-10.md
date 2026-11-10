@@ -282,7 +282,8 @@ an hour of books takes about 1.7 s of CPU, and the event loop waited at most
 smaller, because a market's previous book lies 90 frames (about 77 KB)
 back, beyond gzip's 32 KB window and inside Brotli's (`out/offline-analysis.txt`
 §3: 0.371 against 1.197 GB a day); it is part of Node's standard library and
-stable.
+stable. A reader needs Brotli too: Node's `zlib` has it; Python's standard
+library does not (the `brotli` package) [Final review F14: unsaid].
 
 **Sizes** (measured at 00:55Z; busy hours change more books and trades):
 
@@ -849,7 +850,7 @@ Failures at run time are in §1.7; these concern the plan.
    result built on the record; each exam prints them.
 3. **The weekly fills of the frozen lists** (IDEAS-REVIEW's addition): if a
    history route were withdrawn before an exam, the exam would not be lost.
-   About 0.5 tokens a minute (question 9).
+   About 0.6 tokens a minute (question 9).
 4. **R4's freshness check should read the books, not the trades:** decisions
    2026-11-09 (R7's technical calls) planned it on the trades stream, which
    goes 20 s quiet at night; the books come every 100 ms.
@@ -916,9 +917,11 @@ Failures at run time are in §1.7; these concern the plan.
 9. **Once the exam lists are frozen (about 2026-11-20), may the collector
    store those accounts' new fills weekly, unread,** as insurance against a
    history route withdrawn before an exam (IDEAS-REVIEW)? *Recommendation:*
-   yes — about 0.5 tokens a minute (assumed: about 300 accounts at R6's mean
-   of 16.6 fills a day, 100 fills a read of 10 tokens, at least one read an
-   account), nothing read by anyone until the exam.
+   yes — about 0.6 tokens a minute (assumed: about 300 accounts — the lists
+   are not frozen yet — at R6's mean of 16.6 fills a day, so 116 a week and
+   two reads of 100 each, 10 tokens a read: 6,000 tokens a week), nothing
+   read by anyone until the exam. [Final review F14: was "about 0.5", with
+   "at least one read an account".]
 10. **May the collector start recording as soon as part 3 is verified** —
     the streams, the minute reads and the Windows tasks, with the REST
     client already checked by the supervisor — **before the boards, the
