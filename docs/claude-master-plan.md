@@ -81,7 +81,7 @@ and the collector approved).*
 | | When | What | Who |
 |---|---|---|---|
 | ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
-| 🔵 | since 2026-11-10 14:42Z | **Phase 1 — the collector (C1):** the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
+| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–3 built and verified, the tasks registered by the owner; parts 4–7 building; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
 | 🔵 | since 2026-11-10 14:42Z, beside Phase 1 | **Phase 2 — research round 2, FIND:** by the approved rule book (IDEAS-REVIEW Appendix A.0): the research kit and the first measurements (A.1), then the top ten studies on data up to 2026-11-07; the batch frozen about 2026-11-20 | research subagents |
 | ⏳ | about 2026-11-30 | **The first exam (CONFIRM)** on the weeks after 2026-11-07, with the dated checks D1 (after 11-21) and D2 (after 11-30) | research subagents; the supervisor |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
@@ -265,6 +265,12 @@ review, the supervisor re-computing on its own path what decides.
   statistics, cheap per trader (point 9; optional).
 - **V7** R7's pages and the owner's twelve rulings (decisions 2026-11-09, R7
   accepted).
+- **V8** Before more coding (the v1 skeleton), align `docs/claude-code-rules.md`
+  with the important parts of polymarket-lab's code-rules
+  (`E:\coding\polymarket-lab\docs\claude-code-rules.md`, read only): controllers,
+  models, DTOs, the API client, components, comments — the same rules for the
+  same things in both projects, not a copy of everything (the owner,
+  2026-11-10).
 
 ## Later — the backlog
 

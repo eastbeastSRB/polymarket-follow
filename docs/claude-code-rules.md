@@ -95,5 +95,19 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **Windows PowerShell's stdin is code page 437 here:** a Node process feeding
   it text sets `[Console]::InputEncoding` to UTF-8 first, or non-ASCII names
   arrive garbled (R4, measured 2026-11-06).
+- **Zod 4 makes a key typed `z.unknown()` required;** mark it `.optional()` when
+  a reply may leave it out (COLLECTOR-BUILD, 2026-11-10).
+- **`pnpm deploy` rewrites the workspace's install state** as production-only,
+  and its default `node_modules` links by absolute path, so a renamed folder
+  breaks ("Cannot find package"): deploy hoisted, then re-install the
+  workspace (COLLECTOR-BUILD, 2026-11-10).
+- **A `cmd.exe` launcher holds its output file open** while it runs; a second
+  launcher must check for it. **pino's asynchronous file destination is not
+  open at once** — log synchronously where a process may exit at start.
+  **Windows' per-process I/O counters leave out sockets** — measure network
+  bytes in the process. **Find a node process by its absolute script path,**
+  never by `dist\index.js` alone (the lab's worker has the same).
+  **Batch files keep CRLF** (`*.cmd text eol=crlf` in `.gitattributes`)
+  (all COLLECTOR-BUILD, 2026-11-10).
 - **Never dump window titles or the screen in a test:** they leak the owner's
   private window names (R4, 2026-11-06).
