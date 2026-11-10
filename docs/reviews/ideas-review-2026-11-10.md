@@ -167,8 +167,12 @@ as such.
 
 ### The three foundations (first, and not ranked against the studies)
 
-**A — The collector.** *Sources: C1; I-01, I-17, I-40, I-41; DS §10 and
-questions 1, 4.*
+[Final review F12: the foundations were lettered A, B and C — beside
+Appendix A, its rule list A.0 and the critique's groups A to C. They are
+numbered now, and the critique's groups carry no letter.]
+
+**Foundation 1 — the collector.** *Sources: C1; I-01, I-17, I-40, I-41; DS
+§10 and questions 1, 4.*
 - **Keep, in this order of "cannot be read back":**
   1. Best bid and ask each second, a top-20 book every 10 s, and every
      trade, for all 90 markets — the public WebSocket (`bbo`, `book`,
@@ -225,7 +229,7 @@ questions 1, 4.*
   September with two November mornings' spreads [record: R8 §1.5]. With the
   book on record the forward test's clock starts now, not with v1.
 
-**B — The one-minute panel and the research kit.** *Sources: I-02, I-03,
+**Foundation 2 — the one-minute panel and the research kit.** *Sources: I-02, I-03,
 I-42; M3.*
 - **The panel:** one-minute marks, one-minute klines (volume, trade count)
   and hourly funding for every market from its first trade to
@@ -249,7 +253,7 @@ I-42; M3.*
 - **Cost:** the pull under a day; the kit a day of one build subagent, no
   calls.
 
-**C — The register's rules.** *Sources: M1, M2; I-31 to I-34; DS question
+**Foundation 3 — the register's rules.** *Sources: M1, M2; I-31 to I-34; DS question
 5.* Appendix A opens with them in full. In short: (1) every entry names
 the smallest effect it can see; (2) exploring old data is free but every
 look is logged; (3) the new weeks are examined twice, 2026-11-30 and
@@ -534,7 +538,7 @@ I found no wrong number in R8. The weaknesses are in what was asked, in
 what the answer is taken to mean, and in how round 2 is set up to avoid
 fooling itself. (C-n = the point's number in my stage-1 file.)
 
-### A. What R8 does and does not show
+### What R8 does and does not show
 
 **2.1 — A narrower question than its headline is read as** (C-1). What lost
 money was: "the top 50 by 30-day banked profit; every opening alike; a
@@ -600,7 +604,7 @@ print results per unit of risk as well.
 Entries with no information lose the same at any delay. It does not show
 that delay is harmless for a signal that has some; study 5 looks.
 
-### B. Round 2's method as written
+### Round 2's method as written
 
 **2.7 — The register must count tests, not items.** H9 is about six tests
 (multi-day horizons, funding, open interest, liquidations, sessions, order
@@ -662,7 +666,7 @@ for — and new data is read once.
 
 **2.13 — A fresh subagent per study (M3) multiplies definitions.** R2, R3 and
 R8 each wrote their own readers. A dozen parallel studies need one tested
-kit (foundation B). And a Final review after the look can only correct
+kit (foundation 2). And a Final review after the look can only correct
 words: R8's found thirteen things, none in the design. A reviewer who reads
 the frozen rules *before* the look costs an hour and can still change them.
 
@@ -687,7 +691,7 @@ measures against the follower's result (study 6); show measures with their
 ranges.
 
 **2.17 — The forward clock is not running** (C-19). The paper log starts
-with v1, weeks away. Foundation A starts it now.
+with v1, weeks away. Foundation 1 starts it now.
 
 **2.18 — Care was spent where the uncertainty was smallest** (C-15). A
 weekday measurement, its report and its review settled a choice of cost
@@ -695,7 +699,7 @@ table worth at most 0.43 bps a round trip [record: decisions 2026-11-09]
 while the signal was known to ±17. Not wasted — the live log needs honest
 costs — but the signal side now deserves that care.
 
-### C. Four things to re-check
+### Four things to re-check
 
 **2.19 — The funding rule: an open item for the supervisor.** DOCS-SWEEP's
 report says "funding settles even for a position closed just before"
@@ -744,7 +748,7 @@ before a ruling, and a single composite score (H3).
 
 | Item | Keep or change | Why |
 |---|---|---|
-| **C1** the collector | **Change** (foundation A) | Books "on a schedule" miss the second a trader acted; the stream is free. Add the tape, the ticker, DOCS-SWEEP's reads. Keep the universe as addresses — an account's fills and profit series can be read back any time, so polling it buys nothing. Add the blind-store rule. |
+| **C1** the collector | **Change** (foundation 1) | Books "on a schedule" miss the second a trader acted; the stream is free. Add the tape, the ticker, DOCS-SWEEP's reads. Keep the universe as addresses — an account's fills and profit series can be read back any time, so polling it buys nothing. Add the blind-store rule. |
 | **H1 / D2** B2's confirmation | **Keep, expect little** | It is a promise, frozen. But its measure ranks on banked profit ÷ volume, its find pair showed the top fifth doing worse, and its weeks 9–12 hold the whole competition. Add study 1's five-by-five table as a secondary that decides nothing — "where in the ranks does persistence sit" is the open part. |
 | **H2** long track records | **Merge into study 1** | "All entries since the first fill" is the long record we have. For most accounts that is ten weeks at most (public launch 2026-09-03): say so. A record of years exists only under H13 (c). |
 | **H3** an honest quality score | **Change** (study 6) | (a) Not one number — point 2.16. (b) At most six measures, corrected together. (c) Tested on the *follower's* next result first, the trader's own beside it. (d) Profit at base-tier fees, with open positions. (e) The Sharpe-based measures will say "record too short" for nearly everyone: with 65 days, a record can prove skill only at a yearly Sharpe ratio near 4 [arithmetic from the published formula; memory: Bailey and López de Prado 2012; Final review F10, the inputs: a one-sided 95% test against a Sharpe ratio of zero, returns taken as normal, 365 trading days a year — 1.645 ÷ √64 = 0.206 a day]. That is honest and worth showing as exactly that. |
@@ -943,7 +947,7 @@ matters is that each is written into its entry before any outcome is seen.
    and depth, 4 bps a leg, and funding. Every net figure is printed under
    three cost settings: a taker here; a maker here (1.25 bps a leg, no
    spread paid); the owner's own setting (question 1).
-4. **The null.** The exact matched null of foundation B: the mean signed
+4. **The null.** The exact matched null of foundation 2: the mean signed
    return over every minute of the same market and UTC hour, weighted by
    trade count, with the direction at the trader's own long share (taken
    from the trader's entries before the window). d = the entry's gross
@@ -1095,7 +1099,7 @@ marks and the two price tables). No calls, no outcomes.
 5. Market-days with funding above five times the floor (entry 8).
 6. Entries per week at UTC 12–16 and 00–04 for the frozen lists (entry 10).
 7. On R8's stored entries: the variance of d against the variance of the
-   tracked return — how much three drawn trades add (foundation B).
+   tracked return — how much three drawn trades add (foundation 2).
 8. **The map** (study 3) [Final review F7: moved here from entry 3, part
    (a)]. For each market × horizon (1 h, 6 h, 24 h, 72 h) × cost setting:
    the cost ÷ the mean absolute move; the break-even share of right calls,
@@ -1529,13 +1533,13 @@ commit `09acdf8`.]
 
 ### The foundations as build entries (done when …)
 
-- **A — the collector.** Done when: a day's best-price record has no gap
+- **Foundation 1 — the collector.** Done when: a day's best-price record has no gap
   over 15 s outside logged maintenance; an hour of the recorded stream
   agrees with `/v1/info/bbo` snapshots taken in that hour; the daily board
   copy holds 16 × 1,000 rows with their snapshot stamps; the tables that
   carry results cannot be opened from a study's folder. *Cost:* about 6
   tokens a minute.
-- **B — the panel and the kit.** Done when: the panel's manifest is hashed
+- **Foundation 2 — the panel and the kit.** Done when: the panel's manifest is hashed
   and each market's minutes are counted against its first trade; the kit's
   entry builder returns R8's 1,272 entries exactly (the same accounts,
   instants and sides); priced by the minute, its mean net result on R8's
@@ -1547,58 +1551,58 @@ commit `09acdf8`.]
   from R8's capture to the published −16.60 and −13.58" — exact agreement
   cannot be had: R8 priced by the second and drew its nulls; the kit prices
   by the minute and takes the exact null.]
-- **C — the rules.** Done when the owner has ruled on question 3 and A.0 is
+- **Foundation 3 — the rules.** Done when the owner has ruled on question 3 and A.0 is
   in the register's header.
 
 ---
 
 ## Appendix B — Where every item went
 
-**My stage-1 ideas.** I-01 → foundation A. I-02, I-03, I-42 → foundation B.
+**My stage-1 ideas.** I-01 → foundation 1. I-02, I-03, I-42 → foundation 2.
 I-04 → study 3. I-05 → study 1. I-06 → study 2. I-07 → study 6. I-08 →
 study 1 (population P2). I-09 → study 1 (the bottom fifth). I-10 → study
 24. I-11 → study 15 (its part (c) → study 12). I-12 → study 4. I-13 →
 study 9. I-14 → study 11. I-15 → study 5. I-16 → study 8. I-17 → study 16
-and foundation A. I-18 → study 10. I-19 → study 19. I-20 → study 20. I-21 →
+and foundation 1. I-18 → study 10. I-19 → study 19. I-20 → study 20. I-21 →
 study 7. I-22 → study 17. I-23 → study 18. I-24 → study 12. I-25 → study 4
 and A.0-8. I-26, I-27 → the v1 plan (I-27 also A.0-3). I-28 → study 23.
-I-29 → study 14. I-30 → study 22. I-31 to I-34 → foundation C. I-35 → study
+I-29 → study 14. I-30 → study 22. I-31 to I-34 → foundation 3. I-35 → study
 6 and the v1 plan. I-36 → study 25. I-37 → V6 for the description of a
 trader, study 22 for its test, and its dated list of releases → study 4,
 item 3 [Final review F9: was "I-37 → study 22"; the description itself is
 V6's]. I-38, I-39 → study 21. I-40 → the v1 plan and
-foundation A. I-41 → foundation A and A.0-9.
+foundation 1. I-41 → foundation 1 and A.0-9.
 
 **Our list.** P0-1, P0-2 done; P0-3 DOCS-SWEEP; P0-4 this report. C1 →
-foundation A. H1 → D2. H2 → study 1. H3 → study 6. H4 → study 3. H5 → study
+foundation 1. H1 → D2. H2 → study 1. H3 → study 6. H4 → study 3. H5 → study
 13 and one index in study 6. H6 → study 4. H7 → study 9. H8 → study 2. H9 →
 studies 3, 8, 10, 16, 18, 19. H10 → studies 7, 1 (P2), 11, 17. H11 → study
 22. H12 → study 14. H13 → study 21. D1, D2 → as fixed. V1–V7 → kept (V3:
-point 2.14). M1–M3 → foundation C (M3 also B).
+point 2.14). M1–M3 → foundation 3 (M3 also foundation 2).
 
-**DOCS-SWEEP.** Its possibilities: 1 (the competition table) → foundation A,
+**DOCS-SWEEP.** Its possibilities: 1 (the competition table) → foundation 1,
 addresses only (A.0-9). 2 (`/markets`) → not needed (its own §10). 3
-(long and short counts) → foundation A, study 16. 4 (`exchange`) →
-foundation A. 5 (fee rate → tier) → study 2 uses the fee amounts; the tier
-stays a guess (point 2.21). 6 (exchange statistics) → foundation A. 7
-(retired markets) → foundation B, A.0-7. 8 (cross-margin ratio) → studies
+(long and short counts) → foundation 1, study 16. 4 (`exchange`) →
+foundation 1. 5 (fee rate → tier) → study 2 uses the fee amounts; the tier
+stays a guess (point 2.21). 6 (exchange statistics) → foundation 1. 7
+(retired markets) → foundation 2, A.0-7. 8 (cross-margin ratio) → studies
 13 and 18, weakly — most accounts are isolated by default. 9 (rolling
-funding) → study 8, foundation A. 10 (deeper book, one-second klines,
-corporate actions) → foundation A, untested. 11 (the contract's balance),
+funding) → study 8, foundation 1. 10 (deeper book, one-second klines,
+corporate actions) → foundation 1, untested. 11 (the contract's balance),
 12 (the widget) → not used. Its findings: the competition as a confound →
 A.0-8, point 2.11. Splits → A.0-7. Stops cannot be seen → study 13. The
 reward budget and the open-interest reward → studies 2, 11, 17. The H13
 rule → study 21, question 5. The funding floor → study 3. The margin law →
 study 14. Its "funding settles even for a position closed just before" →
 point 2.19. [Final review F9: the rest of this paragraph was missing.] Its
-§10 list for the collector → foundation A, item 4. Its notes on H1–H13 (its
+§10 list for the collector → foundation 1, item 4. Its notes on H1–H13 (its
 Q8) → each in the study that took that H (above). The liquidation and ADL
 flags that changed meaning in August 2026 → study 18. The same address on
 other chains, and the derived prediction-market wallet → study 21. Its
 five questions for the owner: 1 (the competition table for the universe) →
-foundation A, inside A.0-9's limits; 2 (the line for H13) → question 5; 3
+foundation 1, inside A.0-9's limits; 2 (the line for H13) → question 5; 3
 (one more explorer page) → not mine to place; 4 (`exchange` each minute) →
-foundation A; 5 (the competition as a covariate) → A.0-8. **Not used:**
+foundation 1; 5 (the competition as a covariate) → A.0-8. **Not used:**
 its six contradictions between the docs and the live API (facts for
 external-apis, not ideas); its "three clocks" (the boards' Monday reset,
 the 12:00Z reward cut-off, the hourly funding) — no entry's window is
