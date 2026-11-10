@@ -47,9 +47,14 @@ sections marked ⟨pending⟩ wait for it.
   segment's end itself — for the last segment exactly the cut, which can
   never return a bucket starting at it — and klines the end minus 1 ms. The
   trial's replies are kept apart (`F:\trial-1500Z\`), unused.
-- ⟨pending: coverage — each market's minutes counted against its first trade,
-  holes, klines against the daily klines, funding hours; the agreement with
-  R8's own capture; the manifest's hash⟩
+- **It agrees exactly with R8's independent capture** of the same 80 markets
+  (`out/check-panel-r8.txt`, R8's reads of 2026-11-09): funding 79,338 hours,
+  the same rate in every one; R8's 79,515 hourly marks equal to the panel's
+  mark at each hour's last minute; in 156,618 minutes that R8's one-second
+  windows hold whole, the minute's last one-second mark equal to the panel's
+  one-minute mark; R8's 23,346 minute klines, trade count and volume equal —
+  **no difference anywhere.**
+- ⟨pending: coverage of the whole panel; the manifest's hash⟩
 
 ## 2. The kit
 
@@ -106,8 +111,25 @@ after the final panel build⟩.
    same account, instrument, first-fill instant, type and side, none missing
    on either side; **the primary arm's openings and flips are R8's 1,272**
    (47 accounts); the delay is R8's for 1,919 of 1,919 (`out/proof-entries.txt`).
-2. ⟨pending: priced by the minute, beside R8's −16.60⟩
-3. ⟨pending: with the exact null, beside R8's −13.58⟩
+2. **Priced by the minute** (the taker setting = R8's costs; `out/proof-pricing.txt`):
+   the mean net result on R8's primary cell is **−16.36 bps**, trader-clustered
+   [−29.68, −5.54], against R8's **−16.60** [−29.98, −5.87] by the second —
+   **the minute costs +0.24 bps on the mean**; entry by entry the two differ
+   by 13.0 bps (sd), 7.1 bps on average in size (the mark at the minute's
+   end against the mark at the second, at entry and exit).
+3. **With the exact null:** d = **−2.64 bps**, by trader [−13.72, +8.16], by
+   day [−18.47, +12.94] (1,231 entries; 18 entry hours hold no trade but the
+   tracked accounts' own) — **inside R8's intervals around −13.58** (by
+   trader [−34.33, +0.44], by day [−26.95, −0.83]). It is not R8's statistic:
+   R8's null kept each drawn trade's own taker side, the exact null takes the
+   trader's long share (A.0-4). Like for like, R8's own drawn trades priced
+   by the minute give −13.59 with their own sides (R8: −13.58) and −5.89 with
+   matched sides (R8's secondary: −6.04) — **the minute moves either by under
+   0.2 bps**, and the exact null sits 3.3 bps from the drawn matched null,
+   about one standard error of three draws' mean.
+   The exact null's d has **30.7% less variance** than d with three drawn
+   matched trades on the same entries (intervals 16.7% narrower; first
+   measurement 7).
 
 **The mutants:** 54 of 54 killed (`out/mutation.txt`; a baseline copy must
 pass all 36 tests first, so a run that tests nothing cannot count as a
