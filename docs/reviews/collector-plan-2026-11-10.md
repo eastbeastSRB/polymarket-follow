@@ -567,7 +567,8 @@ and five were missing]:
   hourly full write), the watchdog (fake clock), the board pass (order, the
   page-stamp consistency flag, the 23:59:30Z guard), the
   competition's paging stop, the universe (first seen never moves; sources
-  accumulate), the disk thresholds, every schema on the dated fixtures with
+  accumulate), the price audit's 200 ms rule, the disk thresholds, every
+  schema on the dated fixtures with
   an unknown key added, the file writer (the hour's roll, the Brotli round
   trip, the manifest) — and **an Iron Rule 1 test:** the REST client refuses
   any path outside `/v1/info/`, the WebSocket client can send only `sub`,
@@ -595,9 +596,9 @@ changed only with a decisions entry [Final review F11: unnamed before]:
 **What the owner installs: nothing.** Node v24.13.0 and pnpm 11.20.0 are
 installed (`node --version`, `pnpm --version`, 2026-11-10); MongoDB 8.3.7
 runs as a service (R6). The build runs `pnpm install` for the packages above
-(question 6). The owner registers the three tasks by running
-`tools\register-tasks.ps1` (or by hand, guided by the supervisor) and pushes
-to GitHub as now.
+(question 6). The owner registers the three tasks once, by running
+`tools\register-tasks.ps1` from an elevated PowerShell (§1.4), and pushes to
+GitHub as now.
 
 ### 1.7 Failure cases and how each is handled
 
