@@ -355,7 +355,8 @@ losses against wins, how far price ran against a position before it was
 closed). The target is the *follower's* result on the trader's next
 entries; the trader's own next profit is printed beside it. **Why sixth:**
 high value if traders differ, none if they do not; and FIND has only two
-clean formation dates since the launch. *Prior:* 10%.
+measure windows since the launch, whose formation weeks overlap (entry 6).
+*Prior:* 10%.
 
 **7 — Algorithms working a large order.** *H10; I-21.*
 An account buying one market in many taker pieces has the most predictable
@@ -374,10 +375,9 @@ Most markets sit exactly on the floor rate (55 of 90 [record: DS Q5]); a
 few pay or charge many times that. Does the side that receives extreme
 funding keep it, or does the price take it back over the next day? And as
 a property of an entry (study 4): paid or paying. FIND runs on R8's funding
-rows and hourly marks, already held. One thing to settle first: DOCS-SWEEP
-writes "funding settles even for a position closed just before", R3's rule
-charges positions open at the whole hour (point 2.19). *Prior:* a
-confirmed relation 15%; one that pays 7%.
+rows and hourly marks, already held. One thing is open first, with the
+supervisor: how funding is charged to a position closed just before the
+hour (point 2.19). *Prior:* a confirmed relation 15%; one that pays 7%.
 
 **9 — Agreement.** *H7; I-13; I-24 for the links.*
 Three or more accounts with no visible link opening the same side of one
@@ -401,8 +401,11 @@ per market at each day's end; the day's change against the next day's
 return, ranked across markets. *Test:* market-days in fifths, clustered by
 day; FIND on accounts with whole histories. *Guard:* accounts that hold
 $5M or more gross may be collecting the open-interest reward on hedged
-books — their position says nothing about direction [record: DS Q4, its
-reading]; leave them out. *Cost:* none. *Prior:* 10%.
+books, and then their position would say nothing about direction [record:
+DS Q4 — DOCS-SWEEP's own reading; who is paid is not public]; print the
+result with and without them [Final review F11: was "their position says
+nothing about direction … leave them out" — an inference written as a
+fact]. *Cost:* none. *Prior:* 10%.
 
 **12 — Who copies whom.** *I-24; R5 possibility 4.* For every ordered pair
 of pool accounts: how often B opens the same market and side within 60 s,
@@ -445,8 +448,13 @@ only, on changes, after eight weeks of the collector's series. *Prior:*
 
 **17 — Market makers' inventory.** *H10; I-22.* Makers hold what the crowd
 just sold them and are paid by the price coming back (Hendershott and
-Menkveld 2014 [read]). *Test:* forward only — their histories are cut at
-5,000 fills — from the collector's hourly portfolio reads. *Prior:* 10%.
+Menkveld 2014 [read]). *Test:* needs each maker's position through time.
+Our capture stops at R2's 5,000-fill cap, but the API reads an account
+back to its first fill [record: R8 §3] — about 82,000 tokens for one busy
+maker [record: R1 Q14]. So: that pull for the largest makers, or portfolio
+reads from the day the study is approved [Final review F11: was "forward
+only — their histories are cut at 5,000 fills": the cut is our capture's,
+not the API's]. *Prior:* 10%.
 
 **18 — Liquidations as forced flow.** *H9; I-23; DS Q3.* Flagged fills in
 the pool as events; the mark around them; the opposite trade after the
@@ -685,15 +693,19 @@ costs — but the signal side now deserves that care.
 
 ### C. Four things to re-check
 
-**2.19 — The funding rule.** DOCS-SWEEP writes "funding settles even for a
-position closed just before" [record: DS Q5, not marked by its Final
-review]; R3's approved rule charges a paper position "open across the whole
-hour" [record: R3 Q4]. The two disagree about a position closed minutes
-before the hour. At the floor rate that is a fraction of a bp; on the few
-markets with extreme funding (the rolling rate touched 5.6 bps an hour on
-ANT [record: R3 Q4]) it is not. *Settle:* the docs' funding page, and one
-account that closed a position minutes before an hour — its fills against
-its hourly `/v1/info/pnl`, which includes funding (about 30 tokens).
+**2.19 — The funding rule: an open item for the supervisor.** DOCS-SWEEP's
+report says "funding settles even for a position closed just before"
+[record: DS Q5, not marked by its Final review]; R3's approved rule
+charges a paper position "open across the whole hour" [record: R3 Q4].
+Read plainly, the two sentences do not say the same about a position
+closed minutes before the hour. Which one holds I do not know, and nothing
+in this report assumes either. Why it matters: at the floor rate the
+difference is a fraction of a bp; on the few markets with extreme funding
+(the rolling rate touched 5.6 bps an hour on ANT [record: R3 Q4]) it is
+not. The supervisor settles it with a small read. [Final review F11: was
+"The two disagree about a position closed minutes before the hour" and a
+"*Settle:*" recipe — worded as a finding about the exchange, which it is
+not.]
 
 **2.20 — The mark as a price over minutes.** One of the mark's three parts is
 the index plus a 150-second average of the book's premium, and the mark is
@@ -738,7 +750,7 @@ before a ruling, and a single composite score (H3).
 | **H7** consensus | **Keep** (study 9) | Fix the count and the window first; say "no visible link", never "independent" — entities are hidden. |
 | **H8** why #47 could not be copied | **Widen** (study 2) | The same split for every account turns one puzzle into the ranking rule study 6 needs. Add fees. Start with #47: it is concrete and its data is held. |
 | **H9** market context | **Split into six entries** | Multi-day horizons (in study 3), funding (8), sessions (10), off-hours opens (19), liquidations (18), open interest, counts and books (16). All but the last can be found on old data; the last has no history and starts with the collector. As one item it would enter the register as one test and be run as six. |
-| **H10** big players | **Split into four** | Algorithms' large orders (7); slow systematic accounts (inside 1); cohort holdings (11); market makers' inventory (17, forward only). "How the rewards shape them": DOCS-SWEEP answers as far as public data can — and adds a guard: very large holders may be paid to hold. |
+| **H10** big players | **Split into four** | Algorithms' large orders (7); slow systematic accounts (inside 1); cohort holdings (11); market makers' inventory (17). "How the rewards shape them": DOCS-SWEEP answers as far as public data can — and adds a guard: very large holders may be paid to hold. |
 | **H11** AI, honestly | **Change** (22) | Forward only: on old entries a model may know what came next, and it need not answer the same twice. Freeze the model and the prompt; store the rating at alert time. Put the owner's own "would have taken it" mark beside it — the same test, one button. |
 | **H12** the account-level check | **Keep; define now** (14) | Written before any result, so that it is not shaped around one. Add results per unit of risk. |
 | **H13** on-chain | **Split in three** (21) | Deposits and withdrawals: the API already gives net capital for accounts opened after 2026-10-20. The prediction-market wallet: a derived address, formula unknown. The same address on other venues: the only long record there is, and the owner's ruling twice over (question 5). |
@@ -771,7 +783,7 @@ twice.
 | **11-30 → 12-01** | **The first exam.** One capture, read once, stored with a manifest: the frozen lists' fills for 11-07 → 11-30, the panel's extension, D2's accounts. Every confirmation and D2 read that capture and nothing else. Prices by the mark rule for every entry, so that FIND and CONFIRM are measured alike; the recorded book beside it as an audit from the day the collector started. | about 135,000 tokens, 9 h |
 | **early December** | The v1 plan, with what stands. Hypotheses still open keep running. | — |
 | **12-19 → 12-20** | **The final exam** on six weeks (a second capture, 11-30 → 12-19). The account-level check (study 14) for what passes; paper profiles. **Round 2 ends here.** | about 110,000 tokens, 7.5 h |
-| **mid-January 2027** | The first FIND on the collector's own series for the studies that have no history (15, 16, 17, 20), each confirmed on the eight weeks after — beside v1, outside "research complete". | none |
+| **mid-January 2027** | The first FIND on the collector's own series for the studies whose data starts with the collector (15, 16, 20; and 17 unless its makers' histories are pulled), each confirmed on the eight weeks after — beside v1, outside "research complete". | none |
 
 **Where the two exams' sums come from** [Final review F10: added; the
 table gave totals only]. First exam: 600 directional accounts × 4 pages of
@@ -784,7 +796,7 @@ are guesses until the lists are frozen.
 
 **What runs side by side:** everything in the second row; every study in
 the third (they make no calls, so they do not compete for the budget).
-**What waits for data:** studies 15–17 and 20; every CONFIRM. **What waits
+**What waits for data:** studies 15, 16 and 20; every CONFIRM. **What waits
 for a ruling:** 21 and 22. **What waits for a result:** study 6 (on study
 1); the whole histories of the 20 busiest taker accounts for study 7
 (250,000 tokens, 16.7 h — only if its first look shows a drift).
@@ -1331,8 +1343,10 @@ commit `09acdf8`.]
   top fifth whose entries over the following weeks beat the rest's.
 - **Unit.** The trader.
 - **FIND data.** Formation windows of four weeks ending 2026-10-10 and
-  2026-10-24, measured on the two weeks after each — the only two clean
-  dates since the launch.
+  2026-10-24, measured on the two weeks after each. The two measure windows
+  do not overlap; the two formation windows share two weeks, so the two
+  rankings are not independent. [Final review F11: was "the only two clean
+  dates since the launch".]
 - **CONFIRM data.** Formation: the four weeks to 2026-11-07. Measure: the
   new weeks; 3.3 at the first exam, 6 at the final.
 - **Statistic.** Top fifth minus the rest, mean d in the measure window.
@@ -1394,8 +1408,8 @@ commit `09acdf8`.]
 - **Cost.** FIND: no calls. CONFIRM: at most about 62,000 tokens (4 hours) for
   30 such accounts, each taken as busy as the all-time #1 [Final review
   F10: "at most" and its input added]. The whole histories of the 20
-  busiest taker accounts
-  (250,000 tokens, 16.7 h) only if FIND shows a drift.
+  busiest taker accounts (250,000 tokens, 16.7 h) only if FIND shows a
+  drift.
 - **Fixed in the entry before the look.** Five orders, 30 minutes, gaps
   under 10 minutes; the 30-minute exit; the list of accounts with its hash.
 
