@@ -45,95 +45,67 @@ the supervisor in my closing message.
 
 ## For the owner, in one page
 
+[Final review F6: rewritten to stand alone — plain words, one line an item,
+the six questions on the page itself. The first version is in commit
+`09acdf8`.]
+
+*Three words used below.* A **basis point (bp)** is one hundredth of a
+percent. **A taker's costs** are what anyone pays who trades at once — the
+fee, and the gap between the buying and the selling price: here about 9 to
+13 bps (0.09–0.13%) for getting in and out. **A random trade** is a trade
+picked by chance in the same market and hour: the yardstick every result
+is measured against.
+
 **What I found**
 
-1. **R8 tested one rule, and that rule failed. It did not show that nobody
-   is worth watching.** The rule: the 50 with the most banked profit last
-   month, every new position alike, held 1 to 24 hours, paying a taker's
-   costs. Before costs those entries were worth about nothing: −5 bps,
-   somewhere between −19 and +5 [arithmetic from R8 §1.1].
-2. **R8 could only have seen a large edge** — about 25 bps a trade over
-   random trades, more than two round trips of costs — **and it scored more
-   than half of its traders at one hour**, where the cost is so large
-   against the usual price move that a follower needs about six right calls
-   in ten just to break even (an illustration on usual volatility; study 3
-   measures it).
-3. **Board profit is not what a follower gets.** Part of it is made on the
-   way in and out — resting orders, lower fees for some accounts, exits in
-   small pieces — not by being right. #47 made $109,386 while its follower
-   lost. Ranking by profit points at the wrong accounts; the question to
-   ask is "how much of this profit could a follower have had?"
-4. **The data we already hold can ask far more than R8 did, at almost no
-   API cost.** One day of the budget buys a one-minute price record of
-   every market. After that, every directional account (not 50), the best
-   *and* the worst, holding times up to three days, kinds of trades and
-   other players can be tested without another call.
-5. **The first exam (about 2026-11-30) will have 23 days of new trading,
-   the first nine or ten inside a competition.** It can kill a false
-   pattern; it cannot confirm a small real one. A real answer needs a
-   second exam — I propose 2026-12-19, six weeks, R8's own length.
-6. **My honest guess, written before any of it runs:** about one chance in
-   eight that round 2 confirms something that pays after a taker's costs
-   here; about one in three that it confirms something worth showing that
-   does not clear those costs; otherwise nothing.
+1. R8 tested one way of following — the 50 with the most banked profit, every new position copied, held 1 to 24 hours — and that way failed; it did not test whether anyone is worth watching.
+2. Before costs those copied trades were worth about nothing: −5 bps, give or take 12 [arithmetic; point 2.2].
+3. R8 could only have seen a big edge, about 25 bps a trade, and it scored most traders at one hour — where costs alone ask for about six right calls in ten on a major coin (an illustration; study 3 measures it).
+4. The profit on the boards is not what a follower gets: part of it comes from resting orders, lower fees and careful exits — #47 made $109,386 while its follower lost.
+5. The data we already hold can ask far more, at almost no API cost: every directional account, the best and the worst, holds up to three days, kinds of trades, other players.
+6. Six weeks of new data can confirm only a large effect — about 30 to 50 bps a trade for most tests (A.2); a small real edge will fail this round and need a later one.
+7. My honest guess: one chance in eight that round 2 confirms something that pays after costs here; one in three that it confirms something worth knowing that does not.
 
-**Three things every study stands on** (conditions, not ideas to test)
+**Before any study: three foundations**
 
-- **A. The collector, wider than planned.** Record the market itself — best
-  prices each second, a book every ten seconds, every trade — from public
-  streams that cost no tokens. A trader's fills can be read back later; the
-  book at that second cannot. With it on record, any rule can be tested
-  forward without waiting for v1.
-- **B. One price record and one tested set of research tools,** shared by
-  every study, so that twelve studies do not make twelve definitions of
-  "an entry".
-- **C. The register's rules.** For each test, the smallest effect it can
-  see, written first; two exams with their lines fixed now; the competition
-  marked in every result; a date on which round 2 ends.
+1. The collector records the market itself — best prices each second, the order book, every trade — because a trader's fills can be read back later and the book cannot.
+2. One one-minute price record of every market and one tested set of research tools, shared by every study.
+3. One rule book for every test, written before any result (Appendix A, A.0).
 
-**The top ten studies** (in brackets: H = our list, I = my blind list)
+**The top ten studies**
 
-1. Is there any difference between traders at all — the best and the
-   worst? [H2, I-05]
-2. Where does a trader's money come from, and how much of it could a
-   follower have had? [H8, I-06]
-3. Where could following pay at all — cost against the usual price move,
-   by market and holding time; slow traders against fast? [H4, I-04]
-4. Which kinds of entries carry anything — eleven kinds, fixed in advance?
-   [H6, I-12]
-5. The price path around an entry: what happens in the 60 seconds before a
-   follower can act? [I-15]
-6. A race between ways of ranking traders — only if study 1 finds a
-   difference. [H3, H5, I-07]
-7. Algorithms working a large order: is their next half hour worth knowing?
-   [H10, I-21]
-8. Funding: who pays, who is paid, and does the price take it back?
-   [H9, I-16]
-9. Agreement between traders with no visible link. [H7, I-13]
-10. One cell of R8's own table, tested once on new data: entries at the US
-    open (UTC 12–16). [H9, I-18]
+1. Do traders differ at all — do the best stay better and the worst stay worse from one set of weeks to the next?
+2. Where does a trader's money come from, and how much of it could a follower have had?
+3. Where can following pay at all — cost against the usual price move, by market and holding time — and do slow traders' entries beat random trades?
+4. Which of eleven kinds of entry, fixed in advance, carry anything?
+5. What does the price do in the 60 seconds before a follower can act?
+6. Which way of ranking traders predicts a follower's result? (Only if study 1 finds a difference.)
+7. When an algorithm works a large order in pieces, does the price keep moving its way for the next half hour?
+8. Does the side that is paid extreme funding keep it, or does the price take it back? (Only if a first count shows the test can see anything.)
+9. When three traders with no visible link open the same side within an hour, does the price follow?
+10. Do entries at the US open do worse than random trades, as R8's own table hinted?
 
-**The critique in five lines**
+**The critique**
 
-1. R8's verdict word hides both its estimate and its blind spot. Say:
-   "worth −5 bps before costs, ±12; an edge much under 25 bps over random
-   trades would probably not have been seen."
-2. Choosing by banked profit is close to a random draw of active traders,
-   tilted by the month's market direction and by what each account pays in
-   fees.
-3. Our list bundles many tests under one name (H9 about six, H10 four, H3
-   seven measures) and has no budget for errors, no smallest-visible-effect
-   and no rule for looking twice at the same new weeks.
-4. "The data after 2026-11-07 stays untouched" has a hole: every board, the
-   competition table and every portfolio read today already carry those
-   weeks' results. The rule must cover them.
-5. Verdicts on single traders cannot arrive (months to years each). The
-   paper log should stand on a few lists with frozen rules — V3 already
-   points there.
+1. R8's one word, FAILS, hides its estimate and its blind spot: "worth about nothing before costs; an edge much under 25 bps would probably not have been seen".
+2. Choosing by banked profit is close to a random draw of active traders, tilted by the market's direction that month and by what each account pays in fees.
+3. Our list packs more than thirty tests into thirteen items, with no budget for false alarms and no statement of what each test could see.
+4. The rule "data after 2026-11-07 stays untouched" did not cover boards, the competition table and prices read after that date — which already carry the new weeks' results.
+5. A verdict on a single trader takes months to years; the paper log should judge a few lists with frozen rules instead (V3 already points there).
 
-**Your questions** are in section 6: six, each with my recommendation.
-**For the supervisor:** Appendix A drafts the register entries for the top
-ten; Appendix B shows where every item of the three lists went.
+**The six questions** (my recommendation in brackets; in full in section 6)
+
+1. Where would you act on what the tool shows, and what does a round trip cost you there? (Answer now: it aims the studies; no advice follows from it.)
+2. May the collector keep three public data streams open around the clock? (Yes.)
+3. Two exams, 2026-11-30 and 2026-12-19, with at most a 5% chance that the whole batch passes one false pattern — and round 2 ends there? (Yes.)
+4. If study 1 finds that traders do not differ, do we stop ranking traders for now? (Yes.)
+5. May research read the same address's public record on another exchange — the only record of years? (Not now; decide after study 1, about 2026-11-20.)
+6. A short list of tested measures in place of one "quality score", and the AI's rating only forward, beside your own "would have taken it" mark? (Yes to both.)
+
+**For the supervisor:** Appendix A holds the rule book (A.0), the first
+measurements (A.1), what each test can see (A.2) and the ten draft entries;
+Appendix B shows where every item of the three lists went; the Final review
+is at the end.
 
 ---
 
