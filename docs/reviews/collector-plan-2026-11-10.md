@@ -435,7 +435,7 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    logs — lives beside it in `E:\polymarket-follow-run\var\`, which a deploy
    never touches.
 2. **A lock inside the program:** a lock file with the process id; a second
-   start exits while the holder's heartbeat is fresh. Two collectors would
+   start exits while the holder's heartbeat is fresh. Two pollers would
    double the connections and the tokens.
 3. **The heartbeat:** a file, `…-run\var\heartbeat.json`, rewritten every 10 s
    (time, process id, each connection's last frame, each job's last success,
@@ -459,9 +459,9 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    while others arrive is logged as a stall, and all markets stalled while
    pongs arrive means reconnect.
 6. **Gaps:** every interval without recording, by connection and by market,
-   in `coverage.jsonl`, with its cause — our restart, a
-   server close and its code, a watchdog reconnect, or the PC off (the time
-   since the last heartbeat, found at start).
+   in `coverage.jsonl`, with its cause — our restart, a server close and its
+   code, a watchdog reconnect, or the PC off (the time since the last
+   heartbeat, found at start).
 7. **The lab's nightly window (02:35–03:50Z):** the REST reads pause; the
    streams continue (a separate bucket and host, no tokens; the rate-limits
    page: "Hitting one bucket does not consume another bucket"). No daily job
@@ -469,8 +469,8 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
 8. **PC restarts:** the tasks start a minute after the PC does, before
    anyone signs in [Final review F15: was "at the next sign-in"]; the gap is
    logged. A day's boards missed while the PC was off are lost and logged as
-   missed,
-   never filled from a later read (the lab's lesson: "a lost day is gone").
+   missed, never filled from a later read (the lab's lesson: "a lost day is
+   gone").
 9. **The clock:** every record carries the server's time (`ts`, a board's
    `timestamp`) beside our receive time; the daily times are UTC inside the
    program, so summer time moves nothing. Offset watch: each minute, the
@@ -534,7 +534,7 @@ package.json          private; type module; packageManager pnpm@11.20.0; engines
                       scripts build, lint, test, format, format:check, verify (= build, lint, test, format:check)
 pnpm-workspace.yaml   apps/*, packages/*
 tsconfig.base.json, eslint.config.mjs, .prettierrc.json, .prettierignore   (copied from the lab, trimmed)
-.env.example          MONGO_URI, MONGO_DB=polymarket_follow, STREAM_ROOT, STATE_DIR, BACKUP_ROOTS
+.env.example          MONGO_URI, MONGO_DB=polymarket_follow, RECORDINGS_ROOT, STATE_DIR, BACKUP_ROOTS
 apps/poller/          the one API client (the plan page: "the poller (its first part: the collector)")
   src/index.ts        start: configuration, the lock, the database, connections, schedule, heartbeat
   src/config.ts       the environment, parsed by Zod (Node's own process.loadEnvFile)
@@ -650,7 +650,7 @@ to GitHub as now.
 | A competition ends, a new one starts | the daily `competitions` read | each competition is read until 7 days after its end (final and paid rows); its dates and boosts in the rule book (A.0-8) |
 | A crash | node's exit code, through `run-poller.cmd` | Task Scheduler restarts it three times a minute apart; then the check task |
 | A hang | the heartbeat file older than 2 minutes | the check task ends and restarts it, and logs it |
-| Two collectors | the lock | the second exits |
+| Two pollers | the lock | the second exits |
 | The PC off, asleep or restarted | the time since the last heartbeat, at start | logged as a gap; streams of that time lost; a missed board pass lost and logged |
 | The nightly window | the clock | REST paused 02:35–03:50Z |
 | An hour's file fails its compression check | the round trip | the plain file kept and retried next hour; a WATCH |
@@ -822,7 +822,7 @@ Failures at run time are in §1.7; these concern the plan.
 | The build itself spends tokens | inside the collector's share, one process at a time |
 | The terms of use (R1 Q13) | unchanged from decisions 2026-11-07: personal use, a public documented API, a small steady presence — two connections of the 50 allowed, about 3 tokens a minute |
 | A deploy changes a message's shape | §1.7: rejected frames kept raw; a schema fix re-reads them |
-| Someone starts a second collector by hand | the lock |
+| Someone starts a second poller by hand | the lock |
 | A launcher that one day starts nothing (VBScript off by default from about 2027) — the poller and its check would fail together, silently | no launcher at all: the tasks run outside the session (§1.4; Final review F15) |
 | A later build in the same repository changes what a crash restart runs | the run copy, refreshed only by a deploy after `pnpm verify` (§1.4) |
 | Registering a start-up task outside the session needs an administrator | the account is one (filtered token, `out/task-facts.txt`): the owner runs the prepared script once from an elevated PowerShell; nothing else needs elevation |
