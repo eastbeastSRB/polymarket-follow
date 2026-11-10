@@ -335,7 +335,7 @@ CONFIRM list of this batch.
    address seen only on profit- or return-sorted boards never enters it.
 2. **`rulebook` holds only the rule book's kinds:** the market list, fees,
    competition dates and boosted markets, maintenance and engine-version
-   marks, splits.
+   marks (the exchange's flags and the server's connection drops), splits.
 3. **Everything else** — board and competition rows with their values, the
    stream files, the ticker replies, the audits' figures — stays where no
    research brief points: the other collections and
@@ -348,13 +348,25 @@ CONFIRM list of this batch.
 6. **Later batches** whose data starts with the collector (IDEAS-REVIEW: the
    studies with no history, from mid-January 2027) declare their FIND and
    CONFIRM date slices before any read; the kit's cut moves with the batch.
+7. **Checking the collector looks at counts and shapes, never values.** A.0-11
+   says the new weeks are read at the two exams "and at no other time, by no
+   one, for no reason" — which covers the build's live runs, the `status`
+   command, the logs and the supervisor's verification too. They print rows,
+   pages, stamps, sizes, gaps, hashes and agree/disagree; never a profit, a
+   rank, a price or a move. A test asserts that the board pass's log lines
+   and `status` contain no field of a row.
+8. **This plan's own reads** (allowed by its brief) touched data after the
+   cut: five minutes of books and trades, four pages of the day board and one
+   page of the competition table, all of 2026-11-10. Only shapes, sizes,
+   rates and counts are reported here; the raw replies and frame samples stay
+   in W `raw/` and `out/`, which no FIND brief points to.
 
 ### 1.4 How it runs on this PC
 
 | | **At sign-in, hidden launcher (recommended)** | "Whether logged on or not" (S4U) at sign-in | At start-up (boot) | A Windows service |
 |---|---|---|---|---|
 | Runs with nobody signed in | no | no | yes | yes |
-| A window to hide | yes: a `.vbs` launcher | none (non-interactive) | none | none |
+| A window to hide | yes: a small windowless launcher (item 1) | none (non-interactive) | none | none |
 | Registering | the owner, no admin (R4; not tried) | no admin (Learn; not tried) | admin, most likely (R4) | admin, and a service wrapper to install |
 | Recorded | the decided default (decisions 2026-11-07, the owner's PC; R4 Q3) | — | not needed then | — |
 
@@ -363,22 +375,39 @@ unattended restart costs data (question 8). The parts:
 1. **Task "polymarket-follow collector":** at sign-in of the owner's account;
    run only when the user is logged on; run level Limited (the collector
    needs no rights; R4: an elevated process can drop notifications); action
-   `wscript.exe <repo>\tools\run-collector.vbs`, which starts
-   `node apps\poller\dist\index.js` with a hidden window and **waits** for it,
-   returning node's exit code so that "restart on failure" sees a crash;
-   restart every minute up to three times; no time limit; one instance (do
-   not start a new one).
+   `tools\launch-hidden.exe node <run copy>\dist\index.js`. The launcher is
+   about 20 lines of C#, compiled from source at build time by the .NET
+   Framework compiler that ships with Windows (`csc.exe`, present here:
+   `out/launcher-facts.txt`, 2026-11-10 01:31Z — nothing installed). It
+   starts the program with no console window at all and **waits**, returning
+   its exit code, so that "restart on failure" sees a crash. **Not R4's
+   `.vbs`:** Microsoft's own timeline says "Around 2027, the VBScript FODs
+   will no longer be enabled by default" (Windows IT Pro blog, 2024-05-22,
+   updated 2024-06-13; saved as `docs/ms-vbscript-deprecation.html`, the
+   sentence found verbatim: `out/ms-vbscript-page.txt`), and a
+   launcher that one day stops starting anything is a silent failure; also,
+   whether a merely hidden console window stays hidden when Windows Terminal
+   is the default console host is unknown here (no explicit setting: Windows
+   decides) — with no window created, neither matters. Restart every minute
+   up to three times; no time limit; one instance (do not start a new one).
+   **The run copy:** the task runs a copy of the built program outside the
+   working tree (`E:\polymarket-follow-run\poller\`, written by
+   `tools\deploy.ps1` after `pnpm verify` is green), so a build in progress
+   can never become what a crash restart runs. Its state — heartbeat, lock,
+   logs — lives beside it in `E:\polymarket-follow-run\var\`, which a deploy
+   never touches.
 2. **A lock inside the program:** a lock file with the process id; a second
    start exits while the holder's heartbeat is fresh. Two collectors would
    double the connections and the tokens.
-3. **The heartbeat:** a file, `var\heartbeat.json`, rewritten every 10 s
+3. **The heartbeat:** a file, `…-run\var\heartbeat.json`, rewritten every 10 s
    (time, process id, each connection's last frame, each job's last success,
    tokens in the last minute), and the same in `collector_state`. The file
    works when MongoDB does not.
 4. **Task "polymarket-follow collector check":** at sign-in and every 5
-   minutes, a short PowerShell script. If the heartbeat is older than 2
+   minutes, a short PowerShell script, started by the same launcher (so no
+   window flashes every 5 minutes). If the heartbeat is older than 2
    minutes, it ends the node process whose command line is the collector's,
-   starts the collector task, appends a line to `var\check.log` and shows a
+   starts the collector task, appends a line to `…-run\var\check.log` and shows a
    Windows notification (R4's route: PowerShell's own app ID, nothing
    installed). Task Scheduler restarts a crash, not a hang (R4 §5); this is
    what catches a hang. It is the project's first notification: R4's owner
@@ -412,8 +441,9 @@ unattended restart costs data (question 8). The parts:
     its rows — processes, exchange API, data freshness, budget, disk,
     backup, replies, clock — so the page needs no new collector code (the
     classifier row is v1's).
-11. **Logs:** pino, JSON lines, one file a UTC day under `var\logs\`, 30 days
-    kept; the launcher's own output file catches a crash's last words.
+11. **Logs:** pino, JSON lines, one file a UTC day under `…-run\var\logs\`,
+    30 days kept; the launcher's own output file catches a crash's last
+    words.
 
 ### 1.5 Backups
 
@@ -472,8 +502,11 @@ apps/poller/          the one API client (the plan page: "the poller (its first 
   src/health/         heartbeat.ts, disk.ts (pure thresholds), coverage.ts
   src/schedule.ts     pure: next run times in UTC, the nightly window
   test/               vitest; fixtures trimmed from this plan's replies, dated 2026-11-10
-tools/                backup.cjs, restore.cjs, run-collector.vbs, collector-check.ps1, register-tasks.ps1
-var/                  (ignored by git) heartbeat, lock, logs
+tools/                backup.cjs, restore.cjs, launch-hidden.cs (compiled by the in-box csc.exe),
+                      deploy.ps1 (the run copy), collector-check.ps1, register-tasks.ps1
+
+outside the repository: E:\polymarket-follow-run\poller\ (the run copy), E:\polymarket-follow-run\var\
+                      (heartbeat, lock, logs); F:\polymarket-follow\collector\ (the files)
 ```
 
 **Technical calls, for the supervisor to record:**
@@ -494,8 +527,10 @@ var/                  (ignored by git) heartbeat, lock, logs
   `@types/node` — the lab's major versions (zod 4, mongodb 7, pino 10),
   re-checked against their documentation when installed. No dotenv: Node
   reads `.env` itself.
-- **The task runs compiled code** (`tsc` into `dist\`), as the lab's does: a
-  change needs `pnpm build` and a restart of the task.
+- **The task runs compiled code** (`tsc` into `dist\`), as the lab's does,
+  but from a run copy outside the working tree (§1.4, item 1): a change needs
+  `pnpm verify`, `tools\deploy.ps1` and a restart of the task — so the work
+  of a later build in the same repository (v1's) never runs by accident.
 - **Tests:** unit tests for every rule that decides something — admission
   (the 60 s and 5 s windows, the 50 cap), the 429 back-off, the nightly
   pause, the schedule, the book sampler (once a second when changed; the
@@ -561,7 +596,7 @@ to GitHub as now.
 | 0 | the workspace, configuration, CI, one empty app with one test | the CI file mirrors `pnpm verify` | `pnpm verify` green |
 | 1 | the REST client (admission, back-off, nightly pause, allowed routes, call log), the schemas, the minute and ten-minute reads, the file writer (hours, Brotli, manifests, coverage) | the unit tests of §1.6 that apply | a live run of at least 30 minutes across an hour's end: no 429, the call log never above 50 tokens a minute or 30 in 5 s, the closed hour's file compressed and verified |
 | 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price and tape audits | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); the tape audit finds every API trade; CPU, memory and bytes received reported |
-| 3 | running on Windows: the heartbeat file, the lock, the launcher, the check script, the registration script (prepared, not run by the build) | the launcher returns node's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and notify |
+| 3 | running on Windows: the heartbeat file, the lock, the launcher, the run copy, the check script, the registration script (prepared, not run by the build) | the launcher returns the program's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); no window appears at sign-in or every 5 minutes; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and notify |
 | 4 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book; loading from files | board order and guards (fake clock), the re-read, the paging stop, the universe rules, a rebuild from files | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
 | 5 | health: `collector_state`, the disk checks and the stop, the clock watch, the frozen-source checks, a `status` command printing every row | thresholds; the status output | `status` prints every row from a live run |
 | 6 | backup and restore | the round trip on `polymarket_follow_test` | a backup to E: and F: and a restore test, both ok |
@@ -602,8 +637,9 @@ daily board copy holds 16 × 1,000 rows with their snapshot stamps" → part 4;
 books and boards lost for good,** so question 10 asks whether the tasks may
 be registered as soon as part 3 is verified — the streams and the minute
 reads recording, with part 1's REST client already checked by the
-supervisor — parts 4–6 then shipping as rebuilds (`pnpm build`, the task
-restarted) and the Final review following.
+supervisor — parts 4–6 then shipping as deploys of the running task
+(`pnpm verify`, `tools\deploy.ps1`, a restart) and the Final review
+following.
 
 ---
 
@@ -641,6 +677,14 @@ restarted) and the Final review following.
   Consistency: re-read once when the pages' snapshot stamps span over 10 s.
 - **The universe:** addresses only (recommended) against a daily address row
   per account (35 tokens a minute for 10,000) or weekly.
+- **The launcher:** R4's `.vbs` (works today; VBScript off by default from
+  about 2027, Microsoft) against a windowless launcher compiled from 20 lines
+  of C# by Windows' own `csc.exe` (recommended: no window is ever created,
+  nothing to install, nothing deprecated) against a "whether logged on or
+  not" task (no window, but no notification from the check either).
+- **What the task runs:** the working tree, as the lab does, against a run
+  copy refreshed only by a deploy after `pnpm verify` (recommended: a build
+  in progress can never be what a crash restart starts).
 - **Where:** §1.2. **How it runs:** §1.4. **The repository:** §1.6.
 - **Watching the collector:** the check task (recommended) against the
   supervisor's daily status only (days of silence possible) or a dead-man's
@@ -694,6 +738,9 @@ Failures at run time are in §1.7; these concern the plan.
 | The terms of use (R1 Q13) | unchanged from decisions 2026-11-07: personal use, a public documented API, a small steady presence — two connections of the 50 allowed, about 5 tokens a minute |
 | A deploy changes a message's shape | §1.7: rejected frames kept raw; a schema fix re-reads them |
 | Someone starts a second collector by hand | the lock |
+| A launcher that one day starts nothing (VBScript off by default from about 2027) — the collector and its check would fail together, silently | no VBScript: the compiled launcher (§1.4) |
+| A later build in the same repository changes what a crash restart runs | the run copy, refreshed only by a deploy after `pnpm verify` (§1.4) |
+| Registering the tasks needs an administrator after all (R4: "not tried") | the registration script says so and stops; the owner runs it once from an elevated PowerShell |
 | The download and TLS figures are estimates | part 2 reports the bytes the process received |
 
 ## 5. What stays unknown, and what would settle it
@@ -887,19 +934,20 @@ In W (`E:\coding\Claude\supervisor\polymarket-follow\workers\COLLECTOR-PLAN\`):
   run), `ws-deflate-check.mjs`, `ws-ext-check.mjs`, `offline-analysis.mjs`,
   `depth-coverage.mjs`, `audit-sim.mjs` (the price audit on the capture),
   `cpu-bench.mjs` (Brotli and parsing costs), `rest-budget-check.cjs`,
-  `disk-free.mjs`.
+  `disk-free.mjs`, `save-page.mjs` (Microsoft's VBScript page).
 - **Outputs** (`out/`): `ws-measure.txt` and `ws-main-stdout.txt` (the 300 s
   run), `ws-smoke.txt` and `ws-smoke-stdout.txt` (the 15 s run),
   `ws-samples.jsonl` and `ws-samples-smoke.jsonl` (the first frames of each
   kind), `ws-events.log` (the trades connection's silences),
   `offline-analysis.txt`, `depth-coverage.txt`, `audit-sim.txt`,
   `cpu-bench.txt`, `ws-deflate-check.txt`, `ws-ext-check.txt`,
-  `ws-ua-local-test.txt`,
+  `ws-ua-local-test.txt`, `launcher-facts.txt`, `ms-vbscript-page.txt`,
   `async-inspect.txt`, `async-updates.txt`, `rest1.txt`, `rest-calls.jsonl`
   (every REST call), `rest-budget-check.txt`, `disk-free.txt`,
   `dl-docs.txt`.
 - **Raw replies** (`raw/`): time, instruments, exchange, tickers, bbo (three),
   competitions, competition, the competition table's first page,
   stock-splits, four leaderboard pages.
-- **Docs as downloaded** (`docs/`, with `fetch-log.jsonl`).
+- **Docs as downloaded** (`docs/`, with `fetch-log.jsonl`), and Microsoft's
+  VBScript deprecation page (`docs/ms-vbscript-deprecation.html`, 01:31:03Z).
 - **Log:** `progress.md`.
