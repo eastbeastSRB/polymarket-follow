@@ -201,7 +201,7 @@ review, the supervisor re-computing on its own path what decides.
   competition widget; the POST share-card route stays off-limits), order
   types and TP/SL (another account's are private), liquidation rules,
   rewards, fee tiers, sessions, which blockchain deposits and withdrawals use.
-- **P0-4 IDEAS-REVIEW** (point 12): a fresh subagent (Fable 5.1, max) reads
+- **P0-4 IDEAS-REVIEW** ✅ (point 12; `docs/reviews/ideas-review-2026-11-10.md`): a fresh subagent (Fable 5.1, max) reads
   every doc and report and proposes ideas ranked by impact and testability,
   first blind, then merged with this list and DOCS-SWEEP's findings.
 
