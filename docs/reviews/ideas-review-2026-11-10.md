@@ -13,7 +13,7 @@ to P0-4, C1, H1–H13, D1, D2, V1–V7, M1–M3; decisions 2026-11-09, the fast
 track) and with DOCS-SWEEP's report as it stood after its own Final review
 (`docs-sweep-2026-11-10.md`, 612 lines, commit `4a63dce`; "DS" below).
 **Then its own Final review,** at the owner's request, 2026-11-10 00:40Z –
-00:55Z: findings F1–F15 by severity, one commit a fix, each correction
+00:56Z: findings F1–F15 by severity, one commit a fix, each correction
 marked in place `[Final review Fn: …]`; the findings, the commits and what
 was left are in the last section.
 
@@ -1673,7 +1673,7 @@ figures for what the exams can see were too small by about a third.
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F6 | **The one-page summary does not stand alone.** Trade words are not explained (bps, taker, matched null), its items run to three to five lines, and the six questions are only pointed to. | `0f5affd` |
+| F6 | **The one-page summary does not stand alone.** Trade words are not explained (bps, taker, matched null), its items run to three to five lines, and the six questions are only pointed to. | `0f5affd`, `d20bb90` |
 | F7 | **Appendix A's ten entries do not share one format.** Fields and their order differ; entry 3 mixes a measurement with a hypothesis; entries 1 and 4 hold more than one hypothesis without saying how many they add to the batch; FIND lines are written three ways ("t ≥ 2", "p below 0.05", "upper bound below"). | `25bbe62` |
 | F8 | **Two headline numbers hide their assumptions.** "−5 bps before costs, between −19 and +5" treats the cost as the same for every entry and leaves funding in. "Six right calls in ten" is the major-coin illustration, printed as if for every market. | `ccb1955` |
 | F9 | **Appendix B's map is incomplete and in one place wrong.** DOCS-SWEEP's §10 list, its six contradictions, its five questions and its "three clocks" are not placed; I-37's description of a trader belongs with V6, not with study 22. | `76e7747` |
@@ -1693,7 +1693,8 @@ figures for what the exams can see were too small by about a third.
 fix, in the order they were made — F4 `a961ce4`, F7 `25bbe62`, F1
 `88f0247`, F2 `b348432`, F3 `c74e824`, F5 `5a8a476`, F8 `ccb1955`, F9
 `76e7747`, F10 `d9f0f73`, F11 `38ad7de`, F14 `aaad4c2`, F12 `3ac839d`, F13
-`a2efeee`, F6 `0f5affd`; this closing section last. The order differs from
+`a2efeee`, F6 `0f5affd`; the closing section `310f24c`; then a second pass
+on the summary, F6 again, `d20bb90`. The order differs from
 the numbering because the entries' format (F7) had to exist before their
 lines and figures (F1, F2) were rewritten, and the summary (F6) had to
 come after everything it sums up.
