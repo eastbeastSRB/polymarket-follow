@@ -1361,3 +1361,50 @@ in the ranking, the draft entries or the questions changed.
 
 Not re-checked by anyone but me: every [arithmetic] figure, the proposed
 pass lines, and Appendix B's map. A fresh Final review should start there.
+
+## Final review (2026-11-10, the owner's request; by IDEAS-REVIEW itself)
+
+Scope: my numbers, my arithmetic and this report — a review's "code". I
+started where the self-review pointed (every [arithmetic] figure, the pass
+lines, Appendix B's map), re-derived each figure by hand from the numbers
+named beside it, then went through the six points the supervisor named. No
+API call, no data. **Findings first; each fix is its own commit, marked in
+place `[Final review Fn: …]`; the commits are listed at the end.**
+
+**How satisfied am I?** The merged list, its order and the critique stand:
+nothing found changes them. What was weak is the part other people must
+lift and run — the exams' rule, the "what each test can see" figures, the
+blind-store rule and the entries' format. In four places a reader would
+have had to guess, and in two the report would have misled: the final
+exam's line was not safe for tests that share days and accounts, and the
+figures for what the exams can see were too small by about a third.
+
+**Severity 1 — wrong or misleading, could steer a decision**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F1 | **The exams' lines are neither derived nor airtight.** The first exam's "t ≥ 3.3" is a constant that ignores how many hypotheses are examined and that it rests on 23 days. The final exam's Benjamini–Hochberg line is guaranteed only for tests that are independent or move together; ours share days and accounts, so the guarantee is not shown — R3 chose e-Bonferroni over e-BH for this very reason. "t" was read on the normal table although the day counts are 23 and 42. There is no worked example, and the conditions that keep two looks safe are not written down. | pending |
+| F2 | **The "smallest visible effect" figures are too small and their inputs are missing.** All were computed at 2.8 standard errors — one test, normal table — although each will face a batch line; several rest on guessed spreads and counts but are tagged [arithmetic]. Re-derived they rise by about a third; entry 8's by two to three times; entry 1's FIND figure is 17–28 bps, not 15–20. | pending |
+| F3 | **The "blind store" rule does not say which fields.** "Addresses only" still leaks when the address comes from a board sorted by profit — being listed there after 2026-11-07 is itself a result. Nothing says what FIND may read of prices, profit series and portfolios after that date, and nothing bars an account found later from this batch's CONFIRM lists. | pending |
+| F4 | **Entry 10 carries two hypotheses, and one should not be there.** Cell B (UTC 00–04) failed R8's own count bar (125 entries, 19 traders: "TOO FEW") and its interval held zero; giving it a place in the batch makes every other test's line stricter for nothing. | pending |
+| F5 | **Two promises that cannot be kept as written.** A.0-2 re-prices every cell that goes to CONFIRM from one-second marks: about 200,000 tokens for entry 1 alone, in no budget, and of no use at horizons of an hour or more. And foundation B is "done" when the kit reproduces R8's −16.60 exactly — which a one-minute price cannot do. | pending |
+
+**Severity 2 — evidence or wording that does not carry its weight**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F6 | **The one-page summary does not stand alone.** Trade words are not explained (bps, taker, matched null), its items run to three to five lines, and the six questions are only pointed to. | pending |
+| F7 | **Appendix A's ten entries do not share one format.** Fields and their order differ; entry 3 mixes a measurement with a hypothesis; entries 1 and 4 hold more than one hypothesis without saying how many they add to the batch; FIND lines are written three ways ("t ≥ 2", "p below 0.05", "upper bound below"). | pending |
+| F8 | **Two headline numbers hide their assumptions.** "−5 bps before costs, between −19 and +5" treats the cost as the same for every entry and leaves funding in. "Six right calls in ten" is the major-coin illustration, printed as if for every market. | pending |
+| F9 | **Appendix B's map is incomplete and in one place wrong.** DOCS-SWEEP's §10 list, its six contradictions, its five questions and its "three clocks" are not placed; I-37's description of a trader belongs with V6, not with study 22. | pending |
+| F10 | **Unstated inputs.** The collector's disk and token figures; the two exams' token sums; the Sharpe figure in section 3; entry 7's CONFIRM cost (an upper bound, not said). Entry 5 counts 1,272 entries where the priced cell with its random trades has 1,249. | pending |
+| F11 | **Inferences and one error written as facts.** "Their position says nothing about direction" (study 11). "Forward only — their histories are cut at 5,000 fills" (study 17): the cut was R2's own page cap; the API reads an account back to its first fill. "The only two clean dates" (entry 6): the two formation windows share two weeks. And point 2.19 says "the two disagree" where the supervisor's instruction is to leave the funding rule open and write nothing as fact. | pending |
+
+**Severity 3 — hygiene**
+
+| # | Finding | Fix (commit) |
+|---|---|---|
+| F12 | **Names collide.** "A" is a foundation, an appendix and a rule list (A.0); the critique's groups A–C sit beside foundations A–C. | pending |
+| F13 | **One fact, several homes** (against CLAUDE.md's "one fact, one home"): the exams' rule in four places, the break-even illustration in three. A correction then has to find every copy. | pending |
+| F14 | **Alternatives and extras kept "just in case".** A second cure in point 2.9 and a looser/stricter choice in question 3; two optional pulls (an equity series for a variant that is not among the eleven; one-second marks for #47); "one-second marks or the collector's prices" (entry 5); and the collector's hourly portfolio reads for studies ranked 16 and 17 — which record nothing that cannot be rebuilt later from fills. | pending |
+| F15 | **Left as written** — see "What I left, and why" at the end. | — |
