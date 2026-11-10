@@ -222,8 +222,11 @@ I-42; M3.*
   Q5, §4].
 - **Exact random trades:** the null for an entry becomes the average over
   every minute of the same market and hour, weighted by each minute's
-  trade count — no tape reads, and about a third less noise than three
-  drawn trades [arithmetic; to be shown on R8's stored entries first].
+  trade count — no tape reads, and about a quarter less variance than with
+  three drawn trades, so intervals about an eighth narrower [arithmetic; to
+  be shown on R8's stored entries first] [Self-review S1: was "about a
+  third less noise than three drawn trades" — three draws add a third to
+  the variance; taking them away removes a quarter of it].
 - **The kit:** fills into entries, the panel reader, the exact null, the
   cost settings, the clustered resampling — written and mutation-tested
   once, fingerprinted, imported by every study. R8's review found the same
@@ -254,8 +257,10 @@ null. One question: does a trader's result in odd weeks tell anything about
 the same trader's result in even weeks — at the top **and at the bottom**?
 Run apart for the slow systematic accounts the label now sets aside (a few
 decisions a day, holds of hours: a rule repeats itself). **Why first:** it
-opens or closes the whole "which trader" branch — studies 6 and 11 are
-pointless if traders do not differ — and a clean "no" is worth as much as a
+opens or closes the whole "which trader" branch — studies 6 and 24 are
+pointless if traders do not differ [Self-review S2: was "studies 6 and
+11"; study 11 pools a cohort and does not need traders to differ] — and a
+clean "no" is worth as much as a
 "yes". Published work leaves it open: a few day traders are persistently
 good and the worst persistently bad, before fees too (Barber, Lee, Liu,
 Odean 2014 [read]); on a public-wallet exchange a wallet's informativeness
@@ -314,9 +319,15 @@ day after.
 infer — whether these entries foresee the price for a few seconds (then the
 information is real and gone before a person can act), whether they come
 after a run, whether a wave of copiers follows. One caution: the mark
-smooths the local book over 150 seconds and is held within 50 bps of the
-index [record: DS Q5], so it shows news about the outside price, not the
-push of the trader's own order. *Prior that a 60-second effect shows:* 35%.
+follows a sudden local move only through a 150-second average of the
+book's premium, and is held within 50 bps of the index [record: DS Q5]. So
+the path shows news about the outside price well, and the push of the
+trader's own order — or of copiers — poorly; study 12 looks for copiers in
+the fills themselves [Self-review S3: was "the mark smooths the local book
+over 150 seconds … so it shows news about the outside price, not the push
+of the trader's own order" — the mark is the median of three parts, only
+one of them smoothed; and the copiers' wave, promised just above, is a
+local push too]. *Prior that a 60-second effect shows:* 35%.
 
 **6 — A race between ways of ranking traders.** *H3, H5; I-07, I-35; H1's
 B2 as its baseline.* **Only if study 1 finds a difference.**
@@ -541,7 +552,8 @@ untested).
 market's direction in: the matched null moved it from −13.6 to −6.0, and
 R8's own synthetic test passed condition (ii) in 19% of runs on direction
 alone. Make the matched null primary. (b) Three drawn trades add about a
-third to the noise and were most of the capture's calls. (c) A dollar per
+third to the variance [Self-review S1: was "to the noise"] and were most of
+the capture's calls. (c) A dollar per
 entry in bps lets the most volatile markets carry the noise and throws away
 the trader's own sizing; under a loss limit a follower sizes by risk, so
 print results per unit of risk as well.
@@ -1331,3 +1343,21 @@ In the supervisor folder, `workers/IDEAS-REVIEW/`: `brief.md`;
 blind stage, closed 2026-11-10 00:04Z, unchanged since). No script, no
 data, no output file: this review computed nothing. Every [arithmetic]
 figure can be re-derived from the numbers named beside it.
+
+## Corrections by my own self-review
+
+IDEAS-REVIEW, 2026-11-10 00:30Z (`date -u`), right after the first commit
+(`9323c43`); each is marked in place `[Self-review Sn: was "…"]`. Nothing
+in the ranking, the draft entries or the questions changed.
+
+- **S1** — foundation B and point 2.5: exact nulls take away about a quarter
+  of the variance (intervals about an eighth narrower), not "a third less
+  noise"; three drawn trades *add* a third to the variance.
+- **S2** — study 1: the studies that need traders to differ are 6 and 24,
+  not "6 and 11".
+- **S3** — study 5: the mark is the median of three parts, one of them a
+  150-second average; it shows a sudden local push poorly, the copiers'
+  wave included — so that part of the question belongs to study 12.
+
+Not re-checked by anyone but me: every [arithmetic] figure, the proposed
+pass lines, and Appendix B's map. A fresh Final review should start there.
