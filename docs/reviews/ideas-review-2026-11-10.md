@@ -167,8 +167,8 @@ as such.
 
 ### The three foundations (first, and not ranked against the studies)
 
-**A — The collector.** *Sources: C1; I-01, I-17, I-22, I-40, I-41; DS §10
-and questions 1, 4.*
+**A — The collector.** *Sources: C1; I-01, I-17, I-40, I-41; DS §10 and
+questions 1, 4.*
 - **Keep, in this order of "cannot be read back":**
   1. Best bid and ask each second, a top-20 book every 10 s, and every
      trade, for all 90 markets — the public WebSocket (`bbo`, `book`,
@@ -185,13 +185,17 @@ and questions 1, 4.*
      statistics, competitions and the competition table with
      `include_unqualified=true` daily, settled funding daily, fees weekly —
      about 2.9 tokens a minute [record: DS §10].
-  5. For the forward studies 16 and 17 only: an hourly portfolio read of the
-     labelled market makers and the largest accounts (30–100 accounts,
-     2.5–8 tokens a minute).
+
+  [Final review F14: an item 5 is withdrawn — "for the forward studies 16
+  and 17 only: an hourly portfolio read of the labelled market makers and
+  the largest accounts (30–100 accounts, 2.5–8 tokens a minute)". A
+  maker's positions can be rebuilt later from its fills, so that read
+  records nothing that would otherwise be lost; it is added if and when
+  study 17 is approved.]
 
   All together about 6 tokens a minute of the 250 — the ticker 2, the
   boards 0.6, DOCS-SWEEP's reads 2.9 [arithmetic from the published
-  weights] — and 8 to 14 with item 5. Disk about 0.2 GB a day compressed:
+  weights]. Disk about 0.2 GB a day compressed:
   a guess to be measured on day one — 7.8 million best-price rows a day at
   60–80 bytes, 780,000 book snapshots at about 1 KB, tickers and trades a
   few MB, all shrunk eight- to ten-fold; the row sizes and the ratio are
@@ -775,8 +779,8 @@ twice.
 | When | What | Calls |
 |---|---|---|
 | **Now** (11-10) | The owner's word on where results would be used, the collector's streams, the two exams' lines and what a "no" from study 1 means (questions 1–4). The lists frozen with hashes. | none |
-| **11-10 → 11-11**, all in parallel | **(a)** The research kit (one build subagent). **(b)** The panel pull, to 2026-11-07T00:00Z. **(c)** The collector: a short plan, the owner's yes, a small build, a Windows task — the streams, the ticker and the boards first; DOCS-SWEEP's reads next. **(d)** On data already held, no calls and no panel: the first measurements (Appendix A); study 3's map (R8's hourly marks and the two price tables); study 5 (R8's one-second windows); study 8's FIND (R8's funding rows); a first pass of study 2 for #47 and the 50, as far as R8's one-second windows reach; study 12 (fills only). | (b) ≤ 246,000 tokens, ≤ 16.4 h; the collector 6–15 a minute, standing |
-| **11-12 → 11-16**, in parallel, on the panel | Studies 1, 2 (all accounts), 3 (slow against fast), 4, 7, 9; study 11 if hands are free. Each with a reviewer reading its frozen rules before its look. | none (optional: equity series 15,000; one-second marks for #47 ≤ 10,000) |
+| **11-10 → 11-11**, all in parallel | **(a)** The research kit (one build subagent). **(b)** The panel pull, to 2026-11-07T00:00Z. **(c)** The collector: a short plan, the owner's yes, a small build, a Windows task — the streams, the ticker and the boards first; DOCS-SWEEP's reads next. **(d)** On data already held, no calls and no panel: the first measurements (Appendix A); study 3's map (R8's hourly marks and the two price tables); study 5 (R8's one-second windows); study 8's FIND (R8's funding rows); a first pass of study 2 for #47 and the 50, as far as R8's one-second windows reach; study 12 (fills only). | (b) ≤ 246,000 tokens, ≤ 16.4 h; the collector about 6 a minute, standing |
+| **11-12 → 11-16**, in parallel, on the panel | Studies 1, 2 (all accounts), 3 (slow against fast), 4, 7, 9; study 11 if hands are free. Each with a reviewer reading its frozen rules before its look. | none |
 | **11-16 14:30Z** | Competition 1 ends. Record the next one's dates and boosts when it is announced. | — |
 | **11-17 → 11-20** | FIND reports and their Final reviews. Study 6 only if study 1 passed. **By 11-20 every CONFIRM entry is frozen** — list, thresholds, statistic, hash — before anyone on a study reads a fill after 2026-11-07. | none |
 | **after 11-21** | D1, as ruled. | its own pull |
@@ -1233,8 +1237,10 @@ commit `09acdf8`.]
   design, the list is the thing being explained; an account's fee tier →
   never assumed, only the `fee` amounts are used (point 2.21); ANT, with
   its fee override, left out.
-- **Cost.** No calls. Optional: one-second marks for #47's fills outside
-  R8's windows — at most 10,000 tokens (40 minutes).
+- **Cost.** No calls. [Final review F14: an optional pull is withdrawn —
+  "one-second marks for #47's fills outside R8's windows, at most 10,000
+  tokens". Where R8's capture holds both, the one-minute figure beside the
+  one-second one sizes the error; that is enough.]
 - **Fixed in the entry before the look.** The three lists with their
   hashes; the age buckets; the base-tier rates; the definition of
   followable profit.
@@ -1288,8 +1294,9 @@ commit `09acdf8`.]
   written first. Also: a split that is really a market or an hour →
   compared within category and block; a split that "works" on random
   trades too → the placebo must show nothing; the competition → A.0-8.
-- **Cost.** No calls. Optional, for a "position ÷ equity" form of (4): the
-  equity series, 15,000 tokens (an hour).
+- **Cost.** No calls. [Final review F14: an optional pull is withdrawn —
+  "for a 'position ÷ equity' form of (4): the equity series, 15,000
+  tokens". That form is not among the eleven.]
 - **Fixed in the entry before the look.** The eleven, each with its
   threshold (these are proposals): (1) taken — at least half the opening
   notional as taker — or resting; (2) with or against the last hour's
@@ -1317,8 +1324,10 @@ commit `09acdf8`.]
   one-second marks from 300 s before each follow instant. A second look at
   a capture already used once — logged as exploring.
 - **CONFIRM data.** The 50's entries after 2026-11-07, from one-second
-  marks (about 14,000 tokens) or the collector's recorded prices; 3.3
-  weeks at the first exam, 6 at the final.
+  marks as in FIND (about 14,000 tokens), the collector's best prices
+  printed beside as the audit of the local push; 3.3 weeks at the first
+  exam, 6 at the final. [Final review F14: was "from one-second marks …
+  or the collector's recorded prices" — one way, not two.]
 - **Statistic.** The mean signed mark move from the fill's second to +60 s,
   entries minus random trades. Printed beside, deciding nothing: the path
   second by second from −180 s to +750 s; the +5 s to +60 s move (against a
@@ -1524,7 +1533,7 @@ commit `09acdf8`.]
   over 15 s outside logged maintenance; an hour of the recorded stream
   agrees with `/v1/info/bbo` snapshots taken in that hour; the daily board
   copy holds 16 × 1,000 rows with their snapshot stamps; the tables that
-  carry results cannot be opened from a study's folder. *Cost:* 6–15
+  carry results cannot be opened from a study's folder. *Cost:* about 6
   tokens a minute.
 - **B — the panel and the kit.** Done when: the panel's manifest is hashed
   and each market's minutes are counted against its first trade; the kit's
