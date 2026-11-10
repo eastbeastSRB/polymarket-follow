@@ -886,9 +886,15 @@ matters is that each is written into its entry before any outcome is seen.
    events by `(order_id, previous_size)`; events on one market and side
    within 60 s merged; the instant is the first fill (R8's A4; code-rules).
 2. **The follower's instant and price.** The fill plus R8's delay D (62–96 s
-   at the base reaction). In FIND, on the panel: the mark at the end of the
-   minute that holds the follow instant, with the session-pair cost table. A
-   cell that goes to CONFIRM is first re-priced from one-second marks.
+   at the base reaction). In FIND and in CONFIRM alike: the mark at the end
+   of the minute that holds the follow instant (the one-minute panel and
+   its extension), with the session-pair cost table — one convention, so
+   the two are measured alike. Only entry 5, which is about seconds, reads
+   one-second marks. [Final review F5: was "In FIND, on the panel … A cell
+   that goes to CONFIRM is first re-priced from one-second marks" — about
+   200,000 tokens for entry 1 alone (20,000 entries × 2 instants × 5), in
+   no budget, and of no use at an hour or more: the minute's error falls
+   on an entry and on its null alike.]
 3. **A result.** The signed mark return from the follow instant over the
    horizon h. "Gross" is before costs. "Net" is after the table's spread
    and depth, 4 bps a leg, and funding. Every net figure is printed under
@@ -1476,11 +1482,17 @@ commit `09acdf8`.]
   carry results cannot be opened from a study's folder. *Cost:* 6–15
   tokens a minute.
 - **B — the panel and the kit.** Done when: the panel's manifest is hashed
-  and each market's minutes are counted against its first trade; the kit
-  re-computes R8's primary cell from R8's capture to the published −16.60
-  and −13.58; the exact null gives R8's mean d within its noise on the
-  1,249 entries; the kit's mutants are killed. *Cost:* at most 246,000
-  tokens, 16.4 h; a day of one build subagent.
+  and each market's minutes are counted against its first trade; the kit's
+  entry builder returns R8's 1,272 entries exactly (the same accounts,
+  instants and sides); priced by the minute, its mean net result on R8's
+  cell is reported beside R8's −16.60 — the distance is the measure of what
+  a minute costs, to be stated, not tuned away; with the exact null its
+  mean d falls inside R8's interval around −13.58; the kit's mutants are
+  killed. *Cost:* at most 246,000 tokens, 16.4 h; a day of one build
+  subagent. [Final review F5: was "the kit re-computes R8's primary cell
+  from R8's capture to the published −16.60 and −13.58" — exact agreement
+  cannot be had: R8 priced by the second and drew its nulls; the kit prices
+  by the minute and takes the exact null.]
 - **C — the rules.** Done when the owner has ruled on question 3 and A.0 is
   in the register's header.
 
