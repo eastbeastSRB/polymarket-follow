@@ -5,7 +5,7 @@ DOCS-SWEEP (Sonnet 5.5, xhigh), plan item P0-3, written 2026-11-09 23:33Z – 20
 `E:\coding\Claude\supervisor\polymarket-follow\workers\DOCS-SWEEP\` (paths below are relative to it): `docs/pages/`
 (144 docs pages as downloaded), `docs/specs/` (current index, specs, changelog), `docs/condensed/` (the same pages
 without code samples, which is what I read), `raw/` (every API reply), `scripts/`, `out/`, `notes.md`, `progress.md`.
-Every figure names its output file. No question is open for the supervisor; the owner's questions are in §7.
+Each figure names its saved reply or script output, or the page and its fetch time in `out/fetch-log.jsonl` [Final review F9]. No question is open for the supervisor; the owner's questions are in §7.
 
 **Deviations from the brief, listed in place.** (1) The brief lets me open an explorer page for "one address from
 the stored pool"; no pool was among my inputs, so I took **one public address from the live day leaderboard**
@@ -57,7 +57,7 @@ are unknown.
 ### Q1. The documentation's map
 
 All pages were fetched 2026-11-09 23:34–23:36Z with `scripts/dl-pages.mjs` (URL, time, bytes and sha256 of each:
-`out/fetch-log.jsonl`; 140 pages, all HTTP 200) and four more at ~23:45Z (`out/dl-extra.txt`). **The supervisor can
+`out/fetch-log.jsonl`; 140 pages, all HTTP 200) and four more at 23:46:31Z (`out/dl-extra.txt`) [Final review F9]. **The supervisor can
 diff my pages against R1's by hash** (R1's copies are outside my folder, so I could not). "Read" = I read the prose
 and tables; code samples (SDK snippets, signing examples) were stripped by `docs/condensed/` and are not read line by
 line.
@@ -93,10 +93,10 @@ rate-limits page). Chinese pages (223) exist and were not read.
 | `perps/referral-program` | 20% of referred fees, weekly, invite limits | yes |
 | `perps/trading-competitions` | bi-weekly $50K, score = PnL × √boosted volume | yes |
 | `perps/errors` | error identifiers | headings and the retirement section |
-| `perps/faq` | 40 questions | yes |
+| `perps/faq` | 33 questions [Final review F9] | yes |
 | `perps/rate-limits` (= API-reference copy) | IP 1,000 tokens/min, actions, WebSocket | yes (unchanged) |
 | `changelog/perps` | 2026-06-08 → 2026-11-05, 70,802 bytes | **yes, whole** |
-| neighbours: `concepts/pusd`, `resources/contracts`, `resources/blockchain-data`, `trading/bridge/*` (5), `trading/wallets-auth`, `session-keys`, `wallet-activity`, `getting-started/sdks-apis` | collateral token, contract addresses, bridge chains, wallet types, third-party chain data | pUSD, contracts, blockchain-data, bridge assets yes; wallets-auth searched for address rules; session-keys, wallet-activity saved, not read |
+| neighbours: `concepts/pusd`, `resources/contracts`, `resources/blockchain-data`, `trading/bridge/*` (5), `trading/wallets-auth`, `session-keys`, `wallet-activity`, `getting-started/sdks-apis` | collateral token, contract addresses, bridge chains, wallet types, third-party chain data | pUSD, blockchain-data, bridge assets: yes; contracts: searched (Perps, pUSD, wallet factories), not read in full; wallets-auth (fetched 23:46:31Z): searched for address rules; session-keys, wallet-activity saved, not read |
 
 **The 103 API-reference pages.** `scripts/check-pages.cjs` (`out/check-pages.txt`) maps every page to a spec route or
 channel: 72 HTTP pages → 72 of the 75 spec operations; 28 WebSocket pages → 28 of 29 channels; 3 text pages
@@ -159,7 +159,7 @@ name: 0 hits for each item marked "not in spec"; "tested" = a saved reply in `ra
   account-positions across 90 markets; ETH 946/214, BTC 816/323, SP500 445/239 (`out/an-api1.txt`). Counts accounts,
   not size. The `instrument_id` filter works (tested); the `symbol` filter is changelog text, untested. `pricing_status` (changelog 2026-10-20) was present on **none** of 90 rows.
 - **Ticker `funding_rate` is the rolling implied hourly rate**, not the last settled one: CASHCAT −0.0001883 →
-  −0.00018872 and XRP −0.00002178 → −0.00002157 in 90 s (`out/api3-t0.txt`). 55 of 90 sit exactly on the floor
+  −0.00018872 and XRP −0.00002178 → −0.00002157 in ~95 s, 23:41:12Z to 23:42:47Z (`out/api3-t0.txt`) [Final review F9]. 55 of 90 sit exactly on the floor
   (crypto 0.0000125 = 0.0001/8, others 0.00000625), 35 are off it (`out/an-econ.txt`) [Final review F7]. This is the "implied rate published continuously"
   of the FAQ; the FAQ's "5-second premium sample" is in **no** field of either spec.
 - **Instruments:** `fee_override` (only ANT-USD, id 97, since 2026-10-29: taker 2.0 bp → 1.0 bp, maker +0.625 bp →
@@ -287,7 +287,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 
 ### Q5. Markets
 
-- **Sessions** (page read 23:3xZ): Regular, Overnight, Weekend, Disrupted, Halted. They change **only** which external feed
+- **Sessions** (page fetched 23:34:49Z): Regular, Overnight, Weekend, Disrupted, Halted. They change **only** which external feed
   set builds the index and the C3 mark candidate (if a category has no feed set, the overnight set is used); funding,
   margin, leverage tiers, matching and liquidation triggers run unchanged. No hours or zones are given, and **no
   session field is public** (`pricing_status` absent on 90 tickers). The changelog (2026-09-21) says the page was changed
@@ -520,7 +520,7 @@ Each fact: date, source. (UTC; reads from my IP, user agent `polymarket-follow-r
   −0.00019287 (23:59:20Z), −0.00019312 (23:59:50Z); settled −0.00019317 at 00:00:00.093Z. XRP-USD (id 33) −0.00002069,
   −0.0000206; settled −0.00002056 at 00:00:00.090Z. `/v1/info/funding` rows are hourly, stamped 50–95 ms after the hour;
   with `start_timestamp` the reply held 3 rows and `more: false`.
-- **Docs, 23:3x–23:4xZ:** fee tiers by trailing 30-day volume; MM = notional × 0.5 / maxLeverage; backstop below 2/3 of MM; ADL index = profit ratio × notional / equity; funding formula and 4% hourly cap; mark = median of three, 200 ms; Pyth/Chainlink Data Streams/Hyperliquid; liquidity rewards $75,000/day, 1% of 7-day maker volume, 12:00–12:00 UTC; OI rewards 6% APR on gross OI, entity ≥ $5M; referral 20%; delisting = close-only ≥ 30 min then 30-minute index TWAP; 20 ms taker delay; TP/SL watch the mark; fills' `liquidation` is true for maker and taker legs since 2026-08-11, `adl` on both legs since 2026-08-10; backstop `liquidation_details`.
+- **Docs, fetched 2026-11-09 23:34–23:36Z (read 23:36–23:48Z):** fee tiers by trailing 30-day volume; MM = notional × 0.5 / maxLeverage; backstop below 2/3 of MM; ADL index = profit ratio × notional / equity; funding formula and 4% hourly cap; mark = median of three, 200 ms; Pyth/Chainlink Data Streams/Hyperliquid; liquidity rewards $75,000/day, 1% of 7-day maker volume, 12:00–12:00 UTC; OI rewards 6% APR on gross OI, entity ≥ $5M; referral 20%; delisting = close-only ≥ 30 min then 30-minute index TWAP; 20 ms taker delay; TP/SL watch the mark; fills' `liquidation` is true for maker and taker legs since 2026-08-11, `adl` on both legs since 2026-08-10; backstop `liquidation_details`.
 - **Explorer, 23:43Z (Polygonscan, via a summarising fetch tool; page saved 00:05:59Z in `docs/explorer/`, which confirms the implementation address, the operators and the method names, and shows 81,675,089.32 pUSD and 194,766 transactions at that time) [Final review F8]:** the exchange contract is an ERC-1967 proxy, implementation `0xF92018EeCaF1585De6B6d4989F51482C3E90cCE5`, pUSD balance 81,671,523.51, 194,750 transactions, latest 25 are "Process Withdraw…" and "Commit State Root"; the day-board #1 address page (summary only, **not saved, unverified**) showed 15,759.49 pUSD in its own wallet and "2 token transfers" not rendered.
 - **Spec parameters (2026-11-09, inputs identical to 2026-11-06):** `klines` and `mark-history` require `start_timestamp`
   (and `instrument_id`, `interval`); `funding` has none required; `exchange-stats` requires both timestamps and can answer
