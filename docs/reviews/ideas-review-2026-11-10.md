@@ -35,7 +35,8 @@ shell heredoc failed to parse and wrote nothing; the text then went through
 the Write tool. (3) One number in my stage-1 file was too optimistic: "the
 gate test can see a spread of 8–10 bps between traders" ignored that one
 trader's entries bunch on a few days; the honest rough figure is 15–20 bps
-(Appendix A, entry 1). (4) In stage 1 I saw one commit title that names "the
+(Appendix A, entry 1) [Final review F2: 17–28 bps, with its inputs in
+A.2]. (4) In stage 1 I saw one commit title that names "the
 stop-order and route facts"; disclosed in the stage-1 file and not used.
 (5) The harness refused one scratch file with the note that a subagent
 returns its findings as text; the brief asks for this report as a committed
@@ -978,9 +979,15 @@ matters is that each is written into its entry before any outcome is seen.
       0.011? No — stop. One pattern is confirmed.
 12. **After a pass.** The account-level check (study 14), then a paper
     profile with its rules frozen.
-13. **The smallest visible effect.** 2.8 standard errors — caught four times
-    in five at the usual line; about 3.5 for the first discovery in a batch
-    of thirteen [arithmetic].
+13. **The smallest visible effect** is the standard error times k: the
+    effect a test catches four times in five at the line it will really
+    face. k = 2.85 for FIND at p below 0.05. For the final exam, by batch
+    size: 2.9 (m = 1), 3.4 (3), 3.6 (5), 3.8 (8), 3.9 (12) — the line of
+    A.0-11 plus 0.85 [arithmetic; memory: the t table]. The first exam is
+    not meant to pass anything but the overwhelming (k near 5). Table A.2
+    gives each entry's inputs. [Final review F2: was "2.8 standard errors
+    … about 3.5 for the first discovery in a batch of thirteen" — the
+    figure for one test read on the normal table, used for every entry.]
 14. **Around the look.** Before it: a fresh reviewer reads the frozen rules.
     After a finding: the placebos (entry times moved by a day; the same test
     on random trades) and leave-one-out (each trader, each market, each
@@ -1013,6 +1020,45 @@ marks and the two price tables). No calls, no outcomes.
    and 72 h; two half-periods printed. **Rule fixed now:** a cell whose
    break-even share is above 55% is "closed" — it may be reported, but no
    entry takes it as its primary cell.
+
+### A.2 — What each test can see: the inputs
+
+[Final review F2: new. The first version gave one figure per entry, at 2.8
+standard errors, without its inputs; several rested on guessed counts and
+spreads but were tagged [arithmetic].] Smallest visible effect = standard
+error × k (A.0-13); k for the final exam is 3.6 to 3.9 (a batch of 5 to
+12). **[record]** = a number in our docs; **[guess]** = my assumption,
+measured by nobody. **Every row marked "replace" must be re-computed from
+FIND's own counts and spread before its entry is approved.**
+
+| Entry, stage | What is counted | Spread, clustering | Standard error | k | Smallest visible effect | Replace? |
+|---|---|---|---|---|---|---|
+| 1, FIND | 200 traders with 10 entries in each half [guess → measurement 2]; 20 entries a half [guess] | 150–250 bps an entry [guess] | a rank correlation's: 1 ÷ √199 = 0.07 | 2.85 | a correlation of 0.20 → a spread between traders of 17–28 bps | replace |
+| 1, final exam | 60 traders a fifth [guess: 300 with 20 entries]; 4.43 entries a trader-week [record: R8, 1,249 ÷ 47 ÷ 6]; six weeks → 1,595 entries a fifth | R8's d: a standard error of 8.9 bps on 1,249 entries [record: its interval, half-width 17.4 ÷ 1.96] | each fifth 7.9 bps; the difference 11.1 | 3.6–3.9 | 40–43 bps | replace |
+| 2, final exam | 50 to 150 accounts [record: the 50; guess: the profit board's active hundred] | — | a rank correlation's: 1 ÷ √(n − 3) = 0.15 to 0.08 | 3.6–3.9 | a correlation of 0.5 (50 accounts) to 0.3 (150) | the count is known at the freeze |
+| 3, FIND | entries of slow traders: not counted [measurement 1] | 250–400 bps at 24 h [guess] | 8–12 bps [guess: nothing to derive it from before the count] | 2.85 | 23–34 bps | replace, entirely |
+| 3, final exam | 42 days against FIND's 65 | the same | 10–15 bps | 3.6–3.9 | 36–58 bps | replace, entirely |
+| 4, FIND | 20,000 entries [guess → measurement 1], split evenly | 150–250 bps an entry [guess]; clustering doubles to triples the standard error [guess] | the difference: 4–11 bps | 3.8 (Holm over eleven) | 15–42 bps | replace |
+| 4, final exam | 12,900 entries (42 days of 65) | the same | 5–13 bps | 3.6–3.9 | 18–51 bps | replace |
+| 5, FIND | 1,249 entries [record: R8's priced cell] | a 60-second move of 12–20 bps [guess]; × 1.15 for three drawn trades; clustering × 2 [guess] | 0.8–1.3 bps | 2.85 | 2.3–3.7 bps | replace the spread |
+| 5, final exam | about 1,250 entries of the 50 in six weeks [record: R8's rate] | the same, with the exact null | 0.7–1.1 bps | 3.6–3.9 | 2.5–4.3 bps | replace the spread |
+| 6, FIND | 60 traders in the top fifth, 240 in the rest [guess]; two measure windows of two weeks; 4.43 entries a trader-week [record] → 1,063 and 4,253 entries | R8's standard error, scaled by entries [record] | 9.7 and 4.8 bps; the difference 10.8 | 3.6 (the best of six) | 39 bps | replace |
+| 6, final exam | 1,595 and 6,380 entries | the same | 7.9 and 3.9 bps; the difference 8.8 | 3.6–3.9 | 32–34 bps | replace |
+| 7, FIND | runs: not counted [measurement 3]; 2,000 assumed [guess] | a half-hour move of 40–80 bps [guess]; a few dozen accounts carry the runs: × 3 to 5 [guess] | 2.7–9 bps | 2.85 | 8–26 bps | replace, entirely |
+| 7, final exam | cannot be derived before measurement 3 | — | — | 3.6–3.9 | — | replace, entirely |
+| 8, FIND | market-days above five times the floor: not counted [measurement 5]; 300 assumed — 7 a day over 42 days [guess] | a day's move of 500 bps on such markets [guess]; they move together within a day (correlation 0.4 assumed): × 1.8 [guess] | 53 bps | 2.85 | about 150 bps | replace, entirely |
+| 9, FIND | events: not counted [measurement 4]; 500 assumed [guess] | 120–200 bps at 6 h [guess]; days × 1.3 to 1.5 [guess] | 7–13 bps | 2.85 | 20–37 bps | replace, entirely |
+| 9, final exam | 323 events (42 days of 65) | the same | 9–17 bps | 3.6–3.9 | 32–66 bps | replace, entirely |
+| 10, final exam | the 50: 387 entries in six weeks [record: R8's cell]; all directional accounts: 6.4 times as many [guess: 300 traders against 47] | R8's cell: a standard error of 14.1 bps on 387 entries [record: its interval, half-width 27.6 ÷ 1.96] | 14.1 bps; 5.6 bps | 3.6–3.9 | the 50: 51–55 bps; all accounts: 20–22 bps | replace the second |
+
+**Read together.** At the final exam most entries can see an effect of
+about 30 to 50 bps; only entries 5, 7 and 10 can see less. An edge of 12–15
+bps — enough to pay a taker's costs and leave a little — will most likely
+not be confirmed in six weeks: it fails this batch, and can only be
+registered again for a later one, on new weeks (A.0-11). And entry 8 can
+see only about 150 bps where a strong funding day pays 120: by point 2.8 it
+should be registered only if measurement 5 brings its figure under about 60
+bps.
 
 ### The ten entries, in one format
 
@@ -1053,11 +1099,11 @@ commit `09acdf8`.]
   more months (question 4).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 2 in the
   batch — one per population that passed FIND.
-- **Smallest visible effect.** FIND: a split-half correlation near 0.2 with
-  200 such traders — a between-trader spread of roughly 15–20 bps at 20
-  entries a half [arithmetic; my stage-1 "8–10" was too optimistic].
-  CONFIRM: top minus bottom of roughly 40 bps at the first exam, 30 at the
-  final [arithmetic, from R8's standard error scaled by entries].
+- **Smallest visible effect.** FIND: a split-half correlation of 0.2 — a
+  spread between traders of roughly 17–28 bps. Final exam: top minus bottom
+  of roughly 40–43 bps. Inputs: A.2. [Final review F2: was "roughly 15–20
+  bps … roughly 40 bps at the first exam, 30 at the final"; my stage-1
+  "8–10" was further off still.]
 - **Main way it could fool us → guard.** A lucky cluster of days looks like
   a trader's skill → trader-days as votes, and odd against even weeks.
   Also: accounts chosen by outcome → the primary population comes from the
@@ -1098,8 +1144,9 @@ commit `09acdf8`.]
   accounts) below one half.
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** The shares are descriptions. For the
-  persistence check with 50–150 accounts: a rank correlation of 0.25–0.4.
+- **Smallest visible effect.** The shares are descriptions. Final exam, for
+  the persistence check: a rank correlation of 0.5 with 50 accounts, 0.3
+  with 150. Inputs: A.2. [Final review F2: was "0.25–0.4".]
 - **Main way it could fool us → guard.** A one-minute mark is not the price
   at the fill's second, so "execution" is noisy → one-second marks for #47
   and the 50 where held, the one-minute figure beside them to size the
@@ -1127,9 +1174,10 @@ commit `09acdf8`.]
 - **Pass line, FIND.** Above zero at a two-sided p below 0.05 (A.0-6).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** FIND roughly 25–35 bps on a day's move of
-  250–400 bps per entry [arithmetic; fixed by first measurement 1]; first
-  exam 40–55; final 30–40.
+- **Smallest visible effect.** FIND roughly 23–34 bps; final exam 36–58 —
+  both guesses until first measurement 1. Inputs: A.2. [Final review F2:
+  was "FIND roughly 25–35 bps … first exam 40–55; final 30–40", tagged
+  arithmetic.]
 - **Main way it could fool us → guard.** Long-biased traders in a trending
   market → the matched null. Also: overlapping one- to three-day windows →
   trader-day votes and the day test; funding on long holds → net figures
@@ -1153,9 +1201,10 @@ commit `09acdf8`.]
   over the eleven (A.0-6).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as up to 2 in
   the batch.
-- **Smallest visible effect.** FIND a difference of roughly 15–20 bps for
-  an even split after the correction; first exam 20–30; final 15–22
-  [arithmetic; fixed by first measurement 1]. Uneven splits see less.
+- **Smallest visible effect.** FIND a difference of roughly 15–42 bps for
+  an even split after the correction; final exam 18–51. Uneven splits see
+  less. Inputs: A.2. [Final review F2: was "15–20 bps … first exam 20–30;
+  final 15–22".]
 - **Main way it could fool us → guard.** Thresholds tuned to the result →
   written first. Also: a split that is really a market or an hour →
   compared within category and block; a split that "works" on random
@@ -1197,8 +1246,8 @@ commit `09acdf8`.]
 - **Pass line, FIND.** Above zero at a two-sided p below 0.05 (A.0-6).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** About 2–3 bps [arithmetic: a minute's move
-  is 5–30 bps by market; 1,272 entries].
+- **Smallest visible effect.** FIND about 2.3–3.7 bps; final exam 2.5–4.3.
+  Inputs: A.2. [Final review F2: was "About 2–3 bps".]
 - **Main way it could fool us → guard.** The mark trails a local push
   (point 2.20) → the result is read as news about the outside price, and
   the report says so. Also: the collector's best prices show the local
@@ -1223,8 +1272,9 @@ commit `09acdf8`.]
   best of six, so that choosing among six is paid for; p below 0.05.
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11), for the one winning
   rule; counts as 1 in the batch.
-- **Smallest visible effect.** FIND 30–40 bps; first exam about 35; final
-  about 25 [arithmetic].
+- **Smallest visible effect.** FIND about 39 bps; final exam 32–34. Inputs:
+  A.2. [Final review F2: was "FIND 30–40 bps; first exam about 35; final
+  about 25".]
 - **Main way it could fool us → guard.** A rule made of the thing it
   predicts (rule 4) → reported as entry 1's persistence again, not as a new
   finding. Also: lower fees inside profit → base-tier re-pricing; the
@@ -1264,9 +1314,10 @@ commit `09acdf8`.]
   and by day (A.0-6).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** Fixed by first measurement 3. With 2,000
-  runs and a half-hour move of 40–80 bps, roughly 11–17 bps when a few
-  dozen accounts carry the runs [arithmetic] — about the size of the cost.
+- **Smallest visible effect.** FIND roughly 8–26 bps if there are 2,000
+  runs — a guess until first measurement 3; the final exam's figure cannot
+  be derived before that count. Inputs: A.2. [Final review F2: was "roughly
+  11–17 bps … [arithmetic]".]
 - **Main way it could fool us → guard.** The follower's own order and
   faster machines are not in past data → a doubled-cost run, and the
   recorded book at CONFIRM. Also: runs farmed for a competition's volume →
@@ -1290,14 +1341,19 @@ commit `09acdf8`.]
 - **Statistic.** The mean of [the receiving side's signed 24-hour mark
   return + funding received − a taker's round trip]. Printed beside,
   deciding nothing: the same without the five markets that have the most
-  such days.
+  such days; and the same against that day's average for the same side
+  over all priced markets, which takes out the market's own move [Final
+  review F2: added — it should see about half as much, a guess].
 - **Pass line, FIND.** Above zero at a two-sided p below 0.05 by day
   (A.0-6).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** With a few hundred such market-days over 42
-  days, roughly 40–70 bps [arithmetic; fixed by first measurement 5].
-  Effects here can be that large: 5 bps an hour is 120 a day.
+- **Smallest visible effect.** FIND about 150 bps, where a strong funding
+  day pays 120. By point 2.8 this entry is registered only if first
+  measurement 5 brings the figure under about 60 bps; otherwise it waits
+  for months of the collector's data. Inputs: A.2. [Final review F2: was
+  "roughly 40–70 bps" — that figure forgot that such markets move together
+  within a day.]
 - **Main way it could fool us → guard.** Extreme funding sits on markets
   that cannot be priced → A.0-7 and the "without five" print. Also:
   funding *is* the premium, and the premium collapsing is the receiving
@@ -1326,8 +1382,9 @@ commit `09acdf8`.]
   (A.0-6).
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** Fixed by first measurement 4; with 500
-  events roughly 30 bps [arithmetic].
+- **Smallest visible effect.** FIND roughly 20–37 bps with 500 events;
+  final exam 32–66 — guesses until first measurement 4. Inputs: A.2.
+  [Final review F2: was "with 500 events roughly 30 bps [arithmetic]".]
 - **Main way it could fool us → guard.** Hidden entities → "no visible
   link" in every sentence, never "independent". Also: events bunch on news
   days → the day test and the hour-before print; the count and the window
@@ -1347,9 +1404,12 @@ commit `09acdf8`.]
 - **Unit.** The entry.
 - **FIND data.** Done — R8's secondary: d −38.35 bps [−66.23, −11.05], 387
   entries of 37 traders [record: R8 §1.2] — one of about 25 cuts.
-- **CONFIRM data.** The 50 (the same list; primary) and every account on
-  the frozen directional list (secondary); entries after 2026-11-07 at
-  each trader's class horizon; 3.3 weeks at the first exam, 6 at the final.
+- **CONFIRM data.** Every account on the frozen directional list (the test);
+  the 50, the list of R8's find, printed beside; entries after 2026-11-07
+  at each trader's class horizon; 3.3 weeks at the first exam, 6 at the
+  final. [Final review F2: was "The 50 (… primary) and every account on
+  the frozen directional list (secondary)" — the 50 alone cannot see half
+  of FIND's effect.]
 - **Statistic.** The cell's mean d against the exact null with a random
   direction, as R8's was — shown first, on R8's own cell, to agree with
   R8's drawn trades. Printed beside, deciding nothing: the UTC 00:00–04:00
@@ -1359,10 +1419,11 @@ commit `09acdf8`.]
   zero.
 - **Pass line, CONFIRM.** The two-exam rule (A.0-11); counts as 1 in the
   batch.
-- **Smallest visible effect.** The 50: about 50 bps at the first exam, 40
-  at the final. All directional accounts: about 20, then 15 [arithmetic
-  from R8's cell — a standard error of 14 bps on 387 entries]. FIND's −38
-  was picked from 25 cuts and is likely too large: plan for half of it.
+- **Smallest visible effect.** Final exam: all directional accounts 20–22
+  bps; the 50 alone 51–55. FIND's −38 was picked from 25 cuts and is likely
+  too large: plan for half of it — which only the larger list can see.
+  Inputs: A.2. [Final review F2: was "The 50: about 50 bps at the first
+  exam, 40 at the final. All directional accounts: about 20, then 15".]
 - **Main way it could fool us → guard.** The boosted stocks trade in the US
   session, so competition churn lands in this cell → printed without
   boosted markets and without competition days. Also: the US open moved
