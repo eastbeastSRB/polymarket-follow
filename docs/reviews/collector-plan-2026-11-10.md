@@ -61,11 +61,10 @@ unit of Windows' free-space figures).
    first trade whenever a study needs them.
 4. **Small reads:** the ticker each minute (open interest, funding rate, how
    many accounts are long and short), the exchange's maintenance flag each
-   minute, the market list every 10 minutes, splits, fees and exchange
-   statistics daily.
-5. **Two audits that prove the record honest:** every 10 minutes the
-   recorded best prices against the API's own; every hour the recorded
-   trades against the API's list.
+   minute, the market list every 10 minutes, splits and fees daily.
+5. **One audit that proves the record honest:** every 10 minutes the
+   recorded best prices against the API's own. [Final review F3: the hourly
+   trade audit and the daily exchange statistics are cut — §1.8, "The cut".]
 
 **What it costs.** About **5 tokens a minute** on average (2% of the 250);
 never more than 50 in a minute — only during the 18-minute board read
@@ -87,8 +86,8 @@ Older stream files have one copy, on F: (question 5).
 
 **How it runs.** A Windows task starts it **at sign-in**, hidden, and restarts
 it after a crash; a second small task checks every 5 minutes that it is
-alive, restarts it if it hangs and tells you with a Windows notification. It
-never needs a Claude session. A silent connection is caught within 15
+alive and restarts it if it hangs, writing down each restart. It never needs
+a Claude session. A silent connection is caught within 15
 seconds and reopened; every gap is written down. In polymarket-lab's nightly
 window (02:35–03:50 UTC) it pauses its REST reads; the streams keep running.
 
@@ -193,16 +192,21 @@ accounting where none is published):
 | `tickers` (all 90) | every 60 s | 2 | 2.0 | the raw reply: rolling funding rate, open interest, index, mark, last, mid, `long_count`, `short_count` |
 | `exchange` | every 60 s | 2 | 2.0 | the raw reply; each change of `cancel_only` or `engine_version` in the rule book, with the reply's `date` and `age` (CloudFront served it 213 s and 364 s old) |
 | `instruments` | every 10 min | 2 | 0.2 | the raw reply; each change in the rule book; it drives the subscriptions; a market that leaves the list is read once by id for its settlement |
-| `time` | every 10 min | 1 | 0.1 | the clock offset |
 | `bbo` (all 90) — **the price audit** | every 10 min | 2 | 0.2 | each market's bid and ask against the recorded book within 200 ms of the reply's `timestamp` (one stamp for the whole reply): agree or not |
-| `trades?instrument_id=…&start_timestamp=…&end_timestamp=…` — **the tape audit** | hourly, the last hour of one market with trades | 10 | 0.17 | the share of the API's trades present in the recorded stream |
 | `competitions`, `competition`, `competition/leaderboard?include_unqualified=true&limit=100` (about 48 pages) | daily 23:15Z, while a competition runs and for 7 days after its end | about 50 | 0.03 | raw pages; the parsed table; the universe |
-| `leaderboard`, 16 boards × 10 pages (`limit=100`, offsets 0–900) | daily from 23:38Z: `all`, `month`, `week`, then `day` | 800 (+50 for a re-read) | 0.56 | raw pages; parsed boards with every page's snapshot stamp; the universe |
-| `exchange-stats` for yesterday `[00:00Z, 00:00Z)`, `stock-splits` (charged 10), `fees` | daily 00:20Z | 22 | 0.02 | raw; parsed |
+| `leaderboard`, 16 boards × 10 pages (`limit=100`, offsets 0–900) | daily from 23:38Z: `all`, `month`, `week`, then `day` | 800 | 0.56 | raw pages; parsed boards with every page's snapshot stamp; the universe |
+| `stock-splits` (charged 10), `fees` | daily 00:20Z | 12 | 0.01 | raw; parsed |
 
-**Average: about 5 tokens a minute.** The reads every minute, ten minutes and
-hour make 4.67 a minute, 4.43 after the 75-minute nightly pause; the daily
-passes add 872 tokens, 0.61 a minute; together 5.04. **Peak:** the board pass
+[Final review F3: cut from this table — `time` every 10 minutes (the books'
+own timing watches the clock, §1.4 item 9), the hourly tape audit (10 tokens;
+it guarded a partial stall nobody has seen, of a stream whose content can be
+read back), and the daily `exchange-stats` (the route serves any past window
+up to 31 days, so it is re-readable).]
+
+**Average: about 5 tokens a minute.** The reads every minute and ten minutes
+make 4.4 a minute, 4.17 after the 75-minute nightly pause; the daily passes
+add 862 tokens, 0.60 a minute; together 4.77 [Final review F3: was 4.67,
+4.43, 872, 0.61 and 5.04 with the cut reads]. **Peak:** the board pass
 runs at most 50 tokens in any minute and never more than 30 in 5 s; with the
 minute reads beside it, its 800 tokens take about 17.5 minutes (23:38 → about
 23:56Z), the day boards last. **The collector's share is therefore the 50 a
@@ -212,7 +216,8 @@ until v1's favourites take them.
 
 **Not read, and why.** Funding history, klines, mark history and the tape:
 re-readable back to launch whenever a study needs them (external-apis); the
-exams pull what they need. `/v1/info/markets`: the tickers cover it
+exams pull what they need. `exchange-stats`: any past window up to 31 days
+can be asked (the spec's text). `/v1/info/markets`: the tickers cover it
 (DOCS-SWEEP §10). Per-account reads for the universe (portfolio, the
 leaderboard's `address` row, competition rows): everything they give except
 an account's rank beyond 1,000 can be rebuilt later from its fills and its
@@ -238,17 +243,20 @@ size: tens of thousands of addresses within a year (the day board counted
 
 **Recommended: both.** Streams **and every REST reply that passes its
 schema** go raw into hourly files on F:; MongoDB holds the parsed, queried
-part. Because every reply is also in a file, the database can be rebuilt
-from the files — a test proves it — and an outage of the shared server
-costs no board. This is the one exception to R6's "parsed records, not raw
-replies"; it costs a few MB a day.
+part. Because every reply is also in a file, an outage of the shared server
+costs no board: the database can be filled from the files the day it is
+needed [Final review F3: was "can be rebuilt from the files — a test proves
+it"; the loading command is written when first needed, not now]. This is the
+one exception to R6's "parsed records, not raw replies"; it costs a few MB a
+day.
 
 **Files:** `F:\polymarket-follow\recordings\<UTC date>\` [Final review F7:
 was `…\collector\…`]
 - `book-<HH>.jsonl.br`, `trades-<HH>.jsonl.br`, `rest-<HH>.jsonl.br` — one
   line per frame or reply: our receive time (ms), then the text exactly as
-  received; for REST also the path, the status and the `date` and `age`
-  headers.
+  received; for REST also the path, its weight, the status, the answer time
+  and the `date` and `age` headers — so the REST files are also the call log
+  R6 asked for (decisions 2026-11-08: "rolling files").
 - `rejected-<HH>.jsonl.br` — frames or replies that failed their schema, raw,
   with the reason; used by nothing until a corrected schema re-reads them
   (Iron Rule 3: logged and dropped, never guessed).
@@ -289,12 +297,14 @@ decision; R6's option A, decisions 2026-11-08).
 | `competition_snapshots` | one per pass: the competition, `total`, `updated_at`, every row | about 1.9 MB a pass; up to 0.6 GB a year |
 | `universe` | one per address (above) | a few MB |
 | `rulebook` | each observed change of the market list, fees, exchange marks, splits, competitions (dates, boosts) | small |
-| `exchange_stats` | one per UTC day | tiny |
-| `health_events` | coverage, audits, disk and clock checks, backup runs | small |
-| `collector_state` | one document, rewritten every 10 s: the heartbeat and every row of R7's Status page | — |
-| `api_usage_minute` (kept 7 days), `api_usage_hour` (kept) | tokens, calls, 429s and latency by job (R7 Q8) | small |
-| `rejected` (capped at 64 MB) | schema failures (R6 Q3) | ≤ 64 MB |
-| `unknown_keys` | per day, new key paths per reply kind | tiny |
+
+[Final review F3: six collections cut from the first version —
+`exchange_stats` (re-readable), `health_events`, `collector_state`,
+`api_usage_minute` and `api_usage_hour` (what R7's Status page will read: v1
+adds them with that page; until then the heartbeat file, `coverage.jsonl`,
+the call lines in the REST files and `backup.log` hold the same facts),
+`rejected` (the `rejected-<HH>` files hold them) and `unknown_keys` (one log
+line a day).]
 
 About **2 GB a year on C:** — which had 39.1 GiB free on 2026-11-10 01:09Z,
 down from 42.8 GiB on 2026-11-08 (R6), not by us (`out/disk-free.txt`).
@@ -306,9 +316,10 @@ again. Revisit when F: is half full, or after a year.
 GiB free, stop our database writes under 6 GiB (decisions 2026-11-08); F: —
 warn under 50 GiB, stop the stream files under 10 GiB (new: proposed here);
 E: — the backup refuses to write unless the free space is at least three
-times the last copy plus 5 GiB (R6 Q5). A stop is a PROBLEM on Status and a
-notification from the check task; the streams keep running for the watchdog
-but are not stored while it lasts.
+times the last copy plus 5 GiB (R6 Q5). A stop is logged and shown by the
+`status` command [Final review F3: was "a PROBLEM on Status and a
+notification from the check task"]; the streams keep running for the
+watchdog but are not stored while it lasts.
 
 ### 1.3 The blind store
 
@@ -339,12 +350,12 @@ CONFIRM list of this batch.
    competition dates and boosted markets, maintenance and engine-version
    marks (the exchange's flags and the server's connection drops), splits.
 3. **Everything else** — board and competition rows with their values, the
-   stream files, the ticker replies, the audits' figures — stays where no
+   stream files, the ticker replies, the price audit's figures — stays where no
    research brief points: the other collections and
    `F:\polymarket-follow\recordings\`, never under
    `F:\polymarket-follow-research\`.
 4. **The collector computes no research figure.** Its health code reads values
-   only to say "agree" or "disagree" (the audits) and to count.
+   only to say "agree" or "disagree" (the price audit) and to count.
 5. **An exam reads the blind data once,** through a capture copied out with a
    manifest (A.0-10), recorded in decisions.
 6. **Later batches** whose data starts with the collector (IDEAS-REVIEW: the
@@ -409,17 +420,18 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    double the connections and the tokens.
 3. **The heartbeat:** a file, `…-run\var\heartbeat.json`, rewritten every 10 s
    (time, process id, each connection's last frame, each job's last success,
-   tokens in the last minute), and the same in `collector_state`. The file
-   works when MongoDB does not.
+   tokens in the last minute). It works when MongoDB does not. [Final review
+   F3: was "and the same in `collector_state`" — the database copy comes with
+   v1's Status page.]
 4. **Task "polymarket-follow poller check":** at sign-in and every 5
    minutes, a short PowerShell script, started by the same launcher (so no
    window flashes every 5 minutes). If the heartbeat is older than 2
    minutes, it ends the node process whose command line is the poller's,
-   starts the poller task, appends a line to `…-run\var\check.log` and shows a
-   Windows notification (R4's route: PowerShell's own app ID, nothing
-   installed). Task Scheduler restarts a crash, not a hang (R4 §5); this is
-   what catches a hang. It is the project's first notification: R4's owner
-   sheet A (is the banner drawn?) is checked by the owner then.
+   starts the poller task and appends a line to `…-run\var\check.log`. Task
+   Scheduler restarts a crash, not a hang (R4 §5); this is what catches a
+   hang. [Final review F3: it also showed a Windows notification — cut: R4's
+   banner is still unverified (its owner sheet A), and notices belong to v1's
+   notifier, which watches the poller by design (R4 §5).]
 5. **The watchdog (code-rules):** each connection pings every 10 s; no frame —
    data or pong — for 15 s means close, reopen and resubscribe, with back-off
    of 1, 2, 5, 10, 30 and 60 s, reset after 5 healthy minutes; a connect may
@@ -428,7 +440,7 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    while others arrive is logged as a stall, and all markets stalled while
    pongs arrive means reconnect.
 6. **Gaps:** every interval without recording, by connection and by market,
-   in `coverage.jsonl` and `health_events`, with its cause — our restart, a
+   in `coverage.jsonl`, with its cause — our restart, a
    server close and its code, a watchdog reconnect, or the PC off (the time
    since the last heartbeat, found at start).
 7. **The lab's nightly window (02:35–03:50Z):** the REST reads pause; the
@@ -440,15 +452,19 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
    never filled from a later read (the lab's lesson: "a lost day is gone").
 9. **The clock:** every record carries the server's time (`ts`, a board's
    `timestamp`) beside our receive time; the daily times are UTC inside the
-   program, so summer time moves nothing. Offset watch: `/v1/info/time` every
-   10 minutes and, each minute, the smallest (receive − `ts`) on the books
-   (102–103 ms in the run; it shifts if our clock drifts); WATCH beyond 2 s
-   (R7). Windows last synced to time.windows.com at 2026-11-09 16:25:56Z and
+   program, so summer time moves nothing. Offset watch: each minute, the
+   smallest (receive − `ts`) on the books (102–103 ms in the run; it shifts
+   if our clock drifts); WATCH beyond 2 s (R7) [Final review F3: the
+   `/v1/info/time` reads beside it are cut — the books give the same signal
+   free]. Windows last synced to time.windows.com at 2026-11-09 16:25:56Z and
    polls every 32,768 s (`w32tm /query /status`, 2026-11-10 00:57Z).
-10. **R7's Status page later:** `collector_state` and `health_events` carry
-    its rows — processes, exchange API, data freshness, budget, disk,
-    backup, replies, clock — so the page needs no new collector code (the
-    classifier row is v1's).
+10. **R7's Status page later:** its rows — processes, exchange API, data
+    freshness, budget, disk, backup, replies, clock — have their sources from
+    day one (the heartbeat file, `coverage.jsonl`, the call lines in the
+    REST files, the day manifests, `backup.log`); v1 adds the database copies
+    the page reads [Final review F3: was "`collector_state` and
+    `health_events` carry its rows … so the page needs no new collector
+    code"]. Until then the `status` command prints them.
 11. **Logs:** pino, JSON lines, one file a UTC day under `…-run\var\logs\`,
     30 days kept; the launcher's own output file catches a crash's last
     words.
@@ -460,8 +476,8 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
   04:20Z after 2027-03-28), "run as soon as possible after a missed start";
   `tools\backup.cjs`, outside the build, using the poller's MongoDB driver —
   a backup must not break with the thing it insures (the lab's rule).
-- **The database:** every collection of `polymarket_follow` except a named
-  skip list with its reasons (`api_usage_minute`, `rejected`), as Extended
+- **The database:** every collection of `polymarket_follow` (a skip list,
+  empty now, names any later exception with its reason), as Extended
   JSON, gzip, into `E:\backups\polymarket-follow\db\<date>\` and
   `F:\polymarket-follow\backups\db\<date>\`, `manifest.json` last;
   append-only collections cut at the run's start minus 60 s (R6). Kept: 7
@@ -470,15 +486,16 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
   `E:\backups\polymarket-follow\stream\<date>\`, each file checked against
   the day's manifest; 7 days kept on E: (3–4 GB, inside R6's "our root on E:
   stays under 8 GB").
-- **Checked:** each run re-reads what it wrote against the manifest hashes,
-  appends a line to `backup.log` and writes a `health_events` row (time,
-  sizes, ok); Status shows WATCH after 36 hours without an ok run (R7).
+- **Checked:** each run re-reads what it wrote against the manifest hashes
+  and appends a line to `backup.log` (time, sizes, ok); `status` shows the
+  last ok run, WATCH after 36 hours without one (R7).
 - **The restore test:** every Sunday after the dump, into
   `polymarket_follow_restore_<date>` (refused if the name exists, any other
   name refused, never over the live database); counts and `_id` sets
-  compared; the universe rebuilt from every day's board and competition
-  replies in the files and compared with the restored one; then dropped.
-  Once a quarter the owner runs a full drill (R6).
+  compared; then dropped. Once a quarter the owner runs a full drill (R6).
+  [Final review F3: cut — the skip list's two named collections (cut
+  themselves), the `health_events` row, and the universe rebuilt from the
+  files at each restore test.]
 - **One copy only:** stream files older than 7 days live on F: alone; a
   failing F: loses them (question 5).
 
@@ -493,10 +510,9 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
 
 ```
 package.json          private; type module; packageManager pnpm@11.20.0; engines node >=24;
-                      scripts build, lint, test, format, format:check, verify (= the four in CI's order)
+                      scripts build, lint, test, format, format:check, verify (= build, lint, test, format:check)
 pnpm-workspace.yaml   apps/*, packages/*
 tsconfig.base.json, eslint.config.mjs, .prettierrc.json, .prettierignore   (copied from the lab, trimmed)
-.github/workflows/ci.yml   install (frozen lockfile), build, lint, test, format:check; Node 24
 .env.example          MONGO_URI, MONGO_DB=polymarket_follow, STREAM_ROOT, STATE_DIR, BACKUP_ROOTS
 apps/poller/          the one API client (the plan page: "the poller (its first part: the collector)")
   src/index.ts        start: configuration, the lock, the database, connections, schedule, heartbeat
@@ -504,10 +520,11 @@ apps/poller/          the one API client (the plan page: "the poller (its first 
   src/api/            rest-client.ts (admission, back-off, nightly pause, allowed routes, call log),
                       admission.ts (pure), schemas.ts (Zod for every reply and frame used)
   src/ws/             connection.ts (open, subscribe, ping, watchdog, reconnect), book-sampler.ts (pure)
-  src/jobs/           minute-reads, instruments, board-pass, competition-pass, daily-reads, audits
+  src/jobs/           minute-reads (tickers, exchange), instruments, board-pass, competition-pass,
+                      daily-reads (splits, fees), price-audit
   src/store/          files.ts (hourly files, Brotli at the hour, manifests), db.ts (name check, indexes),
                       universe.ts (pure upsert rules)
-  src/health/         heartbeat.ts, disk.ts (pure thresholds), coverage.ts
+  src/health/         heartbeat.ts, disk.ts (pure thresholds), coverage.ts, status.ts (the status command)
   src/schedule.ts     pure: next run times in UTC, the nightly window
   test/               vitest; fixtures trimmed from this plan's replies, dated 2026-11-10
 tools/                backup.cjs, restore.cjs, launch-hidden.cs (compiled by the in-box csc.exe),
@@ -543,18 +560,18 @@ outside the repository: E:\polymarket-follow-run\poller\ (the run copy), E:\poly
   (the 60 s and 5 s windows, the 50 cap), the 429 back-off, the nightly
   pause, the schedule, the book sampler (once a second when changed; the
   hourly full write), the watchdog (fake clock), the board pass (order, the
-  page-stamp consistency check, the 23:59:30Z guard, one re-read), the
+  page-stamp consistency flag, the 23:59:30Z guard), the
   competition's paging stop, the universe (first seen never moves; sources
   accumulate), the disk thresholds, every schema on the dated fixtures with
   an unknown key added, the file writer (the hour's roll, the Brotli round
   trip, the manifest) — and **an Iron Rule 1 test:** the REST client refuses
   any path outside `/v1/info/`, the WebSocket client can send only `sub`,
   `unsub` and the ping, and no `POST` exists under `src/`. Integration tests
-  (local, not in CI): the store against `polymarket_follow_test` (the code
+  (local only): the store against `polymarket_follow_test` (the code
   asserts the database name at start) and the backup–restore round trip. A
   manual live smoke command (60 s, prints counts).
-- **`pnpm verify`** = build, lint, test, format:check, in CI's order, green at
-  the end of every part.
+- **`pnpm verify`** = build, lint, test, format:check, in that order (CI's,
+  once the skeleton step brings CI), green at the end of every part.
 
 **What the owner installs: nothing.** Node v24.13.0 and pnpm 11.20.0 are
 installed (`node --version`, `pnpm --version`, 2026-11-10); MongoDB 8.3.7
@@ -567,49 +584,78 @@ to GitHub as now.
 
 | Case | Detected by | Handling |
 |---|---|---|
-| **A 429** | the reply | that request dropped and its job's tick skipped; back-off from 2 s doubling to 60 s (code-rules; R1: "on 429 pause 60 s"); the board pass resumes inside its window; counted, a PROBLEM on Status for an hour; never a retry loop. Admission (trailing 60 s ≤ 50, trailing 5 s ≤ 30) keeps it rare; the owner's browser on polymarket.com/perps shares the bucket |
-| A 5xx, a timeout, the network down | the reply, or none within 15 s | the same with back-off from 1 s; minute reads skip a tick; "Polymarket not answering" on Status after 20% failures in 10 minutes (R7) |
+| **A 429** | the reply | that request dropped and its job's tick skipped; back-off from 2 s doubling to 60 s (code-rules; R1: "on 429 pause 60 s"); the board pass resumes inside its window; logged and counted (`status`); never a retry loop. Admission (trailing 60 s ≤ 50, trailing 5 s ≤ 30) keeps it rare; the owner's browser on polymarket.com/perps shares the bucket |
+| A 5xx, a timeout, the network down | the reply, or none within 15 s | the same with back-off from 1 s; minute reads skip a tick; logged and counted |
 | **A silent socket** | no frame, data or pong, for 15 s (pings every 10 s) | close, reopen, resubscribe, back-off; the gap logged from the last frame to the first after |
 | One market's book stops while others flow | no book frame from it for 15 s | a stall logged (start, end); all markets stalled while pongs arrive → reconnect |
 | A deploy, maintenance, cancel-only | the server closes the connection (changelog: "connections drop when the gateway restarts"); `exchange` marks, up to ~7 minutes late through CloudFront | reconnect; the gap's cause "server close" with its code; the marks in the rule book |
 | A channel refused at subscription | the `sub` reply's `err` | logged; expected for a delisted market; otherwise retried at the next reconnect |
 | `message_rate_limited` | the reply | back-off; pings are 12 a minute and a subscription one message per connection, so only a reconnect storm could reach it, and the back-off bounds that |
-| **A full disk** | the hourly free-space check | §1.2's alarms; a stop is a PROBLEM and a notification |
-| F: missing or failing | a write error | stream writing stops (that time is lost); a PROBLEM and a notification; the database writes and the heartbeat go on |
-| MongoDB down or restarted | the driver | the files keep every reply; boards and the competition table are loaded from the day's files when it returns (a tested command); the heartbeat file goes on |
-| **A schema change** (a frame or reply fails Zod) | the parse | dropped, and written raw with its reason to `rejected-<HH>` and the capped collection; counted on Status; a kind failing whole for a minute is a PROBLEM — its data is lost until the schema is fixed; never guessed (Iron Rule 3) |
+| **A full disk** | the hourly free-space check | §1.2's alarms; a stop is logged and shown by `status` |
+| F: missing or failing | a write error | stream writing stops (that time is lost); logged and shown by `status`; the database writes and the heartbeat go on |
+| MongoDB down or restarted | the driver | the files keep every reply, so no board is lost; the database is filled from them if that is ever needed; the heartbeat file goes on |
+| **A schema change** (a frame or reply fails Zod) | the parse | dropped, and written raw with its reason to `rejected-<HH>`; counted in the heartbeat; a kind failing whole for a minute is a PROBLEM in `status` — its data is lost until the schema is fixed; never guessed (Iron Rule 3) |
 | Unknown keys | the parse (non-strict objects) | kept in the raw text; their paths logged once a day |
 | **The API ahead of the spec** (DOCS-SWEEP) | — | only routes read live and recorded in external-apis are called; fields outside the spec (`long_count`, `fee_override`) are optional in the schemas; an unpublished weight is charged 10 (`stock-splits`) |
-| **A split** | the daily `stock-splits` (`events`, `sequence`) | the event in the rule book and on Status; files keep frames as received; readers never join sizes or prices across it (DOCS-SWEEP §4) |
+| **A split** | the daily `stock-splits` (`events`, `sequence`) | the event in the rule book and in `status`; files keep frames as received; readers never join sizes or prices across it (DOCS-SWEEP §4) |
 | **A delisting** | `instruments`: `close_only`, then the market leaves the list | marks in the rule book; its settlement read once by id; its channels unsubscribed, no stall alarm after |
 | A new market | `instruments` | subscribed on the open connections (one message each); a mark in the rule book |
-| The market list unreadable at start | the first `instruments` read fails | the last stored list subscribes the streams; the read retried with back-off |
-| **Clock drift** | `/time` every 10 minutes; the smallest (receive − `ts`) each minute | WATCH over 2 s; records keep the server's time anyway; the program never sets the clock (a system setting) |
-| A board read straddles a refresh | its pages' snapshot stamps span more than 10 s | re-read once if the window allows; otherwise stored with `consistent: false` |
-| **A frozen source** — the API answers, the data stops moving (the lab's leaderboard froze 2026-10-30 to 11-02, R4 §5) | a board's snapshot stamp older than 5 minutes at read time (10 for `all`; R1 saw at most 60 s and 281 s), or its top 100 identical to the day before; no book of any market changing for 5 minutes | the board stored with `stale: true`; a WATCH "no book changed in 5 minutes" (a quiet weekend night can trip it, so the text names the test that fired) |
+| The market list unreadable at start | the first `instruments` read fails | retried with back-off; the streams open after the first read [Final review F3: was "the last stored list subscribes the streams" — a fallback for an API that is down anyway] |
+| **Clock drift** | the smallest (receive − `ts`) on the books each minute | WATCH over 2 s; records keep the server's time anyway; the program never sets the clock (a system setting) |
+| A board read straddles a refresh | its pages' snapshot stamps span more than 10 s | stored with its page stamps and `consistent: false` [Final review F3: was "re-read once if the window allows" — a flag is enough] |
+| **A frozen source** — the API answers, the data stops moving (the lab's leaderboard froze 2026-10-30 to 11-02, R4 §5) | a board's snapshot stamp older than 5 minutes at read time (10 for `all`; R1 saw at most 60 s and 281 s), or its top 100 identical to the day before | the board stored with `stale: true` [Final review F3: the "no book changed in 5 minutes" watch is cut — a dead stream is caught by the per-market stall check; books that arrive but never change are rare and visible in the files afterwards] |
 | The day boards run late | the 23:59:30Z guard | not read after it, logged as missed; a board's day is taken from its snapshot `timestamp`, never from our clock |
 | A competition ends, a new one starts | the daily `competitions` read | each competition is read until 7 days after its end (final and paid rows); its dates and boosts in the rule book (A.0-8) |
 | A crash | the launcher returns node's exit code | Task Scheduler restarts it three times a minute apart; then the check task |
-| A hang | the heartbeat file older than 2 minutes | the check task ends and restarts it, and notifies |
+| A hang | the heartbeat file older than 2 minutes | the check task ends and restarts it, and logs it |
 | Two collectors | the lock | the second exits |
 | The PC off, asleep or restarted | the time since the last heartbeat, at start | logged as a gap; streams of that time lost; a missed board pass lost and logged |
 | The nightly window | the clock | REST paused 02:35–03:50Z |
 | An hour's file fails its compression check | the round trip | the plain file kept and retried next hour; a WATCH |
-| Memory growing | the heartbeat's memory figure | per-market state is bounded by construction; a WATCH over a threshold |
+| Memory growing | the heartbeat's memory figure | per-market state is bounded by construction; `status` shows the figure [Final review F3: was "a WATCH over a threshold" — no one can set the threshold before a week of figures] |
 
 ### 1.8 The build, in parts
 
 | Part | What | Its tests | Done when |
 |---|---|---|---|
-| 0 | the workspace, configuration, CI, one empty app with one test | the CI file mirrors `pnpm verify` | `pnpm verify` green |
+| 0 | the workspace, configuration, one empty app with one test | `pnpm verify` runs build, lint, test, format:check in that order | `pnpm verify` green |
 | 1 | the REST client (admission, back-off, nightly pause, allowed routes, call log), the schemas, the minute and ten-minute reads, the file writer (hours, Brotli, manifests, coverage) | the unit tests of §1.6 that apply | a live run of at least 30 minutes across an hour's end: no 429, the call log never above 50 tokens a minute or 30 in 5 s, the closed hour's file compressed and verified |
-| 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price and tape audits | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); the tape audit finds every API trade outside logged gaps; CPU, memory and bytes received reported |
-| 3 | running on Windows: the heartbeat file, the lock, the launcher, the run copy, the check script, the registration script (prepared, not run by the build) | the launcher returns the program's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); no window appears at sign-in or every 5 minutes; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and notify |
-| 4 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book; loading from files | board order and guards (fake clock), the re-read, the paging stop, the universe rules, a rebuild from files | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
-| 5 | health: `collector_state`, the disk checks and the stop, the clock watch, the frozen-source checks, a `status` command printing every row | thresholds; the status output | `status` prints every row from a live run |
+| 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price audit | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); CPU, memory and bytes received reported |
+| 3 | running on Windows: the heartbeat file, the lock, the launcher, the run copy, the check script, the registration script (prepared, not run by the build) | the launcher returns the program's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); no window appears at sign-in or every 5 minutes; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and log it |
+| 4 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book | board order and guards (fake clock), the re-read, the paging stop, the universe rules | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
+| 5 | health: the disk checks and the stop, the clock watch from the books, the boards' `stale` flag, a `status` command that prints every row from the heartbeat file and the day's folder | thresholds; the status output | `status` prints every row from a live run |
 | 6 | backup and restore | the round trip on `polymarket_follow_test` | a backup to E: and F: and a restore test, both ok |
 | 7 | docs: architecture's first real section, current-task; the decisions entry for the technical calls; the docs sweep | — | `pnpm verify` green; docs swept |
 | 8 (later) | the weekly fills of the frozen exam lists into the blind store (question 9), when the supervisor hands over the list files (about 2026-11-20) | the list's hash checked at start; dedupe by key | a week's fills stored, unread |
+
+**The cut** [Final review F3]. The first version records everything §1.1
+asks for and nothing more. Dropped from what this plan first proposed:
+- *what v1 adds with its Status page:* the collections `collector_state`,
+  `health_events`, `api_usage_minute` and `api_usage_hour` — meanwhile the
+  heartbeat file, `coverage.jsonl`, the REST files' call lines and
+  `backup.log` hold the same facts, and `status` prints them;
+- *copies of something kept elsewhere:* the `rejected` collection (the
+  rejected files), `unknown_keys` (one log line a day), `exchange_stats`
+  (re-readable for any past window);
+- *checks of failures nobody has seen:* the hourly tape audit, the "no book
+  changed in 5 minutes" watch, the board re-read (a flag is enough), a memory
+  threshold no one can set yet;
+- *a second signal for the same thing:* the `/v1/info/time` reads (the books
+  time the clock);
+- *fallbacks whose data is safe anyway:* the command that loads the database
+  from the files (written the day it is needed), the stored market list at
+  start (a retry), the universe rebuilt from the files at each restore test;
+- *what another phase owns:* the check task's notification (v1's notifier)
+  and CI (the skeleton step, as the plan page orders it).
+
+Kept, each because it is the only way to something the brief or a decision
+needs: the two streams and the book sampler; the watchdog, the stall check
+and `coverage.jsonl`; the board and competition passes; the universe and the
+rule book; the price audit (IDEAS-REVIEW's "done" line); the hourly files and
+their manifests; the rejected files (Iron Rule 3); the lock; the heartbeat
+file and the check task (a hang is otherwise silent); the launcher and the
+run copy (§1.4); the disk checks, the backups and the weekly restore test
+(R6, decided); the `status` command (the supervisor checks with it).
 
 **Who builds:** one build subagent (Opus 5.5, effort high or max: its code
 runs unattended and spends the shared budget), part by part, each part
@@ -682,7 +728,8 @@ following.
   turns over.
 - **The board pass:** 23:38Z with the day boards last (recommended) against
   after 00:00Z (the day boards have reset) or twice a day (not asked).
-  Consistency: re-read once when the pages' snapshot stamps span over 10 s.
+  Consistency: flagged when the pages' snapshot stamps span over 10 s, not
+  re-read (Final review F3).
 - **The universe:** addresses only (recommended) against a daily address row
   per account (35 tokens a minute for 10,000) or weekly.
 - **The launcher:** R4's `.vbs` (works today; VBScript off by default from
@@ -719,7 +766,7 @@ following.
    (`raw/lb-day-pnl-*.json`, 00:57:23–30Z).
 7. **The universe needs no per-account reads:** the boards and the
    competition table refresh it daily for about 850 tokens.
-8. **The audits give each exam a measured quality line** for the record it
+8. **The price audit gives each exam a measured quality line** for the record it
    uses.
 9. **A day folder describes itself** (manifest, coverage): a reader needs
    neither the database nor this program.
@@ -778,7 +825,7 @@ Failures at run time are in §1.7; these concern the plan.
 
 1. **The forward clock starts with the books** (IDEAS-REVIEW 2.17): from day
    one any paper entry can be checked against a recorded book.
-2. **The audits' agreement rates are the honest quality line** for any
+2. **The price audit's agreement rate is the honest quality line** for any
    result built on the record; each exam prints them.
 3. **The weekly fills of the frozen lists** (IDEAS-REVIEW's addition): if a
    history route were withdrawn before an exam, the exam would not be lost.
