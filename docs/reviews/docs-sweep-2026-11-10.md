@@ -30,9 +30,12 @@ are unknown.
    stated), each with score, realized and unrealized PnL, volume. **Without that parameter the board holds only the
    qualified accounts: 109 at 23:45Z, 110 later.** It is the cheapest universe seed found, and it exists only while a
    competition has run.
-4. **Incentives are large:** liquidity rewards of $75,000 a day were 3.1× the gross trading fees of 2026-11-02..08
-   ($525,000 against $170,276), and 5.7× on 2026-11-08; open-interest rewards (6% a year on gross OI) come on top.
-   Leaderboard PnL excludes rewards, so a market maker's true income is not on any board.
+4. **Incentives are large** [Final review F2]: the docs' liquidity-rewards **budget** of $75,000 a day (page undated, fetched
+   23:34:50Z) is, over the 7 UTC days from 2026-11-02 00:00Z to 2026-11-09 00:00Z (end exclusive), $525,000 a week against
+   **gross positive trading fees of $170,276** for the same days (`/v1/info/exchange-stats`, read 23:46:58Z): 3.1 times; and
+   $75,000 against $13,156 on 2026-11-08 alone: 5.7 times. This compares a budget with measured fees, not two payments:
+   **who receives the rewards, and how much, is not public** (`/v1/account/rewards` is private). Open-interest rewards (6% a
+   year on gross OI) come on top. Leaderboard PnL excludes rewards, so a market maker's true income is on no board.
 5. **A fill from a take-profit or stop-loss trigger cannot be told from any other fill** in public data. Liquidation,
    auto-deleveraging and settlement fills **can** be told (flags), backstop liquidations carry extra details.
 6. **Chain:** Polygon mainnet (137); the exchange contract is `0xDCa4af75…917d2` (confirmed by `/v1/info/exchange`
@@ -236,10 +239,14 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **Open-interest rewards:** 6% a year on the account's full daily-average **gross** open interest, only if its entity
   averages ≥ $5M (was $1M until 2026-09-07). Private, no public trace except equity steps. *My reading: it pays holders of
   large two-sided or hedged books, whatever their PnL.*
-- **How big:** 2026-11-02..08: volume $591.1M, gross fees $170,276 (2.88 bp); rewards $525,000 = **3.1×** the fees;
-  2026-11-08 alone volume $39.7M, fees $13,156, rewards 5.7× (`raw/a9-xstats-*.json`; "fees" = gross positive maker and
-  taker fees, rebates and referral excluded). If the volume is counted once per trade, one percent of a week's volume is
-  $5.9M — the order of the maker-volume floor.
+- **How big, with units and windows** [Final review F2] (`raw/a9-xstats-7d.json`, `a9-xstats-1d.json`, read 23:46:58Z;
+  arithmetic in `out/an-econ.txt`): for the 7 UTC days [2026-11-02 00:00Z, 2026-11-09 00:00Z): matched volume
+  $591,101,131; gross positive maker and taker fees $170,275.93 (rebates, incentives and referral payments excluded) =
+  2.88 bp of volume. The docs' rewards budget for 7 days is 7 × $75,000 = $525,000, **3.08 times** the fees. For
+  [2026-11-08 00:00Z, 2026-11-09 00:00Z): volume $39,712,771, fees $13,155.66 (3.31 bp), budget $75,000, **5.70
+  times**. Caveats: the budget is the docs' sentence, not a payment record; reward periods run 12:00–12:00 UTC while the
+  windows are UTC days; the recipients are not public. If the volume is counted once per trade, one percent of a week's
+  volume is $5,911,011 — the order of the maker-volume floor.
 - **Referral:** 20% of the fees of referred traders, weekly, one code per account, 10 → 25 → 100 → 250 → 500 invites by
   volume. Private; a payout is capital in `/v2/info/pnl`. Makes referrers promote, not trade.
 - **Builder program:** a builder account earns up to 10 bp on orders routed through its app; public traces: `builder_fee`
@@ -346,7 +353,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
   and settled; baseline floor), `cancel_only` and `engine_version` as exclusion markers, sessions, competition boosts;
   liquidation waves are visible on the tape only for backstops.
 - **H10 big players:** the reward formulas say what a rewarded maker's book looks like (two-sided within 5/10/20 bp,
-  ≥ 1% of weekly maker volume ≈ $5.9M); OI rewards pay gross holders ≥ $5M per entity ("pnl > 0, notional 0" rows);
+  ≥ 1% of weekly maker volume ≈ $5.9M if volume counts once per trade); OI rewards pay gross holders ≥ $5M per entity ("pnl > 0, notional 0" rows);
   entities are hidden; "algorithm" is not "no skill" but its income may be rewards.
 - **H11 AI:** nothing in the docs; Iron Rule 6 stands.
 - **H12 account-level check:** the paper log can use the documented margin law: liquidation when loss exceeds
@@ -389,7 +396,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
    −0.00019312 (CASHCAT) and −0.0000206 (XRP); the hour settled at −0.00019317 and −0.00002056 at 00:00:00.09Z
    (`raw/a4-funding-*.json`). The baseline floor means most majors charge longs 10.95% a year.
 10. WebSocket `book::<iid>::50`, 1 s klines, the `corporate-actions` channel.
-11. The exchange contract's pUSD balance (explorer) next to exchange open interest as a health ratio ($81.6M vs $116.6M one-sided OI).
+11. The exchange contract's pUSD balance (explorer: $81.64M at 23:43Z, $81.68M at 00:05Z) is a public number worth recording over
+    time. Setting it against exchange open interest ($116.6M one-sided notional at 2026-11-08 23:59:39Z) is loose — different
+    dates, and open interest is notional, not collateral — so it is no solvency ratio [Final review F2].
 12. `/v1/info/competition/widget?address=`: qualification progress of one address, weight 1.
 
 ## 4. Potential problems, and how each would be handled
@@ -427,8 +436,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 
 ## 6. Beyond the brief
 
-- **Rewards outweigh fees.** If the exchange pays 3–6 times what it collects, the leaderboards' tops and many "traders" are
-  paid for presence, not direction. R2's finding that tops are algorithms and market makers is *structural*, not an accident.
+- **If the budget is paid in full, rewards outweigh fees** [Final review F2]. The docs' budget is 3–6 times the gross fees of
+  the windows in Q4; the payments themselves are private. If so, part of the boards' tops may be paid for presence rather than
+  direction — consistent with R2's finding that the tops are algorithms and market makers, which this does not prove.
 - **The baseline funding is a one-sided bet.** With zero premium longs pay 10.95% a year on crypto and 5.5% on the rest; a
   paper follower who holds long for weeks pays it; one who holds short is paid. Funding is in the paper log's rules already;
   this says how big the floor is.
@@ -467,7 +477,7 @@ Each fact: date, source. (UTC; reads from my IP, user agent `polymarket-follow-r
 - **23:42Z `/v1/info/index?asset=BTC|SP500|GOLD|NVDA|SKHYNIX|ANT`:** `{asset, index_price, constituents: [], ts}`; cache `public, max-age=1`.
 - **23:42Z `/v1/info/stock-splits`:** `{"events":[],"sequence":101602959840}`. **`/v1/info/perps-whitelist`:** 400 `invalid query parameters: missing field `address``; with an address: `{"status":"ok","whitelisted":false}`, `cache-control: private, max-age=30`.
 - **23:41Z `/v1/info/competition/widget`, `/competitions`; 23:45Z `/competition`, `/competition/leaderboard`, `/competition/account`:** competition 1 (2026-11-02T14:30Z → 2026-11-16T14:30Z), `competition/leaderboard` `total` 109 without `include_unqualified` (23:45:45Z; the supervisor read 110 at ~00:03Z) and 4,736 with `include_unqualified=true` (23:45:45Z), 4,737 (23:46:01Z; the supervisor read 4,738); the competition detail says 10,019 participants; `limit` max 100 (`limit must be between 1 and 100`); **with `include_unqualified=true`, offset 4,700 answers** (no 1,000 cap). `competition/account` rows add `fees`, `funding`, `locked_positions`, `row_state`.
-- **23:46Z `/v1/info/exchange-stats`:** 2026-11-02..08 volume $591,101,131, fees $170,275.93, OI (one-sided) $116,556,434; 2026-11-08 volume $39,712,771, fees $13,155.66.
+- **23:46:58Z `/v1/info/exchange-stats`:** window [2026-11-02 00:00Z, 2026-11-09 00:00Z) (7 UTC days): volume $591,101,131, gross positive fees $170,275.93, OI (one-sided USD notional, sample 2026-11-08T23:59:39Z) $116,556,434; window [2026-11-08 00:00Z, 2026-11-09 00:00Z): volume $39,712,771, fees $13,155.66. The supervisor's re-read of fees for the first window gave the same $170,275.93.
 - **2026-11-09 23:59:20Z–2026-11-10 00:00:40Z, ticker against settlement:** CASHCAT-USD (id 70) rolling `funding_rate`
   −0.00019287 (23:59:20Z), −0.00019312 (23:59:50Z); settled −0.00019317 at 00:00:00.093Z. XRP-USD (id 33) −0.00002069,
   −0.0000206; settled −0.00002056 at 00:00:00.090Z. `/v1/info/funding` rows are hourly, stamped 50–95 ms after the hour;
