@@ -8,14 +8,18 @@ import { loadConfig, parseRunFor, type Config } from "./config.js";
 import { readLastHeartbeat, startHeartbeat } from "./health/heartbeat.js";
 import { startProcessStats } from "./health/process-stats.js";
 import { watchTestSwitches } from "./health/test-switches.js";
-import { instrumentsJob, liveMarkets } from "./jobs/instruments.js";
+import {
+  awaitFirstList,
+  instrumentsJob,
+  marketKeeper,
+  readKeptMarkets,
+} from "./jobs/instruments.js";
 import { exchangeJob, tickersJob } from "./jobs/minute-reads.js";
 import { priceAuditJob } from "./jobs/price-audit.js";
 import { startJobs, startPauseMarks, type JobStatus } from "./jobs/run.js";
 import { releaseLock, takeLock } from "./lock.js";
 import { createLog } from "./log.js";
 import { Recorder } from "./store/files.js";
-import { reconnectDelayMs } from "./ws/connection.js";
 import { Streams } from "./ws/streams.js";
 
 let config: Config;
@@ -166,26 +170,26 @@ if (runForS !== null) {
 }
 log.info({ runForS, lastHeartbeatAt }, "poller started");
 
-// The streams open after the first market list, retried with back-off (COLLECTOR-PLAN §1.7).
-for (let failures = 0; !stopping; failures += 1) {
-  const reply = await client.get("instruments");
-  if (reply.ok) {
-    streams.setMarkets(liveMarkets(reply.data));
-    break;
-  }
-  const delayMs = reconnectDelayMs(failures);
-  log.warn(
-    { reason: reply.reason, delayMs },
-    "no market list yet; the streams wait",
-  );
-  await realClock.sleep(delayMs);
-}
-if (!stopping) {
+const kept = readKeptMarkets(config.STATE_DIR, log);
+const keepMarkets = marketKeeper(config.STATE_DIR, kept, log);
+const useMarkets = (ids: number[]) => {
+  streams.setMarkets(ids);
+  keepMarkets(ids);
+};
+const listed = await awaitFirstList(
+  client,
+  kept,
+  useMarkets,
+  log,
+  realClock,
+  () => stopping,
+);
+if (listed && !stopping) {
   jobs = startJobs(
     [
       tickersJob(client),
       exchangeJob(client, log),
-      instrumentsJob(client, log, (ids) => streams.setMarkets(ids)),
+      instrumentsJob(client, log, useMarkets),
       audit,
     ],
     log,
