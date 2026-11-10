@@ -24,10 +24,12 @@ are unknown.
    `/v1/info/builder-stats`, `/v1/info/account-tiers`, `/v1/info/perps-whitelist`, `/v1/info/stock-splits`, plus the
    v1/v2 pnl and equity routes R1 already had. Ticker `long_count`/`short_count` now has a **definition** (changelog
    2026-10-27): accounts with a nonzero net position on that side, market makers and funds included.
-3. **The competition leaderboard is not capped at rank 1,000** (offset 4,700 answered; the main board stops at
-   offset+limit 1,000): about 48 reads of weight 1 list 4,737 accounts (the competition reports 10,019
-   "participants"; the rule that picks the 4,737 is not stated), each with score, realized and unrealized PnL, volume.
-   That is the cheapest universe seed found.
+3. **The competition leaderboard with `include_unqualified=true` is not capped at rank 1,000** [Final review F1] (offset
+   4,700 answered; the main board stops at offset+limit 1,000): about 48 reads of weight 1 list 4,736–4,738 accounts
+   (23:45Z–00:03Z; the competition itself reports 10,019 "participants"; the rule that picks the listed ones is not
+   stated), each with score, realized and unrealized PnL, volume. **Without that parameter the board holds only the
+   qualified accounts: 109 at 23:45Z, 110 later.** It is the cheapest universe seed found, and it exists only while a
+   competition has run.
 4. **Incentives are large:** liquidity rewards of $75,000 a day were 3.1× the gross trading fees of 2026-11-02..08
    ($525,000 against $170,276), and 5.7× on 2026-11-08; open-interest rewards (6% a year on gross OI) come on top.
    Leaderboard PnL excludes rewards, so a market maker's true income is not on any board.
@@ -142,9 +144,11 @@ and the BLP entries. Ping and the six public channel pages (trades, bbo, book, k
 - **Fees:** the live schedule has one entry and tiers keyed `min_volume_30d` (`a1-fees`).
 - **Competition:** rows add `instruments_traded`, `top_instrument_ids`, `first_fill_at`, `cohort`,
   `next_update_at`; the spec adds `payout_tx_hash` and `paid_at` (prize payouts on chain, empty while live),
-  `volume_to_qualify`, `score_to_prize_zone`, `spots_from_prize_zone`; `include_unqualified=true` widens the list from
-  109 to 4,737 rows (the competition reports 10,019 participants; what selects the 4,737 is not stated);
-  **`limit` ≤ 100 but `offset` has no 1,000 cap** (`out/api8.txt`); competition detail: all markets
+  `volume_to_qualify`, `score_to_prize_zone`, `spots_from_prize_zone`; `include_unqualified=true` (a spec parameter,
+  default false) widens `competition/leaderboard` from the qualified accounts (`total` 109 at 23:45:45Z) to 4,736 rows
+  (23:45:45Z) and 4,737 (23:46:01Z) [Final review F1] — the competition reports 10,019 participants; what selects the
+  listed ones is not stated;
+  **with that parameter, `limit` ≤ 100 but `offset` has no 1,000 cap** (`out/api8.txt`, `out/an-econ.txt`); competition detail: all markets
   count, boosts ANT 3×, AMD/ARM/SOXL 2×, `requires_positive_pnl`, `count_unrealized`.
 - **Fills:** `liquidation_details` {`mark`, `method` "backstop" | "market", `liquidated_user`?} (only backstop fills carry
   it so far), `builder` {address, fee_rate} (hidden on the public surface), `settlement`. R1 had the shapes from the spec.
@@ -323,8 +327,8 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **H1 weak persistence (D2):** nothing changes the test; add a covariate: the competition (2026-11-02 → 16) boosts and
   needs $100K volume, so weeks inside a competition are not like earlier weeks. Board PnL excludes rewards.
 - **H2 long records:** `/v1/info/pnl` and `/equity` give months cheaply; `/v2/info/pnl` only for accounts that began after
-  2026-10-20; the **competition leaderboard enumerates 4,737 accounts at ~48 tokens**; a fill's fee rate gives a 30-day
-  volume bracket for every period.
+  2026-10-20; the **competition leaderboard with `include_unqualified=true` lists about 4,737 accounts at ~48 tokens**
+  [Final review F1]; a fill's fee rate might give a 30-day volume bracket for every period (an inference, untested).
 - **H3 quality score:** leaderboard `pnl` = realized − fees + funding, so it includes maker rebates and excludes rewards
   and referral income; `account_value` is a census value up to minutes old (≤ 8,192 accounts per 60 s). Fee tier changes
   costs over time (a tier-0 follower pays 4 bp taker).
@@ -355,9 +359,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 
 ## 2. Variations weighed
 
-- **Universe seed:** the main leaderboard (16 boards × 1,000, weight 5) against the competition leaderboard (every
-  participant since 2026-11-02, weight 1, only while a competition has run). *Both*: the first is permanent, the second
-  adds accounts below rank 1,000.
+- **Universe seed:** the main leaderboard (16 boards × 1,000, weight 5) against `competition/leaderboard` with
+  `include_unqualified=true` (about 4,737 listed accounts, weight 1 a page, only while a competition has run) [Final review F1].
+  *Both*: the first is permanent, the second adds accounts below rank 1,000.
 - **Funding as a feature:** the settled hourly history (weight 10 per 100 rows) against the ticker's rolling rate (weight
   2 for all 90 markets) — the ticker is the cheap one for live context, the history for studies.
 - **Depth of the explorer check:** one contract page and one address page only (the brief), against also opening
@@ -370,8 +374,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 
 ## 3. Possibilities found
 
-1. `/v1/info/competition/leaderboard?include_unqualified=true` pages 100 rows at weight 1 with no 1,000 cap: all 4,737 participants, score,
-   PnL split, volume, instruments — and `competition/account` gives any address's unrealized PnL, fees and funding.
+1. `/v1/info/competition/leaderboard?include_unqualified=true` pages 100 rows at weight 1 with no 1,000 cap: about 4,737 listed
+   accounts (of 10,019 "participants"), score, PnL split, volume, instruments [Final review F1] — and `competition/account`
+   gives any address's unrealized PnL, fees and funding. Without the parameter the board lists only the 109–110 qualified accounts.
 2. `/v1/info/markets` for 50 instruments at weight 2 (with sparkline) — cheaper than separate tickers and statistics.
 3. Ticker `long_count`/`short_count`: free crowd breadth on 90 markets every 2 s.
 4. `/v1/info/exchange` (weight 2): `cancel_only` and `engine_version` mark maintenance windows and deploys; the changelog
@@ -401,7 +406,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 | Margin ratio from the public portfolio is wrong for isolated positions (web default) | Compute it only when the account's positions fit the cross case; otherwise show "unknown" |
 | `fee_override` (ANT now) and beta top-tier accounts break fee-rate → tier | Exclude override markets; treat rebate rows as "top tier or beta" |
 | Entities/groups hide that several accounts are one party | State it in every consensus result; do not claim independence |
-| The competition list stops being enumerable when no competition runs | Keep the main boards as the base seed |
+| The `include_unqualified=true` competition list exists only while or after a competition has run, and its size drifts (4,736 → 4,738 in 18 minutes) | Keep the main boards as the base seed; record the date and `total` with every pass |
 | `account_value` is a census value (≤ 8,192 accounts a minute) | Use `/v1/info/portfolio` for the exact equity of a followed account |
 | The terms (R1 §13) are unchanged; scraping bans stay | Stay at half the budget, personal use |
 
@@ -435,8 +440,9 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 
 ## 7. Questions for the owner
 
-1. **May the collector read the competition leaderboard beyond rank 1,000 to grow the universe?** It is the same public API at
-   weight 1. *Recommendation:* yes, once a day while a competition runs, inside the budget.
+1. **May the collector read `competition/leaderboard` with `include_unqualified=true` beyond rank 1,000 to grow the universe?** It is
+   the same public API at weight 1 a page (without the parameter it lists only the 110 qualified accounts). *Recommendation:* yes, once
+   a day while a competition runs, inside the budget.
 2. **Where is the line for study H13?** Allowed by the brief: deposits and withdrawals of an address on Polygon, its
    own wallet balance. Not allowed: finding who is behind an address. In between: the same EOA on Hyperliquid or other venues, and the
    derived Polymarket prediction-market wallet. *Recommendation:* allow only deposits, withdrawals and the Polygon wallet
@@ -460,7 +466,7 @@ Each fact: date, source. (UTC; reads from my IP, user agent `polymarket-follow-r
 - **23:41Z `/v1/info/markets?instrument_ids=1&include=sparkline,totals`** answers (weight 2): `markets[]` {instrument_id, symbol, display_symbol, logo, max_leverage, quantity_decimals, mark_price, open_price, volume, sparkline[24]}, `totals` {volume "88407923.5", open_interest "117349872.26", market_count 90}.
 - **23:42Z `/v1/info/index?asset=BTC|SP500|GOLD|NVDA|SKHYNIX|ANT`:** `{asset, index_price, constituents: [], ts}`; cache `public, max-age=1`.
 - **23:42Z `/v1/info/stock-splits`:** `{"events":[],"sequence":101602959840}`. **`/v1/info/perps-whitelist`:** 400 `invalid query parameters: missing field `address``; with an address: `{"status":"ok","whitelisted":false}`, `cache-control: private, max-age=30`.
-- **23:41Z `/v1/info/competition/widget`, `/competitions`; 23:45Z `/competition`, `/competition/leaderboard`, `/competition/account`:** competition 1 (2026-11-02T14:30Z → 2026-11-16T14:30Z), 109 ranked, 4,737 with `include_unqualified=true`, 10,019 participants; `limit` max 100 (`limit must be between 1 and 100`); **offset 4,700 answers** (no 1,000 cap). `competition/account` rows add `fees`, `funding`, `locked_positions`, `row_state`.
+- **23:41Z `/v1/info/competition/widget`, `/competitions`; 23:45Z `/competition`, `/competition/leaderboard`, `/competition/account`:** competition 1 (2026-11-02T14:30Z → 2026-11-16T14:30Z), `competition/leaderboard` `total` 109 without `include_unqualified` (23:45:45Z; the supervisor read 110 at ~00:03Z) and 4,736 with `include_unqualified=true` (23:45:45Z), 4,737 (23:46:01Z; the supervisor read 4,738); the competition detail says 10,019 participants; `limit` max 100 (`limit must be between 1 and 100`); **with `include_unqualified=true`, offset 4,700 answers** (no 1,000 cap). `competition/account` rows add `fees`, `funding`, `locked_positions`, `row_state`.
 - **23:46Z `/v1/info/exchange-stats`:** 2026-11-02..08 volume $591,101,131, fees $170,275.93, OI (one-sided) $116,556,434; 2026-11-08 volume $39,712,771, fees $13,155.66.
 - **2026-11-09 23:59:20Z–2026-11-10 00:00:40Z, ticker against settlement:** CASHCAT-USD (id 70) rolling `funding_rate`
   −0.00019287 (23:59:20Z), −0.00019312 (23:59:50Z); settled −0.00019317 at 00:00:00.093Z. XRP-USD (id 33) −0.00002069,
