@@ -580,3 +580,31 @@ rows; exchange-stats fees $170,275.93 for 2026-11-02 00:00Z to 2026-11-09 00:00Z
 **How the findings fit later phases (notes).** The collector needs the list in §10. The hypothesis register needs F1 (which
 board, which parameter, which date), F2 (the rewards figure is a budget, income is unseen), F5 (what is tested and what is
 only documented) and F6 (the H13 rule). The v1 plan must not show a rewards or tier figure as fact: both are inferences.
+
+---
+
+## 10. For the collector (Phase 1)
+
+What the Phase 1 collector should read from this sweep. Costs are the published or measured weight; "tokens a minute" is
+the average if the read runs at the stated rhythm; every read is spaced evenly, one at a time, never more than 30 tokens in a
+burst, inside the 250-token operating budget (decisions 2026-11-07). Status = tested in this sweep, or text only.
+
+| Read | Keep | How often | Weight | Tokens a minute | Status |
+|---|---|---|---|---|---|
+| `GET /v1/info/exchange` | `engine_version`, `cancel_only`, `chain_id`, `contract` (maintenance flag and deploy marker; explains gaps in the tape) | every 60 s | 2 | 2.0 | tested (23:41:15Z) |
+| `GET /v1/info/tickers` (all 90) | the new `funding_rate` (rolling, hourly), `next_funding`, `long_count`, `short_count`, `open_interest`, `index_price`, `mark_price` | every 60 s (R1 already budgets it) | 2 | 0 new (2.0 already planned) | tested |
+| `GET /v1/info/instruments` | `close_only`, `settlement`, `fee_override`, `funding_multiplier`, `max_leverage`, `risk_tiers`, `isolated_only`; also after any `engine_version` change; a market that leaves the list is read once by `instrument_id` for its `settlement` | every 10 min | 2 | 0.2 | tested |
+| `GET /v1/info/stock-splits` | `events`, `sequence` (a split would break sizes and prices across it) | once a day | unpublished (charge 10) | 0.007 | tested (empty) |
+| `GET /v1/info/exchange-stats` | volume, gross positive fees, open interest for each finished UTC day `[d, d+1)` | once a day after 00:10Z | 10 (1 if cached) | 0.007 | tested |
+| `GET /v1/info/competitions` and `/competition?competition_id=` | status, dates, boosts, minimum volume (the covariate for H1–H7) | once a day | 1 + 1 | 0.001 | tested |
+| `GET /v1/info/competition/leaderboard` with `include_unqualified=true`, `limit=100`, `offset` 0 … ~4,700 (without the parameter only the qualified accounts are listed) | the universe seed: account, score, PnL split, volume, boosted volume, `instruments_traded`; record `total` and the date | once a day while a competition is live, once more after final results; ~48 pages one every ~3 s (about 2.4 minutes) | 1 a page, 48 a pass | 0.03 (20 while the pass runs) | tested (offset 4,700, total 4,737) |
+| `GET /v1/info/competition/account` | a followed account's `row_state`, fees, funding, unrealized PnL | once a day per followed account while live | 1 | 0.014 for 20 accounts | tested for one address |
+| `GET /v1/info/funding?instrument_id=&start_timestamp=` | the settled hourly rate (24 rows a day) | once a day per market, spread over the day (one read every ~96 s) | 10 | 0.63 for 90 markets | tested (2 markets) |
+| `GET /v1/info/fees` | the 7-tier schedule (`min_volume_30d`) | once a week | 2 | 0.0002 | tested |
+
+**New load: about 2.9 tokens a minute on average** (exchange 2.0, funding 0.63, instruments 0.2, the rest under 0.1), plus the
+20-token-a-minute competition pass for 2.4 minutes a day. **Do not read:** `/v1/info/index` (constituents are empty),
+`/v1/info/markets` (tickers and statistics cover it), `assets`, `invite`, `perps-whitelist`, `account-tiers`,
+`builder-stats` (unverified), `competition/widget`. **Parse rules that follow:** non-strict Zod on every reply; log unknown keys
+once a day (the live replies carry fields the spec lacks); keep `previous` raw values of `max_leverage`, `fee_override`,
+`close_only` with the date so a change is visible; store the competition board with its parameter name and `total`.
