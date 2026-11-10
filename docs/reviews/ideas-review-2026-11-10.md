@@ -12,6 +12,10 @@ report — that list merged with ours (the plan page's "The road to v1": P0-1
 to P0-4, C1, H1–H13, D1, D2, V1–V7, M1–M3; decisions 2026-11-09, the fast
 track) and with DOCS-SWEEP's report as it stood after its own Final review
 (`docs-sweep-2026-11-10.md`, 612 lines, commit `4a63dce`; "DS" below).
+**Then its own Final review,** at the owner's request, 2026-11-10 00:40Z –
+00:55Z: findings F1–F15 by severity, one commit a fix, each correction
+marked in place `[Final review Fn: …]`; the findings, the commits and what
+was left are in the last section.
 
 **No Polymarket call, no data opened, nothing on F:** — reading, thinking and
 arithmetic only. A review decides nothing.
@@ -894,9 +898,10 @@ traders it has nothing to rank.
 ## Appendix A — Draft register entries
 
 Drafts for the supervisor to turn into the register the owner approves.
-Every figure marked [arithmetic] is rough and is replaced by a measured one
-before an entry is approved. Thresholds written here are proposals; what
-matters is that each is written into its entry before any outcome is seen.
+Every figure marked [arithmetic] or [guess] is rough and is replaced by a
+measured one before an entry is approved (A.2 says which). Thresholds
+written here are proposals; what matters is that each is written into its
+entry before any outcome is seen.
 
 ### A.0 — Common to every entry
 
@@ -1110,7 +1115,8 @@ FIND's own counts and spread before its entry is approved.**
 | 10, final exam | the 50: 387 entries in six weeks [record: R8's cell]; all directional accounts: 6.4 times as many [guess: 300 traders against 47] | R8's cell: a standard error of 14.1 bps on 387 entries [record: its interval, half-width 27.6 ÷ 1.96] | 14.1 bps; 5.6 bps | 3.6–3.9 | the 50: 51–55 bps; all accounts: 20–22 bps | replace the second |
 
 **Read together.** At the final exam most entries can see an effect of
-about 30 to 50 bps; only entries 5, 7 and 10 can see less. An edge of 12–15
+about 30 to 50 bps; only entries 5 and 10 can see less (and 7, if its runs
+turn out to be many). An edge of 12–15
 bps — enough to pay a taker's costs and leave a little — will most likely
 not be confirmed in six weeks: it fails this batch, and can only be
 registered again for a later one, on new weeks (A.0-11). And entry 8 can
@@ -1646,9 +1652,11 @@ named beside it, then went through the six points the supervisor named. No
 API call, no data. **Findings first; each fix is its own commit, marked in
 place `[Final review Fn: …]`; the commits are listed at the end.**
 
-**How satisfied am I?** The merged list, its order and the critique stand:
-nothing found changes them. What was weak is the part other people must
-lift and run — the exams' rule, the "what each test can see" figures, the
+**How satisfied am I?** The merged list, its order and the critique stand.
+Two of the ten entries changed: entry 10 lost a hypothesis that should not
+have been there, and entry 8 is now registered only if a first count shows
+it can see anything. What was weak is the part other people must lift and
+run — the exams' rule, the "what each test can see" figures, the
 blind-store rule and the entries' format. In four places a reader would
 have had to guess, and in two the report would have misled: the final
 exam's line was not safe for tests that share days and accounts, and the
@@ -1658,28 +1666,103 @@ figures for what the exams can see were too small by about a third.
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F1 | **The exams' lines are neither derived nor airtight.** The first exam's "t ≥ 3.3" is a constant that ignores how many hypotheses are examined and that it rests on 23 days. The final exam's Benjamini–Hochberg line is guaranteed only for tests that are independent or move together; ours share days and accounts, so the guarantee is not shown — R3 chose e-Bonferroni over e-BH for this very reason. "t" was read on the normal table although the day counts are 23 and 42. There is no worked example, and the conditions that keep two looks safe are not written down. | pending |
-| F2 | **The "smallest visible effect" figures are too small and their inputs are missing.** All were computed at 2.8 standard errors — one test, normal table — although each will face a batch line; several rest on guessed spreads and counts but are tagged [arithmetic]. Re-derived they rise by about a third; entry 8's by two to three times; entry 1's FIND figure is 17–28 bps, not 15–20. | pending |
-| F3 | **The "blind store" rule does not say which fields.** "Addresses only" still leaks when the address comes from a board sorted by profit — being listed there after 2026-11-07 is itself a result. Nothing says what FIND may read of prices, profit series and portfolios after that date, and nothing bars an account found later from this batch's CONFIRM lists. | pending |
-| F4 | **Entry 10 carries two hypotheses, and one should not be there.** Cell B (UTC 00–04) failed R8's own count bar (125 entries, 19 traders: "TOO FEW") and its interval held zero; giving it a place in the batch makes every other test's line stricter for nothing. | pending |
-| F5 | **Two promises that cannot be kept as written.** A.0-2 re-prices every cell that goes to CONFIRM from one-second marks: about 200,000 tokens for entry 1 alone, in no budget, and of no use at horizons of an hour or more. And foundation B is "done" when the kit reproduces R8's −16.60 exactly — which a one-minute price cannot do. | pending |
+| F1 | **The exams' lines are neither derived nor airtight.** The first exam's "t ≥ 3.3" is a constant that ignores how many hypotheses are examined and that it rests on 23 days. The final exam's Benjamini–Hochberg line is guaranteed only for tests that are independent or move together; ours share days and accounts, so the guarantee is not shown — R3 chose e-Bonferroni over e-BH for this very reason. "t" was read on the normal table although the day counts are 23 and 42. There is no worked example, and the conditions that keep two looks safe are not written down. | `88f0247` |
+| F2 | **The "smallest visible effect" figures are too small and their inputs are missing.** All were computed at 2.8 standard errors — one test, normal table — although each will face a batch line; several rest on guessed spreads and counts but are tagged [arithmetic]. Re-derived they rise by about a third; entry 8's by two to three times; entry 1's FIND figure is 17–28 bps, not 15–20. | `b348432` |
+| F3 | **The "blind store" rule does not say which fields.** "Addresses only" still leaks when the address comes from a board sorted by profit — being listed there after 2026-11-07 is itself a result. Nothing says what FIND may read of prices, profit series and portfolios after that date, and nothing bars an account found later from this batch's CONFIRM lists. | `c74e824` |
+| F4 | **Entry 10 carries two hypotheses, and one should not be there.** Cell B (UTC 00–04) failed R8's own count bar (125 entries, 19 traders: "TOO FEW") and its interval held zero; giving it a place in the batch makes every other test's line stricter for nothing. | `a961ce4` |
+| F5 | **Two promises that cannot be kept as written.** A.0-2 re-prices every cell that goes to CONFIRM from one-second marks: about 200,000 tokens for entry 1 alone, in no budget, and of no use at horizons of an hour or more. And foundation B is "done" when the kit reproduces R8's −16.60 exactly — which a one-minute price cannot do. | `5a8a476` |
 
 **Severity 2 — evidence or wording that does not carry its weight**
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F6 | **The one-page summary does not stand alone.** Trade words are not explained (bps, taker, matched null), its items run to three to five lines, and the six questions are only pointed to. | pending |
-| F7 | **Appendix A's ten entries do not share one format.** Fields and their order differ; entry 3 mixes a measurement with a hypothesis; entries 1 and 4 hold more than one hypothesis without saying how many they add to the batch; FIND lines are written three ways ("t ≥ 2", "p below 0.05", "upper bound below"). | pending |
-| F8 | **Two headline numbers hide their assumptions.** "−5 bps before costs, between −19 and +5" treats the cost as the same for every entry and leaves funding in. "Six right calls in ten" is the major-coin illustration, printed as if for every market. | pending |
-| F9 | **Appendix B's map is incomplete and in one place wrong.** DOCS-SWEEP's §10 list, its six contradictions, its five questions and its "three clocks" are not placed; I-37's description of a trader belongs with V6, not with study 22. | pending |
-| F10 | **Unstated inputs.** The collector's disk and token figures; the two exams' token sums; the Sharpe figure in section 3; entry 7's CONFIRM cost (an upper bound, not said). Entry 5 counts 1,272 entries where the priced cell with its random trades has 1,249. | pending |
-| F11 | **Inferences and one error written as facts.** "Their position says nothing about direction" (study 11). "Forward only — their histories are cut at 5,000 fills" (study 17): the cut was R2's own page cap; the API reads an account back to its first fill. "The only two clean dates" (entry 6): the two formation windows share two weeks. And point 2.19 says "the two disagree" where the supervisor's instruction is to leave the funding rule open and write nothing as fact. | pending |
+| F6 | **The one-page summary does not stand alone.** Trade words are not explained (bps, taker, matched null), its items run to three to five lines, and the six questions are only pointed to. | `0f5affd` |
+| F7 | **Appendix A's ten entries do not share one format.** Fields and their order differ; entry 3 mixes a measurement with a hypothesis; entries 1 and 4 hold more than one hypothesis without saying how many they add to the batch; FIND lines are written three ways ("t ≥ 2", "p below 0.05", "upper bound below"). | `25bbe62` |
+| F8 | **Two headline numbers hide their assumptions.** "−5 bps before costs, between −19 and +5" treats the cost as the same for every entry and leaves funding in. "Six right calls in ten" is the major-coin illustration, printed as if for every market. | `ccb1955` |
+| F9 | **Appendix B's map is incomplete and in one place wrong.** DOCS-SWEEP's §10 list, its six contradictions, its five questions and its "three clocks" are not placed; I-37's description of a trader belongs with V6, not with study 22. | `76e7747` |
+| F10 | **Unstated inputs.** The collector's disk and token figures; the two exams' token sums; the Sharpe figure in section 3; entry 7's CONFIRM cost (an upper bound, not said). Entry 5 counts 1,272 entries where the priced cell with its random trades has 1,249. | `d9f0f73` |
+| F11 | **Inferences and one error written as facts.** "Their position says nothing about direction" (study 11). "Forward only — their histories are cut at 5,000 fills" (study 17): the cut was R2's own page cap; the API reads an account back to its first fill. "The only two clean dates" (entry 6): the two formation windows share two weeks. And point 2.19 says "the two disagree" where the supervisor's instruction is to leave the funding rule open and write nothing as fact. | `38ad7de` |
 
 **Severity 3 — hygiene**
 
 | # | Finding | Fix (commit) |
 |---|---|---|
-| F12 | **Names collide.** "A" is a foundation, an appendix and a rule list (A.0); the critique's groups A–C sit beside foundations A–C. | pending |
-| F13 | **One fact, several homes** (against CLAUDE.md's "one fact, one home"): the exams' rule in four places, the break-even illustration in three. A correction then has to find every copy. | pending |
-| F14 | **Alternatives and extras kept "just in case".** A second cure in point 2.9 and a looser/stricter choice in question 3; two optional pulls (an equity series for a variant that is not among the eleven; one-second marks for #47); "one-second marks or the collector's prices" (entry 5); and the collector's hourly portfolio reads for studies ranked 16 and 17 — which record nothing that cannot be rebuilt later from fills. | pending |
-| F15 | **Left as written** — see "What I left, and why" at the end. | — |
+| F12 | **Names collide.** "A" is a foundation, an appendix and a rule list (A.0); the critique's groups A–C sit beside foundations A–C. | `3ac839d` |
+| F13 | **One fact, several homes** (against CLAUDE.md's "one fact, one home"): the exams' rule in four places, the break-even illustration in three. A correction then has to find every copy. | `a2efeee` |
+| F14 | **Alternatives and extras kept "just in case".** A second cure in point 2.9 and a looser/stricter choice in question 3; two optional pulls (an equity series for a variant that is not among the eleven; one-second marks for #47); "one-second marks or the collector's prices" (entry 5); and the collector's hourly portfolio reads for studies ranked 16 and 17 — which record nothing that cannot be rebuilt later from fills. | `aaad4c2` |
+| F15 | **Left as written** — see "What I left, and why" below. | — |
+
+**Commits** (on main, not pushed): the findings `1109df0`; then one per
+fix, in the order they were made — F4 `a961ce4`, F7 `25bbe62`, F1
+`88f0247`, F2 `b348432`, F3 `c74e824`, F5 `5a8a476`, F8 `ccb1955`, F9
+`76e7747`, F10 `d9f0f73`, F11 `38ad7de`, F14 `aaad4c2`, F12 `3ac839d`, F13
+`a2efeee`, F6 `0f5affd`; this closing section last. The order differs from
+the numbering because the entries' format (F7) had to exist before their
+lines and figures (F1, F2) were rewritten, and the summary (F6) had to
+come after everything it sums up.
+
+### What I left, and why
+
+1. **The priors** (7%, 8%, 10% … for single studies; 12, 35 and 53% for
+   round 2). They carry more digits than knowledge. Left: "How I ranked"
+   calls them guesses, they only order the list, and rounding them now
+   would look like new information.
+2. **Studies 23 to 25** (a patient follower, specialists, machine
+   learning) propose no work now. Left in the list: the brief asks for
+   every idea with its place; they stand last and say so.
+3. **Section 1's ten paragraphs repeat parts of their entries.** Left:
+   they carry the reasons for the order, which the entries do not; F13 says
+   which of the two rules where they differ.
+4. **Section 5, item 8** ("what the blind stage was worth") is a note on
+   the process, not a finding. Left: the supervisor chose the two-stage
+   design and may want to read how it went.
+5. **My stage-1 file is not corrected.** It is the blind stage's evidence,
+   closed at 00:04Z. Its "8–10 bps" and its figures at 2.8 standard errors
+   stand there as written and are corrected here.
+6. **The figures are still not measurements.** Every [arithmetic] and
+   [guess] figure was re-derived by hand and now names its inputs, but none
+   was run on data. A.1's first measurements replace them; until then no
+   entry should be read as seeing more than its row in A.2 says.
+7. **The t values in A.0-11's table** are from memory of the table, rounded
+   up. The rule is the two formulas (0.005 ÷ m at the first exam; Holm from
+   0.045 ÷ m at the final); the t values are recomputed when the batch is
+   frozen.
+8. **Entry 8's place in the order.** By A.2 it can see only about 150 bps.
+   I flagged the consequence (it is registered only if first measurement 5
+   improves that) and did not move it down the list myself: the count that
+   decides is one look at data already held.
+9. **Not mine to fix:** the reviews index and the plan page (the
+   supervisor's); the funding rule of point 2.19 (the supervisor settles it
+   with a small read).
+
+### How the findings fit the next phases
+
+- **The register.** A.0 is its header as it stands; the ten entries lift
+  unchanged. The batch size m is fixed when the batch is frozen (about
+  2026-11-20), and the lines' t values are computed then. A hypothesis that
+  arrives later starts a second batch.
+- **The kit.** Its readers enforce A.0-9 by construction — in FIND mode
+  they refuse any row stamped at or after 2026-11-07T00:00Z — so the blind
+  store does not rest on anyone's care. Its tests cover the two p-values on
+  cluster means and Holm's steps with a dropped hypothesis still counted.
+- **The collector** stays tiny: it writes everything and decides nothing
+  about who may read. One addition worth its few tokens: once the lists
+  are frozen, pull their new fills weekly into the blind store, unread —
+  then a history route withdrawn before an exam cannot cost the exam.
+- **The exams.** One capture each; the same fingerprinted code at both.
+  The first exam prints, per hypothesis: the estimate, both p-values, the
+  line, and one of three words — PASSES EARLY, DROPPED, OPEN. Nothing else
+  is read from the new weeks.
+- **v1's paper log.** A profile (V3) is the same object as a register
+  entry: a list frozen with a hash, a statistic, a line. Showing each
+  profile's "smallest visible effect" beside it tells the owner what that
+  profile could ever show.
+- **What could still happen, and what then.** FIND finds nothing: the
+  batch is entry 10 alone (m = 1) beside D1 and D2 — say so on 2026-11-20,
+  not on 2026-11-30. A new competition starts inside the exam weeks: A.0-8
+  already covers it; record its dates and boosts before the exam. The owner
+  wants a look in between: a third exam needs its share of the 5%,
+  declared before the first. The collector is late: no exam depends on it —
+  prices come from the mark rule; only the audits and the studies whose
+  data starts with the collector wait. A list shrinks: it is judged whole,
+  and the count is printed.
