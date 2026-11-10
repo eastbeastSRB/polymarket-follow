@@ -575,7 +575,7 @@ rows; exchange-stats fees $170,275.93 for 2026-11-02 00:00Z to 2026-11-09 00:00Z
 | # | Finding | Handling |
 |---|---|---|
 | F11 | `apilib.mjs` imports `createHash` and never uses it; `spec-inventory.cjs` declares `comps` and never uses it; scripts are named `api1` … `api10` (they say nothing); `dl-pages.mjs` fetches the changelog and rate-limits again after `fetch-index.mjs` did; `out/wait-api4.txt` is a leftover; `api6.mjs` and `api7.mjs` hold one public address | left; a project script would take such values as arguments and have a descriptive name |
-| F12 | `docs/condensed/` was made by an awk command typed once and never saved | saved as `scripts/condense.sh` (pending) |
+| F12 | `docs/condensed/` was made by an awk command typed once and never saved | saved as `scripts/condense.sh` (fix F12); run into a scratch folder it reproduces all 37 files of `docs/condensed/` byte for byte |
 
 **How the findings fit later phases (notes).** The collector needs the list in §10. The hypothesis register needs F1 (which
 board, which parameter, which date), F2 (the rewards figure is a budget, income is unseen), F5 (what is tested and what is
