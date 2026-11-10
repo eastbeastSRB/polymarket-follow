@@ -482,7 +482,7 @@ tasks and data folders are costly to rename once v1 runs.] The parts:
   append-only collections cut at the run's start minus 60 s (R6). Kept: 7
   days on E:; 30 daily, 12 weekly and 12 monthly on F:.
 - **The stream files:** yesterday's closed day folder copied to
-  `E:\backups\polymarket-follow\stream\<date>\`, each file checked against
+  `E:\backups\polymarket-follow\recordings\<date>\`, each file checked against
   the day's manifest; 7 days kept on E: (3–4 GB, inside R6's "our root on E:
   stays under 8 GB").
 - **Checked:** each run re-reads what it wrote against the manifest hashes
