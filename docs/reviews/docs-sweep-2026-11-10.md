@@ -377,7 +377,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **Reading the private pages:** page by page against mapping them to the spec. They are signed routes we never call.
 - **Settling the "rolling funding" question:** a second ticker read minutes later (cheap, shows it moves) against waiting for
   a settlement (shows it converges). I did both: 23:59:50Z rolling rate against the 00:00Z settled rate, 2 markets
-  (`out/api4.txt`) — they agree to 0.03%.
+  (`out/api4.txt`) — the gaps are 5e-8 (CASHCAT, 0.026%) and 4e-8 (XRP, 0.195%) an hour (`out/an-econ.txt`) [Final review F3].
 
 ## 3. Possibilities found
 
@@ -392,9 +392,10 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 6. `exchange-stats` per day: volume, fees, open interest — the context series for H9.
 7. Retired markets by id (`instrument_id=51` returns the settlement); `close_only` as an early delisting flag.
 8. Public portfolio → approximate cross-margin ratio (isolated accounts excluded).
-9. Rolling implied funding (ticker, WebSocket `fr`) is a **live forecast of the next settlement**: at 23:59:50Z it read
-   −0.00019312 (CASHCAT) and −0.0000206 (XRP); the hour settled at −0.00019317 and −0.00002056 at 00:00:00.09Z
-   (`raw/a4-funding-*.json`). The baseline floor means most majors charge longs 10.95% a year.
+9. Rolling implied funding (ticker `funding_rate`; the WebSocket `fr` is the same quantity per R1) tracked the next settlement closely
+   in two markets: 10 s before the hour it read −0.00019312 (CASHCAT) and −0.0000206 (XRP); the hour settled at −0.00019317
+   and −0.00002056 at 00:00:00.09Z (`raw/a4-funding-*.json`; gaps 5e-8 and 4e-8 an hour, 0.026% and 0.195%) [Final review F3].
+   The baseline floor means most majors charge longs 10.95% a year (crypto; 5.48% for the rest).
 10. WebSocket `book::<iid>::50`, 1 s klines, the `corporate-actions` channel.
 11. The exchange contract's pUSD balance (explorer: $81.64M at 23:43Z, $81.68M at 00:05Z) is a public number worth recording over
     time. Setting it against exchange open interest ($116.6M one-sided notional at 2026-11-08 23:59:39Z) is loose — different
@@ -431,7 +432,7 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 - **How the smart-wallet address is derived from the signer** (H13's link to the prediction markets): *settle* by computing it
   for a pair polymarket-lab already knows.
 - **Whether R1's saved pages differ from today's:** a hash diff by the supervisor.
-- **Whether the ticker rate matches the settled rate in every market:** two markets agree to 0.03% (`out/api4.txt`); a
+- **Whether the ticker rate matches the settled rate in every market:** two markets: the rolling rate 10 s before the hour differed from the settled rate by 5e-8 and 4e-8 an hour (0.026% and 0.195%; `out/an-econ.txt`) [Final review F3]; a
   scan of all 90 around one settlement would settle it (weight 2 + 90 × 10 for the history, or the WebSocket `fr` plus one funding read each).
 
 ## 6. Beyond the brief
