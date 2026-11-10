@@ -14,8 +14,8 @@ code-rules by the supervisor.
 realtime-updates, rate-limits and market-data pages and the changelog, as
 downloaded 2026-11-10 00:47–00:48Z; the two specs are byte-identical to
 DOCS-SWEEP's: SHA-256 `685bae5e…`, `55b198ce…`), `progress.md`. The raw
-WebSocket capture (about 130 MB of gzip variants) stayed in the session
-scratchpad and is not kept; every figure drawn from it is in `out/`.
+WebSocket capture (88 MB of gzip variants) stayed in the session scratchpad
+and is not kept; every figure drawn from it is in `out/`.
 
 **What I measured, inside the brief's limits.** *WebSocket:* a 15 s smoke
 run and a 300 s run, 2026-11-10 00:54:51–00:59:52Z (a Tuesday: US night,
@@ -70,9 +70,12 @@ unit of Windows' free-space figures).
 **What it costs.** About **5 tokens a minute** on average (2% of the 250);
 never more than 50 in a minute — only during the 18-minute board read
 before midnight UTC — and never more than 30 in 5 seconds. Research keeps its
-200. The streams download **about 25 GB a day** (about 0.8 TB a month),
-nearly all of it the books, whose frames come every tenth of a second
-whether or not anything changed.
+200. The streams download **about 25 GB a day** (about 0.8 TB a month,
+a steady 2–3 Mbit/s), nearly all of it the books, whose frames come every
+tenth of a second whether or not anything changed. The computer's share is
+small: reading the books costs about 1% of one processor core (measured
+offline; the schema checks add a little), compressing an hour of them about
+2 seconds.
 
 **Where it lives.** Streams and every raw reply go to **files on F:** (the 2 TB
 disk, 1,555 GiB free): one compressed file per hour and kind, **about
@@ -95,8 +98,9 @@ activity and the rule book (IDEAS-REVIEW's rule, A.0-9). Its storage layout
 makes that rule a query, not a matter of care.
 
 **Built** in eight parts by one build subagent, each tested and checked by
-the supervisor, then a fresh Final review before it runs unattended — about
-two days. **You install nothing** (Node 24.13 and pnpm 11.20 are on the PC;
+the supervisor, then a fresh Final review — about two days. The streams can
+start recording after the third part, before the rest is finished, if you
+agree (question 10): every day without them is lost for good. **You install nothing** (Node 24.13 and pnpm 11.20 are on the PC;
 MongoDB runs); you register three Windows tasks with a prepared script.
 
 **Your questions** (section 7, each with my recommendation in brackets):
@@ -113,8 +117,10 @@ MongoDB runs); you register three Windows tasks with a prepared script.
    now.*)
 8. After Windows Update's pause ends (2026-11-18), keep restarts manual?
    (*Yes.*)
-9. Once the exam lists are frozen, also store their new trades weekly,
-   unread? (*Yes.*)
+9. Once the exam lists are frozen, also store those accounts' new fills
+   weekly, unread? (*Yes.*)
+10. Start recording as soon as the streams are built and checked, before
+    the last parts and the Final review? (*Yes.*)
 
 ---
 
@@ -187,7 +193,7 @@ accounting where none is published):
 | `exchange` | every 60 s | 2 | 2.0 | the raw reply; each change of `cancel_only` or `engine_version` in the rule book, with the reply's `date` and `age` (CloudFront served it 213 s and 364 s old) |
 | `instruments` | every 10 min | 2 | 0.2 | the raw reply; each change in the rule book; it drives the subscriptions; a market that leaves the list is read once by id for its settlement |
 | `time` | every 10 min | 1 | 0.1 | the clock offset |
-| `bbo` (all 90) — **the price audit** | every 10 min | 2 | 0.2 | each market's bid and ask against the recorded book at the reply's `timestamp`: agree or not |
+| `bbo` (all 90) — **the price audit** | every 10 min | 2 | 0.2 | each market's bid and ask against the recorded book within 200 ms of the reply's `timestamp` (one stamp for the whole reply): agree or not |
 | `trades?instrument_id=…&start_timestamp=…&end_timestamp=…` — **the tape audit** | hourly, the last hour of one market with trades | 10 | 0.17 | the share of the API's trades present in the recorded stream |
 | `competitions`, `competition`, `competition/leaderboard?include_unqualified=true&limit=100` (about 48 pages) | daily 23:15Z, while a competition runs and for 7 days after its end | about 50 | 0.03 | raw pages; the parsed table; the universe |
 | `leaderboard`, 16 boards × 10 pages (`limit=100`, offsets 0–900) | daily from 23:38Z: `all`, `month`, `week`, then `day` | 800 (+50 for a re-read) | 0.56 | raw pages; parsed boards with every page's snapshot stamp; the universe |
@@ -253,7 +259,11 @@ replies"; it costs a few MB a day.
 The current hour is written as plain text and compressed with Brotli when
 the hour ends (checked by decompressing and comparing hashes, then the plain
 file is deleted). A crash leaves a complete plain file, which the next start
-compresses. **Brotli rather than gzip:** on the books it is 3.2 times
+compresses; a last line cut by the crash is dropped there and counted. The
+compression runs as a stream in Node's thread pool, never on the main loop:
+an hour of books takes about 1.7 s of CPU, and the event loop waited at most
+13 ms meanwhile (`out/cpu-bench.txt`), so the sockets keep being read.
+**Brotli rather than gzip:** on the books it is 3.2 times
 smaller, because a market's previous book lies 90 frames (about 77 KB)
 back, beyond gzip's 32 KB window and inside Brotli's (`out/offline-analysis.txt`
 §3: 0.371 against 1.197 GB a day); it is part of Node's standard library and
@@ -273,7 +283,7 @@ decision; R6's option A, decisions 2026-11-08).
 
 | Collection | Holds | Size |
 |---|---|---|
-| `board_snapshots` | one document per board per pass: window, sort, pass date, each page's offset, snapshot `timestamp`, `total` and read time, the 1,000 rows as parsed (API names, money as strings), `consistent`, `complete` | 16 a day; about 1.2 GB a year (R6: 197 B a row on disk) |
+| `board_snapshots` | one document per board per pass: window, sort, pass date, each page's offset, snapshot `timestamp`, `total` and read time, the 1,000 rows as parsed (API names, money as strings, addresses lower-cased), `consistent`, `complete` | 16 a day; about 1.2 GB a year (R6: 197 B a row on disk) |
 | `competition_snapshots` | one per pass: the competition, `total`, `updated_at`, every row | about 1.9 MB a pass; up to 0.6 GB a year |
 | `universe` | one per address (above) | a few MB |
 | `rulebook` | each observed change of the market list, fees, exchange marks, splits, competitions (dates, boosts) | small |
@@ -428,8 +438,9 @@ unattended restart costs data (question 8). The parts:
 - **The restore test:** every Sunday after the dump, into
   `polymarket_follow_restore_<date>` (refused if the name exists, any other
   name refused, never over the live database); counts and `_id` sets
-  compared; the universe rebuilt from that day's files and compared; then
-  dropped. Once a quarter the owner runs a full drill (R6).
+  compared; the universe rebuilt from every day's board and competition
+  replies in the files and compared with the restored one; then dropped.
+  Once a quarter the owner runs a full drill (R6).
 - **One copy only:** stream files older than 7 days live on F: alone; a
   failing F: loses them (question 5).
 
@@ -529,8 +540,10 @@ to GitHub as now.
 | **A split** | the daily `stock-splits` (`events`, `sequence`) | the event in the rule book and on Status; files keep frames as received; readers never join sizes or prices across it (DOCS-SWEEP §4) |
 | **A delisting** | `instruments`: `close_only`, then the market leaves the list | marks in the rule book; its settlement read once by id; its channels unsubscribed, no stall alarm after |
 | A new market | `instruments` | subscribed on the open connections (one message each); a mark in the rule book |
+| The market list unreadable at start | the first `instruments` read fails | the last stored list subscribes the streams; the read retried with back-off |
 | **Clock drift** | `/time` every 10 minutes; the smallest (receive − `ts`) each minute | WATCH over 2 s; records keep the server's time anyway; the program never sets the clock (a system setting) |
 | A board read straddles a refresh | its pages' snapshot stamps span more than 10 s | re-read once if the window allows; otherwise stored with `consistent: false` |
+| **A frozen source** — the API answers, the data stops moving (the lab's leaderboard froze 2026-10-30 to 11-02, R4 §5) | a board's snapshot stamp older than 5 minutes at read time (10 for `all`; R1 saw at most 60 s and 281 s), or its top 100 identical to the day before; no book of any market changing for 5 minutes | the board stored with `stale: true`; a WATCH "no book changed in 5 minutes" (a quiet weekend night can trip it, so the text names the test that fired) |
 | The day boards run late | the 23:59:30Z guard | not read after it, logged as missed; a board's day is taken from its snapshot `timestamp`, never from our clock |
 | A competition ends, a new one starts | the daily `competitions` read | each competition is read until 7 days after its end (final and paid rows); its dates and boosts in the rule book (A.0-8) |
 | A crash | the launcher returns node's exit code | Task Scheduler restarts it three times a minute apart; then the check task |
@@ -546,11 +559,11 @@ to GitHub as now.
 | Part | What | Its tests | Done when |
 |---|---|---|---|
 | 0 | the workspace, configuration, CI, one empty app with one test | the CI file mirrors `pnpm verify` | `pnpm verify` green |
-| 1 | the REST client (admission, back-off, nightly pause, allowed routes, call log), the schemas, the minute and ten-minute reads, the file writer (hours, Brotli, manifests, coverage) | the unit tests of §1.6 that apply | a 30-minute live run: no 429, the call log never above 50 tokens a minute or 30 in 5 s, an hour's file compressed and verified |
-| 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price and tape audits | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 99% of comparisons; the tape audit finds every API trade; CPU, memory and bytes received reported |
-| 3 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book; loading from files | board order and guards (fake clock), the re-read, the paging stop, the universe rules, a rebuild from files | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
-| 4 | health: the heartbeat file and state, the disk checks and the stop, the clock watch, a `status` command printing every row | thresholds; the status output | `status` prints every row from a live run |
-| 5 | Windows: the launcher, the check script, the registration script (prepared, not run) | the launcher returns node's exit code (a run that exits 3) | the owner registers the tasks; an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and notify |
+| 1 | the REST client (admission, back-off, nightly pause, allowed routes, call log), the schemas, the minute and ten-minute reads, the file writer (hours, Brotli, manifests, coverage) | the unit tests of §1.6 that apply | a live run of at least 30 minutes across an hour's end: no 429, the call log never above 50 tokens a minute or 30 in 5 s, the closed hour's file compressed and verified |
+| 2 | the WebSocket (books, trades), pings, the watchdog, reconnects, the sampler, stalls, gaps; the price and tape audits | the sampler, the watchdog, the back-off, the frame schemas | a 60-minute live run: book lines per market as measured here; a forced close reconnects within 20 s and its gap is logged; the price audit agrees in at least 97% of rows, and every miss is a market whose book changed in that second (a timing miss, not a lost frame) — this plan's simulation on its own capture: 177 of 180 rows, the three misses in the markets whose best price changed most often (`out/audit-sim.txt`); the tape audit finds every API trade; CPU, memory and bytes received reported |
+| 3 | running on Windows: the heartbeat file, the lock, the launcher, the check script, the registration script (prepared, not run by the build) | the launcher returns node's exit code (a run that exits 3); the lock refuses a second start | the owner registers the tasks (question 10: as early as this); an ended node process comes back; a stopped heartbeat (a test switch) makes the check restart it and notify |
+| 4 | the MongoDB store; the board pass, the competition pass, the daily reads; the universe; the rule book; loading from files | board order and guards (fake clock), the re-read, the paging stop, the universe rules, a rebuild from files | one live board read (50 tokens) stored, its universe updated; then the first night's full pass, watched by the supervisor: 16 × 1,000 rows with their snapshot stamps |
+| 5 | health: `collector_state`, the disk checks and the stop, the clock watch, the frozen-source checks, a `status` command printing every row | thresholds; the status output | `status` prints every row from a live run |
 | 6 | backup and restore | the round trip on `polymarket_follow_test` | a backup to E: and F: and a restore test, both ok |
 | 7 | docs: architecture's first real section, current-task; the decisions entry for the technical calls; the docs sweep | — | `pnpm verify` green; docs swept |
 | 8 (later) | the weekly fills of the frozen exam lists into the blind store (question 9), when the supervisor hands over the list files (about 2026-11-20) | the list's hash checked at start; dedupe by key | a week's fills stored, unread |
@@ -564,15 +577,33 @@ the diff read; a search for any route outside `/v1/info/`, any `POST`, any
 path of polymarket-lab; the live smoke run on its own path, with the files,
 the database documents and the call log checked (tokens a minute, 5-second
 peaks); each deciding rule broken on purpose — admission, the 23:59:30Z
-guard, the sampler, the universe's first seen, the disk stop — and a test
-seen to fail. **Then a fresh Final-review subagent** reads the whole code
-before the owner registers the tasks. **After start:** the supervisor checks
-the first 23:38Z board pass, the first 05:20Z backup and the first day's
-manifest; after a week the measured sizes replace this plan's estimates in
-architecture.
+guard, the sampler, the watchdog, the universe's first seen, the disk stop
+— and a test seen to fail. **Then a fresh Final-review subagent** reads the
+whole code: before the owner registers the tasks, or — if question 10 is
+answered yes — while the early collector runs, its fixes shipped as
+rebuilds. **After start:** the supervisor checks the first 23:38Z board
+pass, the first 05:20Z backup and the first day's manifest; after a week
+the measured sizes replace this plan's estimates in architecture.
+
+**IDEAS-REVIEW's "done when" for foundation 1, mapped:** (1) "a day's
+best-price record has no gap over 15 s outside logged maintenance" → no
+interval over 15 s without book frames for a market in `coverage.jsonl`,
+outside logged deploys (the best-price stream cannot carry this line: 59 of
+90 markets go quiet longer); (2) "an hour of the recorded stream agrees with
+`/v1/info/bbo` snapshots" → the price audit, at least 97% within 200 ms with
+every miss explained by timing (exact agreement at one instant is impossible
+with 100 ms snapshots in the fastest markets: `out/audit-sim.txt`); (3) "the
+daily board copy holds 16 × 1,000 rows with their snapshot stamps" → part 4;
+(4) "the tables that carry results cannot be opened from a study's folder" →
+§1.3's layout and the kit's readers.
 
 **Time:** about two days of build and review — this week (decisions
-2026-11-09, the fast track).
+2026-11-09, the fast track). **Each day before the task runs is a day of
+books and boards lost for good,** so question 10 asks whether the tasks may
+be registered as soon as part 3 is verified — the streams and the minute
+reads recording, with part 1's REST client already checked by the
+supervisor — parts 4–6 then shipping as rebuilds (`pnpm build`, the task
+restarted) and the Final review following.
 
 ---
 
@@ -752,9 +783,20 @@ Failures at run time are in §1.7; these concern the plan.
    *Recommendation:* yes; if a night restart happens anyway, a start-up task
    (it would need an administrator once) is the fallback.
 9. **Once the exam lists are frozen (about 2026-11-20), may the collector
-   store their new trades weekly, unread,** as insurance against a history
-   route withdrawn before an exam (IDEAS-REVIEW)? *Recommendation:* yes —
-   about 0.5 tokens a minute, nothing read by anyone until the exam.
+   store those accounts' new fills weekly, unread,** as insurance against a
+   history route withdrawn before an exam (IDEAS-REVIEW)? *Recommendation:*
+   yes — about 0.5 tokens a minute (assumed: about 300 accounts at R6's mean
+   of 16.6 fills a day, 100 fills a read of 10 tokens, at least one read an
+   account), nothing read by anyone until the exam.
+10. **May the collector start recording as soon as part 3 is verified** —
+    the streams, the minute reads and the Windows tasks, with the REST
+    client already checked by the supervisor — **before the boards, the
+    backups and the Final review are done** (§1.8)? Each day without it is a
+    day of books, and from part 4 of boards, that no one can record later.
+    *Recommendation:* yes. It is watch-only, the streams cost no tokens, the
+    REST client is capped at 50 a minute and stops at a 429, and every later
+    part ships as a rebuild of the running task. The cost is that it runs
+    for a day or two on code the Final review has not yet read.
 
 ## 8. For external-apis
 
@@ -787,11 +829,18 @@ New facts, each dated and sourced (UTC; reads from this PC, user agent
   (`out/offline-analysis.txt` §2).
 - **`sq` is the exchange-wide engine sequence,** not a per-connection
   counter: frames of one tick share `sq` and `ts` across channels and
-  connections (`out/ws-samples-smoke.jsonl`); it rises with gaps
-  (`out/ws-measure.txt`). Supersedes R1's "one growing sequence number per
-  connection".
+  connections (`tickers::1`, `book::1` and `book::1::50` on three
+  connections, `out/ws-samples-smoke.jsonl`); on each connection it rises with
+  gaps (`out/ws-measure.txt`). It refines R1's "one growing sequence number
+  per connection": gaps in it are normal and do not mean lost frames.
 - **The book's first level equals the latest `bbo` at or before its `ts`** in
   99.9% of seconds (17,396 of 17,410).
+- **A REST `bbo` reply carries one `timestamp` for all 90 rows** (the
+  snapshot's). Against the recorded books, 177 of 180 rows of two replies
+  matched a book frame within 200 ms of it; the last frame at or before it
+  matched 170; the three misses were SKHYNIX-USD, SNDK-USD and SOXL-USD,
+  three of the four markets whose best price changed most often
+  (`out/audit-sim.txt`, replies of 00:55:36Z and 00:58:26Z).
 - **Top 20 levels:** the thinner side covered $1,000 in 90 of 90 markets,
   $10,000 in 89 (PRL-USD: $4,507), $50,000 in 84 (`out/depth-coverage.txt`).
 - **Per-message compression:** the server accepts `permessage-deflate;
@@ -836,12 +885,16 @@ In W (`E:\coding\Claude\supervisor\polymarket-follow\workers\COLLECTOR-PLAN\`):
   only), `rest1.mjs`, `ws-ua-local-test.mjs` (127.0.0.1 only),
   `ws-measure.mjs` (the five connections, the variants, the REST inside the
   run), `ws-deflate-check.mjs`, `ws-ext-check.mjs`, `offline-analysis.mjs`,
-  `depth-coverage.mjs`, `rest-budget-check.cjs`, `disk-free.mjs`.
-- **Outputs** (`out/`): `ws-measure.txt` (the 300 s run), `ws-smoke.txt` and
-  `ws-smoke-stdout.txt` (the 15 s run), `ws-samples.jsonl` and
-  `ws-samples-smoke.jsonl` (the first frames of each kind), `ws-events.log`
-  and `ws-events-smoke.log`, `offline-analysis.txt`, `depth-coverage.txt`,
-  `ws-deflate-check.txt`, `ws-ext-check.txt`, `ws-ua-local-test.txt`,
+  `depth-coverage.mjs`, `audit-sim.mjs` (the price audit on the capture),
+  `cpu-bench.mjs` (Brotli and parsing costs), `rest-budget-check.cjs`,
+  `disk-free.mjs`.
+- **Outputs** (`out/`): `ws-measure.txt` and `ws-main-stdout.txt` (the 300 s
+  run), `ws-smoke.txt` and `ws-smoke-stdout.txt` (the 15 s run),
+  `ws-samples.jsonl` and `ws-samples-smoke.jsonl` (the first frames of each
+  kind), `ws-events.log` (the trades connection's silences),
+  `offline-analysis.txt`, `depth-coverage.txt`, `audit-sim.txt`,
+  `cpu-bench.txt`, `ws-deflate-check.txt`, `ws-ext-check.txt`,
+  `ws-ua-local-test.txt`,
   `async-inspect.txt`, `async-updates.txt`, `rest1.txt`, `rest-calls.jsonl`
   (every REST call), `rest-budget-check.txt`, `disk-free.txt`,
   `dl-docs.txt`.
