@@ -20,10 +20,12 @@ are unknown.
 **Headline.**
 1. **Nothing in the specs changed since 2026-11-06:** `perps-openapi.json`, `asyncapi-perps.json`, `llms.txt` and
    `rate-limits.md` are **byte-identical** (sha256 equal to the inputs). The live API is ahead of the spec, as R1 said.
-2. **Not in the spec but live and public:** `/v1/info/markets` (a batched snapshot, 50 instruments for weight 2),
-   `/v1/info/builder-stats`, `/v1/info/account-tiers`, `/v1/info/perps-whitelist`, `/v1/info/stock-splits`, plus the
-   v1/v2 pnl and equity routes R1 already had. Ticker `long_count`/`short_count` now has a **definition** (changelog
-   2026-10-27): accounts with a nonzero net position on that side, market makers and funds included.
+2. **Not in the spec but live and public** [Final review F5]: `/v1/info/markets` (a batched snapshot; read live for one
+   instrument; "≤ 50 instruments, weight 2" is changelog text), `/v1/info/account-tiers`, `/v1/info/perps-whitelist`,
+   `/v1/info/stock-splits` (all three read live 23:42Z), plus the v1/v2 pnl and equity routes R1 already had.
+   `/v1/info/builder-stats` is in the changelog only — **I never read it; unverified.** Ticker `long_count`/`short_count`
+   is live (read 23:41:12Z) and now has a **definition** (changelog 2026-10-27, text only): accounts with a nonzero net
+   position on that side, market makers and funds included. The full status of each item is the table after Q2-A.
 3. **The competition leaderboard with `include_unqualified=true` is not capped at rank 1,000** [Final review F1] (offset
    4,700 answered; the main board stops at offset+limit 1,000): about 48 reads of weight 1 list 4,736–4,738 accounts
    (23:45Z–00:03Z; the competition itself reports 10,019 "participants"; the rule that picks the listed ones is not
@@ -123,17 +125,39 @@ and the BLP entries. Ping and the six public channel pages (trades, bbo, book, k
 | `/v1/info/index?asset=` (2) | `index_price` and `ts`; the spec promises `constituents` (source, symbol, weight, price) but **the live array is empty** for BTC, SP500, GOLD, NVDA, SKHYNIX, ANT — index construction is not visible | 6 reads (`a2-index-*`) |
 | `/v1/info/limit-tiers` (2) = `/v1/info/account-tiers` (same body) | 4 tiers by 14-day volume: 0 / $1M / $541,800,079 / $10B → 2,000 / 5,000 / 15,000 / 30,000 actions a minute, open orders 1,000 / 1,000 / 3,000 / 6,000; "rate_per_minute" fields are legacy and not enforced; WebSocket fields hold 4294967295 (no limit) | read (`a1-limit-tiers`, `a2-account-tiers`) |
 | `/v1/info/invite?code=` (1) | `{valid, error?}`; I used an obviously invalid code → `{"valid":false,"error":"code not found"}`; no use for us | read (`a1-invite`) |
-| `/v1/info/competition/widget` (1) | live competition at a glance: `competition_id`, `end_time` (2026-11-16T14:30Z), `min_volume`, with `address` the account's rank and qualification progress | read without address (`a1-widget`) |
+| `/v1/info/competition/widget` (1) | live competition at a glance: `competition_id`, `end_time` (2026-11-16T14:30Z), `min_volume`; with `address` the account's rank and qualification progress (spec text, **not tested**) | read without address (`a1-widget`) |
 | `/v1/info/markets` (2; changelog, not in spec) | **batched snapshot**: `instrument_ids` (≤50), `curated_list`, `include=sparkline,totals` → per market mark, open price, volume, 24 sparkline points; `totals` = volume $88.4M, open interest $117.3M, 90 markets | read (`a1-markets`) |
 | `/v1/info/stock-splits` (?) | `{"events":[],"sequence":…}` — empty until a split is scheduled | read (`a2-stock-splits`) |
 | `/v1/info/perps-whitelist?address=` (?) | `{"status":"ok","whitelisted":false}` for the day-board #1 account (a trading account), so it is **not** the registration gate; meaning unknown. Without `address`: 400 | read (`a2-perps-whitelist`, `a6-whitelist`) |
-| `/v1/info/builder-stats?address=&period=` (10 on a miss; changelog) | a builder's users, volume, exchange fee, builder fee per market; periods 1d/1w/1m/1y/alltime | **not read** (needs a builder address; none known) |
+| `/v1/info/builder-stats?address=&period=` (10 on a miss; changelog) | a builder's users, volume, exchange fee, builder fee per market; periods 1d/1w/1m/1y/alltime (changelog 2026-10-22 text only) | **not read — unverified** (needs a builder address; none known) |
+
+**A2. Verification status of every "live but not in the spec" item** [Final review F5] (I searched both spec files for the
+name: 0 hits for each item marked "not in spec"; "tested" = a saved reply in `raw/`):
+
+| Item | In the spec? | Evidence | Status |
+|---|---|---|---|
+| `GET /v1/info/markets` | not in spec | `raw/a1-markets.json`, 23:41:16Z, `instrument_ids=1&include=sparkline,totals` | tested for one instrument; "≤ 50", `curated_list`, weight 2 are changelog text |
+| `GET /v1/info/stock-splits` | not in spec | `a2-stock-splits`, 23:42Z: `{"events":[],"sequence":…}` | tested (empty) |
+| `GET /v1/info/account-tiers` | not in spec | `a2-account-tiers`, 23:42Z: same body as `limit-tiers` | tested |
+| `GET /v1/info/perps-whitelist` | not in spec | `a2-perps-whitelist` (400 without `address`), `a6-whitelist` (`whitelisted:false`) | tested; meaning unknown |
+| `GET /v1/info/builder-stats` | not in spec | none | **unverified** (changelog 2026-10-22 only) |
+| `/v1/info/pnl`, `/v2/info/pnl`, `/v1/info/equity` | not in spec | R1 (2026-11-06) | R1's reads; not repeated here |
+| ticker `long_count`, `short_count` | not in spec | `a1-tickers`, 23:41:12Z | tested; meaning is changelog text |
+| ticker `symbol` filter | not in spec (only `instrument_id`) | none | **unverified** (changelog 2026-10-27); the `instrument_id` filter was tested (`a2-ticker-BTC-t0`, `a3-*`) |
+| ticker `pricing_status` | not in spec | absent on all 90 rows | not observed |
+| instrument `fee_override`, `funding_multiplier`, `logo` | not in spec | `a1-instruments`, 23:41:15Z | tested (`fee_override` set on ANT-USD only; `funding_multiplier` null on all 90) |
+| `limit-tiers` fields `ws_*`, `max_connections`, `connects_per_minute_limit` | not in spec | `a1-limit-tiers` | tested |
+| competition rows `instruments_traded`, `top_instrument_ids`, `cohort`, `next_update_at` | not in spec | `a7-comp-lb`, 23:45:45Z | tested |
+| `competition/widget?address=` | in spec | none (I read it without an address) | spec text only |
+| WebSocket `corporate-actions::<iid>` | not in AsyncAPI | none | **unverified** (changelog 2026-11-05) |
+| WebSocket `book::<iid>::50`, `klines` at `1s` | **in** AsyncAPI (`^book::\d+(::(20\|50))?$`, `klines::…::(1s\|…)`) | none | spec text; not tested live |
+| statistics `open` = mark at window start | n/a | none | changelog 2026-10-29 only |
 
 **B. Fields and parameters that are new to our records:**
 - **Tickers:** `long_count`, `short_count` (live, not in the spec): **accounts with a nonzero net position** on that
   side, market makers and funds included, refreshed every 2 s (changelog 2026-10-27). Read: 7,770 long and 2,944 short
   account-positions across 90 markets; ETH 946/214, BTC 816/323, SP500 445/239 (`out/an-api1.txt`). Counts accounts,
-  not size. `symbol` and `instrument_id` filters work. `pricing_status` (changelog 2026-10-20) was present on **none** of 90 rows.
+  not size. The `instrument_id` filter works (tested); the `symbol` filter is changelog text, untested. `pricing_status` (changelog 2026-10-20) was present on **none** of 90 rows.
 - **Ticker `funding_rate` is the rolling implied hourly rate**, not the last settled one: CASHCAT −0.0001883 →
   −0.00018872 and XRP −0.00002178 → −0.00002157 in 90 s (`out/api3-t0.txt`). 55 of 90 sit exactly on the floor
   (crypto 0.0000125 = 0.0001/8, others 0.00000625), 35 are off it. This is the "implied rate published continuously"
@@ -155,7 +179,7 @@ and the BLP entries. Ping and the six public channel pages (trades, bbo, book, k
   count, boosts ANT 3×, AMD/ARM/SOXL 2×, `requires_positive_pnl`, `count_unrealized`.
 - **Fills:** `liquidation_details` {`mark`, `method` "backstop" | "market", `liquidated_user`?} (only backstop fills carry
   it so far), `builder` {address, fee_rate} (hidden on the public surface), `settlement`. R1 had the shapes from the spec.
-- **Statistics `open_price`** is the **mark** at the start of the 24 h window since 2026-10-29 (the older text said the first trade).
+- **Statistics `open_price`** is the **mark** at the start of the 24 h window since 2026-10-29 (changelog text; not re-read live).
 - **Weights from the spec text:** `/v1/info/limit-tiers` 2, `/assets` 2, `/index` 2, `/invite` 1, `/competition/widget` 1,
   `/exchange-stats` 10 (1 cached), `/markets` 2 (changelog).
 
@@ -165,10 +189,11 @@ multipliers per market; account groups and "rewards entities" (invisible); liqui
 the 20 ms taker delay (2026-06-10); a mark-to-index band of 50 bps by default; maintenance windows with order placement paused
 and WebSocket drops; a withdrawal address book (2026-11-05); read-only API keys; stock splits.
 
-**D. WebSocket.** Public channels in the spec: trades, bbo, book, klines, tickers, statistics (R1 had them). New to us:
-`book::<iid>::50` (top 50 levels, 100 ms, since 2026-09-14), `klines` also at `1s`, and `corporate-actions::<iid>`
-(changelog 2026-11-05, not in the spec). The spec's `trades` update has **no** `liquidation_details` although the
-changelog says public trades carry it for backstops.
+**D. WebSocket** (none of it tested live in this sweep). Public channels in the spec: trades, bbo, book, klines, tickers,
+statistics (R1 had them and tested them). New to us: `book::<iid>::50` (top 50 levels, 100 ms; in the AsyncAPI spec and
+the changelog 2026-09-14), `klines` at `1s` (in the AsyncAPI spec), and `corporate-actions::<iid>` (changelog 2026-11-05
+only, **not** in the spec). The spec's `trades` update has **no** `liquidation_details` although the changelog says public
+trades carry it for backstops.
 
 ### Q3. Orders and stops
 
@@ -394,11 +419,11 @@ retail accounts this ratio is wrong (§4). The account's `adl_index` (0–3) and
 6. `exchange-stats` per day: volume, fees, open interest — the context series for H9.
 7. Retired markets by id (`instrument_id=51` returns the settlement); `close_only` as an early delisting flag.
 8. Public portfolio → approximate cross-margin ratio (isolated accounts excluded).
-9. Rolling implied funding (ticker `funding_rate`; the WebSocket `fr` is the same quantity per R1) tracked the next settlement closely
+9. Rolling implied funding (ticker `funding_rate`; the WebSocket `fr` is presumably the same, untested) tracked the next settlement closely
    in two markets: 10 s before the hour it read −0.00019312 (CASHCAT) and −0.0000206 (XRP); the hour settled at −0.00019317
    and −0.00002056 at 00:00:00.09Z (`raw/a4-funding-*.json`; gaps 5e-8 and 4e-8 an hour, 0.026% and 0.195%) [Final review F3].
    The baseline floor means most majors charge longs 10.95% a year (crypto; 5.48% for the rest).
-10. WebSocket `book::<iid>::50`, 1 s klines, the `corporate-actions` channel.
+10. WebSocket `book::<iid>::50`, 1 s klines (both in the AsyncAPI spec) and the `corporate-actions` channel (changelog only) — none tested live [Final review F5].
 11. The exchange contract's pUSD balance (explorer: $81.64M at 23:43Z, $81.68M at 00:05Z) is a public number worth recording over
     time. Setting it against exchange open interest ($116.6M one-sided notional at 2026-11-08 23:59:39Z) is loose — different
     dates, and open interest is notional, not collateral — so it is no solvency ratio [Final review F2].
