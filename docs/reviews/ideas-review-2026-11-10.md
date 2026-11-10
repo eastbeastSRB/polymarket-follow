@@ -253,22 +253,21 @@ I-42; M3.*
 - **Cost:** the pull under a day; the kit a day of one build subagent, no
   calls.
 
-**Foundation 3 — the register's rules.** *Sources: M1, M2; I-31 to I-34; DS question
-5.* Appendix A opens with them in full. In short: (1) every entry names
-the smallest effect it can see; (2) exploring old data is free but every
-look is logged; (3) the new weeks are examined twice, 2026-11-30 and
-2026-12-19, by lines fixed now from one budget — at most a 5% chance that
-the whole batch passes one false pattern (A.0-11) [Final review F1: was
-"2026-11-30 strict, 2026-12-19 final, the batch held at one false discovery
-in ten"]; (4) every result is printed again without competition days and
-without the boosted markets; (5) a fresh reviewer reads each study's frozen
-rules *before* its look; (6) placebos and leave-one-out on every finding;
-(7) round 2 ends with the final exam.
+**Foundation 3 — the register's rules.** *Sources: M1, M2; I-31 to I-34; DS
+question 5.* Their one home is Appendix A, A.0; nothing of them is repeated
+here but the headings: what an entry is and how it is priced; the null;
+two p-values; what is left out; the competition; what FIND may read; the
+two exams and their lines; the smallest visible effect; the reviewer
+before the look; the end. [Final review F1 and F13: was a seven-point
+summary carrying its own numbers — "2026-11-30 strict, 2026-12-19 final,
+the batch held at one false discovery in ten". A rule written in two
+places has to be corrected in two.]
 
 ### The ranked studies
 
 Entries 1–10 have draft register entries in Appendix A; here, what each is
-and why it stands where it does.
+and why it stands where it does. Where a paragraph here and its entry
+differ, the entry rules [Final review F13].
 
 **1 — Is there any difference between traders at all?** *H2; I-05, with
 I-08, I-09, I-10, I-11 as lists inside it.*
@@ -783,7 +782,7 @@ twice.
 | When | What | Calls |
 |---|---|---|
 | **Now** (11-10) | The owner's word on where results would be used, the collector's streams, the two exams' lines and what a "no" from study 1 means (questions 1–4). The lists frozen with hashes. | none |
-| **11-10 → 11-11**, all in parallel | **(a)** The research kit (one build subagent). **(b)** The panel pull, to 2026-11-07T00:00Z. **(c)** The collector: a short plan, the owner's yes, a small build, a Windows task — the streams, the ticker and the boards first; DOCS-SWEEP's reads next. **(d)** On data already held, no calls and no panel: the first measurements (Appendix A); study 3's map (R8's hourly marks and the two price tables); study 5 (R8's one-second windows); study 8's FIND (R8's funding rows); a first pass of study 2 for #47 and the 50, as far as R8's one-second windows reach; study 12 (fills only). | (b) ≤ 246,000 tokens, ≤ 16.4 h; the collector about 6 a minute, standing |
+| **11-10 → 11-11**, all in parallel | **(a)** The research kit (one build subagent). **(b)** The panel pull, to 2026-11-07T00:00Z. **(c)** The collector: a short plan, the owner's yes, a small build, a Windows task — the streams, the ticker and the boards first; DOCS-SWEEP's reads next. **(d)** On data already held, no calls and no panel: the first measurements (Appendix A); study 3's map (R8's hourly marks and the two price tables); study 5 (R8's one-second windows); study 8's FIND (R8's funding rows); a first pass of study 2 for #47 and the 50, as far as R8's one-second windows reach; study 12 (fills only). | (b) the panel's pull and (c) the collector's standing load: the figures are in foundations 2 and 1 |
 | **11-12 → 11-16**, in parallel, on the panel | Studies 1, 2 (all accounts), 3 (slow against fast), 4, 7, 9; study 11 if hands are free. Each with a reviewer reading its frozen rules before its look. | none |
 | **11-16 14:30Z** | Competition 1 ends. Record the next one's dates and boosts when it is announced. | — |
 | **11-17 → 11-20** | FIND reports and their Final reviews. Study 6 only if study 1 passed. **By 11-20 every CONFIRM entry is frozen** — list, thresholds, statistic, hash — before anyone on a study reads a fill after 2026-11-07. | none |
@@ -1537,8 +1536,8 @@ commit `09acdf8`.]
   over 15 s outside logged maintenance; an hour of the recorded stream
   agrees with `/v1/info/bbo` snapshots taken in that hour; the daily board
   copy holds 16 × 1,000 rows with their snapshot stamps; the tables that
-  carry results cannot be opened from a study's folder. *Cost:* about 6
-  tokens a minute.
+  carry results cannot be opened from a study's folder. *Cost:* as in
+  foundation 1 (section 1).
 - **Foundation 2 — the panel and the kit.** Done when: the panel's manifest is hashed
   and each market's minutes are counted against its first trade; the kit's
   entry builder returns R8's 1,272 entries exactly (the same accounts,
@@ -1546,8 +1545,8 @@ commit `09acdf8`.]
   cell is reported beside R8's −16.60 — the distance is the measure of what
   a minute costs, to be stated, not tuned away; with the exact null its
   mean d falls inside R8's interval around −13.58; the kit's mutants are
-  killed. *Cost:* at most 246,000 tokens, 16.4 h; a day of one build
-  subagent. [Final review F5: was "the kit re-computes R8's primary cell
+  killed. *Cost:* as in foundation 2 (section 1).
+  [Final review F5: was "the kit re-computes R8's primary cell
   from R8's capture to the published −16.60 and −13.58" — exact agreement
   cannot be had: R8 priced by the second and drew its nulls; the kit prices
   by the minute and takes the exact null.]
