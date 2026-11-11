@@ -294,7 +294,7 @@ describe("the board pass", () => {
     ]);
   });
 
-  it("logs and coverage hold no field of a row (Â§1.3 item 7)", async () => {
+  it("logs and coverage hold no field of a row (§1.3 item 7)", async () => {
     const lines: string[] = [];
     const captured = pino(
       { level: "debug" },
