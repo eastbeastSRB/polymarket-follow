@@ -258,7 +258,8 @@ funding prefix sums now start further back).
    either by under 0.2 bps**; the exact null sits 3.3 bps from the drawn
    matched null, about one standard error of three draws' mean.
 
-**The mutants:** 54 of 54 killed (`out/mutation.txt`): every rule that
+**The mutants:** 54 of 54 killed [Final review, F4 and F7: 59 of 59, on 37
+tests] (`out/mutation.txt`): every rule that
 decides something broken on purpose in a copy, the copy's tests run, a
 failure expected. A baseline copy must pass all 36 tests first, so a run
 that tests nothing cannot count as a kill. The first run killed 47 of 52;
@@ -652,6 +653,13 @@ In `workers/RESEARCH-KIT/` unless F: is named.
   `out/numbers-*.json`, `out/index-pool.txt`, `out/check-dropped.txt`,
   `out/directional-at-cut.txt`; F: `derived/`.
 - **Inputs:** `inputs/SHA256SUMS` (86 of 86 verified at the start).
+- **The Final review** (2026-11-11): `scripts/fr-calls.mjs` →
+  `out/fr-calls.txt` (calls against replies; the panel rebuilt from `raw/`);
+  `scripts/fr-kit-values.mjs` → `out/fr-kit-values.json` and
+  `scripts/fr-pricing.mjs` → `out/fr-pricing.txt` (the independent pricing);
+  `scripts/fr-a06.mjs` → `out/fr-a06.txt` (A.0-6, without the kit);
+  `scripts/fr-a2.mjs` → `out/fr-a2.txt` (the map on each entry's cell, A.0-6's
+  cluster sizes); `progress.md`, section "Final review".
 - **Rules I broke:** three `node -e` one-liners — an inspection of
   `selection.json` (2026-11-10 14:5xZ), a print of `numbers-proof.json`
   (20:3xZ), and an empty one typed by mistake (2026-11-11 01:19Z); code-rules
@@ -662,7 +670,7 @@ In `workers/RESEARCH-KIT/` unless F: is named.
 
 ---
 
-## Final review (2026-11-11 from 10:40Z, a fresh RESEARCH-KIT subagent, Opus 5.5, max)
+## Final review (2026-11-11 10:40–11:24Z, a fresh RESEARCH-KIT subagent, Opus 5.5, max)
 
 The brief's addendum: is the work right, not only reproducible. No API call
 was made; nothing stamped at or after the cut was read. Each correction above
@@ -682,6 +690,13 @@ is `progress.md`, section "Final review".
 | F6 low | Question 4(a) undercounts the 139 truncated captures; 4(c)'s list holds 16 holdout accounts and 122 from the profit boards | added to question 4 |
 | F7 low | The kit's tests wrote into this session's scratchpad by default; three fields nothing reads (`takerNotional`, `reopenedInMerge`; "dead code — none" was wrong) | kit fixed |
 | F8 low | Seven small corrections: R8's 4.43 compared with an active-week rate; the headline d is net minus net; a mark-history page is a span of time; the klines "upper bound" is an estimate; a variable named SPLIT; question 3's quote came through a summarising tool; the FIND period differs between entries | corrected in place |
+
+Commits: this section `e097538`; F1 `7faccf0`; F2 `675b8f8`; F3 `46fd67c`;
+F4 `e8ffa75`; F5 `c102d4d`; F6 `58001a8`; F7 `b9c5857`; F8 `b4bd2f4`. The
+kit and the scripts live outside the repository; their changes are logged in
+`progress.md`. Rules I broke: one empty `node -e ""` typed into a shell
+line, and one field-name inspection script written through a shell heredoc
+instead of the Write tool (the scratchpad).
 
 **The kit after the review.** Fingerprint, old
 `872dd5acbe6159052b60faa357446f405e173f1ed727049a93e409b159506246` (24
