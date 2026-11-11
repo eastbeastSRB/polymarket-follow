@@ -127,8 +127,9 @@ cannot change a verdict.
   settlement whose hour lies in the horizon has no mark at the minute before
   it. d uses gross only (A.0-4: "costs cancel in d"). It leaves without d
   103 of FIND-1's 17,583 voted P1 entries and 148 of FIND-4's 25,963
-  records, all in the beta weeks (exchange pauses before 2026-08-31); none
-  in FIND-3's sets, none in FIND-4's primary population. FIND-1's main line
+  records, all in the beta weeks, on four days (2026-06-02 and 2026-08-09 to
+  11: exchange pauses; `out/funding-rule-when.txt`); none in FIND-3's sets,
+  none in FIND-4's primary population. FIND-1's main line
   with them: 101 traders, 7,356 entries, ρ 0.053 (p 0.60), fifths +0.189 and
   +0.122; without the competition's days −0.032 (p 0.76), without its
   boosted markets 0.048 (p 0.64): **the same verdict** (marked in FIND-1's
@@ -495,7 +496,7 @@ look outputs: all equal, 22:58Z).
   `own-find1.mjs`, `own-find3.mjs`, `own-find4.mjs` (each also with the
   argument `restored`); `check-alignment.mjs`; `left-out.mjs`;
   `null-weight.mjs`; `counts-find4.mjs`; `check-net-find3.mjs`;
-  `explore-null-window.mjs`;
+  `funding-rule-when.mjs`; `explore-null-window.mjs`;
   `unused-names.mjs`; `audit-looks.mjs`. Outputs: `out/<name>.txt`.
 - **Bulky files** (`F:\polymarket-follow-research\FIND-REVIEW-A\`):
   `own-records.jsonl.gz` (268,140 groups), `own-priced-find{1,3,4}.jsonl.gz`
