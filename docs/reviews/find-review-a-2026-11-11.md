@@ -1,6 +1,6 @@
 # FIND-REVIEW-A — the Final review of FIND-1, FIND-3 and FIND-4
 
-FIND-REVIEW-A (Fable 5.2, max), 2026-11-11 22:17Z – 23:09Z (UTC, every stamp
+FIND-REVIEW-A (Fable 5.2, max), 2026-11-11 22:17Z – 23:10Z (UTC, every stamp
 from `date -u`), for polymarket-follow's supervisor: the independent Final
 review of three of round 2's FIND studies, all of which found nothing —
 entry 1 (do traders differ, `find-1-2026-11-11.md`), entry 3 (slow traders,
