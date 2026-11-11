@@ -68,7 +68,9 @@ data after 2026-11-07.
 **Questions** (my recommendation in brackets; in full in section 8)
 
 1. Is the "matched" yardstick round 2's only one? The minute data cannot tell
-   buyers from sellers, which R8's version needed. (Yes.)
+   buyers from sellers, which R8's version needed. (Yes.) [Final review,
+   F5: then R8's US-open finding must be measured again with it before it
+   is registered.]
 2. Leave the funding study out of this round? (Yes — it cannot see enough.)
 3. Settle the funding question by the changelog and make no read? (Yes.)
 4. For the register (supervisor): replace one list that came from a board
@@ -474,6 +476,12 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
    kind exactly would mean reading every trade of every hour studied — about
    R8's capture again for each study. *Recommendation: the matched yardstick
    only, as A.0-4 says; R8's drawn trades printed beside where they exist.*
+   [Final review, F5: kept, with its cost. Entry 10's FIND pass (R8's d
+   −38.35 at UTC 12–16) was measured against R8's own-direction null, and on
+   R8's whole cell the direction alone moved d by about 11 bps (section 7,
+   item 3). With the matched yardstick as the only one, that cell must be
+   measured again with the exact matched null on R8's data before entry 10
+   is registered; it may not pass FIND again.]
 2. **The funding study (entry 8).** With the measured counts it can see only
    about 120 bps, where IDEAS-REVIEW's own rule (point 2.8) registers it only
    under about 60. *Recommendation: leave it out of this batch (m one lower)
