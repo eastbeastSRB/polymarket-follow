@@ -1,8 +1,8 @@
 # Current task
 
 polymarket-follow: a watch-only tracker of Polymarket Perps traders
-(CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built and records
-around the clock; v1 is not built.** The plan is the plan page
+(CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built, Final-reviewed
+and records around the clock; v1 is not built.** The plan is the plan page
 (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -13,34 +13,53 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 ## Where things stand
 
 - **The collector is live** (architecture, "The collector"; decisions
-  2026-11-11, COLLECTOR-BUILD's technical calls): parts 0–6 of the plan's
-  §1.8 built, verified and deployed (run copy `0defe9a`, 2026-11-11
-  16:25Z) — the streams, the minute and ten-minute reads, the passes, the
-  rule book and universe, health and `status`, the backup and restore.
-  `pnpm verify` green: 24 files, 152 tests.
+  2026-11-11, COLLECTOR-BUILD's technical calls and COLLECTOR-REVIEW's
+  calls): parts 0–6 of the plan's §1.8 built, verified, Final-reviewed and
+  deployed (run copy `ee47691`, 2026-11-11 20:22Z) — the streams, the
+  minute and ten-minute reads, the passes, the rule book and universe,
+  health and `status`, the backup and restore. `pnpm verify` green: 25
+  files, 171 tests.
+- **The Final review is done** (decisions 2026-11-11, COLLECTOR-REVIEW's
+  calls; the findings, the failure-case table and the notes for the next
+  phases: the supervisor folder's `workers/COLLECTOR-REVIEW/progress.md`):
+  no finding in what is recorded; 14 fixed, in the commits `62d4d56` to
+  `d3fca0d`, and live since the deploy above. **Its six questions wait for
+  the supervisor:** the boards' `consistent` flag, a mark for books that
+  arrive late, `once.js`, the check task's live proof, `Store.close()`, and
+  `status`' PROBLEM row for a schema that fails.
 - **Tonight is the first full pass** of part 4: competitions 23:15Z, boards
-  23:38Z, daily reads 00:20Z; the supervisor checks the 16 boards.
-- **The backup task waits for the owner:** one elevated run of
-  `tools\register-tasks.ps1` adds "polymarket-follow backup" (daily 05:20Z)
-  and re-registers the poller and its check. A backup and a restore test
-  were run by hand once (2026-11-11 16:26Z): both ok.
+  23:38Z, daily reads 00:20Z; the supervisor checks the 16 boards. No deploy
+  and no heavy work on this PC from 23:10Z to 00:30Z.
+- **The owner's one elevated run of `tools\register-tasks.ps1` is waiting.**
+  It adds "polymarket-follow backup" (daily 05:20Z), re-registers the poller
+  and its check, and sets the poller task to normal priority — which holds
+  only from the poller's next start, so one stop and start of the task (or
+  the next deploy) follows it. Until then the poller runs below normal and
+  falls seconds behind its streams whenever every processor is busy (14
+  spells on 2026-11-11, 11:09–14:38Z; the record stayed whole by the
+  server's `ts`). A backup and a restore test were run by hand once
+  (2026-11-11 16:26Z): both ok.
 - **Research:** waves 1–4 closed (R1–R8; decisions 2026-11-07 to
   2026-11-09). **R8 FAILS** (decisions 2026-11-09): copying the top 50
   directional traders about 80 s late lost 16.6 bps an entry; no confirmed
   skill on the leaderboard; v1 is planned as a watching and analysis tool.
   Round 2's rule book (decisions 2026-11-10) and its yardstick, the research
-  kit (decisions 2026-11-11, RESEARCH-KIT accepted), are in place.
+  kit (decisions 2026-11-11, RESEARCH-KIT accepted and its additions), are in
+  place.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
-  closed); the collector's share is 50 a minute and 30 in 5 s.
+  closed); the collector's share is 50 a minute and 30 in 5 s (a night's
+  passes beside the minute reads peak at 49 and 12).
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
 
 ## Next up — IN ORDER
 
 The road is on the plan page, "The road to v1" (decisions 2026-11-09).
 
-1. **A Final review of the whole collector code** by a fresh subagent; then
-   the owner's re-registration for the backup task.
+1. **The supervisor's rulings on COLLECTOR-REVIEW's questions; the owner's
+   re-registration** (the backup task and the poller's priority), then one
+   restart of the poller task and a read of its priority (base priority 8 is
+   normal).
 2. **Part 8 of the collector** (about 2026-11-20): the weekly fills of the
    frozen exam lists into the blind store, when the lists are handed over.
 3. **Round 2's FIND studies** (the hypothesis register first, on the kit).
