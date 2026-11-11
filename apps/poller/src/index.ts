@@ -255,25 +255,18 @@ const useMarkets = (ids: number[]) => {
   streams.setMarkets(ids);
   keepMarkets(ids);
 };
-const listed = await awaitFirstList(
-  client,
-  kept,
-  useMarkets,
+// Before the first market list is read: the passes and the minute reads do
+// not need it, and a list that cannot be read must not hold them back.
+jobs = startJobs(
+  [
+    tickersJob(client),
+    exchangeJob(client, store, log),
+    instrumentsJob(client, store, log, useMarkets),
+    audit,
+    competitionPass,
+    boardPass,
+    dailyReadsJob(client, store),
+  ],
   log,
-  realClock,
-  () => stopping,
 );
-if (listed && !stopping) {
-  jobs = startJobs(
-    [
-      tickersJob(client),
-      exchangeJob(client, store, log),
-      instrumentsJob(client, store, log, useMarkets),
-      audit,
-      competitionPass,
-      boardPass,
-      dailyReadsJob(client, store),
-    ],
-    log,
-  );
-}
+await awaitFirstList(client, kept, useMarkets, log, realClock, () => stopping);
