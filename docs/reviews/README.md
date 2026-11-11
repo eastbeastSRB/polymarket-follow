@@ -11,6 +11,16 @@ plan page or external-apis — or it does not exist.
 
 | Review | What | Accepted |
 |---|---|---|
+| `find-review-a-2026-11-11.md` | FIND-REVIEW-A (Fable): the Final review of FIND-1, FIND-3 and FIND-4 — every entry and statistic recomputed with its own code; all three "no" stand; FIND-4's one-draw placebo corrected (the "after a jump" near miss is unexplained, not the market's); the null's hour window cleared | waiting for the owner (2026-11-12) |
+| `find-review-b-2026-11-11.md` | FIND-REVIEW-B (Fable): the Final review of FIND-5-10, FIND-7 and FIND-9 — every unit recomputed; all four results stand; entry 7's set-apart busiest accounts lose the same | waiting for the owner (2026-11-12) |
+| `find-review-c-2026-11-11.md` | FIND-REVIEW-C (Fable): the Final review of FIND-2 — 13,111 numbers recomputed, 0 different; the result stands; 49 of R8's 50 banked a loss in R8's weeks | waiting for the owner (2026-11-12) |
+| `find-1-2026-11-11.md` | FIND-1 (entry 1, the gate): traders do not differ measurably (Spearman 0.066, p 0.51); not registered — entry 6 does not run, ranking traders stops for now | waiting for the owner (2026-11-12) |
+| `find-2-2026-11-11.md` | FIND-2 (entry 2): the followable share of the top accounts' profit (0.21; bounds 0.62 / 1.07) — not shown below one half; two accounts' multi-week holds carry most of it; not registered | waiting for the owner (2026-11-12) |
+| `find-3-2026-11-11.md` | FIND-3 (entry 3): slow traders against the matched null at 24 h — about zero; not registered | waiting for the owner (2026-11-12) |
+| `find-4-2026-11-11.md` | FIND-4 (entry 4): eleven kinds of entries — none passes Holm; nearest "after a jump"; not registered | waiting for the owner (2026-11-12) |
+| `find-5-10-2026-11-11.md` | FIND-5-10 (entries 5 and 10): the 60 s after a fill, and R8's US-open cell with the exact matched null — both fail; not registered | waiting for the owner (2026-11-12) |
+| `find-7-2026-11-11.md` | FIND-7 (entry 7): joining an algorithm after its fifth taker order — loses about 10 bps at a taker's cost; not registered | waiting for the owner (2026-11-12) |
+| `find-9-2026-11-11.md` | FIND-9 (entry 9): agreement of unlinked traders — no sign of an effect; not registered | waiting for the owner (2026-11-12) |
 | `find-rules-review-2026-11-11.md` | RULES-REVIEW (A.0-14, Fable): the fresh read of the seven FIND studies' rules before any look — nobody looked, the kit intact, every hash equal; per-study verdicts and fixes; three high findings; twelve questions | decisions 2026-11-11, the FIND rules review |
 | `research-kit-2026-11-11.md` | RESEARCH-KIT (round 2's foundation 2 and first measurements): the one-minute panel of 91 markets to the cut (equal to R8's capture), the research kit (fingerprint `7b4179e8…c215` after the review), the proof against R8 (1,272 entries exact; −16.36 by the minute against −16.60; an independent pricer agrees to rounding), the first measurements 1–8 and A.2 recomputed; 8 Final-review corrections (a fresh reviewer); six questions for the owner (§8) | decisions 2026-11-11, RESEARCH-KIT accepted |
 | `r1-perps-api-2026-11-07.md` | R1-API: the Perps API in full — endpoints, the token-bucket limit, fills semantics, the tape, history depth, the feasibility table; 14 Final-review corrections (§8) | decisions 2026-11-07, wave 1 closed |
