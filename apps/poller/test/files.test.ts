@@ -125,6 +125,8 @@ describe("Recorder", () => {
     );
     await vi.advanceTimersByTimeAsync(12_000);
     recorder.write("book", at("2026-11-10T14:00:01Z"), '{"n":3}');
+    // 14:00:02Z, inside the roll's 5 s of grace: a line of the ended hour still goes to its own file.
+    recorder.write("book", at("2026-11-10T13:59:59.950Z"), '{"n":"held"}');
     await vi.advanceTimersByTimeAsync(5_000);
     recorder.write("book", at("2026-11-10T13:59:59.900Z"), '{"n":"late"}');
     await recorder.close();
@@ -136,6 +138,7 @@ describe("Recorder", () => {
     ).toEqual([
       `${at("2026-11-10T13:59:50.100Z")}\t{"n":1}`,
       `${at("2026-11-10T13:59:51.100Z")}\t{"n":2}`,
+      `${at("2026-11-10T13:59:59.950Z")}\t{"n":"held"}`,
     ]);
     expect(existsSync(path.join(root, day, "rest-13.jsonl.br"))).toBe(true);
     expect(lines(read(day, "book-14.jsonl").toString())).toEqual([
@@ -143,7 +146,7 @@ describe("Recorder", () => {
       `${at("2026-11-10T13:59:59.900Z")}\t{"n":"late"}`,
     ]);
     expect(recorder.counts).toMatchObject({
-      lines: { book: 4, rest: 1, trades: 0, rejected: 0 },
+      lines: { book: 5, rest: 1, trades: 0, rejected: 0 },
       late: 1,
       dropped: 0,
       compressed: 2,
@@ -163,9 +166,18 @@ describe("Recorder", () => {
     recorder.write("trades", at("2026-11-10T23:59:58.500Z"), '{"t":1}');
     recorder.coverage({ event: "rest_pause", state: "end" });
     await vi.advanceTimersByTimeAsync(10_000);
-    await recorder.close();
-
     const day = "2026-11-10";
+    while (!existsSync(path.join(root, day, "manifest.json"))) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    const firstWritten = read(day, "manifest.json").toString();
+    // The new day's folder holds coverage alone when the next hour rolls: the
+    // open day gets no manifest, and the closed day's is not written again.
+    recorder.coverage({ event: "rest_pause", state: "start" });
+    await vi.advanceTimersByTimeAsync(3_600_000);
+    await recorder.close();
+    expect(read(day, "manifest.json").toString()).toBe(firstWritten);
+
     const manifest = JSON.parse(read(day, "manifest.json").toString()) as {
       date: string;
       files: {

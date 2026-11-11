@@ -76,6 +76,7 @@ describe("RestClient", () => {
     });
     expect(w.calls[0]!.url).toBe(`${API_BASE}/v1/info/tickers`);
     expect(w.calls[0]!.init.method).toBe("GET");
+    expect(w.calls[0]!.init.redirect).toBe("error");
     expect(w.calls[0]!.init.headers).toEqual({
       "user-agent": "polymarket-follow",
       accept: "application/json",

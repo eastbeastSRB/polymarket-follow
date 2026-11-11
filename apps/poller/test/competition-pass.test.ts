@@ -174,6 +174,30 @@ describe("the competition pass", () => {
     ]);
   });
 
+  it("dates the table's sightings by the table's own update time, not by our clock", async () => {
+    // Read two seconds after midnight; the table was last updated before it.
+    const start = Date.parse("2026-11-11T00:00:02Z");
+    const updated = Date.parse("2026-11-10T23:59:58Z");
+    const w = world(start, (route, q) => {
+      if (route === "competitions") {
+        return ok({
+          competitions: [
+            competition(1, "2026-11-02T14:30:00Z", "2026-11-16T14:30:00Z"),
+          ],
+        });
+      }
+      if (route === "competition") return ok(detail(1));
+      const offset = Number(q.offset);
+      return ok(tablePage(1, offset, 150, offset === 0 ? 100 : 50, updated));
+    });
+    const s = sink();
+    await competitionPassJob(w.client, s.store, log, w.clock).run();
+    expect(s.tables.map((t) => t.passDate)).toEqual(["2026-11-11"]);
+    expect(s.seen.map((x) => [x.accounts.length, x.day])).toEqual([
+      [150, "2026-11-10"],
+    ]);
+  });
+
   it("reads nothing more when the list cannot be read", async () => {
     const w = world(PASS, () => ({ ok: false, reason: "network" }));
     const s = sink();

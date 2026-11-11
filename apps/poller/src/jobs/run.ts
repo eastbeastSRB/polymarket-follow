@@ -44,6 +44,8 @@ export function startJobs(
     const state: JobStatus = { lastRunAt: null, lastOkAt: null };
     status[job.name] = state;
     const tick = (dueAt: number, skip = false) => {
+      // From the slot that was due, not only the clock: a timer that fires a
+      // moment early would otherwise run the same slot twice.
       const next = nextRun(job.schedule, Math.max(dueAt, Date.now()));
       timers[slot] = setTimeout(() => tick(next), next - Date.now());
       if (running || skip) return;

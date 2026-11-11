@@ -76,7 +76,7 @@ describe("readPages", () => {
     entries: Array.from({ length: count }, (_, i) => i),
   });
 
-  it("ends the pass at its deadline and at a dropped request, and the list at a lost page", async () => {
+  it("ends the pass at its deadline, at a dropped request and at a paused one, and the list at a lost page", async () => {
     const { clock } = fakeClock(1_000);
     const deadline = await readPages(
       () => Promise.resolve(ok(page(500, 100))),
@@ -105,6 +105,16 @@ describe("readPages", () => {
     );
     expect(offsets).toEqual([0, 100]);
     expect([dropped.pages.length, dropped.cut]).toEqual([1, "deadline"]);
+
+    const paused = await readPages(
+      () => Promise.resolve({ ok: false, reason: "paused" }),
+      1,
+      1_000,
+      Infinity,
+      pacer(clock),
+      clock,
+    );
+    expect([paused.pages.length, paused.cut]).toEqual([0, "deadline"]);
 
     const lost = await readPages(
       () => Promise.resolve({ ok: false, reason: "http_error" }),

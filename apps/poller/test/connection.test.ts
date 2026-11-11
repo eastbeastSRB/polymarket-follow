@@ -244,6 +244,28 @@ describe("Connection", () => {
     expect(coverage.at(-1)).toMatchObject({ cause: "server close" });
   });
 
+  it("names a gap by its first cause when a reopening fails too", async () => {
+    connection(["book::1"]);
+    last().open();
+    last().message(book(1));
+    await vi.advanceTimersByTimeAsync(16_000);
+    await vi.advanceTimersByTimeAsync(1_000);
+    last().serverClose(1006);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(sockets).toHaveLength(3);
+    last().open();
+    last().message(book(1));
+    expect(coverage.map((e) => [e.event, "cause" in e ? e.cause : ""])).toEqual(
+      [
+        ["ws_open", ""],
+        ["ws_close", "watchdog"],
+        ["ws_close", "connect failed"],
+        ["ws_open", ""],
+        ["ws_resumed", "no frame for 15 s"],
+      ],
+    );
+  });
+
   it("gives a connect 90 s, then backs off 1, 2, 5, 10, 30 and 60 s", async () => {
     connection(["book::1"]);
     const starts: number[] = [];
