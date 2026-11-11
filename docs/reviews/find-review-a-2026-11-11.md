@@ -178,6 +178,15 @@ cannot change a verdict.
   consecutive order events of one market, 491 do not start at the size the
   one before left (0.05%): fills missing from the capture. Too few to move
   anything; the kit could print the count.
+- **L8 — P2's hold can look ahead (FIND-1; P2 is not tested).** The
+  classifier's "open positions' median age" takes the positions still open
+  at the end of the capture, not at the Monday it is asked about
+  (`classifier.mjs`, line 196). The label itself never reads it — every
+  feature behind "directional" takes fills, events and cycles before the
+  Monday — so P1 is clean in all three studies. FIND-1's P2 uses it as the
+  hold where no cycle closed in the 14 days (25 of P2's 492 account-weeks,
+  `out/count-populations.txt`). To fix before P2 returns, as ruled, with the
+  collector's months.
 
 ## 3. The independent recomputation
 
@@ -191,8 +200,10 @@ Welch's broken degrees of freedom), Welch, Spearman with a permutation p
 from my own generator. It imports nothing of the kit and no study script.
 **From the kit I took one thing:** the frozen classifier v1 (`labelAt` on the
 kit's own account object) — "directional by classifier v1" is defined by that
-code — and the kit's data files (rule book, map, population, panel
-manifest). The pool's notional-board flag is taken from
+code; I read how it windows its inputs: every feature the label uses takes
+fills, events and cycles before the instant asked (L8 for the one feature
+that does not, which no label reads) — and the kit's data files (rule book,
+map, population, panel manifest). The pool's notional-board flag is taken from
 `kit/data/population.json` as RESEARCH-KIT built it; I did not open the board
 reads behind it (they were made after the cut).
 
