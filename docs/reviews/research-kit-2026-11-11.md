@@ -104,7 +104,9 @@ data after 2026-11-07.
 - **Cost, stated before the pull** (`out/plan-cost.txt`, from one 1 d klines
   read a market): 19,409 calls, at most 107,325 weighted tokens (marks
   57,885; klines at most 28,880; funding 20,560), 11.9 h of calls at 150 a
-  minute plus the 77-minute quiet window. Foundation 2 allowed at most
+  minute plus the 77-minute quiet window [Final review, F8(d): the klines
+  figure is a proportional estimate where a segment cuts a day, not a
+  bound; the pull spent 12,535 on klines]. Foundation 2 allowed at most
   246,000. **Spent** (`out/audit-calls.txt`, recomputed from `F:\calls.jsonl`):
   the pull 15,944 calls and 89,335 tokens, 2026-11-10 15:05:52Z – 2026-11-11
   01:16:54Z (10 h 11 min; it ended before the quiet window); with the
@@ -246,7 +248,9 @@ funding prefix sums now start further back).
 3. **With the exact null:** d = **−2.64 bps**, by trader [−13.72, +8.16], by
    day [−18.47, +12.94] (1,231 entries; in 18 entry hours no trade is left
    but the tracked accounts' own) — **inside R8's intervals around −13.58**
-   (by trader [−34.33, +0.44], by day [−26.95, −0.83]). It is not R8's
+   (by trader [−34.33, +0.44], by day [−26.95, −0.83]). [Final review,
+   F8(b): −2.64 is net minus net, as R8's d was; A.0-4's d, gross minus
+   gross, is −2.53, inside both intervals too.] It is not R8's
    statistic: R8's null kept each drawn trade's own taker side; the exact
    null takes the trader's long share (A.0-4). Like for like, R8's own drawn
    trades priced by the minute give −13.59 with their own sides (R8: −13.58)
@@ -282,7 +286,10 @@ instants — never signed by a trader's side, so no outcome is computed
 1. **Openings and flips of directional accounts** (`out/m1-entries.txt`,
    `.tsv`): 17,453 P1 entries in primary-cell markets (744 accounts); from
    the launch week (9.71 weeks) **10,612 — about 1,090 a week, 578 accounts,
-   7.3 entries per active trader-week** (R8's 50: 4.43). By hold class:
+   7.3 entries per active trader-week** (R8's 50: 4.43) [Final review,
+   F8(a): unlike measures — R8's 4.43 counts every week of its 47 traders,
+   active or not; on that basis the 240 traders with 20 entries make 3.24 in
+   R8's six weeks, the figure A.2 uses]. By hold class:
    under 2.45 h 4,856; 2.45–6 h 1,103; 6–12 h 699; 12 h and more 854; under
    10 closed cycles 3,100. **Slow traders (median hold ≥ 6 h): 1,553 entries,
    112 accounts, 68 days.** 85% are on the all-time notional board.
@@ -367,7 +374,10 @@ instants — never signed by a trader's side, so no outcome is computed
 The clustering used is measured on R8's cell as A.0-6's tests see it (day
 means 1.38 for a d, 3.57 for a net result — section 7, item 2) and is an
 assumption for other horizons and populations. Entries 2 and 6 are sized at
-the freeze by their lists' counts. [Final review, F1: every count here is
+the freeze by their lists' counts. [Final review, F8(g): entries 3, 7 and 9
+count from the launch week, entry 1 every FIND week, entry 4 both; entry 3
+over every week has 2,538 slow entries, not 1,553 (about 25 bps visible,
+if the spread holds) — each entry must say which period it uses.] [Final review, F1: every count here is
 before A.1-8's map is applied to the entries' own cells; applied as fixed, it
 leaves about a fifth of entries 1 and 4 and almost none of entries 7 and 9 —
 question 5.] [Final review, F2: entries 7, 8 and 9 were sized with clusters
@@ -493,7 +503,10 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
    about 120 bps, where IDEAS-REVIEW's own rule (point 2.8) registers it only
    under about 60. *Recommendation: leave it out of this batch (m one lower)
    and revisit it on months of the collector's data.*
-3. **The funding rule (the brief's item 5).** The changelog of 2026-09-01
+3. **The funding rule (the brief's item 5).** [Final review, F8(f): the
+   recommendation stands, but the quote below came through a summarising
+   fetch tool (section 9); confirm it word for word on the changelog page
+   before a rule rests on it.] The changelog of 2026-09-01
    says funding "settles even if you flattened or flipped just before
    settlement was sequenced": the position held when the hour closes pays,
    even if closed in the moment before the payment is booked; one closed
@@ -575,7 +588,11 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
   (`out/audit-calls.txt`): 15,944 calls (16,116 with the probes), 90,210
   weighted tokens in all, every reply HTTP 200, no 429, at most 150 tokens in
   a trailing minute; latency median 295 ms. `mark-history` 1 m pages hold
-  1,000 buckets ascending with `more`; a bucket exists for every minute from
+  1,000 buckets ascending with `more` [Final review, F8(c): a page is a span
+  of time, not 1,000 rows — 169 of the 11,514 pages said `more` with fewer
+  rows (453–988), all before the launch where marks have holes, most
+  reaching 1,003 minutes past their start; page from the last row, as the
+  pull did]; a bucket exists for every minute from
   2026-08-31 to the cut on all 90 markets (8,304,742 minutes); before it the
   history has 17 exchange-wide pauses, the longest 1,646 minutes from
   2026-06-13 01:20Z, the last ending 2026-08-11 11:55Z. 1 m klines add up to
