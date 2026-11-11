@@ -50,7 +50,10 @@ test has)
    whether traders differ (the plan guessed 200).
 7. **What the planned tests can see:** most of them an effect of about
    15–60 bps a trade (section 3; the first-minute test about 2 bps, the
-   large-orders test 5–33). The funding test can only see 120 bps — by the
+   large-orders test 5–33). [Final review, F2: as the rule book's tests
+   really weigh accounts and days, the large-orders test sees 9–32 and
+   "three traders agree" 33–48; at a day's horizon (question 5) the
+   figures about double.] The funding test can only see 120 bps — by the
    rule book's own line it should wait for more data. "Three traders agree"
    is rarer than guessed (188 times, not 500).
 
@@ -333,10 +336,10 @@ instants — never signed by a trader's side, so no outcome is computed
 | 1 traders differ | 139 traders with ≥ 10 a half (355 counting every entry of accounts ever directional) | d 183 a trade at the class horizon | a correlation of 0.24 — about 17 bps between traders (with 355 traders: 0.15, about 11 bps) | top minus bottom fifth 36–39 (240 traders with ≥ 20 entries; about 930 entries a fifth) | 0.20 → 17–28; 40–43 |
 | 3 slow traders | 1,553 entries, 112 accounts | 382 at 24 h | 32 (47 if 24-hour windows cluster by day three-fold) | 52–56 (about 960 entries) | 23–34; 36–58 |
 | 4 kinds of entries | 10,612 from the launch week (17,453 in all FIND weeks) | 183 | 16 (12) for an even split | 19–21 (about 6,550 entries) | 15–42; 18–51 |
-| 5 the first minute | 1,249 (R8's cell) | 15.6 over 60 s | 1.8 | — | 2.3–3.7 |
-| 7 large orders | 3,067 runs, 327 accounts | 91 over 30 min | 5–9 counting runs; 33 if each account counts once | about 1,560 runs of 81 accounts in 42 days | 8–26 |
+| 5 the first minute | 1,249 (R8's cell) | 15.6 over 60 s | 1.8 [Final review, F2: 1.9 — A.0-6's design effect for R8's drawn d, 1.65, not the entry-level 1.57] | — | 2.3–3.7 |
+| 7 large orders | 3,067 runs, 327 accounts | 91 over 30 min | 5–9 counting runs; 33 if each account counts once [Final review, F2: A.0-6 tests equal-weight account and day means: 9–32 — the account test alone needs 9.4 even if runs were independent, since most of the 327 accounts have few runs] | about 1,560 runs of 81 accounts in 42 days | 8–26 |
 | 8 funding | 293 market-days, 61 days | 501 over 24 h | **120** | — | about 150; register only under about 60 |
-| 9 agreement | 188 events, 59 days | 130 over 6 h | 27–57 | 43–47 (about 116 events) | 20–37; 32–66 |
+| 9 agreement | 188 events, 59 days | 130 over 6 h | 27–57 [Final review, F2: 33–48 — A.0-6's equal-weight day means, the events independent within a day to a day as one unit] | 43–47 (about 116 events) [Final review, F2: about 52–84, the events a day as in FIND] | 20–37; 32–66 |
 | 10 the US open | the 50: about 385 in 42 days; all directional: 1,170–1,430 | R8's standard error 14.1 on 387 | — | the 50: 51–55 (42–46 with the exact null); all: 26–32 (22–26) | 51–55; 20–22 |
 
 The clustering used is measured on R8's cell as A.0-6's tests see it (day
@@ -345,7 +348,12 @@ assumption for other horizons and populations. Entries 2 and 6 are sized at
 the freeze by their lists' counts. [Final review, F1: every count here is
 before A.1-8's map is applied to the entries' own cells; applied as fixed, it
 leaves about a fifth of entries 1 and 4 and almost none of entries 7 and 9 —
-question 5.]
+question 5.] [Final review, F2: entries 7, 8 and 9 were sized with clusters
+weighted by their items (Kish's n, a design effect 1 + (m − 1)ρ); A.0-6
+tests equal-weight account and day means, so `a2-recompute.mjs` now takes
+their standard errors from the measured cluster sizes, the correlation
+within a cluster at its bounds (independent; one unit) where it is not
+measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
 
 ## 4. Variations weighed
 
