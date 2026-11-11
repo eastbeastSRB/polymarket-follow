@@ -1,17 +1,16 @@
 <#
   The poller's check (COLLECTOR-PLAN section 1.4 item 4), run from the run
   copy by the task "polymarket-follow poller check" at start-up and every
-  5 minutes, outside the session. Task Scheduler restarts a crash, not a
-  hang: if the heartbeat is older than 2 minutes (or missing), this ends the
-  node process running THIS run copy's poller - found by its full script
-  path, so no other program's node process can match - starts the poller
-  task and appends a line to ..\var\check.log.
+  5 minutes, outside the session. Task Scheduler does not look at the
+  poller's exit code, so it restarts neither a crash nor a hang: if the
+  heartbeat is older than 2 minutes (or missing), this stops the poller task
+  and waits for its node process to end (poller-task.ps1), starts the task
+  again and appends a line to ..\var\check.log.
 #>
 $ErrorActionPreference = 'Stop'
 $TaskName = 'polymarket-follow poller'
 $StaleSeconds = 120
 
-$poller = Join-Path $PSScriptRoot 'dist\index.js'
 $var = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\var'))
 $heartbeat = Join-Path $var 'heartbeat.json'
 $checkLog = Join-Path $var 'check.log'
@@ -28,25 +27,19 @@ if (Test-Path -LiteralPath $heartbeat) {
 }
 if ($null -ne $age -and $age -lt $StaleSeconds) { exit 0 }
 
-$ended = @()
-foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'node.exe'") {
-  $line = $p.CommandLine
-  if ($line -and $line.IndexOf($poller, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
-    Stop-Process -Id $p.ProcessId -Force
-    $ended += $p.ProcessId
-  }
-}
-# The ended poller's launcher exits right after it; until then a new start would be ignored.
-if ($ended.Count -gt 0) {
-  Wait-Process -Id $ended -Timeout 15 -ErrorAction SilentlyContinue
-  Start-Sleep -Seconds 2
-}
 $ageText = if ($null -eq $age) { 'missing' } else { '{0:N0} s old' -f $age }
-$what = "heartbeat $ageText; ended node process(es) [$($ended -join ', ')]"
 try {
+  . (Join-Path $PSScriptRoot 'poller-task.ps1')
+  # A start while the old instance still runs would be ignored (one instance).
+  $stop = Stop-PollerTask $TaskName $var
   Start-ScheduledTask -TaskName $TaskName
-  Write-CheckLog "$what; started the poller task"
 } catch {
-  Write-CheckLog "$what; the poller task did not start: $($_.Exception.Message)"
+  Write-CheckLog "heartbeat $ageText; the poller task was not restarted: $($_.Exception.Message)"
   exit 1
 }
+if ($stop.ended) {
+  Write-CheckLog "heartbeat $ageText; stopped the poller task: $($stop.summary); started it again"
+  exit 0
+}
+Write-CheckLog "heartbeat $ageText; stopped the poller task, but $($stop.summary); started it anyway"
+exit 1

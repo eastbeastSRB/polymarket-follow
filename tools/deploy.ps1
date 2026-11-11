@@ -2,13 +2,16 @@
   Writes the run copy that the poller task runs (COLLECTOR-PLAN section 1.4,
   deviation D6): only a committed, clean working tree whose `pnpm verify` is
   green is deployed. The program and its production packages are built into
-  <RunRoot>\poller.next and then replace <RunRoot>\poller; a poller running
-  from the run copy is ended for the swap and its task started again after.
-  The task is managed only when it runs this run copy (a scratch run root
-  never touches it), and only from a session that may start it again:
-  elevated, or one the task grants execute; otherwise nothing is deployed.
+  <RunRoot>\poller.next and then replace <RunRoot>\poller. When the task runs
+  this run copy, the poller is stopped through the task for the swap
+  (poller-task.ps1) and the task is started again after; if the poller's node
+  process outlives the stop, the task is started again and nothing is
+  swapped. A scratch run root never touches the task. The task is managed
+  only from a session that may stop and start it: elevated, or one the task
+  grants execute; otherwise nothing is deployed.
   Each deploy appends its reason to <RunRoot>\var\deploy.log: the time, the
-  commit, the poller it ended. <RunRoot>\var is otherwise never touched.
+  commit, the poller it stopped, the seconds from the stop to the start.
+  <RunRoot>\var is otherwise never touched.
 
   Usage, from any folder:  powershell -ExecutionPolicy Bypass -File tools\deploy.ps1
 #>
@@ -19,11 +22,14 @@ $repo = Split-Path $PSScriptRoot -Parent
 $target = Join-Path $RunRoot 'poller'
 $next = Join-Path $RunRoot 'poller.next'
 $old = Join-Path $RunRoot 'poller.old'
+$var = Join-Path $RunRoot 'var'
 
 . (Join-Path $PSScriptRoot 'task-access.ps1')
+. (Join-Path $PSScriptRoot 'poller-task.ps1')
 
-# An elevated session may start any task (administrators have full access);
-# otherwise the task must grant this account execute (register-tasks.ps1 does).
+# Stopping and starting a task both take read and execute: an elevated session
+# has them (administrators have full access); otherwise the task must grant
+# this account execute (register-tasks.ps1 does).
 function Test-CanStartTask([string]$name) {
   $me = [Security.Principal.WindowsIdentity]::GetCurrent()
   $role = [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -34,10 +40,16 @@ function Test-CanStartTask([string]$name) {
   return Test-RunGranted $sddl $me.User.Value
 }
 
+function Write-DeployLog([string]$text) {
+  New-Item -ItemType Directory -Force -Path $var | Out-Null
+  $stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+  Add-Content -LiteralPath (Join-Path $var 'deploy.log') -Encoding UTF8 -Value "$stamp $text"
+}
+
 $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 $ours = $null -ne $task -and $task.Actions[0].Execute -ieq (Join-Path $target 'run-poller.cmd')
 if ($ours -and -not (Test-CanStartTask $TaskName)) {
-  throw "this session could not start the task '$TaskName' again after the swap (the task grants this account read only): deploy from an elevated PowerShell; nothing deployed"
+  throw "this session could not stop and start the task '$TaskName' for the swap (the task grants this account read only): deploy from an elevated PowerShell; nothing deployed"
 }
 
 Push-Location $repo
@@ -61,8 +73,9 @@ try {
   # pnpm command would then remove the development packages: install again.
   pnpm install --frozen-lockfile --offline
   if ($LASTEXITCODE -ne 0) { throw "pnpm install after the deploy failed ($LASTEXITCODE)" }
-  Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'run-poller.cmd') -Destination $next
-  Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'poller-check.ps1') -Destination $next
+  foreach ($file in 'run-poller.cmd', 'poller-check.ps1', 'poller-task.ps1') {
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $next
+  }
   Set-Content -LiteralPath (Join-Path $next 'DEPLOYED.txt') -Encoding ASCII -Value @(
     "commit $commit",
     "deployed $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))"
@@ -71,20 +84,9 @@ try {
   Pop-Location
 }
 
-$wasRunning = $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
-$poller = Join-Path $target 'dist\index.js'
-$ended = @()
-foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'node.exe'") {
-  $line = $p.CommandLine
-  if ($line -and $line.IndexOf($poller, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
-    Stop-Process -Id $p.ProcessId -Force
-    $ended += $p.ProcessId
-    Write-Host "ended the running poller (pid $($p.ProcessId)) for the swap"
-  }
-}
-# A folder cannot be renamed while a process works in it: the ended poller's
-# launcher leaves it a moment later; anything else (a window open in it) stops
-# the deploy here, with the old copy still in place.
+# A folder cannot be renamed while a process works in it (the check task's
+# run, every 5 minutes, takes about a second): retried for 10 s; anything
+# else (a window open in it) stops the swap, with the old copy in place.
 function Rename-Retrying([string]$path, [string]$newName) {
   for ($try = 1; ; $try++) {
     try {
@@ -98,23 +100,58 @@ function Rename-Retrying([string]$path, [string]$newName) {
     }
   }
 }
+# Removed while the poller still runs, so it adds nothing to the gap.
 if (Test-Path -LiteralPath $old) { Remove-Item -Recurse -Force -LiteralPath $old }
-if (Test-Path -LiteralPath $target) { Rename-Retrying $target 'poller.old' }
-Rename-Retrying $next 'poller'
 
-$var = Join-Path $RunRoot 'var'
-New-Item -ItemType Directory -Force -Path $var | Out-Null
-$stamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
-$why = "deploy of $commit; ended poller pid(s) [$($ended -join ', ')] for the swap"
+$why = "deploy of $commit"
+$wasRunning = $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
+if ($wasRunning) {
+  $stoppedAt = Get-Date
+  try {
+    $stop = Stop-PollerTask $TaskName $var
+    $failed = if ($stop.ended) { $null } else { "stopped the task, but $($stop.summary)" }
+  } catch {
+    $failed = "the task's stop failed: $($_.Exception.Message)"
+  }
+  if ($null -ne $failed) {
+    # Whatever outlived the stop still runs the old copy and is left recording.
+    $text = "$why refused: $failed"
+    try {
+      Start-ScheduledTask -TaskName $TaskName
+      $text += '; started the task again'
+    } catch {
+      $text += "; the task did not start: $($_.Exception.Message)"
+    }
+    Write-DeployLog "$text; nothing swapped"
+    throw "$text; nothing swapped; $next is kept"
+  }
+  $why += "; stopped the task: $($stop.summary)"
+}
+
+$swapError = $null
+try {
+  if (Test-Path -LiteralPath $target) { Rename-Retrying $target 'poller.old' }
+  try {
+    Rename-Retrying $next 'poller'
+  } catch {
+    # The old copy goes back, so the task starts what it ran before.
+    if (Test-Path -LiteralPath $old) { Rename-Item -LiteralPath $old -NewName 'poller' }
+    throw
+  }
+} catch {
+  $swapError = $_.Exception.Message
+}
+$why += if ($null -eq $swapError) { '; swapped' } else { "; NOT swapped: $swapError" }
 if ($wasRunning) {
   try {
     Start-ScheduledTask -TaskName $TaskName
   } catch {
-    Add-Content -LiteralPath (Join-Path $var 'deploy.log') -Encoding UTF8 -Value "$stamp $why; the task did not start: $($_.Exception.Message)"
+    Write-DeployLog "$why; the task did not start: $($_.Exception.Message)"
     throw
   }
-  $why += "; started the task again"
+  $why += "; started the task again $([math]::Round(((Get-Date) - $stoppedAt).TotalSeconds, 1)) s after its stop"
   Write-Host "started the task '$TaskName' again"
 }
-Add-Content -LiteralPath (Join-Path $var 'deploy.log') -Encoding UTF8 -Value "$stamp $why"
+Write-DeployLog $why
+if ($null -ne $swapError) { throw $swapError }
 Write-Host "deployed commit $commit to $target"
