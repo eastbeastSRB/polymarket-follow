@@ -1,6 +1,6 @@
 # FIND-REVIEW-A — the Final review of FIND-1, FIND-3 and FIND-4
 
-FIND-REVIEW-A (Fable 5.2, max), 2026-11-11 22:17Z – 23:07Z (UTC, every stamp
+FIND-REVIEW-A (Fable 5.2, max), 2026-11-11 22:17Z – 23:09Z (UTC, every stamp
 from `date -u`), for polymarket-follow's supervisor: the independent Final
 review of three of round 2's FIND studies, all of which found nothing —
 entry 1 (do traders differ, `find-1-2026-11-11.md`), entry 3 (slow traders,
@@ -247,8 +247,12 @@ was priced apart.
 - FIND-3 (`scripts/own-find3.mjs` → `out/own-find3.txt`): the line, both
   competition prints, bps, 6 h, 72 h, the rest of the pool, the left-out
   markets, the short windows — estimates equal to 1e-15, p-values to 1e-13
-  (two different t algorithms). Not recomputed: the net prints, the placebo's
-  rates, the moved instants, leave-one-out, A.2.
+  (two different t algorithms). The net prints its page quotes: the two
+  tests again from its own per-entry nets, equal; my gross less its net is
+  10.9 bps at the median for a taker and 3.8 for a maker — what the fees,
+  the price table and a day's funding come to (`out/check-net-find3.txt`;
+  the costs themselves are the kit's, not priced again). Not recomputed: the
+  placebo's rates, the moved instants, leave-one-out, A.2.
 - FIND-4 (`scripts/own-find4.mjs` → `out/own-find4.txt`): all eleven splits —
   halves, traders, days, strata left, the day test and Welch, the larger p,
   the sign — equal; both competition prints and bps equal; Holm: none, the
@@ -490,7 +494,8 @@ look outputs: all equal, 22:58Z).
   capture's shape); `own-build.mjs`, `dup-ids.mjs`; `own-price.mjs`;
   `own-find1.mjs`, `own-find3.mjs`, `own-find4.mjs` (each also with the
   argument `restored`); `check-alignment.mjs`; `left-out.mjs`;
-  `null-weight.mjs`; `counts-find4.mjs`; `explore-null-window.mjs`;
+  `null-weight.mjs`; `counts-find4.mjs`; `check-net-find3.mjs`;
+  `explore-null-window.mjs`;
   `unused-names.mjs`; `audit-looks.mjs`. Outputs: `out/<name>.txt`.
 - **Bulky files** (`F:\polymarket-follow-research\FIND-REVIEW-A\`):
   `own-records.jsonl.gz` (268,140 groups), `own-priced-find{1,3,4}.jsonl.gz`
