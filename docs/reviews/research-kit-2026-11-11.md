@@ -1,6 +1,6 @@
 # RESEARCH-KIT — round 2's one-minute panel, research kit and first measurements
 
-RESEARCH-KIT (Opus 5.5, max), 2026-11-10 14:37Z – ⟨end⟩ (UTC, every stamp
+RESEARCH-KIT (Opus 5.5, max), 2026-11-10 14:37Z – 2026-11-11 01:24Z (UTC, every stamp
 from `date -u`), for polymarket-follow's supervisor: foundation 2 and
 Appendix A.1 of IDEAS-REVIEW's report (decisions 2026-11-10, round 2's rules
 and the collector approved). Evidence: the supervisor folder
@@ -22,8 +22,10 @@ yardstick: what a trade picked by chance in the same market and hour did.
 
 1. **A one-minute record of every market** — 91, including the one that
    closed in September — from its first trade to 2026-11-07: the price every
-   minute, how much traded, and the funding every hour. Every one of its
-   ⟨total⟩ minutes has a price. Where R8 had read the same markets on its
+   minute, how much traded, and the funding every hour. From the launch on,
+   every one of its 8.3 million minutes has a price; in the beta months
+   before it the exchange itself paused 17 times (1.2% of those minutes have
+   no price, and are marked so). Where R8 had read the same markets on its
    own (156,618 minutes, 79,338 funding hours), the two agree to the last
    digit.
 2. **One research toolbox for every study**, so that all of round 2 counts
@@ -87,8 +89,13 @@ data after 2026-11-07.
   read a market): 19,409 calls, at most 107,325 weighted tokens (marks
   57,885; klines at most 28,880; funding 20,560), 11.9 h of calls at 150 a
   minute plus the 77-minute quiet window. Foundation 2 allowed at most
-  246,000. **Spent:** ⟨calls, tokens, hours, 429s⟩ (`F:\calls.jsonl`,
-  `out/pull-heartbeat.log`).
+  246,000. **Spent** (`out/audit-calls.txt`, recomputed from `F:\calls.jsonl`):
+  the pull 15,944 calls and 89,335 tokens, 2026-11-10 15:05:52Z – 2026-11-11
+  01:16:54Z (10 h 11 min; it ended before the quiet window); with the
+  planning probe, the trial and the end-rule probe, **16,116 calls and 90,210
+  weighted tokens, every one HTTP 200, no network error, no 429**; never more
+  than 150 tokens in a trailing minute nor 22 in any 5 s; no call in
+  02:34–03:51Z.
 - **How it pauses and resumes:** segments of 10,000 minutes from the cut
   backwards, round-robin over the markets, each market's funding chain kept
   level, so the panel is complete from the current segment to the cut at
@@ -104,15 +111,22 @@ data after 2026-11-07.
   segment's end — for the last segment exactly the cut, which cannot return
   a bucket starting at it — and klines the end minus 1 ms. The trial's
   replies are kept apart (`F:\trial-1500Z\`), unused.
-- **Coverage** (`F:\panel\coverage.json`; `scripts/peek-coverage.mjs`), each
-  market's minutes counted against its first trade: ⟨final totals⟩ — every
-  minute from a market's first trade has a mark (no hole at all); the minute
-  klines' trade counts add up to the daily klines' on every fully pulled day
-  (⟨days⟩, none off); funding has a row for every hour but 14, gaps of the
-  API's own: SP500-USD 2026-08-28 08:00Z; MU, TSM and SNDK 2026-08-31 20:00Z;
-  KAITO-USD four hours on 2026-09-10/11 (its first day); MRVL, EWY and SOXL
-  2026-09-16 16:00Z, EWY 17:00Z, UNITREE 20:00Z and 21:00Z (their first day).
-  The kit charges such an hour nothing and counts it. One settlement hour,
+- **Coverage**, each market's minutes counted against its first trade
+  (`F:\panel\coverage.json`; by period through the kit's reader,
+  `out/coverage-periods.txt`): 11,451,888 minutes in all.
+  **From the launch week (2026-08-31) to the cut: 8,304,742 minutes, every one
+  with its own mark;** 138,402 funding hours, 13 without a row — the API's
+  own gaps, mostly a market's first day (MU, TSM and SNDK 2026-08-31 20:00Z;
+  KAITO-USD four hours on 2026-09-10/11; MRVL, EWY and SOXL 2026-09-16 16:00Z,
+  EWY 17:00Z, UNITREE 20:00Z and 21:00Z). **Before it**, in the beta months:
+  39,187 of 3,147,146 minutes (1.2%) without a mark, nearly all in 17 pauses
+  shared by most markets — the longest 1,646 minutes from 2026-06-13 01:20Z,
+  then 484 from 06-03 02:40Z and 273 from 08-11 01:01Z; the last minute
+  without a mark anywhere is 2026-08-11 11:55Z — and 3,267 of 52,420 funding
+  hours without a row. The reader prices none of a pause's minutes past its
+  first five and counts them; a missing funding hour is charged nothing and
+  counted. The minute klines' trade counts add up to the daily klines' on
+  every fully pulled day (8,010 market-days, none off). One settlement hour,
   2026-11-05 20:00Z, is stamped 46 s late on all 90 markets (R8 saw it): the
   panel files it under its nominal hour.
 - **It agrees exactly with R8's independent capture** of the same 80 markets
@@ -122,10 +136,11 @@ data after 2026-11-07.
   windows hold whole, the minute's last one-second mark equal to the panel's;
   R8's 23,346 minute klines, trade count and volume equal — no difference
   anywhere.
-- **The manifest:** `F:\MANIFEST.sha256` (⟨files⟩ files: every raw reply file
-  and every panel file), SHA-256 ⟨manifest hash⟩. Its panel lines are pinned
-  in the kit (`kit/data/panel-manifest.sha256`): the reader refuses a panel
-  file whose hash differs.
+- **The manifest:** `F:\MANIFEST.sha256` (367 files: every raw reply file and
+  every panel file), SHA-256
+  `93c985e5cbab3ea359fb7aece3d5f93580b01f328a3ae386d96b6d32be25be15`. Its
+  panel lines are pinned in the kit (`kit/data/panel-manifest.sha256`): the
+  reader refuses a panel file whose hash differs.
 
 ## 2. The kit
 
@@ -174,10 +189,16 @@ ones.
 `checkKit()` — it throws on any file that differs from the fingerprint, on a
 missing file and on an extra one — then import what it needs.
 
-**Its fingerprint:** ⟨fingerprint⟩ — the SHA-256 of `kit/FINGERPRINT.sha256`
-(⟨n⟩ files, the pinned panel manifest among them). `scripts/test-check.mjs`
-proves the check on a copy: it passes unchanged and throws on one changed
-byte, an added file and a missing file (`out/test-check.txt`).
+**Its fingerprint:**
+`872dd5acbe6159052b60faa357446f405e173f1ed727049a93e409b159506246` — the
+SHA-256 of `kit/FINGERPRINT.sha256` (24 files, the pinned panel manifest
+among them). `scripts/test-check.mjs` proves the check on a copy: it passes
+unchanged and throws on one changed byte, an added file and a missing file
+(`out/test-check.txt`). Every proof and measurement script checks it at its
+start; the final run of all twelve (`out/final-run.txt`, 2026-11-11 01:20Z)
+gave every printed figure of the earlier runs again, the derived index byte
+for byte (the proof's full-precision numbers moved in their 16th digit: the
+funding prefix sums now start further back).
 
 **Its proof against R8** (foundation 2's "done when"):
 
@@ -287,6 +308,10 @@ instants — never signed by a trader's side, so no outcome is computed
    | indices | 70.4% | 57.3% | 52.4% | 50.5% |
    | commodities | 68.6% | 57.1% | 52.3% | 49.5% |
 
+   A market counts as closed when both directions are; with funding, one
+   direction is closed in 15 markets at 24 h and 8 at 72 h. The halves hold
+   the picture, the edge cells move: at 1 h 81 then 84 of 84 closed, at 6 h
+   44 then 34, at 24 h 9 then 3.
    BTC at 1 h: a mean move of 24.2 bps against an 8.2 bps round trip — 67.0%
    (A.2's "about six in ten on a major coin" was too kind); SP500-USD at 1 h:
    8.1 bps against 8.3 — 101%, a cost no share of right calls covers. For a
@@ -298,7 +323,7 @@ instants — never signed by a trader's side, so no outcome is computed
 
 | Entry | Measured count | Measured spread (bps) | Visible in FIND | Visible at the final exam | A.2 had |
 |---|---|---|---|---|---|
-| 1 traders differ | 139 traders with ≥ 10 a half (355 counting every entry of accounts ever directional) | d 183 a trade at the class horizon | a correlation of 0.24 — about 17 bps between traders (0.15 and 11) | top minus bottom fifth 36–39 (240 traders with ≥ 20 entries; about 930 entries a fifth) | 0.20 → 17–28; 40–43 |
+| 1 traders differ | 139 traders with ≥ 10 a half (355 counting every entry of accounts ever directional) | d 183 a trade at the class horizon | a correlation of 0.24 — about 17 bps between traders (with 355 traders: 0.15, about 11 bps) | top minus bottom fifth 36–39 (240 traders with ≥ 20 entries; about 930 entries a fifth) | 0.20 → 17–28; 40–43 |
 | 3 slow traders | 1,553 entries, 112 accounts | 382 at 24 h | 32 (47 if 24-hour windows cluster by day three-fold) | 52–56 (about 960 entries) | 23–34; 36–58 |
 | 4 kinds of entries | 10,612 from the launch week (17,453 in all FIND weeks) | 183 | 16 (12) for an even split | 19–21 (about 6,550 entries) | 15–42; 18–51 |
 | 5 the first minute | 1,249 (R8's cell) | 15.6 over 60 s | 1.8 | — | 2.3–3.7 |
@@ -348,13 +373,13 @@ the freeze by their lists' counts.
 
 | Problem | Handling |
 |---|---|
-| **The blind store** | the fills reader throws on a row at or after the cut; the panel builder refuses such rows (none met) and the reader throws on them; the client refuses a history read without both stamps or ending after the cut (marks may end at the cut itself: no bucket starting at it can return); R2's light files never opened; `pool.json.gz` read for its account keys and notional-board membership only; the 13 late accounts excluded; R8's `probe/` never opened; `/v1/info/pnl` not read (item 5, section 8) |
+| **The blind store** | the fills reader throws on a row at or after the cut; the panel builder refuses such rows (none met) and the reader throws on them; the client refuses a history read without both stamps or ending after the cut (marks may end at the cut itself: no bucket starting at it can return); R2's light files never opened; `pool.json.gz` parsed once, and only its account keys and their board names taken (no rank, profit or other value printed or used); the 13 late accounts excluded; R8's `probe/` never opened; `/v1/info/pnl` not read (item 5, section 8) |
 | Fills with ids above 2^53 − 1 | 3,403 rows of one account on 2026-05-07/08 (WTIOIL, SILVER) fail the boundary check: dropped and counted (`out/check-dropped.txt`), never read as numbers |
 | Truncated captures (139 accounts) | a week counts only where the capture reaches 14 days back; truncated accounts' runs set apart |
 | The competition (A.0-8) | runs split at 2026-11-02 14:30Z; the studies print every result without it |
 | The minute's look-ahead (up to 60 s) | the same for an entry and its null; against the second it moved R8's mean by 0.24 bps and each entry by 13 bps (sd) |
-| Holes in the marks | none from any first trade to the cut; the reader would take the previous minute's mark up to 5 minutes old, longer holes unpriced and counted |
-| Missing funding rows | 14 hours, the API's own gaps (section 1): charged nothing, counted |
+| Holes in the marks | none from the launch week to the cut; before it 17 exchange-wide pauses (section 1): the reader takes the previous minute's mark up to 5 minutes old, prices nothing later in a pause, and counts it — a study reaching into May–August meets them |
+| Missing funding rows | 13 hours from the launch week, 3,267 before it — the API's own gaps (section 1): charged nothing, counted |
 | Cost tables from two November mornings | R8's, kept as approved (decisions 2026-11-09); stated |
 | Uniform seconds inside a minute (the exact null) | stated; R8 found the klines' minute counts equal the tape's in 2,471 of 2,472 minutes, and the panel equals R8's klines in 23,346 of 23,346 |
 | Holdout accounts | their fills before the cut are used, as R8 did; D1's data is after 2026-11-07 and untouched |
@@ -441,14 +466,18 @@ the freeze by their lists' counts.
   12:00:00.000 or 12:00:59.999 → last bucket 11:59; 12:01:00.000 → 12:00);
   klines at 1 m include a candle opening at `end_timestamp` (end
   12:00:00.000 → 12:00 included), as R8 found.
-- **The pull, 2026-11-10 15:05Z – ⟨end⟩** (`F:\calls.jsonl`): ⟨calls⟩ calls,
-  ⟨tokens⟩ weighted tokens, never more than 150 in a trailing minute, ⟨429s⟩
-  429. `mark-history` 1 m pages hold 1,000 buckets ascending with `more`, and
-  a bucket exists for every minute from each market's first trade to the cut
-  (⟨minutes⟩ minutes, no hole); 1 m klines add up to the 1 d klines' trade
-  counts on every fully pulled day (⟨days⟩); `funding` with `start_timestamp`
-  and `end_timestamp` pages back by `end` = the oldest row (exclusive), 100 a
-  page, with no row for 14 hours (section 1).
+- **The pull, 2026-11-10 15:05:52Z – 2026-11-11 01:16:54Z**
+  (`out/audit-calls.txt`): 15,944 calls (16,116 with the probes), 90,210
+  weighted tokens in all, every reply HTTP 200, no 429, at most 150 tokens in
+  a trailing minute; latency median 295 ms. `mark-history` 1 m pages hold
+  1,000 buckets ascending with `more`; a bucket exists for every minute from
+  2026-08-31 to the cut on all 90 markets (8,304,742 minutes); before it the
+  history has 17 exchange-wide pauses, the longest 1,646 minutes from
+  2026-06-13 01:20Z, the last ending 2026-08-11 11:55Z. 1 m klines add up to
+  the 1 d klines' trade counts on every fully pulled market-day (8,010).
+  `funding` with `start_timestamp` and `end_timestamp` pages back by `end` =
+  the oldest row (exclusive), 100 a page; no row for 13 hours from
+  2026-08-31 (mostly a market's first day) and for 3,267 before it.
 - **R2's capture, read 2026-11-10:** fills of 2026-05-07/08 carry `trade_id`
   and `order_id` above 2^53 − 1 (3,403 rows of one account, WTIOIL-USD and
   SILVER-USD) — not exact as JSON numbers; later fills fit.
@@ -473,16 +502,20 @@ the freeze by their lists' counts.
 
 In `workers/RESEARCH-KIT/` unless F: is named.
 
-- **The kit:** `kit/` (⟨n⟩ files; `kit/FINGERPRINT.sha256`, fingerprint
-  ⟨fingerprint⟩); tests `out/test-kit.txt` (36 of 36), mutants
-  `out/mutation.txt` (54 of 54), the check `out/test-check.txt`.
+- **The kit:** `kit/` (24 files; `kit/FINGERPRINT.sha256`, fingerprint
+  `872dd5ac…6246`, `out/fingerprint.txt`); tests `out/test-kit.txt` (36 of
+  36), mutants `out/mutation.txt` (54 of 54), the check `out/test-check.txt`;
+  the final run `scripts/run-final.mjs` → `out/final-run.txt` (every output's
+  SHA-256), with `scripts/add-check.mjs`, `diff-json.mjs`.
 - **The panel:** `scripts/plan-panel.mjs`, `plan-cost.mjs`, `api.mjs`
   (`out/test-api.txt`, 4 of 4), `rawstore.mjs`, `pull-panel.mjs`,
   `build-panel.mjs`, `check-raw.mjs`, `probe-end.mjs`; `out/plan-panel.log`,
   `out/plan-cost.txt`, `out/panel-plan.json`, `out/probe-end.txt`,
   `out/pull-heartbeat.log`; F: `raw/`, `panel/` (with `coverage.json`),
-  `done.jsonl`, `calls.jsonl`, `MANIFEST.sha256` (⟨manifest hash⟩),
-  `trial-1500Z/` (the trial, unused).
+  `done.jsonl`, `calls.jsonl`, `MANIFEST.sha256` (`93c985e5…be15`),
+  `trial-1500Z/` (the trial, unused); `scripts/audit-calls.mjs`,
+  `coverage-periods.mjs` → `out/audit-calls.txt`, `out/coverage-periods.txt`,
+  `out/build-panel-final.txt`.
 - **The data the kit holds:** `scripts/build-kit-data.mjs`
   (`out/build-kit-data.txt`), `scripts/make-fingerprint.mjs`.
 - **The proof:** `scripts/proof-entries.mjs`, `proof-pricing.mjs`,
@@ -496,8 +529,10 @@ In `workers/RESEARCH-KIT/` unless F: is named.
   `out/numbers-*.json`, `out/index-pool.txt`, `out/check-dropped.txt`,
   `out/directional-at-cut.txt`; F: `derived/`.
 - **Inputs:** `inputs/SHA256SUMS` (86 of 86 verified at the start).
-- **Rules I broke:** two `node -e` one-liners (14:5xZ and 20:3xZ; code-rules
-  want scripts in files); `kit/test/mutate.mjs` first sat where the test
-  runner ran it as a test (moved to `kit/mutate.mjs`; the baseline check now
-  guards against a run that tests nothing); one edit made with `sed`
-  (`scripts/m-spreads.mjs`), then corrected with the Edit tool.
+- **Rules I broke:** three `node -e` one-liners — an inspection of
+  `selection.json` (2026-11-10 14:5xZ), a print of `numbers-proof.json`
+  (20:3xZ), and an empty one typed by mistake (2026-11-11 01:19Z); code-rules
+  want scripts in files. `kit/test/mutate.mjs` first sat where the test runner
+  ran it as a test (moved to `kit/mutate.mjs`; the baseline check now guards
+  against a run that tests nothing). Two edits made with `sed`
+  (`scripts/m-spreads.mjs`), the second corrected with the Edit tool.
