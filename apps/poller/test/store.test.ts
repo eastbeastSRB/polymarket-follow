@@ -417,6 +417,17 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
     );
   });
 
+  it("fails the run, not the process, when the dump cannot be written", async () => {
+    const missing = path.join(
+      mkdtempSync(path.join(tmpdir(), "poller-backup-")),
+      "no-such-folder",
+      "dump.jsonl.gz",
+    );
+    await expect(
+      backup.dump(mongodb, db(), missing, new Date()),
+    ).rejects.toThrow(/ENOENT/);
+  });
+
   it("keeps the 14 newest dumps and the newest of each of the 8 weeks before them", () => {
     const day = (n: number) =>
       new Date(Date.UTC(2026, 10, 30) - n * 86_400_000)

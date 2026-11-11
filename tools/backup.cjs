@@ -20,7 +20,7 @@
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { once } = require("node:events");
+const { pipeline } = require("node:stream/promises");
 const { createGzip } = require("node:zlib");
 const { dumpLines, restore } = require("./restore.cjs");
 
@@ -48,27 +48,25 @@ async function dump(mongodb, db, file, cutAt) {
     .map((c) => c.name)
     .filter((n) => !n.startsWith("system."))
     .sort();
-  const tmp = `${file}.tmp`;
-  const gzip = createGzip();
-  const out = fs.createWriteStream(tmp);
-  gzip.pipe(out);
-  const write = async (value) => {
-    if (!gzip.write(`${JSON.stringify(value)}\n`)) await once(gzip, "drain");
-  };
   const counts = {};
-  for (const name of names) {
-    counts[name] = 0;
-    const filter = APPEND_ONLY.has(name) ? { _id: { $lt: before } } : {};
-    for await (const doc of db.collection(name).find(filter).sort({ _id: 1 })) {
-      await write({ c: name, d: EJSON.serialize(doc, { relaxed: false }) });
-      counts[name] += 1;
+  const line = (value) => `${JSON.stringify(value)}\n`;
+  async function* lines() {
+    for (const name of names) {
+      counts[name] = 0;
+      const filter = APPEND_ONLY.has(name) ? { _id: { $lt: before } } : {};
+      const docs = db.collection(name).find(filter).sort({ _id: 1 });
+      for await (const doc of docs) {
+        yield line({ c: name, d: EJSON.serialize(doc, { relaxed: false }) });
+        counts[name] += 1;
+      }
     }
+    yield line({
+      end: { db: db.databaseName, cutAt: cutAt.toISOString(), counts },
+    });
   }
-  await write({
-    end: { db: db.databaseName, cutAt: cutAt.toISOString(), counts },
-  });
-  gzip.end();
-  await once(out, "close");
+  const tmp = `${file}.tmp`;
+  // A pipeline, so a failed read or write is this run's failure, not an uncaught error.
+  await pipeline(lines(), createGzip(), fs.createWriteStream(tmp));
   fs.renameSync(tmp, file);
   return counts;
 }
