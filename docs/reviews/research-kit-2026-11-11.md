@@ -220,7 +220,8 @@ now into a fresh folder in the system's temp folder, removed after.]
 SHA-256 of `kit/FINGERPRINT.sha256` (24 files, the pinned panel manifest
 among them). [Final review, F4 and F7: now
 `7b4179e897faa34758de8508cef47a84e7c2504ec5eb9974526f55041bdfc215`, 26
-files; the panel manifest unchanged.] `scripts/test-check.mjs` proves the check on a copy: it passes
+files; the panel manifest unchanged.] [Addendum 2: now `2d3667b5…09aa`, 33
+files.] `scripts/test-check.mjs` proves the check on a copy: it passes
 unchanged and throws on one changed byte, an added file and a missing file
 (`out/test-check.txt`). Every proof and measurement script checks it at its
 start; the final run of all twelve (`out/final-run.txt`, 2026-11-11 01:20Z)
@@ -626,7 +627,7 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
 In `workers/RESEARCH-KIT/` unless F: is named.
 
 - **The kit:** `kit/` (24 files [Final review, F4 and F7: 26, fingerprint
-  `7b4179e8…c215`]; `kit/FINGERPRINT.sha256`, fingerprint
+  `7b4179e8…c215`] [Addendum 2: 33, `2d3667b5…09aa`]; `kit/FINGERPRINT.sha256`, fingerprint
   `872dd5ac…6246`, `out/fingerprint.txt`); tests `out/test-kit.txt` (36 of
   36), mutants `out/mutation.txt` (54 of 54), the check `out/test-check.txt`;
   the final run `scripts/run-final.mjs` → `out/final-run.txt` (every output's
@@ -747,12 +748,15 @@ and (g).
   is read in it) and **A.0-4's d** itself (gross minus the exact null's gross;
   a study composes it from `leg` and `exactNull`). The first study should add
   both to the kit, tested and mutated, before any result is read — or each
-  study will write its own.
+  study will write its own. [Addendum 2: both in the kit now — `riskUnit`,
+  `dAgainstNull`.]
 - Entry 7's runs and entry 9's agreement events are defined in scripts
   (`index-pool.mjs`, `m-runs-agree.mjs`): if those entries are registered,
   their definitions move into the kit, or a study writes a second copy.
+  [Addendum 2: moved — `runs.mjs`, `agreement.mjs`; the scripts import them.]
 - The map's closed cells (A.1-8) are a script output (`out/m8-map.tsv`): if
   question 5 keeps the rule, freeze that table with its hash for the studies.
+  [Addendum 2: frozen — `data/m8-map.tsv`, with `mapOpen`.]
 - **CONFIRM cannot use the kit's readers as they are:** the fills reader, the
   panel reader and the client refuse anything at or after the FIND cut by
   construction. The exams need their own, deliberate path (the exam's end as
@@ -766,3 +770,118 @@ and (g).
 - A session runs the kit's tests with `RESEARCH_KIT_TMP` set to its own
   scratchpad (F7); a study prints `checkKit()`'s fingerprint, so any later kit
   change (the risk unit, say) shows in every output.
+
+---
+
+## Addendum 2 (2026-11-11)
+
+2026-11-11 15:53–16:32Z (`date -u`), a fresh RESEARCH-KIT subagent (Opus 5.5,
+max), on the brief's Addendum 2: the pieces the note "How the kit fits the
+FIND studies to come" names, added to the kit, nothing else. No API call;
+nothing stamped at or after the cut read; the proof's numbers unchanged
+(`numbers-proof.json` byte for byte). The log: `progress.md`, section
+"Addendum 2".
+
+**Added** — one definition each, tested, every mutant killed:
+
+| | Where | What |
+|---|---|---|
+| A.0-4's d | `nulls.mjs` `dAgainstNull` | the entry's gross at t + D over h minus the exact matched null's gross over t's UTC hour, composed from `leg` and `exactNull`; the caller names whose trades the null leaves out (`removed`, required: `removalOf`, or `() => 0`); the long share must be a number in [0, 1]; d net minus net under a setting only when asked (`netSetting`) |
+| A.0-5's risk unit | `returns.mjs` `riskUnit` | the market's mean absolute h-return, h = 1, 6, 24 or 72 h, over the 30 days of whole minutes before the minute that holds the instant — each start and its exit inside them, by `leg`'s convention (the mark at the end of minute s to the mark at the end of minute s + h); it returns the mean and the number of starts it rests on |
+| Entry 7's runs | `runs.mjs` `runsOf` | moved from `scripts/index-pool.mjs`, verbatim |
+| Entry 9's events | `agreement.mjs` | `sharedTradePairs`, `copyPatternPairs`, `linkOf`, `agreementEvents`, moved from `index-pool.mjs` and `m-runs-agree.mjs`, unchanged in meaning |
+| The map | `data/m8-map.tsv` (SHA-256 `d8f8657c…3f77`, `out/m8-map.tsv` byte for byte), `cells.mjs` `mapOpen` | whether a market × horizon × setting cell of FIND's 65 days is open, in the entry's own direction (funding splits the two from 24 h) |
+| Question 6's beside-print | `stats.mjs` `cr1Test`, `entryWeightedCR1` | the entry-weighted mean with CR1 errors (K ÷ (K − 1)) by day and by trader, Student's t on K − 1 degrees of freedom |
+| The competition | `competition.mjs` `COMPETITION`, `inCompetition` | the window [2026-11-02 14:30Z, 11-16 14:30Z) and its boosted markets ANT, AMD, ARM, SOXL, their ids from the rule book (97, 22, 26, 89): `{ days, boosted }` for a market and an instant |
+
+**The evidence** (`scripts/check-additions.mjs` → `out/check-additions.txt`,
+now the last script of `run-final.mjs`):
+1. d on R8's cell equals the proof's composition in all 1,231 entries bit for
+   bit (d, d net minus net, the null's weight), with the same 18 without a
+   null; its means, −2.53 and −2.64 bps, are `numbers-proof.json`'s bit for
+   bit.
+2. The risk unit equals a direct sum over its window in 32 of 32 cases (BTC,
+   ETH, SP500, GOLD; four horizons; two instants); BTC at the cut, 1 h: 24.7
+   bps (the map's 65 days: 24.2).
+3. **Runs and events:** `index-pool.mjs` and `m-runs-agree.mjs` import the
+   kit, their own copies gone; every derived file comes out byte for byte
+   (`pool-runs`, `pool-pairs`, `runs-covered`, `agreement-events` among them)
+   and `numbers-runs-agree.json` too — **3,182 runs** of 327 accounts (81 with
+   ten or more; 1,116 inside the competition), **188 events** on 59 days in
+   13 markets.
+4. **The map:** `mapOpen` gives first measurement 8's counts (a taker's
+   closed markets 82, 41, 4, 1 of 84 at 1, 6, 24, 72 h, one side closed 82,
+   41, 15, 8; a maker's 14, 2, 0, 0 — a test) and the Final review's tallies
+   of each entry's own cell exactly (`out/fr-a2.txt`: P1 entries at the class
+   horizon 2,149 open and 8,463 closed, at 24 h 9,235 and 1,377; events at 6
+   h 9 and 179, at 24 h 179 and 9; runs at 1 h 23 and 3,159).
+5. CR1 on R8's net result by the second: −16.60, se 8.00 by day (p 0.0442),
+   6.04 by trader (p 0.0085) — `out/fr-a06.txt`'s figures, computed without
+   the kit, to the printed digit; likewise the minute's net result and d.
+6. The competition splits measurement 3's runs as before (1,116 inside).
+
+**The kit:** fingerprint `7b4179e8…c215` (26 files) →
+**`2d3667b5ce90645b41dfee4e6fc425ab3e64c985cb4973bfed6ece5052c409aa`** (33
+files: `runs.mjs`, `agreement.mjs`, `competition.mjs`, `data/m8-map.tsv` and
+three tests added; `cells.mjs`, `nulls.mjs`, `returns.mjs`, `stats.mjs`,
+`mutate.mjs` and three tests changed; the panel manifest unchanged). Tests 54
+of 54 (`out/test-kit.txt`); mutants 109 of 109, 50 of them new
+(`out/mutation.txt`); the check 5 of 5; `run-final.mjs` (`out/final-run.txt`):
+every output the same bytes or the same but its stamps, except
+`index-pool.txt`'s list of the code it ran. `run-final.mjs` now gives each
+script at most 4 GB of heap (it gave 8 GB; the collector shares the machine);
+every script ran within it.
+
+**What a FIND study must know**
+- *d:* pass `removed` — whose trades the null leaves out is the entry's to
+  say (R8 left out both arms) — and a long share. `habitsAt` gives none to a
+  trader without an opening in the 30 days before (3 P1 entries from the
+  launch week); `dAgainstNull` refuses it rather than guess (R8's analysis
+  took 0.5). Near the cut, apply `voted(t, h)`: a null leg that would end past
+  the cut leaves the entry unpriced.
+- *Risk units:* d ÷ `riskUnit(mk, t, h).value`, t the entry's instant
+  (A.0-1); 1, 6, 24 and 72 h only (entry 5's 60 s and entry 7's 30 min are
+  not d-based). Not every window is full: question 7.
+- *The map:* a taker's and a maker's cells only — the owner's own setting
+  has none, and the function refuses it; the entry's own direction, as the
+  Final review applied it and the owner ruled on; not applied to entries 7
+  and 8.
+- *Events:* pass every P1 entry from the first week and take a period from
+  the events: an event's merging depends on the events before it.
+- *The competition:* pass the entry's instant (A.0-1); an entry made before
+  11-02 14:30Z and held into the window counts outside it. Of the 10,612 P1
+  entries from the launch week, 913 lie inside the window, 161 in boosted
+  markets (AMD 61, ARM 15, SOXL 85; ANT-USD is pre-IPO, outside every primary
+  cell), 33 both.
+- *Memory:* the risk unit keeps prefix sums of 12 bytes a minute per market
+  and horizon (BTC about 3 MB a horizon); load markets one at a time, as
+  `check-additions.mjs` does.
+
+**Questions** (for section 8, each with a recommendation)
+
+7. **A risk unit on a short window (A.0-5).** The trailing 30 days are not
+   full where a market is younger than 30 days or where the beta months'
+   pauses fall inside them. Of the 10,612 P1 entries from the launch week, at
+   24 h 8,643 have the full window, 1,210 90–100%, 431 half to 90%, 324 under
+   half (63 under 7 days) and 4 none (a market's first day). *Recommendation:
+   the unit over the minutes the window holds, its share printed; an entry
+   whose window holds under 7 days of starts, or none, is left out of the line
+   read in risk units and printed apart, its bps beside — 67 entries at 24 h.
+   Seven days, so that every unit spans a whole week, weekend included.*
+8. **The competition's source.** No stored rule-book read holds the
+   competition: its window and boosts are R1's (read 2026-11-07, "boosts 3x
+   ANTH") and DOCS-SWEEP's (read 2026-11-09, "ANT 3×, AMD/ARM/SOXL 2×"); the
+   kit takes their markets from the rule book's instruments. *Recommendation:
+   one read of `/v1/info/competition?competition_id=` (weight 1, the rule
+   book A.0-9 allows after the cut) by the supervisor before the freeze, its
+   dates and boosted ids compared with the kit's; a difference is a kit change
+   and a new fingerprint.*
+
+Evidence: `kit/` (33 files), `kit/FINGERPRINT.sha256`, `out/fingerprint.txt`,
+`out/test-kit.txt`, `out/mutation.txt`, `out/test-check.txt`,
+`out/final-run.txt`, `out/check-additions.txt`, `out/freeze-map.txt`; scripts
+added `freeze-map.mjs` and `check-additions.mjs`, changed `index-pool.mjs`,
+`m-runs-agree.mjs` and `run-final.mjs`. Rules I broke: one kit edit appended
+with a shell heredoc instead of the Edit tool (rewritten with it since), and
+one time stamp written from an estimate in `progress.md`, corrected from
+`date -u`.
