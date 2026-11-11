@@ -194,7 +194,11 @@ matched null can (question 1).
 
 **R8-REVIEW's code findings, and what became of them:** duplicated
 definitions (groups, removal, delay, voted rule) — one each; dead code —
-none; `analyze.mjs` untested — the analysis layer (the leg, the null, the
+none [Final review, F7: wrong — `toEvents`' `takerNotional` (added for entry
+4, which is not registered) and `buildEntries`' `reopenedInMerge` (R8's flag
+for its mirrored money, which the kit does not compute) had no reader, and
+are removed; the fields of R8's event record no script reads (`t1`, `n`,
+`notional`, `liq`, `tids`) stay as R8's record, pinned by the tests]; `analyze.mjs` untested — the analysis layer (the leg, the null, the
 cell rules, the counters) tested and mutated; the null's silent fall-through
 — the exact null draws nothing, so no loop can run out; no boundary parse of
 market rows — the panel builder parses every row and counts what it drops or
@@ -204,7 +208,10 @@ ones.
 
 **How a study uses it:** `import { checkKit } from '<kit>/check.mjs'`; print
 `checkKit()` — it throws on any file that differs from the fingerprint, on a
-missing file and on an extra one — then import what it needs.
+missing file and on an extra one — then import what it needs. [Final review,
+F7: a session that runs the kit's tests or mutants sets `RESEARCH_KIT_TMP` to
+its own scratchpad; they wrote by default into this session's scratchpad,
+now into a fresh folder in the system's temp folder, removed after.]
 
 **Its fingerprint:**
 `872dd5acbe6159052b60faa357446f405e173f1ed727049a93e409b159506246` — the
