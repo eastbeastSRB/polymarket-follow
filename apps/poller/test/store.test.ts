@@ -3,7 +3,14 @@
  * only (COLLECTOR-PLAN §1.6, integration tests, local only): dropped before
  * and after.
  */
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -311,6 +318,12 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
       manifest: { bytes: number; sha256: string; counts: Counts },
     ) => Promise<void>;
     datesToDelete: (dates: string[]) => string[];
+    isDumpFolder: (dir: string) => boolean;
+    run: (
+      m: typeof mongodb,
+      env: Record<string, string>,
+      now: Date,
+    ) => Promise<string>;
   };
   const restore = load("../../../tools/restore.cjs") as {
     restore: (
@@ -321,6 +334,22 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
     ) => Promise<{ ok: boolean; counts: Counts; problems: string[] }>;
   };
   const RESTORED = "polymarket_follow_restore_2000-01-01";
+  const DUMP = "polymarket_follow.jsonl.gz";
+  const run = (root: string, latest: string, now: string) =>
+    backup.run(
+      mongodb,
+      {
+        MONGO_URI: URI,
+        MONGO_DB: NAME,
+        BACKUP_ROOT: root,
+        BACKUP_LATEST: latest,
+      },
+      new Date(now),
+    );
+  const fileIn = (root: string, folder: string, name: string) => {
+    mkdirSync(path.join(root, folder), { recursive: true });
+    writeFileSync(path.join(root, folder, name), "x");
+  };
 
   it("dumps every collection, restores it with the same counts and _id sets, and refuses any other name", async () => {
     await db().dropDatabase();
@@ -415,6 +444,52 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
     await expect(backup.verifyDump(file, manifest)).rejects.toThrow(
       /hash differs/,
     );
+  });
+
+  it("writes into and removes only a dump's own folder: the recordings' day folders carry the same names", async () => {
+    const tmp = mkdtempSync(path.join(tmpdir(), "poller-backup-"));
+    for (const name of [DUMP, "manifest.json", `${DUMP}.tmp`]) {
+      fileIn(tmp, "own", name);
+    }
+    expect(backup.isDumpFolder(path.join(tmp, "own"))).toBe(true);
+    fileIn(tmp, "own", "coverage.jsonl");
+    expect(backup.isDumpFolder(path.join(tmp, "own"))).toBe(false);
+    mkdirSync(path.join(tmp, "nested", "sub"), { recursive: true });
+    expect(backup.isDumpFolder(path.join(tmp, "nested"))).toBe(false);
+    expect(backup.isDumpFolder(path.join(tmp, "nested", "sub"))).toBe(true);
+
+    // Today's folder holds a recording: nothing is written beside it.
+    const taken = path.join(tmp, "taken");
+    fileIn(taken, "2099-01-05", "book-00.jsonl.br");
+    await expect(
+      run(taken, path.join(tmp, "latest"), "2099-01-05T05:20:00Z"),
+    ).rejects.toThrow(/not a dump's folder: nothing written/);
+    expect(readdirSync(path.join(taken, "2099-01-05"))).toEqual([
+      "book-00.jsonl.br",
+    ]);
+
+    // 13 days and 8 weeks are kept beside today's; of the two older folders only the dump's goes.
+    const root = path.join(tmp, "root");
+    const day = (n: number) =>
+      new Date(Date.UTC(2099, 0, 5) - n * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    for (let n = 1; n <= 13; n++) fileIn(root, day(n), DUMP);
+    for (let week = 0; week < 8; week++) fileIn(root, day(20 + 7 * week), DUMP);
+    fileIn(root, "2098-01-01", DUMP);
+    fileIn(root, "2097-06-01", "book-00.jsonl.br");
+    await expect(
+      run(root, path.join(tmp, "latest"), "2099-01-05T05:20:00Z"),
+    ).rejects.toThrow(/not removed: 2097-06-01$/);
+    const left = readdirSync(root);
+    expect(left).toHaveLength(1 + 13 + 8 + 1);
+    expect(left).toContain("2097-06-01");
+    expect(left).not.toContain("2098-01-01");
+    expect(readdirSync(path.join(root, "2099-01-05")).sort()).toEqual([
+      "manifest.json",
+      DUMP,
+    ]);
+    expect(existsSync(path.join(tmp, "latest", DUMP))).toBe(true);
   });
 
   it("fails the run, not the process, when the dump cannot be written", async () => {

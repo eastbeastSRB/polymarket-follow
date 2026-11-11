@@ -8,7 +8,8 @@
  *   BACKUP_ROOT\<UTC date>\ (F:), the append-only collections cut at the
  *   run's start minus 60 s; the manifest written last; the dump re-read
  *   against it. Kept: the 14 newest, and the newest of each of the 8 weeks
- *   before them;
+ *   before them; a folder that holds anything but a dump is never written
+ *   into or removed, and makes the run fail;
  * - then the newest dump alone into BACKUP_LATEST (E:, one file, replaced)
  *   when E: has three times its size plus 5 GiB free (R6 Q5);
  * - on Sundays (UTC) the restore test (restore.cjs) into
@@ -121,6 +122,16 @@ function datesToDelete(dates) {
   return sorted.filter((d) => !keep.has(d));
 }
 
+/**
+ * A dump's own folder: nothing in it but a dump, its manifest and a dump cut
+ * short. The recordings' day folders carry the same names as the dumps', so
+ * the backup writes into and removes no folder that holds anything else.
+ */
+function isDumpFolder(dir) {
+  const ours = new Set([DUMP_FILE, MANIFEST_FILE, `${DUMP_FILE}.tmp`]);
+  return fs.readdirSync(dir).every((name) => ours.has(name));
+}
+
 /** The newest dump into E:, replacing the one there, only with room to spare. */
 async function copyLatest(file, manifest, latestDir) {
   fs.mkdirSync(latestDir, { recursive: true });
@@ -146,6 +157,8 @@ async function run(mongodb, env, now) {
     const date = now.toISOString().slice(0, 10);
     const dir = path.join(env.BACKUP_ROOT, date);
     fs.mkdirSync(dir, { recursive: true });
+    if (!isDumpFolder(dir))
+      throw new Error(`${dir} is not a dump's folder: nothing written`);
     const file = path.join(dir, DUMP_FILE);
     const counts = await dump(
       mongodb,
@@ -165,12 +178,15 @@ async function run(mongodb, env, now) {
       `${JSON.stringify(manifest, null, 2)}\n`,
     );
     await verifyDump(file, manifest);
-    const removed = datesToDelete(fs.readdirSync(env.BACKUP_ROOT));
-    for (const old of removed)
-      fs.rmSync(path.join(env.BACKUP_ROOT, old), {
-        recursive: true,
-        force: true,
-      });
+    const removed = [];
+    const notOurs = [];
+    for (const old of datesToDelete(fs.readdirSync(env.BACKUP_ROOT))) {
+      const oldDir = path.join(env.BACKUP_ROOT, old);
+      if (isDumpFolder(oldDir)) {
+        fs.rmSync(oldDir, { recursive: true, force: true });
+        removed.push(old);
+      } else notOurs.push(old);
+    }
     const latest = await copyLatest(file, manifest, env.BACKUP_LATEST);
     let restoreText = "no restore test (not Sunday)";
     if (now.getUTCDay() === 0) {
@@ -181,6 +197,10 @@ async function run(mongodb, env, now) {
         throw new Error(`restore test failed: ${result.problems.join("; ")}`);
       restoreText = `restore test ok into ${name}, dropped`;
     }
+    if (notOurs.length > 0)
+      throw new Error(
+        `the dump is written, but not a dump's folder, so not removed: ${notOurs.join(", ")}`,
+      );
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     return `ok ${file} ${manifest.bytes} B sha256 ${manifest.sha256.slice(0, 12)}, ${total} documents in ${Object.keys(counts).length} collections; ${removed.length} old dump(s) removed; ${latest}; ${restoreText}`;
   } finally {
@@ -219,7 +239,14 @@ async function main() {
   process.stdout.write(`${line}\n`);
 }
 
-module.exports = { APPEND_ONLY, datesToDelete, dump, fileHash, verifyDump };
+module.exports = {
+  datesToDelete,
+  dump,
+  fileHash,
+  isDumpFolder,
+  run,
+  verifyDump,
+};
 
 if (require.main === module) {
   main().catch((err) => {
