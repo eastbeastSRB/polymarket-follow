@@ -70,7 +70,14 @@ data after 2026-11-07.
 3. Settle the funding question by the changelog and make no read? (Yes.)
 4. For the register (supervisor): replace one list that came from a board
    read after 2026-11-07; score one-hour traders at six hours; freeze the
-   list of 303 directional accounts. (Yes to all three.)
+   list of 303 directional accounts. (Yes to all three.) [Final review, F1:
+   "score one-hour traders at six hours" is withdrawn — see question 5.]
+5. [Final review, F1: new.] The rule that bars cells a taker cannot pay
+   (above 55% right calls needed) would bar most planned tests as they are
+   written: four in five directional entries at their usual horizon, nearly
+   every "three traders agree" event at six hours. Judge those tests at a
+   day's horizon, where almost every market is open, and leave the rule out
+   of the two tests that already measure a taker's net result? (Yes.)
 
 ---
 
@@ -335,7 +342,10 @@ instants — never signed by a trader's side, so no outcome is computed
 The clustering used is measured on R8's cell as A.0-6's tests see it (day
 means 1.38 for a d, 3.57 for a net result — section 7, item 2) and is an
 assumption for other horizons and populations. Entries 2 and 6 are sized at
-the freeze by their lists' counts.
+the freeze by their lists' counts. [Final review, F1: every count here is
+before A.1-8's map is applied to the entries' own cells; applied as fixed, it
+leaves about a fifth of entries 1 and 4 and almost none of entries 7 and 9 —
+question 5.]
 
 ## 4. Variations weighed
 
@@ -385,7 +395,7 @@ the freeze by their lists' counts.
 | Holdout accounts | their fills before the cut are used, as R8 did; D1's data is after 2026-11-07 and untouched |
 | A list that is not yet frozen | "directional on the 14 days before the cut" is a candidate with a hash, for the supervisor to freeze |
 | Entry 2's list (c) | "the all-time profit board's top 100": our only copy was read 48 minutes after the cut, and A.0-9 forbids accounts taken from a profit board read after it — question 4 |
-| The 1-hour class | 82 of 84 markets closed for a taker at 1 h, and A.1's rule bars closed cells from a primary cell: entries 1 and 4 score many traders at 1 h — question 4 |
+| The 1-hour class | 82 of 84 markets closed for a taker at 1 h, and A.1's rule bars closed cells from a primary cell: entries 1 and 4 score many traders at 1 h — question 4 [Final review, F1: and far more — 41 of 84 markets at 6 h with BTC, ETH and SOL; entries 7, 9 and 10 too: question 5] |
 
 ## 6. What stays unknown
 
@@ -456,8 +466,30 @@ the freeze by their lists' counts.
    highest realized profit net of fees from their own fills before the cut;*
    (b) at 1 h a taker's cell is closed in 82 of 84 markets, while entries 1
    and 4 score one-hour traders there — *score them at 6 h, with 1 h printed
-   beside;* (c) *freeze the 303-account list (section 7, item 4) after
-   checking it.*
+   beside;* [Final review, F1: withdrawn — at 6 h BTC, ETH and SOL are
+   closed too, and 7,248 of the 10,612 entries would still sit in closed
+   cells; the rule's reach is question 5.] (c) *freeze the 303-account list
+   (section 7, item 4) after checking it.*
+5. **How far the map's rule reaches (A.1-8)** [Final review, F1: new].
+   Applied to each entry's own cell — a taker, FIND's 65 days, the entry's
+   own direction (`out/fr-a2.txt`): at the class horizon 8,463 of the 10,612
+   P1 entries from the launch week sit in closed cells (the 1 h class 4,833
+   of 4,856; the 6 h class 3,501 of 4,902, because BTC, ETH and SOL are
+   closed at 6 h — 56.7%, 55.2%, 55.05%); entry 9's events at 6 h, 179 of
+   188; entry 7's runs, 3,159 of 3,182 already at 1 h, and it holds 30
+   minutes; entry 10's cell (R8's 50) is mostly at 1 h. At 24 h, 9,235 of
+   the entries and 179 of the events are open. As fixed, the rule leaves
+   entries 1 and 4 a fifth of their entries, entry 9 nine events and entry 7
+   none. *Recommendation: (a) judge the d-based entries (1, 4, 6, 9, 10; 3
+   is at 24 h already) in their primary cells at 24 h, the class horizon and
+   entry 9's 6 h printed beside, deciding nothing — the round looks for a
+   pattern that pays a taker, and at 1 h and 6 h the main markets cannot;
+   (b) leave the map out of entries 7 and 8, whose statistic is already a
+   taker's net result; (c) recompute A.2 for those horizons before the
+   register is drafted: the move at 24 h is about twice the class horizon's
+   (RMS about 380–410 bps against 184), so their smallest visible effects
+   about double.* The map is a taker's (the default, the owner 2026-11-10);
+   the owner's own setting, once defined, may open more cells.
 
 ## 9. For external-apis (new facts, dated and sourced)
 
