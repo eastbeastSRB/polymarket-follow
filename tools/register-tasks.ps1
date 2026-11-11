@@ -17,7 +17,13 @@
     start-up after 1 minute; no time limit; one instance. Task Scheduler
     retries a start that fails to launch (every minute, up to 3 times); it
     does not look at the poller's exit code, so a crash or a hang is
-    restarted by the check task.
+    restarted by the check task. Priority 4 (normal): at Task Scheduler's
+    default, 7, a task runs below normal, and the poller then falls seconds
+    behind its streams whenever the PC is busy (16 busy threads for 8 s:
+    no book line for 7 s, COLLECTOR-REVIEW 2026-11-11 17:00Z;
+    learn.microsoft.com/windows/win32/taskschd/tasksettings-priority). A
+    poller already running keeps the priority it started with until its
+    next start (the next deploy).
   - "polymarket-follow poller check": at start-up after 3 minutes, and every
     5 minutes from now on, for ever; 2 minutes at most a run; one instance.
   - "polymarket-follow backup": node.exe runs the run copy's backup.cjs
@@ -88,7 +94,7 @@ $pollerTrigger = New-ScheduledTaskTrigger -AtStartup
 $pollerTrigger.Delay = 'PT1M'
 $pollerSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
-  -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
+  -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -Priority 4
 $pollerAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'dist\index.js')) -WorkingDirectory $run
 Register-ScheduledTask -TaskName $Poller -Force `
   -Description 'polymarket-follow: the poller (the collector). Watch-only; see the repository''s docs.' `
@@ -135,7 +141,7 @@ Register-ScheduledTask -TaskName 'polymarket-follow backup' -Force `
 
 foreach ($name in $Poller, 'polymarket-follow poller check', 'polymarket-follow backup') {
   $task = Get-ScheduledTask -TaskName $name
-  Write-Host "`n== $name - state $($task.State), logon $($task.Principal.LogonType), run level $($task.Principal.RunLevel)"
+  Write-Host "`n== $name - state $($task.State), logon $($task.Principal.LogonType), run level $($task.Principal.RunLevel), priority $($task.Settings.Priority)"
   foreach ($t in $task.Triggers) {
     Write-Host ("   trigger {0}: delay '{1}', repeat every '{2}' for '{3}' (empty = for ever)" -f `
       $t.CimClass.CimClassName, $t.Delay, $t.Repetition.Interval, $t.Repetition.Duration)

@@ -329,11 +329,17 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   `book::<iid>`), the last frame came at 15:13:59Z and nothing followed for
   7 m 56 s while HTTP kept answering; a new connection worked. Detect "no frame
   for 15 s" and reconnect.
-- **A connection can stall and then deliver its backlog** (COLLECTOR-BUILD,
-  2026-11-11): the book connection (90 `book::` channels) gave 0 book lines a
-  second by receive time 11:28:38–11:28:58Z but one blip of 43, then 401, 78,
-  499 and 322 lines a second (55–75 before) while the trades connection kept
-  receiving; each silence stayed under 15 s. The books' smallest receive −
-  `ts` in a minute was 112 and 113 ms (2026-11-11 16:10Z and 16:13Z).
+- **Book frames that arrive seconds late in a burst were this PC's doing, not
+  the API's** (corrected 2026-11-11 17:05Z by COLLECTOR-REVIEW; COLLECTOR-BUILD
+  had read the spell of 11:28:38–11:28:58Z as a stall of the connection, "while
+  the trades connection kept receiving"): 14 such spells on 2026-11-11, all
+  between 11:09Z and 14:38Z, the books 7–20 s late and then a burst of several
+  hundred lines a second; trades frames were late in the same seconds
+  (1.1–5.9 s) and one of the poller's own timers fired 2 s late; by the
+  server's `ts` no second was missing. 16 busy threads on this PC for 8 s
+  made the same picture (17:00:44Z: no book line for 7 s, then 561 in one
+  second, trades on time): the poller's task ran below normal priority. No
+  stall of a connection from the server's side has been seen. The books'
+  smallest receive − `ts` in a minute stayed 99–120 ms through the day.
 - Every fills-channel, orders, balances and backstop channel is private
   (authentication needed) and was not touched.
