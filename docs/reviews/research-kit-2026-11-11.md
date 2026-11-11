@@ -499,12 +499,24 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
    list (c), "the all-time profit board's top 100", comes from a board read
    48 minutes after the cut — *replace it by the pool accounts with the
    highest realized profit net of fees from their own fills before the cut;*
+   [Final review, F6: kept, with one more check — 139 of the pool's captures
+   are truncated by R2's page cap, so an all-time sum from captured fills
+   undercounts the busiest accounts: rank on a window every capture covers,
+   or first complete those captures with fills reads ending before the cut.
+   The pool itself rests on the same 00:48Z read, its profit boards included
+   (A.0-9 names it the primary population); what A.0-9 forbids here is a
+   post-cut row's rank.]
    (b) at 1 h a taker's cell is closed in 82 of 84 markets, while entries 1
    and 4 score one-hour traders there — *score them at 6 h, with 1 h printed
    beside;* [Final review, F1: withdrawn — at 6 h BTC, ETH and SOL are
    closed too, and 7,248 of the 10,612 entries would still sit in closed
    cells; the rule's reach is question 5.] (c) *freeze the 303-account list
-   (section 7, item 4) after checking it.*
+   (section 7, item 4) after checking it.* [Final review, F6: checked — all
+   303 in the pool, lower case, sorted; 16 are holdout accounts, whose fills
+   after the cut are D1's unseen data until D1 is scored (A.0-10), so D1
+   must be scored before the first exam's capture; 122 entered the pool
+   through the profit boards read at 00:48Z and 181 are on the notional
+   board — print the two apart at the exams; 16 of R8's 50 are in it.]
 5. **How far the map's rule reaches (A.1-8)** [Final review, F1: new].
    Applied to each entry's own cell — a taker, FIND's 65 days, the entry's
    own direction (`out/fr-a2.txt`): at the class horizon 8,463 of the 10,612
