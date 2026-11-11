@@ -1,5 +1,43 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (round 2's FIND results — the supervisor records the reports and
+their Final reviews; the owner has read them; the way forward is the owner's,
+still open): **NOTHING PASSES FIND: NO ENTRY IS REGISTERED, SO ROUND 2'S
+EXAMS HAVE NOTHING TO CONFIRM.** Seven studies ran on 2026-11-11 on data up to
+2026-11-07, each with rules frozen before one look and read first by a fresh
+reviewer (decisions 2026-11-11, the FIND rules review); three fresh Final
+reviewers (FIND-REVIEW-A, -B, -C) recomputed every deciding statistic with
+their own code and found no error that could hide an effect; every result
+stands (corrections marked in place). **Entry 1, the gate** (`find-1`):
+directional traders' follower result in odd weeks does not predict their
+even weeks (99 traders, 7,252 entries; Spearman 0.066, permutation p 0.51;
+it could see a spread of about 46 bps) — so, by decisions 2026-11-10 (2),
+**entry 6 does not run and ranking traders stops for now, to be reopened
+after six more months.** **Entry 2** (`find-2`): the top accounts' followable
+share 0.21, not shown below one half; two accounts' multi-week shorts carry
+about half of list (c)'s profit; of R8's 50, 49 banked a loss together in R8's
+weeks and #47 made 81% of its profit within two minutes of a fill. **Entry 3**
+(`find-3`): slow traders at 24 h about zero (951 entries; p 0.53 / 0.88).
+**Entry 4** (`find-4`): no kind of entry passes Holm over eleven; the nearest,
+"after a jump", is an unexplained near miss (a candidate only). **Entries 5
+and 10** (`find-5-10`): no news in the first 60 s; R8's US-open cell is gone
+with the exact matched null (R8's −38.35 came from its own-direction null).
+**Entry 7** (`find-7`): joining an algorithm after its fifth taker order loses
+about 10 bps at a taker's cost; its busiest accounts the same. **Entry 9**
+(`find-9`): no sign of an effect from unlinked traders agreeing. Entry 8 was
+left out by ruling. **Candidates for a later batch, on new weeks, nothing
+now:** "after a jump" (FIND-4), the counter-move before agreement (FIND-9),
+the top accounts' long holds (FIND-2). **For the kit before any later batch**
+(the Final reviews): a funding hour without a mark must not drop a gross
+result; one random-trade placebo function drawn at least 1,000 times; unique
+entry ids; the trader test where the same traders stand in both halves; the
+rule written three times across studies moved into the kit; d's limit (a
+one-sided trader on its usual side scores only timing inside the hour) in the
+rule book. **Open, the owner's:** the way forward — among a small forward
+paper experiment, a pause with the collector recording, a later batch, or
+stopping — and with it the exams of 2026-11-30 and 2026-12-19 and the dated
+checks D1 and D2.
+
 2026-11-11 (entry 5's yardstick — the owner, on RULES-REVIEW's and the
 supervisor's recommendation): **IN ENTRY 5, R8'S DRAWN TRADES ARE COMPARED IN
 THEIR OWN DIRECTION.** The owner ("i agree with your recommendation"):
