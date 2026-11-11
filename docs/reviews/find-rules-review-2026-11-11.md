@@ -1,6 +1,6 @@
 # RULES-REVIEW — the fresh read of the seven FIND studies' rules, before their look
 
-RULES-REVIEW (Fable 5.2, max), 2026-11-11 20:23Z – 21:20Z (UTC, every stamp
+RULES-REVIEW (Fable 5.2, max), 2026-11-11 20:23Z – 21:19Z (UTC, every stamp
 from `date -u`), for polymarket-follow's supervisor: the reviewer IDEAS-REVIEW's
 A.0-14 asks for — "Before it [the look]: a fresh reviewer reads the frozen
 rules" — on round 2's seven FIND studies (decisions 2026-11-10, round 2's
