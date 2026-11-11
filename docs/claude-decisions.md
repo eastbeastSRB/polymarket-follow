@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (entry 6 runs with the owner's filter — the owner lifts the gate for
+one study, on the supervisor's proposal): **ONE MORE FIND STUDY, FIND-6: A RACE
+BETWEEN RANKING RULES, THE OWNER'S "DISCIPLINED TRADERS" FILTER AMONG THEM.**
+The owner ("yeah, let's do that. let try to filter, i really want to see
+numbers"): decisions 2026-11-10 (2) stopped ranking traders when entry 1
+failed (decisions 2026-11-11, round 2's FIND results); for this one study the
+owner lifts that stop. Entry 1 tested whether a trader's past *follower result*
+predicts the next weeks; entry 6 tests other ranking rules. **FIND-6 is entry 6
+as IDEAS-REVIEW Appendix A writes it** — formation windows of four weeks ending
+2026-10-10 and 2026-10-24, each measured on the two weeks after; the top fifth
+against the rest by mean d; the best rule judged against the resampled best,
+so choosing among the rules is paid for — **with a seventh rule, the owner's
+filter:** eligible are accounts with a long, active history (a minimum of
+closed positions before the formation window ends and activity in most of its
+weeks, whatever the account's size), ranked by discipline (wins against losses
+after fees, per dollar traded, with the depth of losing streaks) — its exact
+formula written into FIND-6's rules before any outcome is seen. Every ruling
+of 2026-11-11 applies: the notional board decides; d at 24 h against the exact
+matched null, the class horizon beside; A.0-6's two p-values, the larger
+deciding, the entry-weighted CR1 beside; risk units, short windows apart; the
+competition strict; the kit's fingerprint pinned. **Printed beside, deciding
+nothing, so the owner sees the numbers:** for each rule's top fifth, the
+follower's net result per entry at a taker's cost and the delay of R8's
+rule, its win share, its average win against its average loss, and its worst
+losing streak. The same order as before: rules first, a fresh rules review,
+the supervisor's go, one look, a Final review. If FIND-6 passes, its rule goes
+to the exams of 2026-11-30 and 2026-12-19.
+
 2026-11-11 (round 2's FIND results — the supervisor records the reports and
 their Final reviews; the owner has read them; the way forward is the owner's,
 still open): **NOTHING PASSES FIND: NO ENTRY IS REGISTERED, SO ROUND 2'S
