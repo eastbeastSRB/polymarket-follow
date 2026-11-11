@@ -14,6 +14,7 @@ import {
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { gzipSync } from "node:zlib";
 import * as mongodb from "mongodb";
 import { MongoClient, type Db } from "mongodb";
 import { pino } from "pino";
@@ -319,6 +320,11 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
     ) => Promise<void>;
     datesToDelete: (dates: string[]) => string[];
     isDumpFolder: (dir: string) => boolean;
+    copyLatest: (
+      file: string,
+      manifest: { bytes: number; sha256: string },
+      latestDir: string,
+    ) => Promise<string>;
     run: (
       m: typeof mongodb,
       env: Record<string, string>,
@@ -346,6 +352,10 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
       },
       new Date(now),
     );
+  const databases = async () =>
+    (
+      await admin.db("admin").admin().listDatabases({ nameOnly: true })
+    ).databases.map((d) => d.name);
   const fileIn = (root: string, folder: string, name: string) => {
     mkdirSync(path.join(root, folder), { recursive: true });
     writeFileSync(path.join(root, folder, name), "x");
@@ -490,6 +500,59 @@ describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => 
       DUMP,
     ]);
     expect(existsSync(path.join(tmp, "latest", DUMP))).toBe(true);
+  });
+
+  it("on a Sunday restores its dump into polymarket_follow_restore_<date>, compares it and drops it", async () => {
+    const tmp = mkdtempSync(path.join(tmpdir(), "poller-backup-"));
+    const [root, latest] = [path.join(tmp, "root"), path.join(tmp, "latest")];
+    const sundays = "polymarket_follow_restore_2099-01-04";
+    await admin.db(sundays).dropDatabase();
+    await db().collection("rulebook").insertOne({ kind: "test", key: "k" });
+    const sunday = await run(root, latest, "2099-01-04T05:20:00Z");
+    expect(sunday).toMatch(
+      /^ok .+ documents in 4 collections; 0 old dump\(s\) removed; E: replaced .+; restore test ok into polymarket_follow_restore_2099-01-04, dropped$/,
+    );
+    expect(await databases()).not.toContain(sundays);
+    const monday = await run(root, latest, "2099-01-05T05:20:00Z");
+    expect(monday).toMatch(/; no restore test \(not Sunday\)$/);
+    expect(readdirSync(root)).toEqual(["2099-01-04", "2099-01-05"]);
+  });
+
+  it("leaves no database behind when a restore fails half-way", async () => {
+    const cut = path.join(
+      mkdtempSync(path.join(tmpdir(), "poller-backup-")),
+      "cut.jsonl.gz",
+    );
+    const doc = { _id: { $oid: "0123456789abcdef01234567" }, kind: "test" };
+    writeFileSync(
+      cut,
+      gzipSync(`${JSON.stringify({ c: "rulebook", d: doc })}\n`),
+    );
+    await admin.db(RESTORED).dropDatabase();
+    await expect(
+      restore.restore(mongodb, admin, cut, RESTORED),
+    ).rejects.toThrow(/no end line: it was cut short/);
+    expect(await databases()).not.toContain(RESTORED);
+  });
+
+  it("copies the newest dump only with three times its size and 5 GiB to spare, and only when its hash holds", async () => {
+    const tmp = mkdtempSync(path.join(tmpdir(), "poller-backup-"));
+    const file = path.join(tmp, "dump");
+    writeFileSync(file, "a dump");
+    const latest = path.join(tmp, "latest");
+    const manifest = await backup.fileHash(file);
+    expect(
+      await backup.copyLatest(file, { ...manifest, bytes: 2 ** 50 }, latest),
+    ).toMatch(/^E: skipped, \d+\.\d GiB free under \d+\.\d$/);
+    expect(readdirSync(latest)).toEqual([]);
+    expect(await backup.copyLatest(file, manifest, latest)).toBe(
+      `E: replaced ${path.join(latest, DUMP)}`,
+    );
+    writeFileSync(file, "a newer dump");
+    await expect(backup.copyLatest(file, manifest, latest)).rejects.toThrow(
+      /the copy's hash differs/,
+    );
+    expect(readFileSync(path.join(latest, DUMP), "utf8")).toBe("a dump");
   });
 
   it("fails the run, not the process, when the dump cannot be written", async () => {

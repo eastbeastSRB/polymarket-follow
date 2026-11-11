@@ -38,8 +38,19 @@ async function restore(mongodb, client, file, name) {
     .listDatabases({ nameOnly: true });
   if (databases.some((d) => d.name === name))
     throw new Error(`${name} exists: refused`);
-  const { EJSON } = mongodb.BSON;
   const db = client.db(name);
+  try {
+    return await fill(mongodb, db, file);
+  } catch (err) {
+    // The name did not exist before this call, so what is there is its own.
+    await db.dropDatabase().catch(() => undefined);
+    throw err;
+  }
+}
+
+/** Inserts every document of `file` into `db` and compares counts and `_id` sets with the dump's end line. */
+async function fill(mongodb, db, file) {
+  const { EJSON } = mongodb.BSON;
   const ids = new Map();
   let end = null;
   let batch = [];

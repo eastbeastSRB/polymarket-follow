@@ -240,6 +240,7 @@ async function main() {
 }
 
 module.exports = {
+  copyLatest,
   datesToDelete,
   dump,
   fileHash,
