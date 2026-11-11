@@ -44,8 +44,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-11, through decisions 2026-11-11 (RESEARCH-KIT
-accepted).*
+*Brought in step on 2026-11-11, through decisions 2026-11-11 (round 2's FIND
+results).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -83,8 +83,8 @@ accepted).*
 |---|---|---|---|
 | ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
 | 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task registered by the owner (2026-11-11); the whole collector's Final review done (COLLECTOR-REVIEW, 15 findings, 14 fixed and live since 20:22Z; decisions 2026-11-11); the poller task's normal priority waits for the owner's re-registration; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
-| 🔵 | since 2026-11-10 14:42Z, beside Phase 1 | **Phase 2 — research round 2, FIND:** by the approved rule book (IDEAS-REVIEW Appendix A.0): the research kit and the first measurements (A.1) done and accepted (decisions 2026-11-11, RESEARCH-KIT accepted: the matched null only, d-based entries judged at 24 h), then from 2026-11-12 studies 1, 2, 3, 4, 7 and 9 — six subagents, one study each (the owner, 2026-11-11) — and entry 10 measured again with the matched null, the top ten studies on data up to 2026-11-07; the batch frozen about 2026-11-20 | research subagents |
-| ⏳ | about 2026-11-30 | **The first exam (CONFIRM)** on the weeks after 2026-11-07, with the dated checks D1 (after 11-21) and D2 (after 11-30) | research subagents; the supervisor |
+| ✅ | 2026-11-11 | **Phase 2 — research round 2, FIND: NOTHING PASSES.** The kit and the first measurements accepted; seven studies (entries 1, 2, 3, 4, 5, 7, 9, 10), rules frozen and reviewed before one look each, three fresh Final reviews: every result stands; no entry registered; the gate (entry 1) fails, so entry 6 does not run and ranking traders stops for now (decisions 2026-11-11, round 2's FIND results) | research subagents |
+| ⏸️ | the owner's call | **The way forward** — a small forward paper experiment, a pause with the collector recording, a later batch, or stopping; with it the exams of 11-30 and 12-19 (nothing to confirm) and the dated checks D1 (after 11-21) and D2 (after 11-30) | the owner |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
@@ -275,6 +275,11 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Later — the backlog
 
+- ⏳ **A later batch, on new weeks** (decisions 2026-11-11, round 2's FIND
+  results): the candidates "after a jump" (FIND-4), the counter-move before
+  agreement (FIND-9) and the top accounts' long holds (FIND-2); the gate
+  reopened after six more months; the kit's fixes from the Final reviews
+  first. Trigger: the owner's word.
 - ⏳ **The owner's own execution venue and costs** — where the owner acts on what the tool shows and what a round trip costs there (the owner will explain and show; decisions 2026-11-10, round 2's rules and the collector approved). Until then every table uses Polymarket Perps' measured taker costs. Trigger: the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
@@ -302,6 +307,12 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Done lately
 
+- ✅ 11-11 **Research round 2, FIND — nothing passes:** traders' results do
+  not persist from week to week (the gate); slow traders, kinds of entries,
+  algorithms' large orders, agreement, the first minute and R8's US-open
+  cell show nothing a follower could use; 49 of R8's 50 banked a loss in the
+  weeks R8 followed them; three fresh Final reviews confirm every result
+  (decisions 2026-11-11, round 2's FIND results).
 - ✅ 11-11 **RESEARCH-KIT — the panel, the kit, the first measurements:**
   one-minute prices of 91 markets to the cut, equal to R8's capture; one kit
   every round-2 study imports, proven on R8 (−16.36 by the minute against
