@@ -1,5 +1,19 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (entry 5's yardstick — the owner, on RULES-REVIEW's and the
+supervisor's recommendation): **IN ENTRY 5, R8'S DRAWN TRADES ARE COMPARED IN
+THEIR OWN DIRECTION.** The owner ("i agree with your recommendation"):
+reading (10) of the entry "the FIND rules review" is ruled — entry 5's
+deciding line compares each entry's 60-second mark move with R8's three
+drawn trades taken in the side those trades really took; the matched
+direction (a coin at the trader's long share) is printed beside, deciding
+nothing. Why: within a minute any taker order moves the mark its own way, so
+against a coin the line would only show that the 50's entries are orders
+(1,089 of 1,241 entries), not that they carry news. This is the one exception
+to ruling (1) of "RESEARCH-KIT accepted" (the matched null as round 2's only
+yardstick), and it holds for entry 5 alone; every d-based entry keeps the
+exact matched null.
+
 2026-11-11 (the FIND rules review; one reading for all seven studies, fixed
 before any look — the supervisor, on RULES-REVIEW's recommendations; the
 yardstick of entry 5 waits for the owner): **SEVEN STUDIES HAVE WRITTEN THEIR
