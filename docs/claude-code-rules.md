@@ -133,6 +133,20 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   (`polymarket_follow_test`) live in one file. A test that runs the built
   program needs `pnpm verify`'s order — a bare `pnpm test` runs a stale
   `dist` (COLLECTOR-BUILD, 2026-11-11).
+- **A scheduled task runs below normal priority by default** (Task Scheduler's
+  7): a recorder needs `-Priority 4`, or a busy PC delays its frames — the
+  book "stalls" of 2026-11-11 were this PC's, not the server's
+  (COLLECTOR-REVIEW, 2026-11-11).
+- **`stream.pipe` forwards no error:** use `stream.pipeline`. **Guard a
+  recursive delete by what the folder holds, never by its name** (the
+  recordings' day folders carry the same names as the backups'). **A
+  liveness check counts a frame before it is parsed,** or a changed frame
+  shape restarts the connection in a loop. **Mutation-check the constants
+  that wire a rule into a job,** not only the rule. **An untracked file of
+  another worker blocks a deploy** (it deploys only a clean tree)
+  (COLLECTOR-REVIEW, 2026-11-11).
+- **A Bash heredoc in this harness halves `\\`:** write regular expressions
+  with the Write or Edit tool (COLLECTOR-REVIEW, 2026-11-11).
 - **Node's `.env` loader** (`process.loadEnvFile`, Node 24.13) keeps unquoted
   backslashes, and a variable already set in the environment wins
   (COLLECTOR-BUILD, 2026-11-11).

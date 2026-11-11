@@ -82,7 +82,7 @@ accepted).*
 | | When | What | Who |
 |---|---|---|---|
 | ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
-| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task waits for the owner's registration; then a fresh Final review of the whole collector code; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
+| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task registered by the owner (2026-11-11); the whole collector's Final review done (COLLECTOR-REVIEW, 15 findings, 14 fixed and live since 20:22Z; decisions 2026-11-11); the poller task's normal priority waits for the owner's re-registration; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
 | 🔵 | since 2026-11-10 14:42Z, beside Phase 1 | **Phase 2 — research round 2, FIND:** by the approved rule book (IDEAS-REVIEW Appendix A.0): the research kit and the first measurements (A.1) done and accepted (decisions 2026-11-11, RESEARCH-KIT accepted: the matched null only, d-based entries judged at 24 h), then from 2026-11-12 studies 1, 2, 3, 4, 7 and 9 — six subagents, one study each (the owner, 2026-11-11) — and entry 10 measured again with the matched null, the top ten studies on data up to 2026-11-07; the batch frozen about 2026-11-20 | research subagents |
 | ⏳ | about 2026-11-30 | **The first exam (CONFIRM)** on the weeks after 2026-11-07, with the dated checks D1 (after 11-21) and D2 (after 11-30) | research subagents; the supervisor |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
@@ -160,7 +160,7 @@ client):
 
 ```mermaid
 flowchart TD
-  API["Polymarket Perps public API<br/>keyless reads · 250 tokens a minute, all callers"] --> P["The poller (its first part: the collector)<br/>a Windows task at sign-in · the one API client"]
+  API["Polymarket Perps public API<br/>keyless reads · 250 tokens a minute, all callers"] --> P["The poller (its first part: the collector)<br/>a Windows task at start-up · the one API client"]
   P --> DB[("Our data<br/>boards every day · the universe · fills · prices · books")]
   DB --> L["The style label<br/>directional · algorithm · market maker · unclassified"]
   L --> Q["Trader statistics<br/>quality score · style · risk profile · evidence"]
