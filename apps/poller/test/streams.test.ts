@@ -209,4 +209,59 @@ describe("Streams", () => {
       ]),
     ).toEqual({ rows: 1, agree: 1, timingMiss: 0, otherMiss: 0, noBook: 0 });
   });
+
+  it("logs a clock WATCH once when a minute's books all arrive over 2 s after their server time, and once when they are back", () => {
+    const lines: Record<string, unknown>[] = [];
+    const captured = pino(
+      { level: "info", base: undefined, timestamp: false },
+      { write: (l: string) => lines.push(JSON.parse(l) as never) },
+    );
+    const watched = new Streams(
+      { write: () => undefined, coverage: () => undefined },
+      captured,
+      clock,
+      () => {
+        const socket = new FakeSocket();
+        sockets.push(socket);
+        return socket as unknown as SocketLike;
+      },
+    );
+    watched.setMarkets([7]);
+    sockets[0]!.open();
+    const minute = (n: number) =>
+      Date.parse("2026-11-10T14:01:00Z") + n * 60_000;
+    /** One book frame received at `at`, `lateMs` after its server time. */
+    const frame = (at: number, lateMs: number) => {
+      vi.setSystemTime(at);
+      sockets[0]!.message(book(7, at - lateMs));
+    };
+    frame(minute(0) + 1_000, 2_000);
+    frame(minute(1) + 1_000, 2_600);
+    frame(minute(1) + 30_000, 2_500);
+    // Minute 0 closed at 2,000 ms: at the line, not over it.
+    expect(lines).toEqual([]);
+    frame(minute(2) + 1_000, 2_500);
+    frame(minute(3) + 1_000, 100);
+    frame(minute(3) + 2_000, 9_000);
+    frame(minute(4) + 1_000, 100);
+    watched.stop();
+    expect(lines).toEqual([
+      {
+        level: 40,
+        minuteStart: minute(1),
+        minOffsetMs: 2_500,
+        msg: "clock watch: books arrive over 2 s after their server time",
+      },
+      {
+        level: 30,
+        minuteStart: minute(3),
+        minOffsetMs: 100,
+        msg: "clock watch: books back under 2 s",
+      },
+    ]);
+    expect(watched.clockWatch.last).toEqual({
+      minuteStart: minute(3),
+      minOffsetMs: 100,
+    });
+  });
 });
