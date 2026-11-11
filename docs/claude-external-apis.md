@@ -291,8 +291,16 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   notional × 0.5 / max leverage; the backstop below 2/3 of it, then ADL;
   liquidation fills flagged on both legs since 2026-08-11, ADL since
   2026-08-10; **a TP/SL watches the mark and sends a reduce-only order — its
-  fill cannot be told from any other**; mark = a median of three, every 200
-  ms, from Pyth, Chainlink Data Streams and Hyperliquid; funding capped at 4%
+  fill cannot be told from any other**; mark = the median, every 200 ms, of
+  C1 = the index + a 150-second EMA of (book mid − index), C2 = the median of
+  the best bid, the best ask and a recent last trade, and C3 = external mark
+  feeds, held within 50 bps of the index by default (the tighter of that and
+  1 ÷ max leverage), each falling back to the index; the index is a weighted
+  average of external feeds (Pyth, Chainlink Data Streams, Hyperliquid) — so
+  two of the three candidates are local and **the mark follows a push on our
+  own book with a lag** (DOCS-SWEEP Q5; corrected 2026-11-11 on RULES-REVIEW's
+  finding, which read "a median of three … from Pyth, Chainlink Data Streams
+  and Hyperliquid"); funding capped at 4%
   an hour; a 20 ms taker delay; delisting = close-only for ≥ 30 min, then a
   30-minute index TWAP; liquidity rewards a budget of $75,000 a day (1% of 7
   days' maker volume to qualify; recipients not public), open-interest rewards
