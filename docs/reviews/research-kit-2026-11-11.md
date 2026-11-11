@@ -173,8 +173,9 @@ data after 2026-11-07.
 | `costs.mjs` | the cost settings: **taker, the default** (the base fee, 4 bps a leg — ANT-USD 2 bps under its override — plus R8's session-pair table of half-spread and depth) and maker (1.25 bps a leg, no spread); New York sessions kept per minute |
 | `stats.mjs` | R8's cluster bootstrap (with the share of resampled means at or above zero) and exact sign test; A.0-6's t-tests on day means and on trader means, the larger p deciding; the day-by-day difference and Welch on trader means; Spearman with a permutation p; Holm with every frozen hypothesis in m; Student's t and its critical value |
 | `check.mjs` | the fingerprint check a study calls at its start |
+| `cells.mjs` | [Final review, F4: added] the markets an entry may count in (A.0-7): pre-IPO and R8's five out, a retired market from its settlement's UTC day, a split refused until the module handles it — one definition, where five scripts had their own |
 | `data/` | byte-identical copies of frozen inputs (R8's price table `9f559b4a…`, `selection.json` `c20c3f80…`, classifier v1 `f7f32f22…` and `d803192c…`), `rulebook.json` (the rule book as read 2026-11-10 14:55Z), `population.json` (the pool as read 2026-11-07 00:48Z: 1,702 accounts, 1,000 on the all-time notional board, 100 holdout; 13 excluded), `panel-manifest.sha256` |
-| `test/`, `mutate.mjs` | 36 tests (`node --test`), 54 mutants |
+| `test/`, `mutate.mjs` | 36 tests (`node --test`), 54 mutants [Final review, F4 and F7: 37 tests, 59 mutants] |
 
 **The exact null, in one paragraph.** For an entry at instant t in a market,
 every minute of t's UTC hour weighs its trade count, less the trades of the
@@ -206,7 +207,9 @@ missing file and on an extra one — then import what it needs.
 **Its fingerprint:**
 `872dd5acbe6159052b60faa357446f405e173f1ed727049a93e409b159506246` — the
 SHA-256 of `kit/FINGERPRINT.sha256` (24 files, the pinned panel manifest
-among them). `scripts/test-check.mjs` proves the check on a copy: it passes
+among them). [Final review, F4 and F7: now
+`7b4179e897faa34758de8508cef47a84e7c2504ec5eb9974526f55041bdfc215`, 26
+files; the panel manifest unchanged.] `scripts/test-check.mjs` proves the check on a copy: it passes
 unchanged and throws on one changed byte, an added file and a missing file
 (`out/test-check.txt`). Every proof and measurement script checks it at its
 start; the final run of all twelve (`out/final-run.txt`, 2026-11-11 01:20Z)
@@ -255,7 +258,10 @@ each survivor was a missing test (a flip back after a forced flip,
 Every count uses the kit. "P1 at its week" = the account's v1 label on the
 14 days before the entry's Monday is directional and the capture covers
 them. Primary-cell markets = A.0-7's list left out (pre-IPO, PRL, NCLD,
-SKHYNIX, SAMSUNG, CXMT; KIOXIA from its settlement day). The launch week
+SKHYNIX, SAMSUNG, CXMT; KIOXIA from its settlement day). [Final review, F4:
+one definition now, `kit/cells.mjs`; three scripts had left KIOXIA out
+whole — measurement 5, the spreads and A.2 moved a little; the map leaves
+it out as retired before any exam.] The launch week
 starts Monday 2026-08-31 (the public launch, 2026-09-03). The pool's index
 (`scripts/index-pool.mjs`, 21 s): 1,702 accounts, 1,272,487 fills, 126,033
 openings and flips before the cut, 1,044 accounts ever directional in a
@@ -293,7 +299,10 @@ instants — never signed by a trader's side, so no outcome is computed
    commodities 29, indices 21; UNITREE 33, ZM 21, CRCL 18, BRENTOIL 16 the
    most. The next 24 hours' move: RMS **501 bps**; on a day with several
    such markets their raw moves correlate **0.145** (A.2 assumed 0.4);
-   design effect 2.0.
+   design effect 2.0. [Final review, F4: with KIOXIA-USD's days before
+   2026-09-28 in, as the stated rule has it: 303 (longs pay 173, shorts 130)
+   in 50 markets, equities 163; RMS 502 bps; correlation 0.162; design
+   effect 2.1.]
 6. **Entries a week at UTC 12–16 and 00–04** (`out/m6-blocks.txt`; the
    follow instant's hour, as R8): the 50 — 64 a week at 12–16, 21 at 00–04;
    **385 and 125 in R8's six weeks; under R8's own cell definition 387, R8's
@@ -341,8 +350,8 @@ instants — never signed by a trader's side, so no outcome is computed
 | 3 slow traders | 1,553 entries, 112 accounts | 382 at 24 h | 32 (47 if 24-hour windows cluster by day three-fold) | 52–56 (about 960 entries) | 23–34; 36–58 |
 | 4 kinds of entries | 10,612 from the launch week (17,453 in all FIND weeks) | 183 | 16 (12) for an even split | 19–21 (about 6,550 entries) | 15–42; 18–51 |
 | 5 the first minute | 1,249 (R8's cell) | 15.6 over 60 s | 1.8 [Final review, F2: 1.9 — A.0-6's design effect for R8's drawn d, 1.65, not the entry-level 1.57] | — | 2.3–3.7 |
-| 7 large orders | 3,067 runs, 327 accounts | 91 over 30 min | 5–9 counting runs; 33 if each account counts once [Final review, F2: A.0-6 tests equal-weight account and day means: 9–32 — the account test alone needs 9.4 even if runs were independent, since most of the 327 accounts have few runs] | about 1,560 runs of 81 accounts in 42 days | 8–26 |
-| 8 funding | 293 market-days, 61 days | 501 over 24 h | **120** | — | about 150; register only under about 60 |
+| 7 large orders | 3,067 runs, 327 accounts [Final review, F4: 3,182, as in section 3] | 91 over 30 min | 5–9 counting runs; 33 if each account counts once [Final review, F2: A.0-6 tests equal-weight account and day means: 9–32 — the account test alone needs 9.4 even if runs were independent, since most of the 327 accounts have few runs] | about 1,560 runs of 81 accounts in 42 days [Final review, F4: about 1,640] | 8–26 |
+| 8 funding | 293 market-days, 61 days [Final review, F4: 303] | 501 over 24 h [F4: 502] | **120** | — | about 150; register only under about 60 |
 | 9 agreement | 188 events, 59 days | 130 over 6 h | 27–57 [Final review, F2: 33–48 — A.0-6's equal-weight day means, the events independent within a day to a day as one unit] | 43–47 (about 116 events) [Final review, F2: about 52–84, the events a day as in FIND] | 20–37; 32–66 |
 | 10 the US open | the 50: about 385 in 42 days; all directional: 1,170–1,430 | R8's standard error 14.1 on 387 | — | the 50: 51–55 (42–46 with the exact null); all: 26–32 (22–26) | 51–55; 20–22 |
 
@@ -571,7 +580,8 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
 
 In `workers/RESEARCH-KIT/` unless F: is named.
 
-- **The kit:** `kit/` (24 files; `kit/FINGERPRINT.sha256`, fingerprint
+- **The kit:** `kit/` (24 files [Final review, F4 and F7: 26, fingerprint
+  `7b4179e8…c215`]; `kit/FINGERPRINT.sha256`, fingerprint
   `872dd5ac…6246`, `out/fingerprint.txt`); tests `out/test-kit.txt` (36 of
   36), mutants `out/mutation.txt` (54 of 54), the check `out/test-check.txt`;
   the final run `scripts/run-final.mjs` → `out/final-run.txt` (every output's
