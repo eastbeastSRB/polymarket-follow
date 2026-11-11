@@ -52,8 +52,11 @@ export const BoardSnapshot = z.object({
   consistent: z.boolean(),
   /** Every page was read, to the list's end or its 1,000th row. */
   complete: z.boolean(),
+  /** A page's snapshot was old at read, or the top 100 are the day before's (jobs/board-pass.ts). */
+  stale: z.boolean(),
 });
 export type BoardSnapshot = z.infer<typeof BoardSnapshot>;
+const StoredBoardTop = BoardSnapshot.pick({ rows: true });
 
 /** One competition's table in one pass, `competition_snapshots`. */
 export const CompetitionSnapshot = z.object({
@@ -101,8 +104,9 @@ export function canonical(value: unknown): string {
 }
 
 export class Store {
-  readonly counts = { done: 0, failed: 0, waiting: 0 };
+  readonly counts = { done: 0, failed: 0, waiting: 0, refused: 0 };
   private work: Promise<void> = Promise.resolve();
+  private paused = false;
   private indexed = false;
   /** The latest stored value of each rule, as canonical JSON. */
   private readonly rules = new Map<string, string>();
@@ -184,6 +188,34 @@ export class Store {
     });
   }
 
+  /** A stored board's first `n` rows; null when the pass date has none or the server cannot say. */
+  async boardTop(
+    passDate: string,
+    board: { window: string; sort: string },
+    n: number,
+  ): Promise<BoardSnapshot["rows"] | null> {
+    try {
+      const doc = await this.db
+        .collection("board_snapshots")
+        .findOne(
+          { passDate, window: board.window, sort: board.sort },
+          { projection: { _id: 0, rows: { $slice: n } } },
+        );
+      return doc === null ? null : StoredBoardTop.parse(doc).rows;
+    } catch (err) {
+      // A schema issue can quote a row's value, which a log never holds (§1.3 item 7).
+      const reason =
+        err instanceof z.ZodError
+          ? `${err.issues.length} schema issue(s)`
+          : String(err);
+      this.log.warn(
+        { reason, passDate, board: `${board.window}:${board.sort}` },
+        "the day before's board not read; judged by its page stamps only",
+      );
+      return null;
+    }
+  }
+
   /** `window:sort` of the boards a pass date already holds; none if the server cannot say. */
   async boardsStored(passDate: string): Promise<Set<string>> {
     try {
@@ -209,7 +241,16 @@ export class Store {
     await this.client.close();
   }
 
+  /** While the database's disk is low (health/disk.ts) no write is queued; each is counted, its reply stays in the files. */
+  pauseWrites(paused: boolean): void {
+    this.paused = paused;
+  }
+
   private enqueue(what: string, write: (db: Db) => Promise<void>): void {
+    if (this.paused) {
+      this.counts.refused += 1;
+      return;
+    }
     this.counts.waiting += 1;
     this.work = this.work.then(async () => {
       try {

@@ -79,7 +79,10 @@ export class Recorder {
     late: 0,
     dropped: 0,
     compressed: 0,
+    /** Stream lines not stored while the recordings' disk is low. */
+    notStored: 0,
   };
+  private streamsPaused = false;
   private readonly files = new Map<string, OpenFile>();
   /** Files whose stream is open or still closing: no scan compresses one. */
   private readonly busy = new Set<string>();
@@ -109,7 +112,16 @@ export class Recorder {
     this.scheduleRoll();
   }
 
+  /** While the recordings' disk is low (health/disk.ts) book and trade lines are not stored; replies still are. */
+  pauseStreams(paused: boolean): void {
+    this.streamsPaused = paused;
+  }
+
   write(kind: Kind, recvMs: number, text: string): void {
+    if (this.streamsPaused && (kind === "book" || kind === "trades")) {
+      this.counts.notStored += 1;
+      return;
+    }
     const ownHour = hourStart(recvMs);
     const hourMs = Math.max(ownHour, this.openFromMs);
     if (hourMs !== ownHour) this.counts.late += 1;

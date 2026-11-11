@@ -58,7 +58,12 @@ describe("the universe", () => {
     store.noteSeen([a], "competition:1:include_unqualified", "2026-11-11");
     store.noteSeen([], "board:day:roi", "2026-11-11");
     await store.close();
-    expect(store.counts).toEqual({ done: 4, failed: 0, waiting: 0 });
+    expect(store.counts).toEqual({
+      done: 4,
+      failed: 0,
+      waiting: 0,
+      refused: 0,
+    });
     const docs = await db()
       .collection("universe")
       .find()
@@ -177,12 +182,18 @@ describe("the boards", () => {
         },
       ],
       true,
+      null,
     );
     const store = Store.open(URI, NAME, log);
     store.saveBoard(doc);
     store.saveBoard({ ...doc, complete: false });
     await store.close();
-    expect(store.counts).toEqual({ done: 2, failed: 0, waiting: 0 });
+    expect(store.counts).toEqual({
+      done: 2,
+      failed: 0,
+      waiting: 0,
+      refused: 0,
+    });
     const stored = await db()
       .collection("board_snapshots")
       .find({}, { projection: { _id: 0 } })
@@ -203,9 +214,78 @@ describe("the boards", () => {
     store.noteEvent("test", "big", "x".repeat(17 * 1_048_576), 1);
     store.noteEvent("test", "small", "x", 2);
     await store.close();
-    expect(store.counts).toEqual({ done: 1, failed: 1, waiting: 0 });
+    expect(store.counts).toEqual({
+      done: 1,
+      failed: 1,
+      waiting: 0,
+      refused: 0,
+    });
     expect(
       await db().collection("rulebook").countDocuments({ kind: "test" }),
     ).toBe(1);
+  });
+});
+
+describe("a pause of the database writes (the disk check)", () => {
+  it("refuses and counts every write while paused, and writes again after", async () => {
+    await db().collection("rulebook").deleteMany({ kind: "pause-test" });
+    const store = Store.open(URI, NAME, log);
+    store.pauseWrites(true);
+    store.noteRule("pause-test", "a", { v: 1 }, 1);
+    store.noteEvent("pause-test", "b", { v: 2 }, 2);
+    store.pauseWrites(false);
+    store.noteRule("pause-test", "a", { v: 1 }, 3);
+    await store.close();
+    expect(store.counts).toEqual({
+      done: 1,
+      failed: 0,
+      waiting: 0,
+      refused: 2,
+    });
+    const docs = await db()
+      .collection("rulebook")
+      .find({ kind: "pause-test" })
+      .toArray();
+    expect(docs.map((d) => `${String(d.key)} ${String(d.at)}`)).toEqual([
+      "a 3",
+    ]);
+    await db().collection("rulebook").deleteMany({ kind: "pause-test" });
+  });
+});
+
+describe("boardTop", () => {
+  it("gives a stored board's first rows, and null for a date or board it does not hold", async () => {
+    await db()
+      .collection("board_snapshots")
+      .deleteMany({ passDate: "2026-11-01" });
+    const stamp = Date.parse("2026-11-01T23:50:00Z");
+    const doc = boardSnapshot(
+      "2026-11-01",
+      { window: "week", sort: "roi" },
+      [0, 100].map((offset) => ({
+        offset,
+        readAt: stamp,
+        data: boardPage("week", "roi", offset, stamp, 200),
+      })),
+      true,
+      null,
+    );
+    const store = Store.open(URI, NAME, log);
+    store.saveBoard(doc);
+    await store.close();
+    const reader = Store.open(URI, NAME, log);
+    expect(
+      await reader.boardTop("2026-11-01", { window: "week", sort: "roi" }, 100),
+    ).toEqual(doc.rows.slice(0, 100));
+    expect(
+      await reader.boardTop("2026-10-31", { window: "week", sort: "roi" }, 100),
+    ).toBeNull();
+    expect(
+      await reader.boardTop("2026-11-01", { window: "week", sort: "pnl" }, 100),
+    ).toBeNull();
+    await reader.close();
+    await db()
+      .collection("board_snapshots")
+      .deleteMany({ passDate: "2026-11-01" });
   });
 });

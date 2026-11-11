@@ -19,6 +19,7 @@ import {
   isClosedHourFile,
   truncateCutLine,
 } from "../src/store/files.js";
+import { utcDate, utcHour } from "../src/schedule.js";
 
 const at = (iso: string) => Date.parse(iso);
 const log = pino({ level: "silent" });
@@ -265,6 +266,38 @@ describe("Recorder", () => {
     expect(coverage).toEqual([
       expect.objectContaining({ event: "cut_line_dropped", bytes: 4 }),
       expect.objectContaining({ event: "cut_line_dropped", bytes: 5 }),
+    ]);
+  });
+});
+
+describe("a pause of the stream files (the disk check)", () => {
+  it("drops and counts book and trade lines while paused, keeps the replies, and stores again after", async () => {
+    const recorder = new Recorder(root, log);
+    await recorder.start();
+    const now = Date.now();
+    recorder.pauseStreams(true);
+    recorder.write("book", now, '{"n":1}');
+    recorder.write("trades", now, '{"n":2}');
+    recorder.write("rest", now, '{"n":3}');
+    recorder.pauseStreams(false);
+    recorder.write("book", now, '{"n":4}');
+    await recorder.close();
+    expect(recorder.counts.notStored).toBe(2);
+    expect(recorder.counts.lines).toEqual({
+      book: 1,
+      trades: 0,
+      rest: 1,
+      rejected: 0,
+    });
+    const [day, hour] = [utcDate(now), utcHour(now)];
+    expect(lines(read(day, `book-${hour}.jsonl`).toString())).toEqual([
+      `${now}\t{"n":4}`,
+    ]);
+    expect(existsSync(path.join(root, day, `trades-${hour}.jsonl`))).toBe(
+      false,
+    );
+    expect(lines(read(day, `rest-${hour}.jsonl`).toString())).toEqual([
+      `${now}\t{"n":3}`,
     ]);
   });
 });

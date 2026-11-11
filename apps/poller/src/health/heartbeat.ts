@@ -1,38 +1,60 @@
 /**
  * `<STATE_DIR>/heartbeat.json`, rewritten every 10 s (COLLECTOR-PLAN §1.4
  * item 3): the check task restarts a poller whose file is older than 2
- * minutes, and v1's notifier will read it to say "poller down" — its fields
- * are an interface (§1.6, "What later phases build on" 2). It works when
- * MongoDB does not.
+ * minutes, `status` prints it, and v1's notifier will read it to say "poller
+ * down" — its fields are an interface (§1.6, "What later phases build on" 2).
+ * It works when MongoDB does not.
  */
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { z } from "zod";
 import { HEARTBEAT_FILE } from "../lock.js";
 import type { Logger } from "../log.js";
 
 export const HEARTBEAT_EVERY_MS = 10_000;
 
-export type Heartbeat = {
-  time: number;
-  iso: string;
-  pid: number;
-  startedAt: number;
-  connections: Record<string, { open: boolean; lastFrameAt: number | null }>;
-  jobs: Record<string, { lastRunAt: number | null; lastOkAt: number | null }>;
-  tokensLastMinute: number;
-  rest: Record<string, number>;
-  streams: Record<string, number>;
-  files: Record<string, unknown>;
-  db: Record<string, number>;
-  audit: Record<string, number> | null;
-  memory: {
-    rssMb: number;
-    heapUsedMb: number;
-    heapTotalMb: number;
-    externalMb: number;
-    arrayBuffersMb: number;
-  };
-};
+const ms = z.number();
+const counts = z.record(z.string(), z.number());
+
+export const Heartbeat = z.object({
+  time: ms,
+  iso: z.string(),
+  pid: ms,
+  startedAt: ms,
+  connections: z.record(
+    z.string(),
+    z.object({ open: z.boolean(), lastFrameAt: ms.nullable() }),
+  ),
+  jobs: z.record(
+    z.string(),
+    z.object({ lastRunAt: ms.nullable(), lastOkAt: ms.nullable() }),
+  ),
+  tokensLastMinute: z.number(),
+  rest: counts,
+  streams: counts,
+  files: z.record(z.string(), z.unknown()),
+  db: counts,
+  audit: counts.nullable(),
+  memory: z.object({
+    rssMb: z.number(),
+    heapUsedMb: z.number(),
+    heapTotalMb: z.number(),
+    externalMb: z.number(),
+    arrayBuffersMb: z.number(),
+  }),
+  /** The clock watch's last minute (health/clock-watch.ts). */
+  clock: z.object({ minuteStart: ms, minOffsetMs: z.number() }).nullable(),
+  /** Each watched disk's last reading (health/disk.ts). */
+  disk: z.record(
+    z.string(),
+    z.object({
+      path: z.string(),
+      freeGiB: z.number(),
+      state: z.enum(["ok", "warn", "stop"]),
+    }),
+  ),
+});
+export type Heartbeat = z.infer<typeof Heartbeat>;
 
 /** The time of the last heartbeat an earlier run left, to measure the gap at start. */
 export function readLastHeartbeat(stateDir: string): number | null {

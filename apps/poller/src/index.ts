@@ -5,6 +5,7 @@
 import { COLLECTOR_SHARE, RestClient } from "./api/rest-client.js";
 import { realClock } from "./clock.js";
 import { loadConfig, parseRunFor, type Config } from "./config.js";
+import { diskRules, startDiskWatch } from "./health/disk.js";
 import { readLastHeartbeat, startHeartbeat } from "./health/heartbeat.js";
 import { startProcessStats } from "./health/process-stats.js";
 import { watchTestSwitches } from "./health/test-switches.js";
@@ -111,6 +112,29 @@ let jobs: { stop: () => void; status: () => Record<string, JobStatus> } = {
   status: () => ({}),
 };
 
+const disks = startDiskWatch(
+  diskRules(config.RECORDINGS_ROOT),
+  (rule, reading) => {
+    const stopped = reading.state === "stop";
+    if (rule.name === "database") store.pauseWrites(stopped);
+    else recorder.pauseStreams(stopped);
+    recorder.coverage({
+      event: "disk",
+      disk: rule.name,
+      ...reading,
+      stops: rule.stops,
+    });
+    const facts = { disk: rule.name, ...reading, stops: rule.stops };
+    if (reading.state === "ok") log.info(facts, "disk space ok again");
+    else
+      log.warn(
+        facts,
+        stopped ? `disk space low: ${rule.stops} stopped` : "disk space low",
+      );
+  },
+  log,
+);
+
 const heartbeat = startHeartbeat(
   config.STATE_DIR,
   () => {
@@ -136,6 +160,8 @@ const heartbeat = startHeartbeat(
         externalMb: memory.externalMb,
         arrayBuffersMb: memory.arrayBuffersMb,
       },
+      clock: streams.clockWatch.last,
+      disk: disks.readings(),
     };
   },
   log,
@@ -180,6 +206,7 @@ async function stop(reason: string): Promise<void> {
   stopping = true;
   jobs.stop();
   stopMarks();
+  disks.stop();
   stopSwitches();
   heartbeat.stop();
   streams.stop();

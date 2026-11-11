@@ -32,4 +32,12 @@ export type CoverageEvent =
   | { event: "test_switch"; name: string }
   | { event: "cut_line_dropped"; file: string; bytes: number }
   | { event: "compression_failed"; file: string; reason: string }
+  | {
+      event: "disk";
+      disk: "database" | "recordings";
+      path: string;
+      state: "ok" | "warn" | "stop";
+      freeGiB: number;
+      stops: string;
+    }
   | { event: "write_failed"; file: string; reason: string };

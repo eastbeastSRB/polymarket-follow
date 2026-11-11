@@ -107,6 +107,8 @@ describe("the heartbeat", () => {
       files: {},
       db: {},
       audit: null,
+      clock: null,
+      disk: {},
       memory: {
         rssMb: 0,
         heapUsedMb: 0,

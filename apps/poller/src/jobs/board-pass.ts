@@ -22,7 +22,7 @@ import {
   dayStart,
   utcDate,
 } from "../schedule.js";
-import type { BoardSnapshot, Store } from "../store/db.js";
+import { canonical, type BoardSnapshot, type Store } from "../store/db.js";
 import type { Recorder } from "../store/files.js";
 import { boardSource } from "../store/universe.js";
 import { PAGE_LIMIT, pacer, readPages, type PageRead } from "./paging.js";
@@ -37,6 +37,14 @@ export const BOARD_PASS_GUARD_MS =
   23 * HOUR_MS + 59 * MINUTE_MS + 30 * SECOND_MS;
 /** Pages read more than 10 s of snapshot apart may straddle a refresh: flagged, not re-read. */
 export const CONSISTENT_WITHIN_MS = 10_000;
+/**
+ * A frozen source (§1.7): a board is stale when a page's snapshot was older
+ * than 5 minutes at read (10 for `all`; R1 saw at most 60 s and 281 s), or
+ * its top 100 rows are the day before's.
+ */
+export const STALE_PAGE_MS = 5 * MINUTE_MS;
+export const STALE_PAGE_ALL_MS = 10 * MINUTE_MS;
+export const STALE_TOP = 100;
 
 export type Board = { window: string; sort: string };
 type BoardPage = Reply<"leaderboard">;
@@ -44,6 +52,7 @@ export type BoardsRead = {
   stored: number;
   complete: number;
   consistent: number;
+  stale: number;
   rows: number;
   missed: string[];
 };
@@ -56,12 +65,17 @@ export function boardOrder(): Board[] {
   );
 }
 
-/** One row an account, the first page's (a list can shift while it is paged); addresses lower-cased. */
+/**
+ * One row an account, the first page's (a list can shift while it is
+ * paged); addresses lower-cased. `dayBeforeTop`: the same board's first rows
+ * the pass date before, or null.
+ */
 export function boardSnapshot(
   passDate: string,
   board: Board,
   pages: readonly PageRead<BoardPage>[],
   complete: boolean,
+  dayBeforeTop: BoardSnapshot["rows"] | null,
 ): BoardSnapshot {
   const seen = new Set<string>();
   const rows: BoardSnapshot["rows"] = [];
@@ -75,6 +89,12 @@ export function boardSnapshot(
   }
   const stamps = pages.map((p) => p.data.timestamp);
   const first = Math.min(...stamps);
+  const oldest = board.window === "all" ? STALE_PAGE_ALL_MS : STALE_PAGE_MS;
+  const stale =
+    pages.some((p) => p.readAt - p.data.timestamp > oldest) ||
+    (dayBeforeTop !== null &&
+      canonical(rows.slice(0, STALE_TOP)) ===
+        canonical(dayBeforeTop.slice(0, STALE_TOP)));
   return {
     passDate,
     window: board.window,
@@ -90,6 +110,7 @@ export function boardSnapshot(
     rows,
     consistent: Math.max(...stamps) - first <= CONSISTENT_WITHIN_MS,
     complete,
+    stale,
   };
 }
 
@@ -125,15 +146,17 @@ export async function readBoards(
   passDate: string,
   deadlineWall: number,
   client: Pick<RestClient, "get">,
-  store: Pick<Store, "saveBoard" | "noteSeen">,
+  store: Pick<Store, "saveBoard" | "noteSeen" | "boardTop">,
   log: Logger,
   clock: Clock,
 ): Promise<BoardsRead> {
   const pace = pacer(clock);
+  const dayBefore = utcDate(Date.parse(`${passDate}T00:00:00Z`) - DAY_MS);
   const read: BoardsRead = {
     stored: 0,
     complete: 0,
     consistent: 0,
+    stale: 0,
     rows: 0,
     missed: [],
   };
@@ -156,7 +179,13 @@ export async function readBoards(
       read.missed.push(boardName(board));
       continue;
     }
-    const doc = boardSnapshot(passDate, board, paged.pages, paged.complete);
+    const doc = boardSnapshot(
+      passDate,
+      board,
+      paged.pages,
+      paged.complete,
+      await store.boardTop(dayBefore, board, STALE_TOP),
+    );
     store.saveBoard(doc);
     store.noteSeen(
       doc.rows.map((r) => r.account),
@@ -166,6 +195,7 @@ export async function readBoards(
     read.stored += 1;
     if (doc.complete) read.complete += 1;
     if (doc.consistent) read.consistent += 1;
+    if (doc.stale) read.stale += 1;
     read.rows += doc.rows.length;
   }
   return read;
@@ -177,7 +207,7 @@ export async function readBoards(
  */
 export function boardPassJob(
   client: Pick<RestClient, "get">,
-  store: Pick<Store, "saveBoard" | "noteSeen" | "boardsStored">,
+  store: Pick<Store, "saveBoard" | "noteSeen" | "boardTop" | "boardsStored">,
   recorder: Pick<Recorder, "coverage">,
   log: Logger,
   clock: Clock,

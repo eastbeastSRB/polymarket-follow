@@ -9,6 +9,11 @@ import { issuesText } from "../api/rest-client.js";
 import { BookFrame, TradesFrame, unknownKeyPaths } from "../api/schemas.js";
 import { type Clock, realClock } from "../clock.js";
 import {
+  CLOCK_WATCH_MS,
+  ClockWatch,
+  type ClockMinute,
+} from "../health/clock-watch.js";
+import {
   auditRows,
   type AuditCounts,
   type AuditRow,
@@ -46,6 +51,8 @@ export class Streams {
     stalls: 0,
   };
   readonly linesByMarket = new Map<number, number>();
+  readonly clockWatch = new ClockWatch();
+  private clockWatching = false;
   private readonly connections: Record<Kind, Connection[]> = {
     book: [],
     trades: [],
@@ -193,6 +200,8 @@ export class Streams {
     const { ch, ts, data } = parsed.data;
     const iid = Number(ch.slice("book::".length));
     this.stats.bookFrames += 1;
+    const minute = this.clockWatch.note(recvMs, ts);
+    if (minute) this.onClockMinute(minute);
     const watch = this.watches.get(iid);
     if (watch === undefined) return;
     if (watch.stalled) {
@@ -221,6 +230,21 @@ export class Streams {
       JSON.stringify([data.b, data.a]),
     );
     if (line) this.writeBook(line.iid, line.recvMs, line.text);
+  }
+
+  /** A WATCH begins or ends: logged once each way; the heartbeat shows every minute's figure. */
+  private onClockMinute(minute: ClockMinute): void {
+    const watching = minute.minOffsetMs > CLOCK_WATCH_MS;
+    if (watching === this.clockWatching) return;
+    this.clockWatching = watching;
+    if (watching) {
+      this.log.warn(
+        minute,
+        "clock watch: books arrive over 2 s after their server time",
+      );
+    } else {
+      this.log.info(minute, "clock watch: books back under 2 s");
+    }
   }
 
   private onTrades(
