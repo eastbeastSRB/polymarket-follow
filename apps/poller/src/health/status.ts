@@ -12,7 +12,7 @@ import path from "node:path";
 import { z } from "zod";
 import { COLLECTOR_SHARE } from "../api/rest-client.js";
 import { HEARTBEAT_FILE, STALE_HEARTBEAT_MS } from "../lock.js";
-import { DAY_MS, utcDate } from "../schedule.js";
+import { DAY_MS, HOUR_MS, utcDate } from "../schedule.js";
 import { CLOCK_WATCH_MS } from "./clock-watch.js";
 import { Heartbeat } from "./heartbeat.js";
 
@@ -52,7 +52,7 @@ export function statusLines(
   heartbeat: Heartbeat | null,
   heartbeatAgeMs: number | null,
   day: DayFacts,
-  backup: string | null,
+  backup: string,
 ): string[] {
   const out: string[] = [];
   if (heartbeat === null || heartbeatAgeMs === null) {
@@ -97,7 +97,7 @@ export function statusLines(
       );
     }
   }
-  out.push(`backup: ${backup ?? "none yet"}`);
+  out.push(backup);
   const kinds = new Map<
     string,
     { files: number; open: number; bytes: number }
@@ -199,7 +199,20 @@ export function readDayFacts(root: string, now: number): DayFacts {
   };
 }
 
-/** The last line of `<STATE_DIR>/backup.log` (part 6 writes it), or null. */
+/** Without an ok backup for 36 hours, the backup row is a WATCH (R7). */
+export const BACKUP_WATCH_MS = 36 * HOUR_MS;
+
+/** The backup row: `backup.log`'s last line (tools/backup.cjs), a WATCH when it is not ok or too old. */
+export function backupRow(line: string | null, now: number): string {
+  if (line === null) return "backup: WATCH - none yet";
+  const space = line.indexOf(" ");
+  const at = Date.parse(line.slice(0, space));
+  const fresh = !Number.isNaN(at) && now - at <= BACKUP_WATCH_MS;
+  const ok = line.slice(space + 1).startsWith("ok ");
+  return `backup: ${ok && fresh ? "ok" : "WATCH"} - ${line}`;
+}
+
+/** The last line of `<STATE_DIR>/backup.log`, or null. */
 export function readBackupLine(stateDir: string): string | null {
   try {
     const lines = readFileSync(path.join(stateDir, "backup.log"), "utf8")

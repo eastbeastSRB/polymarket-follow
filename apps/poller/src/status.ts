@@ -5,6 +5,7 @@
  */
 import { loadConfig, type Config } from "./config.js";
 import {
+  backupRow,
   readBackupLine,
   readDayFacts,
   readHeartbeat,
@@ -24,6 +25,6 @@ const lines = statusLines(
   beat?.heartbeat ?? null,
   beat?.ageMs ?? null,
   readDayFacts(config.RECORDINGS_ROOT, now),
-  readBackupLine(config.STATE_DIR),
+  backupRow(readBackupLine(config.STATE_DIR), now),
 );
 process.stdout.write(`${new Date(now).toISOString()}\n${lines.join("\n")}\n`);

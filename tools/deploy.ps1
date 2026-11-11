@@ -2,7 +2,7 @@
   Writes the run copy that the poller task runs (COLLECTOR-PLAN section 1.4,
   deviation D6): only a committed, clean working tree whose `pnpm verify` is
   green is deployed. The program, its production packages, its settings
-  (tools\poller.env, as .env) and the check's scripts are built into
+  (tools\poller.env, as .env), the check's scripts and the backup's are built into
   <RunRoot>\poller.next; the new copy must load (started without its
   settings, it exits 2) before it replaces <RunRoot>\poller. When the task
   runs this run copy, the poller is stopped through the task for the swap
@@ -77,7 +77,7 @@ try {
   # pnpm command would then remove the development packages: install again.
   pnpm install --frozen-lockfile --offline
   if ($LASTEXITCODE -ne 0) { throw "pnpm install after the deploy failed ($LASTEXITCODE)" }
-  foreach ($file in 'poller-check.ps1', 'poller-task.ps1') {
+  foreach ($file in 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs') {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $next
   }
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'poller.env') -Destination (Join-Path $next '.env')

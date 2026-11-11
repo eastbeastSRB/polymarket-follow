@@ -1,11 +1,11 @@
 <#
-  Registers the poller's two Windows tasks (COLLECTOR-PLAN section 1.4;
-  decisions 2026-11-10, (8) and (9)). The OWNER runs it from an elevated
+  Registers the poller's three Windows tasks (COLLECTOR-PLAN sections 1.4 and
+  1.5; decisions 2026-11-10, (7) to (9)). The OWNER runs it from an elevated
   PowerShell, after tools\deploy.ps1 has written the run copy:
 
       powershell -ExecutionPolicy Bypass -File E:\coding\polymarket-follow\tools\register-tasks.ps1
 
-  Both tasks run as the owner's account "whether the user is logged on or
+  All three run as the owner's account "whether the user is logged on or
   not" without a stored password (S4U: local resources only, no window),
   run level Limited:
   - "polymarket-follow poller": node.exe itself, by the absolute path found
@@ -20,6 +20,10 @@
     restarted by the check task.
   - "polymarket-follow poller check": at start-up after 3 minutes, and every
     5 minutes from now on, for ever; 2 minutes at most a run; one instance.
+  - "polymarket-follow backup": node.exe runs the run copy's backup.cjs
+    daily at 06:20 local time as registered in winter, which the trigger keeps
+    in UTC (05:20Z all year: 07:20 local in summer time), and as soon as
+    possible after a missed start; an hour at most a run; one instance.
   The poller task also grants the registering account read and execute
   (GRGX): by default Task Scheduler gives a task's own user read only, and
   then neither the check task (run level Limited) nor tools\deploy.ps1 from
@@ -29,7 +33,7 @@
   on every run, since -Force re-registers the task; a grant already there is
   not added twice. The check task gets no grant.
 
-  Running it again replaces the two tasks, also while the poller records.
+  Running it again replaces the three tasks, also while the poller records.
   Microsoft's documentation does not say whether re-registering a task ends
   its running instance, so the poller task is started again at once after
   it is re-registered: a poller still running ignores the start (one
@@ -39,8 +43,8 @@
   before and after.
 
   Undo: Stop-ScheduledTask -TaskName 'polymarket-follow poller' ends the
-  poller; then Unregister-ScheduledTask -TaskName 'polymarket-follow poller*'
-  -Confirm removes both tasks, and the grant with them (it lives on the
+  poller; then Unregister-ScheduledTask -TaskName 'polymarket-follow *'
+  -Confirm removes the three tasks, and the grant with them (it lives on the
   task). It leaves the run copy and its state (E:\polymarket-follow-run), the
   recordings (F:\polymarket-follow\recordings), the database
   polymarket_follow and its backups.
@@ -51,7 +55,7 @@ $ErrorActionPreference = 'Stop'
 $Poller = 'polymarket-follow poller'
 $run = 'E:\polymarket-follow-run\poller'
 $heartbeat = 'E:\polymarket-follow-run\var\heartbeat.json'
-foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'dist\index.js') {
+foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs', 'dist\index.js') {
   if (-not (Test-Path -LiteralPath (Join-Path $run $file))) {
     throw "missing $run\$file - run tools\deploy.ps1 first; nothing registered"
   }
@@ -121,7 +125,15 @@ Register-ScheduledTask -TaskName 'polymarket-follow poller check' -Force `
   -Description 'polymarket-follow: restarts the poller when its heartbeat is older than 2 minutes.' `
   -Action $checkAction -Trigger @($checkAtStartup, $checkEvery5Min) -Principal $principal -Settings $checkSettings | Out-Null
 
-foreach ($name in $Poller, 'polymarket-follow poller check') {
+$backupTrigger = New-ScheduledTaskTrigger -Daily -At '06:20'
+$backupSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+  -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
+$backupAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'backup.cjs')) -WorkingDirectory $run
+Register-ScheduledTask -TaskName 'polymarket-follow backup' -Force `
+  -Description 'polymarket-follow: the database''s daily dump to F:, its newest copy on E: (see the repository''s docs).' `
+  -Action $backupAction -Trigger $backupTrigger -Principal $principal -Settings $backupSettings | Out-Null
+
+foreach ($name in $Poller, 'polymarket-follow poller check', 'polymarket-follow backup') {
   $task = Get-ScheduledTask -TaskName $name
   Write-Host "`n== $name - state $($task.State), logon $($task.Principal.LogonType), run level $($task.Principal.RunLevel)"
   foreach ($t in $task.Triggers) {

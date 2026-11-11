@@ -3,7 +3,12 @@
  * only (COLLECTOR-PLAN §1.6, integration tests, local only): dropped before
  * and after.
  */
-import { MongoClient } from "mongodb";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import * as mongodb from "mongodb";
+import { MongoClient, type Db } from "mongodb";
 import { pino } from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { boardSnapshot } from "../src/jobs/board-pass.js";
@@ -287,5 +292,155 @@ describe("boardTop", () => {
     await db()
       .collection("board_snapshots")
       .deleteMany({ passDate: "2026-11-01" });
+  });
+});
+
+describe("the backup's round trip (tools/backup.cjs, tools/restore.cjs)", () => {
+  type Counts = Record<string, number>;
+  const load = createRequire(import.meta.url);
+  const backup = load("../../../tools/backup.cjs") as {
+    dump: (
+      m: typeof mongodb,
+      db: Db,
+      file: string,
+      cutAt: Date,
+    ) => Promise<Counts>;
+    fileHash: (file: string) => Promise<{ bytes: number; sha256: string }>;
+    verifyDump: (
+      file: string,
+      manifest: { bytes: number; sha256: string; counts: Counts },
+    ) => Promise<void>;
+    datesToDelete: (dates: string[]) => string[];
+  };
+  const restore = load("../../../tools/restore.cjs") as {
+    restore: (
+      m: typeof mongodb,
+      client: MongoClient,
+      file: string,
+      name: string,
+    ) => Promise<{ ok: boolean; counts: Counts; problems: string[] }>;
+  };
+  const RESTORED = "polymarket_follow_restore_2000-01-01";
+
+  it("dumps every collection, restores it with the same counts and _id sets, and refuses any other name", async () => {
+    await db().dropDatabase();
+    await admin.db(RESTORED).dropDatabase();
+    const stamp = Date.parse("2026-11-01T23:50:00Z");
+    const store = Store.open(URI, NAME, log);
+    store.saveBoard(
+      boardSnapshot(
+        "2026-11-02",
+        { window: "day", sort: "pnl" },
+        [
+          {
+            offset: 0,
+            readAt: stamp,
+            data: boardPage("day", "pnl", 0, stamp, 40, 40),
+          },
+        ],
+        true,
+        null,
+      ),
+    );
+    store.noteRule("fees", "schedule", { taker: "0.0005" }, stamp);
+    store.noteSeen(
+      [address(1).toLowerCase(), address(2).toLowerCase()],
+      "board:day:pnl",
+      "2026-11-02",
+    );
+    await store.close();
+    const file = path.join(
+      mkdtempSync(path.join(tmpdir(), "poller-backup-")),
+      "dump.jsonl.gz",
+    );
+    const counts = await backup.dump(
+      mongodb,
+      db(),
+      file,
+      new Date(Date.now() + 60_000),
+    );
+    expect(counts).toEqual({
+      board_snapshots: 1,
+      competition_snapshots: 0,
+      rulebook: 1,
+      universe: 2,
+    });
+    const manifest = { ...(await backup.fileHash(file)), counts };
+    await backup.verifyDump(file, manifest);
+    await expect(
+      backup.verifyDump(file, {
+        ...manifest,
+        counts: { ...counts, rulebook: 2 },
+      }),
+    ).rejects.toThrow(/rulebook has 1 lines, the manifest 2/);
+
+    expect(await restore.restore(mongodb, admin, file, RESTORED)).toEqual({
+      ok: true,
+      counts,
+      problems: [],
+    });
+    expect(await admin.db(RESTORED).collection("rulebook").findOne({})).toEqual(
+      await db().collection("rulebook").findOne({}),
+    );
+    await expect(
+      restore.restore(mongodb, admin, file, RESTORED),
+    ).rejects.toThrow(/exists: refused/);
+    for (const name of [
+      "polymarket_follow",
+      "polymarket_follow_test",
+      "polymarket_follow_restore_x",
+    ]) {
+      await expect(restore.restore(mongodb, admin, file, name)).rejects.toThrow(
+        /only polymarket_follow_restore_<date>/,
+      );
+    }
+    await admin.db(RESTORED).dropDatabase();
+
+    // The cut: what the append-only collections got after it stays out; the universe is taken whole.
+    const cutFile = `${file}.cut`;
+    const cut = await backup.dump(
+      mongodb,
+      db(),
+      cutFile,
+      new Date(Date.now() - 3_600_000),
+    );
+    expect(cut).toEqual({
+      board_snapshots: 0,
+      competition_snapshots: 0,
+      rulebook: 0,
+      universe: 2,
+    });
+    // One byte more fails the check.
+    writeFileSync(file, Buffer.concat([readFileSync(file), Buffer.from("x")]));
+    await expect(backup.verifyDump(file, manifest)).rejects.toThrow(
+      /hash differs/,
+    );
+  });
+
+  it("keeps the 14 newest dumps and the newest of each of the 8 weeks before them", () => {
+    const day = (n: number) =>
+      new Date(Date.UTC(2026, 10, 30) - n * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    const dates = Array.from({ length: 100 }, (_, n) => day(n));
+    const kept = new Set(
+      dates.filter(
+        (d) => !backup.datesToDelete([...dates, "notes"]).includes(d),
+      ),
+    );
+    expect(kept.size).toBe(14 + 8);
+    for (let n = 0; n < 14; n++) expect(kept.has(day(n))).toBe(true);
+    // Weeks run Monday to Sunday: 2026-11-16 is the only one left of its week, then Sundays.
+    expect([...kept].sort().reverse().slice(14)).toEqual([
+      "2026-11-16",
+      "2026-11-15",
+      "2026-11-08",
+      "2026-11-01",
+      "2026-10-25",
+      "2026-10-18",
+      "2026-10-11",
+      "2026-10-04",
+    ]);
+    expect(backup.datesToDelete(["2026-11-01", "notes"])).toEqual([]);
   });
 });

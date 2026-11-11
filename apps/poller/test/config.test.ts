@@ -32,17 +32,23 @@ describe("parseConfig", () => {
     ).toThrow(/absolute path/);
   });
 
-  it("reads the run copy's settings, tools/poller.env: the four, and nothing else", () => {
+  it("reads the run copy's settings, tools/poller.env: the poller's four and the backup's two, nothing else", () => {
     const text = readFileSync(
       new URL("../../../tools/poller.env", import.meta.url),
       "utf8",
     );
     const settings = parseEnv(text);
     expect(Object.keys(settings).sort()).toEqual([
+      "BACKUP_LATEST",
+      "BACKUP_ROOT",
       "MONGO_DB",
       "MONGO_URI",
       "RECORDINGS_ROOT",
       "STATE_DIR",
+    ]);
+    expect([settings.BACKUP_ROOT, settings.BACKUP_LATEST]).toEqual([
+      "F:\\backups\\polymarket-follow\\db",
+      "E:\\backups\\polymarket-follow\\db",
     ]);
     expect(parseConfig(settings)).toEqual({
       RECORDINGS_ROOT: "F:\\polymarket-follow\\recordings",

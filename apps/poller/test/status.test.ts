@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Heartbeat } from "../src/health/heartbeat.js";
 import {
+  backupRow,
   readDayFacts,
   readHeartbeat,
   statusLines,
@@ -69,7 +70,7 @@ const day: DayFacts = {
 
 describe("statusLines", () => {
   it("prints every row, with its state", () => {
-    const text = statusLines(beat, 4_000, day, null).join("\n");
+    const text = statusLines(beat, 4_000, day, backupRow(null, NOW)).join("\n");
     for (const row of [
       "process: ok - pid 26852, heartbeat 4.0 s old, started 2026-11-11T15:47:43.000Z, rss 142.6 MB",
       "connection book-1: ok - open, last frame 0.1 s before the heartbeat",
@@ -86,7 +87,7 @@ describe("statusLines", () => {
       "clock: WATCH - the books' smallest receive - ts 2400 ms in the minute from 15:59:00Z",
       "disk database: ok - C:\\ 39.1 GiB free",
       "disk recordings: STOP - F:\\ 9.4 GiB free",
-      "backup: none yet",
+      "backup: WATCH - none yet",
       "day 2026-11-11 book: 2 file(s), 1 plain, 25.0 MB",
       "day 2026-11-11 rest: 1 file(s), 1 plain, 0.1 MB",
       "day 2026-11-11 coverage: process_start 2, ws_open 1; 1 unreadable line(s)",
@@ -98,17 +99,17 @@ describe("statusLines", () => {
   });
 
   it("says DOWN for an old or missing heartbeat, and ok for a clock under 2 s", () => {
-    expect(statusLines(beat, 120_000, day, null)[0]).toMatch(
+    expect(statusLines(beat, 120_000, day, "backup: x")[0]).toMatch(
       /^process: DOWN - pid 26852/,
     );
-    expect(statusLines(null, null, day, "x")[0]).toBe(
+    expect(statusLines(null, null, day, "backup: x")[0]).toBe(
       "process: DOWN - no readable heartbeat file",
     );
     const calm = {
       ...beat,
       clock: { minuteStart: NOW - 60_000, minOffsetMs: 2_000 },
     };
-    expect(statusLines(calm, 4_000, day, null).join("\n")).toContain(
+    expect(statusLines(calm, 4_000, day, "backup: x").join("\n")).toContain(
       "clock: ok - ",
     );
   });
@@ -142,9 +143,12 @@ describe("status from the folders", () => {
     expect(facts.coverage).toHaveLength(1);
     expect(facts.unreadableCoverage).toBe(1);
     expect(facts.yesterday).toEqual({ date: "2026-11-10", manifestFiles: 2 });
-    const text = statusLines(read!.heartbeat, read!.ageMs, facts, null).join(
-      "\n",
-    );
+    const text = statusLines(
+      read!.heartbeat,
+      read!.ageMs,
+      facts,
+      "backup: x",
+    ).join("\n");
     expect(text).toContain("day 2026-11-11 book: 1 file(s), 1 plain");
     expect(text).toContain(
       "last start: 15:59:59Z, 60.0 s after the last heartbeat",
@@ -165,5 +169,25 @@ describe("status from the folders", () => {
     expect(readHeartbeat(state, NOW)).toBeNull();
     writeFileSync(path.join(state, "heartbeat.json"), '{"pid":"x"}');
     expect(readHeartbeat(state, NOW)).toBeNull();
+  });
+});
+
+describe("backupRow", () => {
+  it("is ok for an ok line under 36 hours old, and a WATCH otherwise", () => {
+    const at = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
+    expect(backupRow(`${at(5)} ok F:\\d.gz 10 B`, NOW)).toBe(
+      `backup: ok - ${at(5)} ok F:\\d.gz 10 B`,
+    );
+    expect(backupRow(`${at(36)} ok F:\\d.gz 10 B`, NOW)).toMatch(
+      /^backup: ok - /,
+    );
+    expect(backupRow(`${at(36.01)} ok F:\\d.gz 10 B`, NOW)).toMatch(
+      /^backup: WATCH - /,
+    );
+    expect(backupRow(`${at(1)} FAILED no server`, NOW)).toMatch(
+      /^backup: WATCH - .* FAILED no server$/,
+    );
+    expect(backupRow("garbage", NOW)).toMatch(/^backup: WATCH - garbage$/);
+    expect(backupRow(null, NOW)).toBe("backup: WATCH - none yet");
   });
 });
