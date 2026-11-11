@@ -536,3 +536,95 @@ In `workers/RESEARCH-KIT/` unless F: is named.
   ran it as a test (moved to `kit/mutate.mjs`; the baseline check now guards
   against a run that tests nothing). Two edits made with `sed`
   (`scripts/m-spreads.mjs`), the second corrected with the Edit tool.
+
+---
+
+## Final review (2026-11-11 from 10:40Z, a fresh RESEARCH-KIT subagent, Opus 5.5, max)
+
+The brief's addendum: is the work right, not only reproducible. No API call
+was made; nothing stamped at or after the cut was read. Each correction above
+is marked in place ("Final review, F<n>"); nothing was edited silently. The
+review's scripts are `scripts/fr-*.mjs`, their outputs `out/fr-*.txt`; the log
+is `progress.md`, section "Final review".
+
+**Findings, by severity**
+
+| | Finding | What was done |
+|---|---|---|
+| F1 high | A.1-8's map reaches far beyond question 4(b): at the class horizon 8,463 of the 10,612 P1 entries from the launch week sit in cells closed for a taker (BTC, ETH and SOL are closed at 6 h too), 179 of entry 9's 188 events at 6 h, entry 7's runs at any horizon up to 1 h; "score one-hour traders at 6 h" leaves 7,248 closed (`out/fr-a2.txt`) | question 4(b) withdrawn; question 5 |
+| F2 medium | A.2's figures for entries 7 and 9 weighted clusters by their items, where A.0-6 tests equal-weight account and day means; entry 5 used an entry-level design effect | `a2-recompute.mjs` fixed; the A.2 table corrected |
+| F3 medium | Section 7 item 2 (A.0-6's day test) pairs a by-the-second figure with a by-the-minute one, and its "costs power" holds for the net result but not for d | corrected; question 6 |
+| F4 medium | The primary-cell market rule (A.0-7) was written in five scripts in two versions (KIOXIA-USD before its settlement day in or out), so entry 7 had 3,182 runs in section 3 and 3,067 in A.2 | one definition in the kit (`cells.mjs`, a test, five mutants); every script on it; numbers that moved corrected |
+| F5 medium | Question 1 leaves out its cost: entry 10's FIND pass rests on R8's own-direction null | added to question 1 |
+| F6 low | Question 4(a) undercounts the 139 truncated captures; 4(c)'s list holds 16 holdout accounts and 122 from the profit boards | added to question 4 |
+| F7 low | The kit's tests wrote into this session's scratchpad by default; three fields nothing reads (`takerNotional`, `reopenedInMerge`; "dead code — none" was wrong) | kit fixed |
+| F8 low | Seven small corrections: R8's 4.43 compared with an active-week rate; the headline d is net minus net; a mark-history page is a span of time; the klines "upper bound" is an estimate; a variable named SPLIT; question 3's quote came through a summarising tool; the FIND period differs between entries | corrected in place |
+
+**The kit after the review.** Fingerprint, old
+`872dd5acbe6159052b60faa357446f405e173f1ed727049a93e409b159506246` (24
+files), new **`7b4179e897faa34758de8508cef47a84e7c2504ec5eb9974526f55041bdfc215`**
+(26 files: `cells.mjs` and its test added; `entries.mjs`, `mutate.mjs` and two
+tests changed; the panel manifest unchanged). Tests 37 of 37, mutants 59 of 59,
+the fingerprint check 5 of 5; `run-final.mjs` again (`out/final-run.txt`):
+the proof's outputs the same but for their stamps (`numbers-proof.json` byte
+for byte), so the proof's numbers hold.
+
+**1. The minute pricing, checked independently** (`scripts/fr-pricing.mjs`,
+which imports no kit module: it reads the panel files, the price table,
+`rules.json`, `selection.json` and the fills itself, computes the New York
+session from the 2026 clock changes and the null's follow minutes from
+interval overlaps; `out/fr-pricing.txt`). On a seeded draw of 100 entries and
+on the whole cell (1,249): the delay equal in every entry and equal to R8's
+stored follow instant; net and gross equal to the kit's within 3e-17; the
+exact null within 7.5e-12 (my fractions are taken from instants near 1.8e12
+ms, the kit's from D: rounding only); the same 18 entries without a null on
+both sides; means −16.36 (net), d −2.64 (net minus net) and −2.53 (gross
+minus gross). Charging funding by the settlement's stamp, R8's own reading,
+changes no entry; no spread came from a category mean; no tracked trade sits
+only in a window sample. **No difference beyond floating-point rounding.**
+
+**2. Calls against stored replies** (`scripts/fr-calls.mjs`,
+`out/fr-calls.txt`). Every one of the 16,116 calls matches exactly one stored
+reply (by its start instant and URL), and every stored reply one call: klines
+2,613 = 91 planning reads of 1 d klines (`raw/plan.jsonl.gz`) + 13 in the
+trial (`trial-1500Z/`) + 2 in the end-rule probe (`raw/probe-end.jsonl.gz`) +
+2,507 in the pull (`raw/k1m/`); mark-history 11,561 = 44 trial + 3 probe +
+11,514 pull; funding 1,931 = 8 trial + 1,923 pull. No key is stored twice (the
+pull never restarted, so nothing was fetched again or de-duplicated); the
+trial's 65 keys were all fetched again by the pull (its done file moved with
+it). The panel rebuilt from `raw/` alone equals the panel files in every mark,
+kline and funding row: **no stored panel minute rests on a reply outside
+`raw/`.**
+
+**3. A.0-6's day test:** F3 and question 6. **4. The questions:** 1 kept,
+with F5; 2 kept (even with no clustering entry 8 sees about 83 bps, above
+60); 3 kept, with F8(f); 4(a) and 4(c) kept, with F6; 4(b) withdrawn (F1).
+**5. The first measurements:** each query, unit and grouping read against
+A.1 and the register entries; what does not follow is F1, F2, F4 and F8(a)
+and (g).
+
+**How the kit fits the FIND studies to come** (notes; no code added for them):
+- Not in the kit, and every study needs it: **A.0-5's risk unit** (d over the
+  market's mean absolute h-return of the trailing 30 days — every pass line
+  is read in it) and **A.0-4's d** itself (gross minus the exact null's gross;
+  a study composes it from `leg` and `exactNull`). The first study should add
+  both to the kit, tested and mutated, before any result is read — or each
+  study will write its own.
+- Entry 7's runs and entry 9's agreement events are defined in scripts
+  (`index-pool.mjs`, `m-runs-agree.mjs`): if those entries are registered,
+  their definitions move into the kit, or a study writes a second copy.
+- The map's closed cells (A.1-8) are a script output (`out/m8-map.tsv`): if
+  question 5 keeps the rule, freeze that table with its hash for the studies.
+- **CONFIRM cannot use the kit's readers as they are:** the fills reader, the
+  panel reader and the client refuse anything at or after the FIND cut by
+  construction. The exams need their own, deliberate path (the exam's end as
+  the bound), designed with the exams — not a switch in these readers.
+- The removal in `exactNull` is the caller's: each entry should say whose
+  trades its null leaves out (R8: both arms).
+- New York sessions are R8's rule as written — Monday to Friday 09:30–16:00,
+  no holidays: Labor Day (2026-09-07, inside FIND's 65 days) and Thanksgiving
+  (2026-11-26, inside the first exam) are priced with the weekday table.
+  Changing that is a rule change; stated so no study is surprised.
+- A session runs the kit's tests with `RESEARCH_KIT_TMP` set to its own
+  scratchpad (F7); a study prints `checkKit()`'s fingerprint, so any later kit
+  change (the risk unit, say) shows in every output.
