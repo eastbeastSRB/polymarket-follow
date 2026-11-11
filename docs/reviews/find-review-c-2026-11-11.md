@@ -343,12 +343,13 @@ phase — nothing to change in round 2, all for a later kit:
   FIND data, deciding nothing): five — `checks.mjs` (C, D, G), `show-gap`,
   `show-failed`, `without-47`, `top-accounts`.
 - **Not done:** the calibration scripts and the 92 mutants were not re-run
-  (their outputs were read); `render.mjs` and `mutate.mjs` were read, not
-  tested; `F:\polymarket-follow-research\FIND-2\` (the ranking and coverage
+  (their outputs were read); `mutate.mjs`, the tests and the pre-look scripts
+  were read in part; `F:\polymarket-follow-research\FIND-2\` (the ranking and coverage
   files) was not opened — both were recomputed; R8's figure of $109,386 for
   #47 was not re-derived.
 - **Rules I broke:** one `node -e` peek at the price table's layout (22:30Z);
-  `sed -i` twice on my own `recompute.mjs` (22:36Z) where the Edit tool
-  belongs. No figure rests on either.
+  `sed -i` three times where the Edit tool belongs — twice on my own
+  `recompute.mjs` (22:36Z), once to stamp this report's end time from the
+  clock (22:56Z). No figure rests on any of them.
 - **Commits:** `44fc204` (FIND-2's report, the corrections marked in place),
   and this report's own.
