@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (the FIND rules review; one reading for all seven studies, fixed
+before any look — the supervisor, on RULES-REVIEW's recommendations; the
+yardstick of entry 5 waits for the owner): **SEVEN STUDIES HAVE WRITTEN THEIR
+RULES AND NONE HAS LOOKED; A FRESH REVIEWER READ THEM; THESE READINGS HOLD FOR
+EVERY STUDY.** Report `docs/reviews/find-rules-review-2026-11-11.md`
+(RULES-REVIEW, Fable): every tool call of the eight transcripts listed, no
+look output anywhere, the kit `2d3667b5…09aa` intact in all seven folders,
+every recorded hash equal to its files; no study "must not look yet"; three
+high findings (FIND-7's and FIND-9's populations, entry 5's yardstick).
+**(1) A.0-8, "competition only":** a FIND pass must hold again without the
+competition's days and again without its boosted markets — the finding's
+sign on every deciding estimate and an uncorrected p below 0.05 — and the
+exams use the same sentence. **(2) A.0-11 with two estimates:** a hypothesis
+points FIND's way, or the other way, only when both estimates (day means and
+trader means) do; a split stays OPEN. **(3) FIND-1's fifths:** "beats" means
+a difference above zero, the p-values printed beside. **(4) The deciding
+population is the all-time notional board** in every test of how accounts'
+entries, events or runs did; the whole pool is printed beside (accounts that
+entered through profit boards were chosen partly on the moves being scored).
+FIND-7 and FIND-9 re-count and re-freeze. **(5)** FIND-3's placebo on real
+markets and FIND-7's placebo dry run were not looks (neither uses an entry's
+side; the expected d is zero by construction); each counts as one logged run
+(A.0-15); FIND-7 deletes its dry-run file before its look. **(6) A risk unit
+on a short window** (decisions 2026-11-11, Q7): "under 7 days" means under
+10,080 starts, and a unit of zero is no unit, everywhere. **(7) CONFIRM
+populations follow each entry's letter:** a list frozen and judged whole for
+entries 1, 3, 7 and 10; a frozen list whose label is re-read each Monday for
+entries 4 and 9 — for both, the notional board's accounts with a directional
+week since the launch (FIND-4's 539-account list, `8889dc8a…`); FIND-3's 29
+accounts judged whole, its weekly rule printed beside. **(8) The long share
+at CONFIRM** is taken as in FIND, each Monday. **(9) Placebos and
+leave-one-out** keep each study's regime; every draft register entry states
+on its first line what they showed. **(10) Entry 5's yardstick:** RULES-REVIEW
+recommends that the drawn trades' own direction decide (a coin at the long
+share tests only that the mark moves with any taker order — 1,089 of 1,241
+entries); that departs from ruling (1) of "RESEARCH-KIT accepted", so it waits
+for the owner. **(11) Places in m** are weighed at the freeze (entries 1, 2, 3
+and 9 see only large effects; entry 5 is a minute no follower can act in).
+**(12) Every look stops unless the kit's fingerprint equals the frozen
+value** (`checkKit()` alone checks the kit only against its own list).
+**Entry 7** is registered only if its doubled-cost net mean is also above
+zero. Each study fixes its own findings, writes its hashes again and reports;
+the supervisor checks them and gives each its go.
+
 2026-11-11 (COLLECTOR-REVIEW's calls — the Final review of the whole
 collector, COLLECTOR-PLAN §1.8; its findings and questions are in the
 supervisor folder's `workers/COLLECTOR-REVIEW/progress.md`, its fixes the

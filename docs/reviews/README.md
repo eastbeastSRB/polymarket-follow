@@ -11,6 +11,7 @@ plan page or external-apis — or it does not exist.
 
 | Review | What | Accepted |
 |---|---|---|
+| `find-rules-review-2026-11-11.md` | RULES-REVIEW (A.0-14, Fable): the fresh read of the seven FIND studies' rules before any look — nobody looked, the kit intact, every hash equal; per-study verdicts and fixes; three high findings; twelve questions | decisions 2026-11-11, the FIND rules review |
 | `research-kit-2026-11-11.md` | RESEARCH-KIT (round 2's foundation 2 and first measurements): the one-minute panel of 91 markets to the cut (equal to R8's capture), the research kit (fingerprint `7b4179e8…c215` after the review), the proof against R8 (1,272 entries exact; −16.36 by the minute against −16.60; an independent pricer agrees to rounding), the first measurements 1–8 and A.2 recomputed; 8 Final-review corrections (a fresh reviewer); six questions for the owner (§8) | decisions 2026-11-11, RESEARCH-KIT accepted |
 | `r1-perps-api-2026-11-07.md` | R1-API: the Perps API in full — endpoints, the token-bucket limit, fills semantics, the tape, history depth, the feasibility table; 14 Final-review corrections (§8) | decisions 2026-11-07, wave 1 closed |
 | `r4-notifications-2026-11-06.md` | R4-NOTIFY: Windows notifications from the poller — PowerShell toasts, sessions under Task Scheduler, silent failures, alert noise; the owner test sheet in the supervisor folder; 11 corrections | decisions 2026-11-07, wave 1 closed |
