@@ -133,15 +133,17 @@ describe("Connection", () => {
     ]);
   });
 
-  it("stays open on pongs alone", async () => {
-    connection(["trades::1"]);
+  it("stays open on pongs alone, and reports the last one as its last frame", async () => {
+    const c = connection(["trades::1"]);
     last().open();
+    expect(c.health()).toEqual({ open: true, lastFrameAt: null });
     for (let i = 0; i < 6; i += 1) {
       await vi.advanceTimersByTimeAsync(10_000);
       last().message(pong());
     }
     expect(sockets).toHaveLength(1);
     expect(coverage.map((e) => e.event)).toEqual(["ws_open"]);
+    expect(c.health()).toEqual({ open: true, lastFrameAt: Date.now() });
   });
 
   it("reopens after 15 s without a frame, resubscribes, and logs the gap at the first frame after", async () => {

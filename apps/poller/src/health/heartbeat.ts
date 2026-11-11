@@ -21,6 +21,7 @@ export const Heartbeat = z.object({
   iso: z.string(),
   pid: ms,
   startedAt: ms,
+  /** `lastFrameAt`: the connection's last frame of any kind, a pong too (ws/connection.ts). */
   connections: z.record(
     z.string(),
     z.object({ open: z.boolean(), lastFrameAt: ms.nullable() }),

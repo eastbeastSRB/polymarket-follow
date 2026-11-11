@@ -13,11 +13,9 @@ import { z } from "zod";
 import { COLLECTOR_SHARE } from "../api/rest-client.js";
 import { HEARTBEAT_FILE, STALE_HEARTBEAT_MS } from "../lock.js";
 import { DAY_MS, HOUR_MS, utcDate } from "../schedule.js";
+import { SILENCE_MS } from "../ws/connection.js";
 import { CLOCK_WATCH_MS } from "./clock-watch.js";
 import { Heartbeat } from "./heartbeat.js";
-
-/** A connection with no frame for 15 s is reconnected (code-rules, the watchdog). */
-const FRAME_WATCH_MS = 15_000;
 
 export type CoverageLine = {
   at: number;
@@ -65,7 +63,7 @@ export function statusLines(
     for (const [name, c] of Object.entries(heartbeat.connections)) {
       const quiet =
         c.lastFrameAt === null ? null : heartbeat.time - c.lastFrameAt;
-      const watch = !c.open || quiet === null || quiet > FRAME_WATCH_MS;
+      const watch = !c.open || quiet === null || quiet > SILENCE_MS;
       out.push(
         `connection ${name}: ${watch ? "WATCH" : "ok"} - ${c.open ? "open" : "closed"}, last frame ${quiet === null ? "never" : `${age(quiet)} before the heartbeat`}`,
       );

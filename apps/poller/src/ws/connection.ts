@@ -77,6 +77,7 @@ export class Connection {
   private connectingSince = 0;
   private openedAt: number | null = null;
   private lastFrameAt = 0;
+  private lastFrameWall: number | null = null;
   private lastDataWall: number | null = null;
   private gapCause: string | null = null;
   private deaf = false;
@@ -112,8 +113,9 @@ export class Connection {
     return this.openedAt !== null;
   }
 
+  /** `lastFrameAt`: the last frame of any kind, a pong too, as the watchdog counts them (wall ms). */
   health(): { open: boolean; lastFrameAt: number | null } {
-    return { open: this.isOpen(), lastFrameAt: this.lastDataWall };
+    return { open: this.isOpen(), lastFrameAt: this.lastFrameWall };
   }
 
   subscribe(channels: readonly string[]): void {
@@ -183,6 +185,7 @@ export class Connection {
     if (this.deaf) return;
     const recvMs = this.clock.wall();
     this.lastFrameAt = this.clock.monotonic();
+    this.lastFrameWall = recvMs;
     if (typeof data !== "string") {
       this.hooks.onReject(this.name, String(data), "not text", recvMs);
       return;
