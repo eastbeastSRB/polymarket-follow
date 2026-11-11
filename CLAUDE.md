@@ -31,9 +31,12 @@ database and supervisor.
 Planned, the same as polymarket-lab's, copied by the skeleton build and never
 shared: Turborepo + pnpm · React 19 + Vite + TS (web) · Express + TS (api) · a
 node-cron poller · a shared package for Zod schemas and constants · MongoDB,
-its own database (native driver, Zod is the schema) · pino · vitest. **Nothing
-is installed yet (2026-11-06):** check package.json before trusting this
-line. Ports are set by the v1 plan, clear of the lab's 3000 and 4000.
+its own database (native driver, Zod is the schema) · pino · vitest. **Built so far
+(2026-11-11): only the collector, `apps/poller` in a pnpm workspace
+(TypeScript, Zod, pino, the MongoDB driver, vitest; no Turborepo, web, api
+or shared package yet — decisions 2026-11-11, COLLECTOR-BUILD's technical
+calls; docs/claude-architecture.md):** check package.json before trusting
+this line. Ports are set by the v1 plan, clear of the lab's 3000 and 4000.
 
 ## Structure & docs
 docs/claude-current-task.md — where we are, what is next.

@@ -121,6 +121,18 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   they hide test fakes. **A leftover test process that inherited a tool's
   handle keeps a background run from ending:** stop every test process after
   each case and give each run a time limit (COLLECTOR-BUILD, 2026-11-11).
+- **Windows PowerShell 5.1 traps:** `Set-Content -Encoding UTF8` writes a
+  BOM — use `[IO.File]::WriteAllText` with `UTF8Encoding($false)`;
+  `(Get-Content f)[-1]` on a one-line file is its last character — wrap it in
+  `@()`; `Get-Content -Raw` of an empty file is `$null`; with
+  `Start-Process -PassThru`, read `$p.Handle` before `WaitForExit(ms)` or
+  `ExitCode` stays `$null`. **`New-ScheduledTaskTrigger -Daily -At` stores
+  the time in UTC:** a daily task keeps its UTC time through summer time
+  (all COLLECTOR-BUILD, 2026-11-11).
+- **vitest runs test files in parallel:** tests that share one database
+  (`polymarket_follow_test`) live in one file. A test that runs the built
+  program needs `pnpm verify`'s order — a bare `pnpm test` runs a stale
+  `dist` (COLLECTOR-BUILD, 2026-11-11).
 - **Node's `.env` loader** (`process.loadEnvFile`, Node 24.13) keeps unquoted
   backslashes, and a variable already set in the environment wins
   (COLLECTOR-BUILD, 2026-11-11).
