@@ -191,29 +191,34 @@ export class Streams {
     text: string,
     recvMs: number,
   ): void {
+    // A frame that fails its schema is still a frame of its market: kept raw
+    // in `rejected`, it is neither a stall nor a reason to restart the
+    // connection, which would lose the frames the restart's wait skips.
+    const iid = Number((msg.ch as string).slice("book::".length));
+    const watch = this.watches.get(iid);
+    if (watch !== undefined) {
+      if (watch.stalled) {
+        watch.stalled = false;
+        this.recorder.coverage({
+          event: "market_resume",
+          iid,
+          gapMs: watch.lastWall === null ? null : recvMs - watch.lastWall,
+        });
+      }
+      watch.lastAt = this.clock.monotonic();
+      watch.lastWall = recvMs;
+    }
     const parsed = BookFrame.safeParse(msg);
     if (!parsed.success) {
       this.reject("ws:book", text, issuesText(parsed.error), recvMs);
       return;
     }
     this.checkKeys("book", BookFrame, msg, recvMs);
-    const { ch, ts, data } = parsed.data;
-    const iid = Number(ch.slice("book::".length));
+    const { ts, data } = parsed.data;
     this.stats.bookFrames += 1;
     const minute = this.clockWatch.note(recvMs, ts);
     if (minute) this.onClockMinute(minute);
-    const watch = this.watches.get(iid);
     if (watch === undefined) return;
-    if (watch.stalled) {
-      watch.stalled = false;
-      this.recorder.coverage({
-        event: "market_resume",
-        iid,
-        gapMs: watch.lastWall === null ? null : recvMs - watch.lastWall,
-      });
-    }
-    watch.lastAt = this.clock.monotonic();
-    watch.lastWall = recvMs;
     watch.tops.push({
       ts,
       bid: data.b[0]?.[0] ?? null,

@@ -193,6 +193,96 @@ describe("Streams", () => {
     expect(reopened.closes).toEqual([]);
   });
 
+  it("leaves alone a connection with no market left to watch", async () => {
+    streams.setMarkets([1]);
+    sockets[0]!.open();
+    sockets[1]!.open();
+    streams.setMarkets([]);
+    for (let i = 0; i < 20; i += 1) {
+      await vi.advanceTimersByTimeAsync(1_000);
+      sockets[0]!.message(pong());
+      sockets[1]!.message(pong());
+    }
+    expect(sockets).toHaveLength(2);
+    expect(sockets[0]!.closes).toEqual([]);
+  });
+
+  it("raises no stall for a market whose book channel the server refused", async () => {
+    streams.setMarkets([1, 2]);
+    sockets[0]!.open();
+    sockets[1]!.open();
+    sockets[0]!.message(
+      JSON.stringify({
+        id: 1,
+        data: [{ status: "ok" }, { status: "err", error: "unknown" }],
+      }),
+    );
+    /** 16 s in which only market 1's book and the trades connection's pongs arrive. */
+    const flow = async (books: FakeSocket) => {
+      for (let i = 0; i < 32; i += 1) {
+        await vi.advanceTimersByTimeAsync(500);
+        books.message(book(1, Date.now()));
+        sockets[1]!.message(pong());
+      }
+    };
+    await flow(sockets[0]!);
+    expect(coverage.filter((e) => e.event === "sub_refused")).toEqual([
+      {
+        event: "sub_refused",
+        conn: "book-1",
+        channel: "book::2",
+        error: "unknown",
+      },
+    ]);
+    expect(coverage.filter((e) => e.event === "market_stall")).toEqual([]);
+    expect(streams.health().stalledMarkets).toBe(0);
+    expect(sockets).toHaveLength(2);
+
+    // A reopened connection asks for the channel again, and its silence counts again.
+    for (let i = 0; i < 16; i += 1) {
+      await vi.advanceTimersByTimeAsync(1_000);
+      sockets[1]!.message(pong());
+    }
+    expect(sockets[0]!.closes).toEqual(["every market stalled"]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    const reopened = sockets.at(-1)!;
+    reopened.open();
+    expect(reopened.sent[0]).toMatchObject({
+      req: "sub",
+      chs: ["book::1", "book::2"],
+    });
+    await flow(reopened);
+    expect(coverage.filter((e) => e.event === "market_stall")).toEqual([
+      { event: "market_stall", iid: 2, lastFrameAt: null },
+    ]);
+  });
+
+  it("keeps a connection whose book frames all fail their schema: each is kept raw, none is a stall", async () => {
+    streams.setMarkets([1, 2]);
+    sockets[0]!.open();
+    sockets[1]!.open();
+    const changed = (iid: number) =>
+      JSON.stringify({ ch: `book::${iid}`, time: Date.now(), levels: [] });
+    for (let i = 0; i < 40; i += 1) {
+      await vi.advanceTimersByTimeAsync(500);
+      sockets[0]!.message(changed(1));
+      sockets[0]!.message(changed(2));
+      sockets[1]!.message(pong());
+    }
+    expect(sockets).toHaveLength(2);
+    expect(sockets[0]!.closes).toEqual([]);
+    expect(coverage.map((e) => e.event)).toEqual(["ws_open", "ws_open"]);
+    expect(written.map((w) => w.kind)).toEqual(
+      Array.from({ length: 80 }, () => "rejected"),
+    );
+    expect(streams.stats).toMatchObject({
+      bookFrames: 0,
+      rejected: 80,
+      stalls: 0,
+    });
+    expect(streams.health().stalledMarkets).toBe(0);
+  });
+
   it("prices the audit from the frames it received", () => {
     streams.setMarkets([3]);
     sockets[0]!.open();
