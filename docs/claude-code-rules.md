@@ -114,8 +114,9 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **`Stop-ScheduledTask` returns before the process has ended:** a
   `Start-ScheduledTask` right after it meets the old poller still alive, the
   new one exits 3 at the lock, and nothing records until the check task
-  restarts it (2026-11-11: 4 min 49 s). Restart through `toolsdeploy.ps1`, which
-  waits for the pid, or wait until the task is Ready (the supervisor, 2026-11-11).
+  restarts it (2026-11-11: 4 min 49 s). Restart through `tools\deploy.ps1`,
+  which waits for the pid, or wait until the task is Ready (the supervisor,
+  2026-11-11).
 - **A normal session cannot see or open an S4U task's processes** (an empty
   command line, OpenProcess refused); `Get-Process -Id` still answers. Stop
   such a process through its task, and judge the stop by the task's state and
