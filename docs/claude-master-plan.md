@@ -44,12 +44,13 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-10, through decisions 2026-11-10 (round 2's rules
-and the collector approved).*
+*Brought in step on 2026-11-11, through decisions 2026-11-11 (RESEARCH-KIT
+accepted).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
-- Nothing is built. The perps API is researched in full (R1, external-apis):
+- **The collector records** since 2026-11-10 20:59:54Z (books and trades of
+  every market, the minute reads; Phase 1 below). The perps API is researched in full (R1, external-apis):
   everything v1 needs is public and keyless, with history back to launch.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, evenly spaced** (decisions 2026-11-07, wave 1 closed).
@@ -81,8 +82,8 @@ and the collector approved).*
 | | When | What | Who |
 |---|---|---|---|
 | ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
-| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–3 built and verified, the tasks registered by the owner; parts 4–7 building; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
-| 🔵 | since 2026-11-10 14:42Z, beside Phase 1 | **Phase 2 — research round 2, FIND:** by the approved rule book (IDEAS-REVIEW Appendix A.0): the research kit and the first measurements (A.1), then the top ten studies on data up to 2026-11-07; the batch frozen about 2026-11-20 | research subagents |
+| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–3 built and verified, the tasks registered by the owner; part 4 (the database, the nightly board and competition passes) built and verified, live after the owner's one-time switch to a task without a launcher; parts 5–7 next; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
+| 🔵 | since 2026-11-10 14:42Z, beside Phase 1 | **Phase 2 — research round 2, FIND:** by the approved rule book (IDEAS-REVIEW Appendix A.0): the research kit and the first measurements (A.1) done and accepted (decisions 2026-11-11, RESEARCH-KIT accepted: the matched null only, d-based entries judged at 24 h), then the top ten studies on data up to 2026-11-07; the batch frozen about 2026-11-20 | research subagents |
 | ⏳ | about 2026-11-30 | **The first exam (CONFIRM)** on the weeks after 2026-11-07, with the dated checks D1 (after 11-21) and D2 (after 11-30) | research subagents; the supervisor |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
@@ -301,6 +302,13 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Done lately
 
+- ✅ 11-11 **RESEARCH-KIT — the panel, the kit, the first measurements:**
+  one-minute prices of 91 markets to the cut, equal to R8's capture; one kit
+  every round-2 study imports, proven on R8 (−16.36 by the minute against
+  −16.60; an independent pricer agrees); for a taker the 1- and 6-hour
+  cells of the main markets cannot pay their costs, so the d-based entries
+  are judged at 24 h; the owner ruled all six questions (decisions
+  2026-11-11, RESEARCH-KIT accepted).
 - ✅ 11-09 **R7 — the pages:** eight pages of a watching and analysis tool
   (Watch first, Boards, Trader, Alerts, Paper log, Status, Method, Settings);
   the pages read only the database; ports 3300 and 4300; the owner's twelve
