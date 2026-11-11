@@ -98,13 +98,19 @@ export class Recorder {
 
   /**
    * Repairs the open hour's files an earlier run left, then starts the hourly
-   * roll; that run's closed hours are compressed in the background.
+   * roll; that run's closed hours are compressed in the background. Without
+   * its folder (the recordings' disk missing) the start goes on: lines are
+   * dropped and counted until the disk is back (COLLECTOR-PLAN §1.7).
    */
   async start(): Promise<void> {
-    mkdirSync(this.root, { recursive: true });
     this.openFromMs = hourStart(Date.now());
-    for (const kind of KINDS) {
-      await this.dropCutLine(this.fileOf(kind, this.openFromMs));
+    try {
+      mkdirSync(this.root, { recursive: true });
+      for (const kind of KINDS) {
+        await this.dropCutLine(this.fileOf(kind, this.openFromMs));
+      }
+    } catch (err) {
+      this.log.error({ err }, "recordings folder not ready; lines are dropped");
     }
     this.enqueue(() => this.finishClosedHours()).catch((err: unknown) =>
       this.log.error({ err }, "earlier hours not finished"),

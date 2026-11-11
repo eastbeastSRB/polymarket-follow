@@ -270,6 +270,29 @@ describe("Recorder", () => {
   });
 });
 
+describe("a Recorder without its folder (the recordings' disk missing)", () => {
+  it("starts all the same, and drops and counts every line", async () => {
+    // A folder cannot be made under a file: as a missing disk, every mkdir fails.
+    const blocker = path.join(root, "disk");
+    writeFileSync(blocker, "");
+    const recorder = new Recorder(path.join(blocker, "recordings"), log);
+    await recorder.start();
+    const now = Date.now();
+    recorder.write("book", now, '{"n":1}');
+    recorder.write("rest", now, '{"n":2}');
+    recorder.write("rest", now, '{"n":3}');
+    recorder.coverage({ event: "rest_pause", state: "start" });
+    await recorder.close();
+    expect(recorder.counts.dropped).toBe(3);
+    expect(recorder.counts.lines).toEqual({
+      book: 0,
+      trades: 0,
+      rest: 0,
+      rejected: 0,
+    });
+  });
+});
+
 describe("a pause of the stream files (the disk check)", () => {
   it("drops and counts book and trade lines while paused, keeps the replies, and stores again after", async () => {
     const recorder = new Recorder(root, log);
