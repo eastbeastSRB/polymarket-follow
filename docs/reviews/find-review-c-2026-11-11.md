@@ -1,6 +1,6 @@
 # FIND-REVIEW-C — the Final review of FIND-2 (entry 2: where the money comes from)
 
-FIND-REVIEW-C (Fable 5.2, max), 2026-11-11 22:17Z – 22:56Z (UTC, every stamp
+FIND-REVIEW-C (Fable 5.2, max), 2026-11-11 22:17Z – 22:59Z (UTC, every stamp
 from `date -u`), for polymarket-follow's supervisor: the independent Final
 review of one FIND study of research round 2, `docs/reviews/find-2-2026-11-11.md`
 (entry 2 of IDEAS-REVIEW's Appendix A), which did not pass. Evidence: the
@@ -10,12 +10,12 @@ any row stamped at or after 2026-11-07T00:00:00Z and none did; the collector's
 recordings, database and run folder, R2's light files, the pool file,
 `R3-PAPER\` and `R3-WEEKDAY\` were never opened; no API call was made. I
 changed no file of the study but its report (corrections marked in place,
-`44fc204`) and ran neither its look nor any of its scripts on real data. A
-review decides nothing.
+`44fc204`, `f9b9caf`) and ran neither its look nor any of its scripts on real
+data. A review decides nothing.
 
 **Verdict: FIND-2's result STANDS, with corrections.** "FIND does not pass" is
 reproduced to the last digit by independent code, holds under every other
-reading I tried, and no error was found that could have hidden a pass. Seven
+reading I tried, and no error was found that could have hidden a pass. Eight
 corrections, none touching the line or list (c)'s figures: two change what
 the owner's page says about R8's 50 and about #47 (F1, F2).
 
@@ -263,6 +263,14 @@ day, 2026-11-05, accrued $155,749 of the $694,686.
   "followable" only by the entry's definition.
 - **F7. Section 2's "51 … 270"** are pre-look counts by another filter; the
   look's are 50 and 269 (517 in all). Both sourced; nothing wrong.
+- **F8. "The 99.5th percentile passed a true one half in at most 1.8% of
+  worlds"** (the report's problems table; also the frozen `rules.md` §6 and
+  `code/params.mjs`): `out/calib-methods.txt` holds 2.8% and 2.0% for its two
+  worlds of 50 accounts with sigma 2 and 2.5 (11 and 8 of 400 worlds). The
+  sentence is right for `calib-stress.txt` and for every world of 100
+  accounts, list (c)'s size (at most 1.5%). All around the entry's nominal
+  2.5%: the stricter line was not too loose, and a line can only be blamed
+  for a false pass — there was no pass.
 
 ## 5. The report against its outputs
 
@@ -273,8 +281,10 @@ the owner's page (0.2074; 87 accounts, 2,107 positions, $694,686; 68%, 89%,
 86%, a quarter, about half; 4%, 4%, 5%, 3%; #47's 81%, 10%, 10%, 1%), the
 deciding table's 24 numbers, the components, the beside-prints, the (a) and
 (b) table, the guard's counts and dollars, the counts and checks, section
-4's correlations, the hashes and times. **No number is misquoted;** units and
-"out of what" are right. What needed correcting is the reading of numbers
+4's correlations, the hashes and times; and the calibration's quotes against
+`out/calib-*.txt`. **One number is misquoted** — the calibration's "at most
+1.8%" (F8); every figure of the look is quoted exactly, with the right unit
+and "out of what". What else needed correcting is the reading of numbers
 that are themselves right (F1, F2, F6) and three open ends (F3–F5).
 
 ## 6. The code (the owner's Final-review text)
@@ -351,5 +361,5 @@ phase — nothing to change in round 2, all for a later kit:
   `sed -i` three times where the Edit tool belongs — twice on my own
   `recompute.mjs` (22:36Z), once to stamp this report's end time from the
   clock (22:56Z). No figure rests on any of them.
-- **Commits:** `44fc204` (FIND-2's report, the corrections marked in place),
-  and this report's own.
+- **Commits:** `44fc204` (FIND-2's report, F1–F7 marked in place), `f9b9caf`
+  (F8); this report: `19b5394`, `8776055` and the commit of this version.
