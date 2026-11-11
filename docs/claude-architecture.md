@@ -18,10 +18,11 @@ decisions 2026-11-11 (COLLECTOR-BUILD's technical calls).
 - **Streams** (`ws/`): the top-20 book of every listed market at most once a
   second when it changed (the sampler), and every trade, on two connections
   (`book-1`, `trades-1`, at most 100 channels each). A watchdog reconnects
-  after 15 s without a frame; a market quiet for 15 s is a stall. The
-  market list comes from `/instruments` every 10 minutes and is kept in
-  `var\markets.json`, so a start that cannot read it opens the streams from
-  the last one.
+  after 15 s without a frame; a market quiet for 15 s is a stall (a frame
+  that fails its schema is kept raw in `rejected` and still counts as a
+  frame). The market list comes from `/instruments` every 10 minutes and is
+  kept in `var\markets.json`, so a start that cannot read it opens the
+  streams from the last one.
 - **REST reads** (`jobs/`, one client with admission in `api/rest-client.ts`):
   tickers every minute, exchange every 5 minutes, instruments every 10, the
   price audit (REST best prices against the books) every 10; the
@@ -40,7 +41,8 @@ decisions 2026-11-11 (COLLECTOR-BUILD's technical calls).
   stamps, rows, `consistent`, `complete`, `stale`), `competition_snapshots`,
   `universe` (where each address was seen: source, first and last date — no
   value), `rulebook` (the market list, fees, competition dates and boosts,
-  splits, exchange marks, server closes; stored on change).
+  splits, exchange marks, the server's closes of an open connection; stored
+  on change).
 
 **Health** (`health/`). `var\heartbeat.json` every 10 s (its fields are the
 Zod schema `Heartbeat`: connections, jobs, budget, counts, the price audit,
@@ -48,8 +50,10 @@ memory, the clock watch's last minute, the disks); the clock watch (each
 minute's smallest receive − `ts` on the books; WATCH over 2 s); the disks at
 start and hourly (C: warns under 15 GiB and stops our database writes under
 6; the recordings' disk warns under 50 and stops the book and trade lines
-under 10); the boards' `stale` flag. A crash's last words go to the poller's
-own log, `var\logs\poller-<UTC date>.log` (pino, synchronous, 30 days).
+under 10; with that disk missing the poller still starts and runs, its lines
+dropped and counted); the boards' `stale` flag. A crash's last words go to
+the poller's own log, `var\logs\poller-<UTC date>.log` (pino, synchronous,
+30 days).
 
 **How it runs on this PC.** The run copy `E:\polymarket-follow-run\poller\`
 (written by `tools\deploy.ps1` from a clean, verified tree: the program, its
@@ -63,7 +67,11 @@ outside the session (S4U), run level Limited:
 - **"polymarket-follow poller"**: node.exe itself runs `dist\index.js` in the
   run copy's folder; at start-up after 1 minute; one instance; it grants the
   owner's account read and execute, so a normal session can stop and start
-  it. A second poller is refused by the lock (exit 3).
+  it. A second poller is refused by the lock (exit 3). Its priority is 4,
+  normal, in `register-tasks.ps1` (2026-11-11); the task as registered still
+  runs at Task Scheduler's default 7, below normal, until the owner's re-run
+  and the poller's next start — and at 7 the poller falls seconds behind its
+  streams whenever the PC is busy (decisions 2026-11-11, COLLECTOR-REVIEW).
 - **"polymarket-follow poller check"**: every 5 minutes, `poller-check.ps1`:
   a heartbeat older than 2 minutes → stop the task, wait for the lock's
   node process to end, start it, one line in `check.log`.
@@ -75,10 +83,11 @@ it again: a gap of a few seconds, logged in `deploy.log` and `coverage.jsonl`.
 **Backups** (`tools\backup.cjs`, `tools\restore.cjs`, the run copy's MongoDB
 driver, none of the poller's code): every collection as canonical Extended
 JSON lines, gzip, into `F:\backups\polymarket-follow\db\<UTC date>\` with its
-manifest (14 daily and 8 weekly kept), the newest file alone in
-`E:\backups\polymarket-follow\db\`; on Sundays a restore test into
-`polymarket_follow_restore_<date>`, dropped after; one line a run in
-`backup.log`. The stream files have no second copy.
+manifest (14 daily and 8 weekly kept; a folder that holds anything but a
+dump is never written into or removed, and fails the run), the newest file
+alone in `E:\backups\polymarket-follow\db\`; on Sundays a restore test into
+`polymarket_follow_restore_<date>`, dropped after (also when it fails); one
+line a run in `backup.log`. The stream files have no second copy.
 
 **Commands.** `pnpm verify` (build, lint, test, format check); `node
 dist\status.js` in the run copy's folder (every status row, from files

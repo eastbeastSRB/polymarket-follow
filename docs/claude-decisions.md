@@ -1,5 +1,62 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (COLLECTOR-REVIEW's calls — the Final review of the whole
+collector, COLLECTOR-PLAN §1.8; its findings and questions are in the
+supervisor folder's `workers/COLLECTOR-REVIEW/progress.md`, its fixes the
+commits from `62d4d56` on, each named "COLLECTOR-REVIEW F…"): **THE
+COLLECTOR STANDS AS BUILT; NO FINDING IN WHAT IT RECORDS; THESE CALLS.**
+**(1) The poller task runs at normal priority (4).** At Task Scheduler's
+default, 7, a task runs below normal
+(Microsoft, TaskSettings.Priority, read 2026-11-11), and on 2026-11-11
+between 11:09Z and 14:38Z the books came 7–20 s late in 14 spells while
+builds and research loaded this PC: the trades frames were late in the same
+seconds, one of the poller's own timers fired 2 s late, and by the server's
+`ts` no second was missing. One experiment (17:00:44Z, 16 busy threads for
+8 s) made the same picture: no book line for 7 s, then 561 in one second.
+So the "stall of the connection" COLLECTOR-BUILD recorded was this PC's
+(external-apis, corrected in place). `tools\register-tasks.ps1` carries
+`-Priority 4` for the poller task only; it holds from the owner's re-run and
+the poller's next start. **(2) A connect that fails is "connect failed", not
+a server close:** only the close of an open connection becomes a rule-book
+`connection_drop`, so an outage of our own network no longer writes
+maintenance marks into the rule book; and a book frame that fails its schema
+still counts as a frame of its market — kept raw, it neither stalls the
+market nor restarts the connection (after a change of the frame's shape
+every market looked stalled, and each restart's wait lost the frames it
+skipped). **(3) The poller starts without the recordings' disk**
+(COLLECTOR-PLAN §1.7's row made true at start: lines dropped and counted,
+the database part runs) **and starts its jobs before
+the first market list is read** (a list that cannot be read no longer holds
+back the passes). **(4) The heartbeat's `lastFrameAt` of a connection is its
+last frame of any kind, a pong too** — the watchdog's own measure — so
+`status` shows no WATCH on a quiet trades connection. **(5) The backup**
+writes into and removes only a folder that holds nothing but a dump (the
+recordings' day folders carry the same names; a date folder that is not a
+dump's fails the run), runs its dump through a pipeline (a write error is
+its FAILED line, not an uncaught error), and a restore that fails drops the
+database it began. **(6) Left as built, each a question for the supervisor**
+(the closing message of COLLECTOR-REVIEW): the boards' `consistent` flag
+(false on nearly every board by construction — recommended: drop it once the
+first night's boards confirm); no mark for books that arrive late in a burst
+(recommended: one coverage line a late minute, with the event loop's delay;
+the 15 s watchdog unchanged); `once.js` (a second client beside the live
+poller — recommended: delete it after the first full pass is verified); the
+first-list loop beside the instruments job (the list is read twice at each
+start; the plan fixed "retried with back-off"); `Store.close()` waiting for
+its queue (only a graceful stop waits, 10 s for each write still queued; the
+task's stop is a kill); and COLLECTOR-PLAN §1.7's "a kind failing whole for
+a minute is a PROBLEM in `status`", which nobody built — `status` prints the
+counts (recommended: with v1's Status page, where every row gets a state).
+**(7) Tests added:** the whole night on fake timers through the real client
+(the peak is 49 tokens in a minute and 12 in 5 s, so admission never holds a
+page; each pass's slot and catch-up window pinned, which no test did), the
+backup's Sunday branch, its E: copy and its rotation's guard, the clock
+WATCH's log lines, the stall check's rules, and seven rules that had
+survived a sample of 38 mutants. The built program was also run with no
+network (its `fetch` and `WebSocket` replaced, its clock shifted): the
+passes of a whole night, a missing disk, an unreachable database, frames of
+a changed shape. `pnpm verify` green: 25 files, 171 tests.
+
 2026-11-11 (the kit's additions accepted; the risk unit on a short window —
 the owner, on RESEARCH-KIT's recommendation): **EVERY FIND STUDY IMPORTS THE
 KIT `2d3667b5…09aa`; A RISK UNIT ON A SHORT WINDOW IS PRINTED APART.** The
