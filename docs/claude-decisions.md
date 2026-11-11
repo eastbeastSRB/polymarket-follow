@@ -1,5 +1,26 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (the kit's additions accepted; the risk unit on a short window —
+the owner, on RESEARCH-KIT's recommendation): **EVERY FIND STUDY IMPORTS THE
+KIT `2d3667b5…09aa`; A RISK UNIT ON A SHORT WINDOW IS PRINTED APART.** The
+report's "Addendum 2 (2026-11-11)" (`2207b95`) adds to the kit, each with one
+definition, tests and killed mutants: A.0-4's d (`dAgainstNull`, the caller
+naming whose trades the null leaves out), A.0-5's risk unit (`riskUnit`, 1,
+6, 24 and 72 h over the 30 days before the entry), entry 7's runs and entry
+9's agreement events (moved from scripts, counts unchanged: 3,182 and 188),
+the map frozen in `kit/data/m8-map.tsv` with `mapOpen`, the entry-weighted
+mean with CR1 errors (decisions 2026-11-11, RESEARCH-KIT accepted, (6)), and
+the competition window with its boosted markets; the proof's numbers are
+unchanged byte for byte; the supervisor re-hashed the kit (33 files) and the
+map. **Q7 (the owner: "i agree with your recommendation for Q7"):** a risk
+unit uses the minutes its 30-day window holds, with that share printed; an
+entry with under 7 days of starts in the window, or none, is left out of the
+line read in risk units and printed apart with its bps (67 of 10,612 P1
+entries at 24 h). **Q8 (the supervisor's call):** the competition's boosted
+markets in the kit (ids 97, 22, 26, 89) are compared with the collector's own
+rule-book read of the competition (the nightly 23:15Z pass) before the
+freeze; a difference is a kit change and a new fingerprint. No extra read.
+
 2026-11-11 (COLLECTOR-BUILD's technical calls — the collector's build,
 parts 0–6, inside the plan approved 2026-11-10; the supervisor's answers to
 its questions Q1–Q6): **THE COLLECTOR IS BUILT AS PLANNED, WITH THESE
