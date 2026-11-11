@@ -33,7 +33,7 @@ export function parseRunFor(args: readonly string[]): number | null {
   return seconds;
 }
 
-/** A developer's `.env` in the working directory; the run copy gets its values from run-poller.cmd. */
+/** The `.env` in the working directory: the run copy's is `tools/poller.env`; a variable already set wins. */
 export function loadConfig(): Config {
   if (existsSync(".env")) process.loadEnvFile(".env");
   return parseConfig(process.env);

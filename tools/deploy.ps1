@@ -1,14 +1,18 @@
 <#
   Writes the run copy that the poller task runs (COLLECTOR-PLAN section 1.4,
   deviation D6): only a committed, clean working tree whose `pnpm verify` is
-  green is deployed. The program and its production packages are built into
-  <RunRoot>\poller.next and then replace <RunRoot>\poller. When the task runs
-  this run copy, the poller is stopped through the task for the swap
-  (poller-task.ps1) and the task is started again after; if the poller's node
-  process outlives the stop, the task is started again and nothing is
-  swapped. A scratch run root never touches the task. The task is managed
-  only from a session that may stop and start it: elevated, or one the task
-  grants execute; otherwise nothing is deployed.
+  green is deployed. The program, its production packages, its settings
+  (tools\poller.env, as .env) and the check's scripts are built into
+  <RunRoot>\poller.next; the new copy must load (started without its
+  settings, it exits 2) before it replaces <RunRoot>\poller. When the task
+  runs this run copy, the poller is stopped through the task for the swap
+  (poller-task.ps1) and the task is started again after; if the poller's
+  node process outlives the stop, the task is started again and nothing is
+  swapped. A scratch run root never touches the task, and a poller started
+  from it by hand needs its four settings in its environment (they win over
+  the copy's .env). The task is managed only from a session that may stop
+  and start it: elevated, or one the task grants execute; otherwise nothing
+  is deployed.
   Each deploy appends its reason to <RunRoot>\var\deploy.log: the time, the
   commit, the poller it stopped, the seconds from the stop to the start.
   <RunRoot>\var is otherwise never touched.
@@ -47,7 +51,7 @@ function Write-DeployLog([string]$text) {
 }
 
 $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-$ours = $null -ne $task -and $task.Actions[0].Execute -ieq (Join-Path $target 'run-poller.cmd')
+$ours = $null -ne $task -and "$($task.Actions[0].Arguments)".Trim().Trim('"') -ieq (Join-Path $target 'dist\index.js')
 if ($ours -and -not (Test-CanStartTask $TaskName)) {
   throw "this session could not stop and start the task '$TaskName' for the swap (the task grants this account read only): deploy from an elevated PowerShell; nothing deployed"
 }
@@ -73,15 +77,36 @@ try {
   # pnpm command would then remove the development packages: install again.
   pnpm install --frozen-lockfile --offline
   if ($LASTEXITCODE -ne 0) { throw "pnpm install after the deploy failed ($LASTEXITCODE)" }
-  foreach ($file in 'run-poller.cmd', 'poller-check.ps1', 'poller-task.ps1') {
+  foreach ($file in 'poller-check.ps1', 'poller-task.ps1') {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $next
   }
+  Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'poller.env') -Destination (Join-Path $next '.env')
   Set-Content -LiteralPath (Join-Path $next 'DEPLOYED.txt') -Encoding ASCII -Value @(
     "commit $commit",
     "deployed $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))"
   )
 } finally {
   Pop-Location
+}
+
+# The new copy must load before it replaces the old one: started once with
+# none of its settings (its folder dist holds no .env, and the four are left
+# out of its environment), it stops at its configuration with exit 2.
+$smoke = New-Object System.Diagnostics.ProcessStartInfo
+$smoke.FileName = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+$smoke.Arguments = '"{0}"' -f (Join-Path $next 'dist\index.js')
+$smoke.WorkingDirectory = Join-Path $next 'dist'
+$smoke.UseShellExecute = $false
+$smoke.RedirectStandardError = $true
+foreach ($name in 'RECORDINGS_ROOT', 'STATE_DIR', 'MONGO_URI', 'MONGO_DB') { $smoke.EnvironmentVariables.Remove($name) }
+$started = [System.Diagnostics.Process]::Start($smoke)
+$stderr = $started.StandardError.ReadToEndAsync()
+if (-not $started.WaitForExit(30000)) {
+  $started.Kill()
+  throw "the new copy did not stop within 30 s when started without its settings: nothing deployed; $next is kept"
+}
+if ($started.ExitCode -ne 2) {
+  throw "the new copy does not load (exit $($started.ExitCode)): $($stderr.Result.Trim()) - nothing deployed; $next is kept"
 }
 
 # A folder cannot be renamed while a process works in it (the check task's

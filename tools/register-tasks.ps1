@@ -8,10 +8,16 @@
   Both tasks run as the owner's account "whether the user is logged on or
   not" without a stored password (S4U: local resources only, no window),
   run level Limited:
-  - "polymarket-follow poller": at start-up after 1 minute; no time limit;
-    one instance. Task Scheduler retries a start that fails to launch (every
-    minute, up to 3 times); it does not look at the poller's exit code, so a
-    crash or a hang is restarted by the check task.
+  - "polymarket-follow poller": node.exe itself, by the absolute path found
+    on this account's PATH now (printed, version 24 or later), runs the run
+    copy's dist\index.js in the run copy's folder, whose .env holds its
+    settings (tools\poller.env). No launcher: Task Scheduler's stop ends
+    only the process it started, so node must be that process (a node
+    started by cmd.exe outlived the stop, COLLECTOR-BUILD 2026-11-11). At
+    start-up after 1 minute; no time limit; one instance. Task Scheduler
+    retries a start that fails to launch (every minute, up to 3 times); it
+    does not look at the poller's exit code, so a crash or a hang is
+    restarted by the check task.
   - "polymarket-follow poller check": at start-up after 3 minutes, and every
     5 minutes from now on, for ever; 2 minutes at most a run; one instance.
   The poller task also grants the registering account read and execute
@@ -29,16 +35,15 @@
   it is re-registered: a poller still running ignores the start (one
   instance), one that was ended comes back within seconds; after 15 s its
   heartbeat is read, and a stale one gets one more start. A second poller is
-  refused anyway, by the launcher (its log is held: exit 4) or by the lock
-  (exit 3). The script prints the poller's pid before and after.
+  refused anyway, by the lock (exit 3). The script prints the poller's pid
+  before and after.
 
-  Undo: Unregister-ScheduledTask -TaskName 'polymarket-follow poller*' -Confirm
-  removes both tasks, and the grant with them (it lives on the task). It
-  leaves the run copy and its state (E:\polymarket-follow-run), the
+  Undo: Stop-ScheduledTask -TaskName 'polymarket-follow poller' ends the
+  poller; then Unregister-ScheduledTask -TaskName 'polymarket-follow poller*'
+  -Confirm removes both tasks, and the grant with them (it lives on the
+  task). It leaves the run copy and its state (E:\polymarket-follow-run), the
   recordings (F:\polymarket-follow\recordings), the database
-  polymarket_follow and its backups. Whether it also ends a poller that is
-  running is not documented; one left running is ended by its full path:
-  the node process whose command line holds E:\polymarket-follow-run\poller\dist\index.js.
+  polymarket_follow and its backups.
 #>
 #Requires -RunAsAdministrator
 $ErrorActionPreference = 'Stop'
@@ -46,10 +51,15 @@ $ErrorActionPreference = 'Stop'
 $Poller = 'polymarket-follow poller'
 $run = 'E:\polymarket-follow-run\poller'
 $heartbeat = 'E:\polymarket-follow-run\var\heartbeat.json'
-foreach ($file in 'run-poller.cmd', 'poller-check.ps1', 'dist\index.js') {
+foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'dist\index.js') {
   if (-not (Test-Path -LiteralPath (Join-Path $run $file))) {
     throw "missing $run\$file - run tools\deploy.ps1 first; nothing registered"
   }
+}
+$node = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+$nodeVersion = & $node --version
+if ([int]($nodeVersion -replace '^v(\d+)\..*$', '$1') -lt 24) {
+  throw "node $nodeVersion at $node is older than 24 (the poller's engines); nothing registered"
 }
 
 # The poller's pid and the heartbeat's age in seconds, or $null without one.
@@ -75,7 +85,7 @@ $pollerTrigger.Delay = 'PT1M'
 $pollerSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
   -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
-$pollerAction = New-ScheduledTaskAction -Execute (Join-Path $run 'run-poller.cmd') -WorkingDirectory $run
+$pollerAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'dist\index.js')) -WorkingDirectory $run
 Register-ScheduledTask -TaskName $Poller -Force `
   -Description 'polymarket-follow: the poller (the collector). Watch-only; see the repository''s docs.' `
   -Action $pollerAction -Trigger $pollerTrigger -Principal $principal -Settings $pollerSettings | Out-Null
@@ -118,12 +128,13 @@ foreach ($name in $Poller, 'polymarket-follow poller check') {
     Write-Host ("   trigger {0}: delay '{1}', repeat every '{2}' for '{3}' (empty = for ever)" -f `
       $t.CimClass.CimClassName, $t.Delay, $t.Repetition.Interval, $t.Repetition.Duration)
   }
-  Write-Host "   action: $($task.Actions[0].Execute) $($task.Actions[0].Arguments)"
+  Write-Host "   action: $($task.Actions[0].Execute) $($task.Actions[0].Arguments), in $($task.Actions[0].WorkingDirectory)"
+  if ($name -eq $Poller) { Write-Host "   node: $node, $nodeVersion" }
   Write-Host "   security: $($scheduler.GetFolder('\').GetTask($name).GetSecurityDescriptor(7))"
 }
 $pidBefore = if ($null -eq $before) { 'none' } else { $before.pid }
 if ($null -eq $after -or $after.ageS -gt 20) {
-  Write-Host "`nthe poller: pid $pidBefore before; NO fresh heartbeat now - see $heartbeat and ..\var\logs\stdout.log"
+  Write-Host "`nthe poller: pid $pidBefore before; NO fresh heartbeat now - see $heartbeat, the poller's log in E:\polymarket-follow-run\var\logs and the task's last result (Get-ScheduledTaskInfo -TaskName '$Poller')"
 } elseif ($null -ne $before -and $after.pid -eq $before.pid) {
   Write-Host "`nthe poller kept running through the re-registration: pid $($after.pid), heartbeat $($after.ageS) s old"
 } else {

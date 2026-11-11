@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 import { describe, expect, it } from "vitest";
 import { parseConfig } from "../src/config.js";
 
@@ -28,6 +30,26 @@ describe("parseConfig", () => {
     expect(() =>
       parseConfig({ ...good, RECORDINGS_ROOT: "recordings" }),
     ).toThrow(/absolute path/);
+  });
+
+  it("reads the run copy's settings, tools/poller.env: the four, and nothing else", () => {
+    const text = readFileSync(
+      new URL("../../../tools/poller.env", import.meta.url),
+      "utf8",
+    );
+    const settings = parseEnv(text);
+    expect(Object.keys(settings).sort()).toEqual([
+      "MONGO_DB",
+      "MONGO_URI",
+      "RECORDINGS_ROOT",
+      "STATE_DIR",
+    ]);
+    expect(parseConfig(settings)).toEqual({
+      RECORDINGS_ROOT: "F:\\polymarket-follow\\recordings",
+      STATE_DIR: "E:\\polymarket-follow-run\\var",
+      MONGO_URI: "mongodb://127.0.0.1:27017",
+      MONGO_DB: "polymarket_follow",
+    });
   });
 
   it("refuses any database but ours, and a missing one (Iron Rule 2)", () => {

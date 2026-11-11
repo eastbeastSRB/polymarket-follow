@@ -41,6 +41,21 @@ const startedAt = Date.now();
 const processStats = startProcessStats();
 const { log, close: closeLog } = createLog(config.STATE_DIR);
 
+/**
+ * Set before anything else can fail: the task keeps no output, so a crash's
+ * last words go to this log (written synchronously). Once this process
+ * records, its crash is also a stop in the coverage.
+ */
+let markCrash = (): void => {};
+process.on("uncaughtException", (err) => crash(err));
+process.on("unhandledRejection", (err) => crash(err));
+
+function crash(err: unknown): never {
+  log.fatal({ err }, "poller crashed");
+  markCrash();
+  process.exit(1);
+}
+
 const lastHeartbeatAt = readLastHeartbeat(config.STATE_DIR);
 const lock = takeLock(config.STATE_DIR);
 if (!lock.taken) {
@@ -57,6 +72,12 @@ if (!lock.taken) {
 }
 
 const recorder = new Recorder(config.RECORDINGS_ROOT, log);
+markCrash = () =>
+  recorder.coverage({
+    event: "process_stop",
+    pid: process.pid,
+    reason: "crash",
+  });
 const store = Store.open(config.MONGO_URI, config.MONGO_DB, log);
 const client = new RestClient(COLLECTOR_SHARE, recorder, log);
 /** A server's close of a connection is also a maintenance mark in the rule book (COLLECTOR-PLAN §1.3 item 2). */
@@ -89,19 +110,6 @@ let jobs: { stop: () => void; status: () => Record<string, JobStatus> } = {
   stop: () => {},
   status: () => ({}),
 };
-
-process.on("uncaughtException", (err) => crash(err));
-process.on("unhandledRejection", (err) => crash(err));
-
-function crash(err: unknown): never {
-  log.fatal({ err }, "poller crashed");
-  recorder.coverage({
-    event: "process_stop",
-    pid: process.pid,
-    reason: "crash",
-  });
-  process.exit(1);
-}
 
 const heartbeat = startHeartbeat(
   config.STATE_DIR,
