@@ -74,6 +74,19 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **Tests use synthetic data;** a real reply saved as a fixture is trimmed to
   what the test needs and dated.
 
+## Research studies (round 2, 2026-11-11)
+
+- **A placebo of one random draw can mislead:** draw it at least 1,000 times
+  and read the real statistic against that distribution (FIND-REVIEW-A: a
+  one-draw coin placebo seemed to "repeat" FIND-4's near miss; 1,000 draws
+  showed nothing).
+- **A random-trade yardstick has its own move:** a public print is followed
+  by about +2 bps its own way within 10 s, whether drawn per print or per
+  order — a study of seconds reads the book beside the mark (FIND-REVIEW-B,
+  entry 5).
+- **Recompute a deciding number with independent code** before a result is
+  accepted, unit by unit, not only the mean (the three FIND Final reviews).
+
 ## This machine (Windows, Git Bash)
 
 - **`pnpm verify` = build + lint + test + format:check, in CI's order;**

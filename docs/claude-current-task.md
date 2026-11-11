@@ -2,8 +2,10 @@
 
 polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built, Final-reviewed
-and records around the clock; v1 is not built.** The plan is the plan page
-(docs/claude-master-plan.md); what exists is architecture.
+and records around the clock; research round 2's FIND stage is done and
+nothing passed; v1 is not built; the way forward is the owner's, still
+open.** The plan is the plan page (docs/claude-master-plan.md); what exists is
+architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -14,73 +16,44 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 - **The collector is live** (architecture, "The collector"; decisions
   2026-11-11, COLLECTOR-BUILD's technical calls and COLLECTOR-REVIEW's
-  calls): parts 0–6 of the plan's §1.8 built, verified, Final-reviewed and
-  deployed (run copy `ee47691`, 2026-11-11 20:22Z) — the streams, the
-  minute and ten-minute reads, the passes, the rule book and universe,
-  health and `status`, the backup and restore. `pnpm verify` green: 25
-  files, 171 tests.
-- **The Final review is done** (decisions 2026-11-11, COLLECTOR-REVIEW's
-  calls; the findings, the failure-case table and the notes for the next
-  phases: the supervisor folder's `workers/COLLECTOR-REVIEW/progress.md`):
-  no finding in what is recorded; 14 fixed, in the commits `62d4d56` to
-  `d3fca0d`, and live since the deploy above. **Its six questions wait for
-  the supervisor:** the boards' `consistent` flag, a mark for books that
-  arrive late, `once.js`, the check task's live proof, `Store.close()`, and
-  `status`' PROBLEM row for a schema that fails.
-- **Tonight is the first full pass** of part 4: competitions 23:15Z, boards
-  23:38Z, daily reads 00:20Z; the supervisor checks the 16 boards. No deploy
-  and no heavy work on this PC from 23:10Z to 00:30Z.
-- **The owner's one elevated run of `tools\register-tasks.ps1` is waiting.**
-  It adds "polymarket-follow backup" (daily 05:20Z), re-registers the poller
-  and its check, and sets the poller task to normal priority — which holds
-  only from the poller's next start, so one stop and start of the task (or
-  the next deploy) follows it. Until then the poller runs below normal and
-  falls seconds behind its streams whenever every processor is busy (14
-  spells on 2026-11-11, 11:09–14:38Z; the record stayed whole by the
-  server's `ts`). A backup and a restore test were run by hand once
-  (2026-11-11 16:26Z): both ok.
-- **Research:** waves 1–4 closed (R1–R8; decisions 2026-11-07 to
-  2026-11-09). **R8 FAILS** (decisions 2026-11-09): copying the top 50
-  directional traders about 80 s late lost 16.6 bps an entry; no confirmed
-  skill on the leaderboard; v1 is planned as a watching and analysis tool.
-  Round 2's rule book (decisions 2026-11-10) and its yardstick, the research
-  kit (decisions 2026-11-11, RESEARCH-KIT accepted and its additions), are in
-  place.
+  calls): books and trades of every market, the minute reads, the nightly
+  competition (23:15Z), board (23:38Z) and daily (00:20Z) passes, the rule
+  book and universe, health and `status`, the daily backup (05:20Z) with a
+  Sunday restore test. Three Windows tasks, registered by the owner: the
+  poller (node itself, normal priority), its 5-minute check (proven live
+  2026-11-11 20:38Z), the backup. The first competition pass ran 2026-11-11
+  23:15Z (58 pages, 5,726 rows, complete).
+- **Research:** R1–R8 closed; **R8 FAILS** (decisions 2026-11-09). **Round 2's
+  FIND: nothing passes** (decisions 2026-11-11, round 2's FIND results): the
+  gate (entry 1) shows no week-to-week persistence of traders' follower
+  results, so entry 6 does not run and ranking traders stops for now; entries
+  2, 3, 4, 5, 7, 9 and 10 fail; three fresh Final reviews confirmed every
+  result with their own code. The reports: `docs/reviews/find-*-2026-11-11.md`.
+- **Open, the owner's decision:** the way forward (a small forward paper
+  experiment, a pause with the collector recording, a later batch on new
+  weeks, or stopping), and with it the exams of 2026-11-30 and 2026-12-19
+  (nothing registered to confirm) and the dated checks D1 and D2.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
-  closed); the collector's share is 50 a minute and 30 in 5 s (a night's
-  passes beside the minute reads peak at 49 and 12).
+  closed); the collector's share is 50 a minute and 30 in 5 s.
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
 
 ## Next up — IN ORDER
 
-The road is on the plan page, "The road to v1" (decisions 2026-11-09).
+1. **The owner's decision on the way forward** (the plan page's "The way
+   forward" row). Nothing is started before it.
+2. **Small collector follow-ups, when convenient** (COLLECTOR-REVIEW's
+   questions as ruled in HANDOVER): drop the boards' `consistent` flag once
+   the first board pass is checked; a coverage mark for books that arrive
+   late; delete `once.js`.
+3. **Whatever the owner chooses**, planned first and approved, by the
+   workflow in the supervisor's folder.
 
-1. **The supervisor's rulings on COLLECTOR-REVIEW's questions; the owner's
-   re-registration** (the backup task and the poller's priority), then one
-   restart of the poller task and a read of its priority (base priority 8 is
-   normal).
-2. **Part 8 of the collector** (about 2026-11-20): the weekly fills of the
-   frozen exam lists into the blind store, when the lists are handed over.
-3. **Round 2's FIND studies** (the hypothesis register first, on the kit).
-4. **About 2026-11-30:** the first exam on the weeks after 2026-11-07, with
-   D1 (after 11-21) and D2 (after 11-30).
-5. **Early December:** the v1 plan, the final exams beside it; then the
-   skeleton and v1.
+## Last session (2026-11-11)
 
-## Open questions — the research answers them
-
-- Whether the corrected style classifier (v2) passes its forward blind test
-  (after 2026-11-21).
-- Whether a pattern exists that pays over many trades — the right trader,
-  trades, instruments, moment (research round 2).
-
-
-## How this file works
-
-Status, next step and open questions come first — they are why this file is
-read. It is the ONE file loaded into every session, so its size is a tax on
-all of them: **keep it under ~10 KB, the latest value only, never a series.**
-**REWRITE it; do not append to it.** Durable content belongs in the other
-docs (CLAUDE.md, "Structure & docs"). Old versions:
-`git log --follow -- docs/claude-current-task.md`.
+The collector's parts 4–7 were built, deployed and Final-reviewed (14
+fixes); the poller task now runs node itself at normal priority; the backup
+task was registered. RESEARCH-KIT was accepted with its additions; seven FIND
+studies wrote rules, passed a fresh rules review, looked once each, and
+failed; three fresh Final reviews confirmed them. Default usage from now on;
+Fable only in rare cases (the owner, 2026-11-11).
