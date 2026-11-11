@@ -548,7 +548,7 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
    minutes; entry 10's cell (R8's 50) is mostly at 1 h. At 24 h, 9,235 of
    the entries and 179 of the events are open. As fixed, the rule leaves
    entries 1 and 4 a fifth of their entries, entry 9 nine events and entry 7
-   none. *Recommendation: (a) judge the d-based entries (1, 4, 6, 9, 10; 3
+   almost none (23 runs open even at 1 h). *Recommendation: (a) judge the d-based entries (1, 4, 6, 9, 10; 3
    is at 24 h already) in their primary cells at 24 h, the class horizon and
    entry 9's 6 h printed beside, deciding nothing — the round looks for a
    pattern that pays a taker, and at 1 h and 6 h the main markets cannot;
