@@ -101,13 +101,28 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   and its default `node_modules` links by absolute path, so a renamed folder
   breaks ("Cannot find package"): deploy hoisted, then re-install the
   workspace (COLLECTOR-BUILD, 2026-11-10).
-- **A `cmd.exe` launcher holds its output file open** while it runs; a second
-  launcher must check for it. **pino's asynchronous file destination is not
-  open at once** — log synchronously where a process may exit at start.
-  **Windows' per-process I/O counters leave out sockets** — measure network
-  bytes in the process. **Find a node process by its absolute script path,**
-  never by `dist\index.js` alone (the lab's worker has the same).
+- **pino's asynchronous file destination is not open at once** — log
+  synchronously where a process may exit at start. **Windows' per-process
+  I/O counters leave out sockets** — measure network bytes in the process.
   **Batch files keep CRLF** (`*.cmd text eol=crlf` in `.gitattributes`)
   (all COLLECTOR-BUILD, 2026-11-10).
+- **A scheduled task runs its program itself, with no launcher:** Task
+  Scheduler's stop ends only the process the task started — a node started by
+  `cmd.exe` outlived it (COLLECTOR-BUILD, 2026-11-11). A task's own user gets
+  read only (FR) unless granted execute, which starting and stopping need;
+  Task Scheduler's restart-on-failure ignores the program's exit code.
+- **A normal session cannot see or open an S4U task's processes** (an empty
+  command line, OpenProcess refused); `Get-Process -Id` still answers. Stop
+  such a process through its task, and judge the stop by the task's state and
+  the pid, never by the call's result (`IRegisteredTask::Stop` may return
+  S_FALSE) (COLLECTOR-BUILD, 2026-11-11).
+- **Test task scripts under a task name that does not exist:** the
+  ScheduledTasks module's commands are functions, and once the module loads
+  they hide test fakes. **A leftover test process that inherited a tool's
+  handle keeps a background run from ending:** stop every test process after
+  each case and give each run a time limit (COLLECTOR-BUILD, 2026-11-11).
+- **Node's `.env` loader** (`process.loadEnvFile`, Node 24.13) keeps unquoted
+  backslashes, and a variable already set in the environment wins
+  (COLLECTOR-BUILD, 2026-11-11).
 - **Never dump window titles or the screen in a test:** they leak the owner's
   private window names (R4, 2026-11-06).
