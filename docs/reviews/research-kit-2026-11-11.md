@@ -81,6 +81,10 @@ data after 2026-11-07.
    every "three traders agree" event at six hours. Judge those tests at a
    day's horizon, where almost every market is open, and leave the rule out
    of the two tests that already measure a taker's net result? (Yes.)
+6. [Final review, F3: new.] The rule book's day test counts every day once,
+   so it tests the average day, not the average trade (on R8's trades −8 bps
+   a day against −17 a trade). Keep it so, and print the average trade
+   beside, deciding nothing? (Yes.)
 
 ---
 
@@ -431,7 +435,13 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
    (p 0.008); the larger p decides. The design effect a line faces is 3.57
    for a net result, 1.38 for d with the exact null (day means). A.2 above
    uses these; a study whose entries bunch on a few days should expect its
-   day test to be the weaker of the two.
+   day test to be the weaker of the two. [Final review, F3: −8.18 and −16.60
+   are R8's stored results (by the second), −19.14 is the minute's; by the
+   second the trader means give −19.69 (p 0.007). And equal day weights cost
+   power for the net result (design effect 3.64, against 1.88 for the
+   entry-weighted mean with a day-clustered CR1 error), not for d with the
+   exact null (1.38 against 1.94); for entries 7 and 9 it depends on how far
+   a cluster moves as one (`out/fr-a06.txt`, `out/fr-a2.txt`). Question 6.]
 3. **The yardstick's direction moves d by about 11 bps on R8's cell** —
    own taker side −13.6, matched −5.9 (drawn) and −2.6 (exact): random
    takers' own direction carried about +8 bps over the next hours (R8's own
@@ -498,6 +508,25 @@ measured. Entry 8 is unchanged by it: 120 bps at the measured correlation.]
    (RMS about 380–410 bps against 184), so their smallest visible effects
    about double.* The map is a taker's (the default, the owner 2026-11-10);
    the owner's own setting, once defined, may open more cells.
+6. **What A.0-6's day test measures** [Final review, F3: new; the brief's
+   addendum, point 3]. A plain t-test on day means gives every day one
+   weight, so it tests the mean of day means, not the entry-weighted mean
+   every report quotes. On R8's cell, by the second (`out/fr-a06.txt`,
+   computed without the kit): day means −8.18 (se 11.12, p 0.47), trader
+   means −19.69 (se 7.02, p 0.007); the entry-weighted mean −16.60, with a
+   cluster-robust (CR1) error by day 8.00 (p 0.044) and by trader 6.04 (p
+   0.009). Options: (a) A.0-6 as written — robust to a few busy days or
+   accounts ("one day, one vote", like the votes); for d with the exact null,
+   the statistic most entries test, it had the smaller error on R8's cell
+   (design effect 1.38 against 1.94), for a net result the larger (3.64
+   against 1.88); (b) the entry-weighted mean with CR1 errors by day and by
+   trader, clusters − 1 degrees of freedom, the larger p deciding — what a
+   follower earns, more power for net results and less for d, and one busy
+   day or account can carry the estimate; (c) (a) deciding, (b) printed
+   beside. *Recommendation: (c) — keep A.0-6 as written; print the
+   entry-weighted mean with its two CR1 errors beside every result, deciding
+   nothing; name in each entry which mean its line tests. A.2 is computed as
+   (a) sees it.*
 
 ## 9. For external-apis (new facts, dated and sourced)
 
