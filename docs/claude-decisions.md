@@ -1,5 +1,44 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (RESEARCH-KIT accepted — the owner, on the recommendations of
+RESEARCH-KIT, its Final review and the supervisor): **THE KIT IS ROUND 2'S
+ONE YARDSTICK; THE SIX QUESTIONS OF ITS SECTION 8 ARE RULED AS RECOMMENDED.**
+Report `docs/reviews/research-kit-2026-11-11.md` (8 Final-review corrections
+by a fresh reviewer, marked in place): the one-minute panel of 91 markets to
+2026-11-07T00:00Z (manifest `93c985e5…be15`, on
+`F:\polymarket-follow-research\KIT\`, equal to R8's capture wherever both
+exist); the kit (fingerprint `7b4179e8…c215`, 26 files) returns R8's 1,272
+entries exactly and prices R8's cell by the minute at −16.36 bps against
+−16.60, and an independent pricer agrees with it to rounding; the supervisor
+re-hashed both, scanned every raw reply for the blind store (none at or after
+the cut) and re-ran the proof. The owner ("yes, i agree with all six"):
+**(1)** the exact matched random-trade null (A.0-4) is round 2's only
+yardstick, R8's drawn trades printed beside where they exist; entry 10's
+FIND result, measured against R8's own-direction null, is measured again with
+the exact matched null before entry 10 is registered; **(2)** entry 8 (the
+funding study) leaves this batch (it can see about 120 bps where its rule
+needs under 60) and returns on months of the collector's data; **(3)** the
+funding rule is settled by Polymarket's changelog of 2026-09-01 (a position
+held when the hour closes pays; one closed before it does not — R3's rule by
+nominal hour, as the kit charges it), with no `/v1/info/pnl` read; the quote
+is confirmed word for word on the page before the freeze; **(4)** for the
+register: entry 2's list (c) is built from the pool's own fills before the
+cut, never from a board read after it, with the 139 truncated captures
+handled; the 303-account directional list (`out/directional-at-cut.txt`,
+SHA-256 `ac3570b6…`) is frozen, and since it holds 16 holdout accounts, D1
+is scored before the first exam's capture; (4b) is withdrawn by the Final
+review; **(5)** the d-based entries (1, 4, 6, 9, 10) are judged at 24 hours
+in their primary cells, the class horizon (and entry 9's 6 hours) printed
+beside, deciding nothing — for a taker the 1- and 6-hour cells of the main
+markets cannot pay their costs (the map, A.1-8); the map is left out of
+entries 7 and 8, whose statistic is already a taker's net result; A.2's
+smallest visible effects are recomputed for these horizons before the
+register is drafted; **(6)** A.0-6 stays as written (t-tests on day means
+and on trader means, the larger p deciding); the entry-weighted mean with its
+cluster-robust errors by day and by trader is printed beside every result,
+deciding nothing, and each entry names which mean its line tests. Next: the
+batch freeze about 2026-11-20 (m, the register, the t values recomputed).
+
 2026-11-10 (round 2's rules and the collector approved — the owner, on the
 recommendations of IDEAS-REVIEW, DOCS-SWEEP, COLLECTOR-PLAN and the
 supervisor): **ROUND 2 RUNS BY ONE RULE BOOK WITH TWO EXAMS, AND THE COLLECTOR
