@@ -1,8 +1,9 @@
 # Current task
 
 polymarket-follow: a watch-only tracker of Polymarket Perps traders
-(CLAUDE.md). Founded 2026-11-06; **nothing is built.** The plan is the plan
-page (docs/claude-master-plan.md).
+(CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built and records
+around the clock; v1 is not built.** The plan is the plan page
+(docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -11,53 +12,42 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Where things stand
 
-- **Wave 1 of the research is closed** (decisions 2026-11-07, wave 1 closed):
-  R1 (the API), R4 (notifications), R5 (existing tools), reports in
-  docs/reviews/. The API facts are in external-apis; the coding rules they
-  produced are in code-rules ("The Perps API").
+- **The collector is live** (architecture, "The collector"; decisions
+  2026-11-11, COLLECTOR-BUILD's technical calls): parts 0–6 of the plan's
+  §1.8 built, verified and deployed (run copy `0defe9a`, 2026-11-11
+  16:25Z) — the streams, the minute and ten-minute reads, the passes, the
+  rule book and universe, health and `status`, the backup and restore.
+  `pnpm verify` green: 24 files, 152 tests.
+- **Tonight is the first full pass** of part 4: competitions 23:15Z, boards
+  23:38Z, daily reads 00:20Z; the supervisor checks the 16 boards.
+- **The backup task waits for the owner:** one elevated run of
+  `tools\register-tasks.ps1` adds "polymarket-follow backup" (daily 05:20Z)
+  and re-registers the poller and its check. A backup and a restore test
+  were run by hand once (2026-11-11 16:26Z): both ok.
+- **Research:** waves 1–4 closed (R1–R8; decisions 2026-11-07 to
+  2026-11-09). **R8 FAILS** (decisions 2026-11-09): copying the top 50
+  directional traders about 80 s late lost 16.6 bps an entry; no confirmed
+  skill on the leaderboard; v1 is planned as a watching and analysis tool.
+  Round 2's rule book (decisions 2026-11-10) and its yardstick, the research
+  kit (decisions 2026-11-11, RESEARCH-KIT accepted), are in place.
 - **The operating budget is 250 weighted tokens a minute, all callers
-  together, one request at a time, evenly spaced, never more than 30 tokens in
-  a burst** (same entry). The limit is a token bucket (burst ~90–100 tokens).
-- **Wave 2 is closed.** R3 (decisions 2026-11-07, R3 accepted): the follower
-  is priced at the 1 s mark plus the measured spread and depth; a trader is
-  judged over a fixed horizon against random trades, never by the trader's
-  own exits; a verdict only at E ≥ 400 (20 traders), the pooled board first.
-  R2 (decisions 2026-11-08, R2 and R2-LABELS accepted): the boards' tops are
-  mostly algorithms, market makers and inactive accounts; the style
-  classifier v1 scored blind (trap 2 of 23, both anchors caught) is used for
-  the research; v2 is frozen and the app ships only if it passes the forward
-  blind test after 2026-11-21 (decisions 2026-11-07, the classifier's
-  ruling).
-- **Wave 3 is closed.** R6 (decisions 2026-11-08, R6 accepted): backups on E:
-  and F:, never D: (the owner: D: is unreliable). **R8 FAILS** (decisions 2026-11-09, R8 accepted): copying
-  the top 50 directional traders about 80 s late lost 16.6 bps an entry and
-  was no better than random trades; no confirmed skill on the leaderboard.
-  v1 is planned as a watching and analysis tool; the owner continues with a
-  second research round (decisions 2026-11-09, the owner's direction after
-  R8).
-- **Wave 4 is closed: R7, the pages** (decisions 2026-11-09, R7 accepted):
-  eight pages of a watching and analysis tool; the pages read only the
-  database; ports 3300 and 4300.
-- **The v1 defaults are approved** (decisions 2026-11-07, wave 1 closed): the owner chose them before
-  the plan; the plan subagent starts from them.
-- **The repository holds docs only:** no package.json, no code, no CI.
-  GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
+  together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
+  closed); the collector's share is 50 a minute and 30 in 5 s.
+- GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
 
 ## Next up — IN ORDER
 
-The road is on the plan page, "The road to v1" (decisions 2026-11-09, the
-road to v1): every point with its ID. Nothing starts before the owner's go.
+The road is on the plan page, "The road to v1" (decisions 2026-11-09).
 
-1. **Phase 0 is done** (DOCS-SWEEP, IDEAS-REVIEW, the second copies).
-   Round 2's rule book and the collector are approved (decisions 2026-11-10,
-   round 2's rules and the collector approved); both start on the owner's go.
-2. **This week (the fast track, decisions 2026-11-09):** Phase 1, the
-   collector (C1), after DOCS-SWEEP; Phase 2, round 2's FIND studies in
-   parallel (the hypothesis register first), after IDEAS-REVIEW.
-3. **About 2026-11-30:** the first exam on the weeks after 2026-11-07, with
+1. **A Final review of the whole collector code** by a fresh subagent; then
+   the owner's re-registration for the backup task.
+2. **Part 8 of the collector** (about 2026-11-20): the weekly fills of the
+   frozen exam lists into the blind store, when the lists are handed over.
+3. **Round 2's FIND studies** (the hypothesis register first, on the kit).
+4. **About 2026-11-30:** the first exam on the weeks after 2026-11-07, with
    D1 (after 11-21) and D2 (after 11-30).
-4. **Early December:** the v1 plan (R7's pages, the rulings, V1–V7, what
-   round 2 has earned), the final exams beside it; then the skeleton and v1.
+5. **Early December:** the v1 plan, the final exams beside it; then the
+   skeleton and v1.
 
 ## Open questions — the research answers them
 

@@ -1,5 +1,71 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-11 (COLLECTOR-BUILD's technical calls — the collector's build,
+parts 0–6, inside the plan approved 2026-11-10; the supervisor's answers to
+its questions Q1–Q6): **THE COLLECTOR IS BUILT AS PLANNED, WITH THESE
+CALLS.** Commits `ab8a4ef` … `0defe9a`; plan
+`docs/reviews/collector-plan-2026-11-10.md`. **(1) The plan's deviations
+D1–D14 hold as built** (its §1.6 table): no Turborepo; the schemas in
+`apps/poller`; no node-cron (one admission queue); Node 24's own WebSocket;
+the tasks at start-up outside the session (S4U), no launcher (made true by
+(5)); a run copy refreshed by `tools\deploy.ps1` after `pnpm verify`; raw
+replies kept beside parsed records; the call lines in the REST files;
+streams and replies in Brotli files on F:, MongoDB for what is queried;
+Node's `process.loadEnvFile`; no CI yet; PowerShell and CommonJS tools
+beside TypeScript; 16 boards; no notifier. **(2) Versions,** each the
+newest at least 14 days old on its registry within the plan's majors (and
+pnpm's `minimumReleaseAge` of 14 days for the rest): typescript ~6.0.3
+(typescript-eslint 8.72 supports below 6.1), zod 4.6.7, pino 10.4.0, vitest
+5.0.5, eslint 10.13.0, typescript-eslint 8.72.1, prettier 3.9.10,
+@types/node 24.19.2, **mongodb 7.7.0** (7.8.0 was 11 days old; compatible
+with MongoDB 8.x and Node 24). **(3) Q1 — the last market list is kept**
+in `var\markets.json` and the streams open from it when the first read
+fails or is paused, so a start inside the lab's nightly window records
+books at once; this reverses one item of the plan's cut ("the stored
+market list at start"). **(4) Q4 — the grant:** Task Scheduler gives a
+task's own user read only, so `register-tasks.ps1` grants the registering
+account read and execute on the poller task; Task Scheduler's restart on
+failure looks at no exit code (it retries a start that fails to launch), so
+the check task restarts a crash as well as a hang. **(5) Q5 and Q6 — the
+poller is stopped through Task Scheduler, and its task runs node.exe
+itself:** a normal session can neither read an S4U task's command line nor
+open its process, so `deploy.ps1` and `poller-check.ps1` stop the task
+(IRegisteredTask::Stop, allowed by read and execute) and wait for the
+lock's pid (`tools\poller-task.ps1`). The deploy of 11:27Z showed that the
+stop ends only the process the task started (cmd.exe ended, node outlived
+it), so `run-poller.cmd` was removed: the action is node.exe by its
+absolute path, resolved at registration, and the four settings moved into
+**`tools\poller.env`, committed because it holds no secret** (folders and a
+database on this PC), copied as the run copy's `.env`. A deploy first starts
+the new copy without settings and requires exit 2; the crash handlers are
+set before the lock, so a crash at start leaves its last words in the
+poller's own log. The owner switched once, elevated (15:46–15:48Z, a 60-s
+gap); every deploy since ended node within 1.1 s, gaps 3–4 s. **(6) The
+passes and the client:** the board pass paces 1.35 s a token (at most 45
+tokens in any minute), reads pages one at a time with 3 tries spaced by the
+client's back-off, sends no page after 23:59:30Z, and after a restart inside
+its window reads only what the date does not hold; a pass whose whole window
+fell in a gap is a `pass_missed` line; the client drops a request whose turn
+in the queue came after its deadline. `consistent` (page stamps within 10 s)
+is mostly false: pods serve snapshots of different ages, so no pacing makes
+a board one snapshot; the flag and the stamps record it. **(7) The rule
+book** keeps the market list (whole, on change), fees, competition dates
+and boosts, splits, the exchange marks and each server close of a
+connection; a settlement's price and debit are left out (values, A.0-9).
+**(8) Part 5** as the plan says: C: warns under 15 GiB and stops our
+database writes under 6, the recordings' disk warns under 50 and stops the
+book and trade lines under 10 (the streams kept for the watchdog); the
+clock watch from the books; the boards' `stale` flag (a page over 5 minutes
+old at read, 10 for `all`, or the top 100 the day before's); `status` reads
+files only, never a recording. **(9) Part 6** as (7) of decisions 2026-11-10
+amends the plan, and Q2 (the backup task joins `register-tasks.ps1`; the
+owner re-runs it once): the dumps are canonical Extended JSON lines in one
+gzip file with an end line, written by the run copy's driver (no Database
+Tools); F: keeps 14 daily and 8 weekly (weeks Monday to Sunday), E: only the
+newest file, replaced when E: has three times its size plus 5 GiB free; no
+stream files on E:; Windows keeps the backup task's trigger in UTC (05:20Z
+all year: 06:20 local now, 07:20 in summer time).
+
 2026-11-11 (RESEARCH-KIT accepted — the owner, on the recommendations of
 RESEARCH-KIT, its Final review and the supervisor): **THE KIT IS ROUND 2'S
 ONE YARDSTICK; THE SIX QUESTIONS OF ITS SECTION 8 ARE RULED AS RECOMMENDED.**

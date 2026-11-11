@@ -108,6 +108,10 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   6–281 s (median 143 s). Several pods serve different snapshots: `timestamp`
   can go back between reads (−67 s seen), and the address row can flap between
   values 6–59 s old. 169 reads 22:21Z–00:07Z, 2026-11-06/07.
+- **A board read as ten pages is not one snapshot:** day:pnl read page by page
+  6.75 s apart had its pages' stamps spread over 76 s and out of read order
+  (ages at read 0.3–51 s), so no pacing makes it one; leaderboard replies came
+  uncached (no CloudFront `age`). COLLECTOR-BUILD, 2026-11-10 21:54Z.
 
 ### Fills — `GET /v1/info/fills?address=`
 
@@ -224,7 +228,10 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   server-cached 1–2 s (`cache-control: public, max-age=1..2`); a past instant
   cannot be asked. Served through CloudFront: on 2026-11-09 420 of 1,366 reads
   were cache hits (bbo and book `age` ≤ 1 s), and `/instruments` once came with
-  `age: 393` — a reply can be minutes old (R3-WEEKDAY, 14:10:59Z).
+  `age: 393` — a reply can be minutes old (R3-WEEKDAY, 14:10:59Z). Again on
+  2026-11-10: `/fees` 513 s and `/instruments` 388 s old (COLLECTOR-BUILD).
+- **`/instruments` rows carry three keys outside the spec:** `fee_override`,
+  `funding_multiplier`, `logo` (COLLECTOR-BUILD, 2026-11-10 15:16Z; kept raw).
 - **Thin names' books can be stale or holey** (2026-11-09, R3-WEEKDAY):
   NCLD-USD's book stood 540 bps wide from 14:30Z to ~14:40Z; two of 22 PRL-USD
   book sides had a hole 1,454–2,491 bps beyond the half-spread for $1,000.
@@ -298,7 +305,10 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   `/competition/leaderboard`, `/competition/account?competition_id=&address=`
   (weight 1; any address; `qualified`, `row_state` live | disqualified …,
   volume, boosted_volume, pnl split, `locked_positions`): one live competition
-  (2026-11-02 14:30Z to 2026-11-16 14:30Z, 77 ranked). `/v1/info/builder?address=`
+  (2026-11-02 14:30Z to 2026-11-16 14:30Z, 77 ranked). Its table with
+  `include_unqualified=true` read whole: `total` 5,232, 5,223 rows in 53 pages
+  — it grows while it is paged (COLLECTOR-BUILD, 2026-11-10 22:08Z).
+  `/v1/info/builder?address=`
   is about builder accounts; no fill carried a builder fee (4,063 fills).
 
 ### WebSocket (public channels, 22:30–22:40Z)
@@ -319,5 +329,11 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   `book::<iid>`), the last frame came at 15:13:59Z and nothing followed for
   7 m 56 s while HTTP kept answering; a new connection worked. Detect "no frame
   for 15 s" and reconnect.
+- **A connection can stall and then deliver its backlog** (COLLECTOR-BUILD,
+  2026-11-11): the book connection (90 `book::` channels) gave 0 book lines a
+  second by receive time 11:28:38–11:28:58Z but one blip of 43, then 401, 78,
+  499 and 322 lines a second (55–75 before) while the trades connection kept
+  receiving; each silence stayed under 15 s. The books' smallest receive −
+  `ts` in a minute was 112 and 113 ms (2026-11-11 16:10Z and 16:13Z).
 - Every fills-channel, orders, balances and backstop channel is private
   (authentication needed) and was not touched.
