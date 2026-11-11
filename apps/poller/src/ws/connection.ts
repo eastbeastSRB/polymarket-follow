@@ -153,7 +153,7 @@ export class Connection {
       if (current()) this.onMessage(event.data);
     });
     socket.addEventListener("close", (event) => {
-      if (current()) this.onServerClose(event.code, event.reason);
+      if (current()) this.onClose(event.code, event.reason);
     });
     socket.addEventListener("error", () => {
       if (current()) this.log.warn({ conn: this.name }, "websocket error");
@@ -255,16 +255,18 @@ export class Connection {
     this.hooks.onReject(this.name, text, "unknown message", recvMs);
   }
 
-  private onServerClose(code: number, reason: string): void {
+  /** A close before the open is a connect that failed (ours or the network's), not the server's close of a connection. */
+  private onClose(code: number, reason: string): void {
+    const cause = this.openedAt === null ? "connect failed" : "server close";
     this.recorder.coverage({
       event: "ws_close",
       conn: this.name,
       code,
       reason,
-      cause: "server close",
+      cause,
       lastFrameAt: this.lastDataWall,
     });
-    this.reconnectLater(`server close ${code}`);
+    this.reconnectLater(`${cause} ${code}`);
   }
 
   private check(): void {

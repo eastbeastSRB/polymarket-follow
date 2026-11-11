@@ -222,6 +222,26 @@ describe("Connection", () => {
     expect(sockets).toHaveLength(2);
   });
 
+  it("logs a close before the open as a failed connect, never as the server's close", async () => {
+    connection(["book::1"]);
+    last().serverClose(1006);
+    expect(coverage).toEqual([
+      {
+        event: "ws_close",
+        conn: "book-1",
+        code: 1006,
+        reason: "bye",
+        cause: "connect failed",
+        lastFrameAt: null,
+      },
+    ]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(sockets).toHaveLength(2);
+    last().open();
+    last().serverClose(1006);
+    expect(coverage.at(-1)).toMatchObject({ cause: "server close" });
+  });
+
   it("gives a connect 90 s, then backs off 1, 2, 5, 10, 30 and 60 s", async () => {
     connection(["book::1"]);
     const starts: number[] = [];

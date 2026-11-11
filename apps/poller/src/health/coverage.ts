@@ -13,7 +13,7 @@ export type CoverageEvent =
       conn: string;
       code: number;
       reason: string;
-      cause: "server close" | "watchdog";
+      cause: "server close" | "connect failed" | "watchdog";
       lastFrameAt: number | null;
     }
   | {
