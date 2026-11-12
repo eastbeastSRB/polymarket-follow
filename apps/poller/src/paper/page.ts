@@ -44,6 +44,8 @@ export type PageTrader = {
 };
 
 export type PageData = {
+  /** The rehearsal's banner (part 4): a page on weeks already studied. */
+  rehearsal?: string;
   writtenAt: number;
   dataThrough: number;
   frozen: { sha256: string; at: string } | null;
@@ -116,6 +118,7 @@ export function renderPage(p: PageData): string {
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Paper experiment</title><style>${STYLE}</style></head><body>
 <h1>Paper experiment</h1>
+${p.rehearsal === undefined ? "" : `<div class="box"><strong>${esc(p.rehearsal)}</strong></div>`}
 <p>This page records paper positions: each one is opened, on paper, about 80 seconds after a trader of a fixed pool opened a new position, from 7 November 2026 on, and it leaves when the trader leaves. Nothing here is a trade or a recommendation, and nothing on this page can be changed from it. The rules are judged only at three looks (19 December 2026, 6 February 2027, 8 May 2027); keep and drop are verdicts on this test, never instructions to trade.</p>
 <p class="muted">Data through ${day(p.dataThrough)} · written ${iso(p.writtenAt)}${p.frozen === null ? "" : ` · rules frozen ${esc(p.frozen.at)}, SHA-256 ${esc(p.frozen.sha256)}`}</p>
 ${p.frozen === null ? "" : `<p class="muted">The rules were frozen on ${esc(p.frozen.at)} before any result after 7 November existed; whatever this page shows, they do not change.</p>`}

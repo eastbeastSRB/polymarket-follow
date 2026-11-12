@@ -731,3 +731,24 @@ describe("a Monday's facts come from the fills before it (R5, code-rules: an ins
     expect(primaryMarket(i, 6, CUT)).toBe(false);
   });
 });
+
+describe("the rehearsal on the old weeks (part 4, F6)", () => {
+  it("scores weeks before the cut only", () => {
+    const i = {
+      kit,
+      end: CUT + 1,
+      start: CUT - 28 * DAY_MS,
+      pool: [],
+      favourites: [],
+      account: () => {
+        throw new Error("no account");
+      },
+      market: () => null,
+      book: EMPTY_RULE_BOOK,
+      cache: new Map(),
+      kitMarkets,
+    } as unknown as ScoreInput;
+    expect(() => score(i)).toThrow(/only weeks before the cut/);
+    expect(score({ ...i, end: CUT }).copies).toEqual([]);
+  });
+});

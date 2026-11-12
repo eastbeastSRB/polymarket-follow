@@ -102,6 +102,11 @@ export type ScoreInput = {
   cache: MondayCache;
   /** The kit's rule book's markets with their category (R6 (2), R9). */
   kitMarkets: ReadonlyMap<number, string>;
+  /**
+   * Where arm A's entries start: the cut. Only the rehearsal on the old weeks
+   * (part 4) sets an earlier one, and then END may not pass the cut (F6).
+   */
+  start?: number;
 };
 
 /** R10: every leg drawn from the entry's hour ends by END (the kit's `voted` with END in place of the cut). */
@@ -110,9 +115,9 @@ export const votedBy = (kit: Research, t: number, end: number): boolean =>
   end;
 
 /** Mondays from the cut's to the last one before `end`. */
-export function mondaysTo(end: number): number[] {
+export function mondaysTo(end: number, start = CUT): number[] {
   const out: number[] = [];
-  for (let M = mondayOf(CUT); M < end; M += WEEK_MS) out.push(M);
+  for (let M = mondayOf(start); M < end; M += WEEK_MS) out.push(M);
   return out;
 }
 
@@ -181,7 +186,11 @@ export function weekList(input: ScoreInput, M: number): Set<string> {
 
 export function score(input: ScoreInput): Scored {
   const { kit, end } = input;
-  const mondays = mondaysTo(end);
+  const start = input.start ?? CUT;
+  if (start !== CUT && end > CUT) {
+    throw new Error("a rehearsal scores only weeks before the cut");
+  }
+  const mondays = mondaysTo(end, start);
   const notional = new Map(input.pool.map((p) => [p.addr, p.notionalBoard]));
   const favourites = new Map(input.favourites.map((f) => [f.addr, f.from]));
   const accounts = [
@@ -235,7 +244,7 @@ export function score(input: ScoreInput): Scored {
     if (!anyLine) continue;
     const { events, groups, liqKeys, chain } = history(kit, account);
     for (const g of groups) {
-      if (g.type === "ADD" || g.t < CUT || g.t >= end) continue;
+      if (g.type === "ADD" || g.t < start || g.t >= end) continue;
       const M = mondayOf(g.t);
       const fact = facts.get(M) ?? null;
       const l = fact === null ? null : linesAt(fact);
