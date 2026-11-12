@@ -1,5 +1,29 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the exploring check's Q1, before any outcome is seen — the
+supervisor's correction of its own wording, within the owner's "Yes, run the
+check"): **A PARTIAL LIQUIDATION CLOSES ITS SHARE OF THE COPY, NOT THE WHOLE
+COPY.** Point (2) of "an exploring check: FIND-6's copies with the trader's
+exits copied" said "all of it on a close, flip or liquidation"; the rule it
+cites, R8's "mirrored_money", says "all of it on a close or flip", and the
+kit's `buildEntries` gives a partial liquidation its share. The words "or
+liquidation" were the supervisor's slip; FIND-6-EXITS found the conflict
+before pricing anything (no copied-exit number was computed: its plumbing
+check only, 2026-11-12 08:32Z, held 24 h equal to FIND-6's `netBps` for 1,918
+of 1,918). Why the share: it is R8's rule, so the result compares with R8's
+−20.23 bps; a follower at the trader's leverage is cut by the same share.
+Beside it, deciding nothing, one line per group where every liquidation fill
+closes the whole copy (115 partial liquidations fall in 79 copies of 39
+accounts; 15 whole ones close the copy under either reading). Also accepted
+as FIND-6-EXITS fixed them before any outcome: the hold is each copy's
+share-weighted mean hold (median and quartiles; the time to the last leg
+beside); a gap copy is a chain break after the entry's first event up to its
+last exit used (to the end of the data while the trader is open); the
+entry-weighted top minus rest is a top indicator's coefficient clustered by
+trader (CR1, G − 1 degrees of freedom); a leg marked at the cut ends at
+CUT − 1 ms, the panel's last minute (2026-11-06T23:59Z), funding of hours in
+(tIn, CUT − 1 ms] only.
+
 2026-11-12 (an exploring check: FIND-6's copies with the trader's exits
 copied — the owner, "Yes, run the check", 2026-11-12 ~08:05Z, on the
 supervisor's recommendation after FIND-REVIEW-6's F6): **FIND-6-EXITS
