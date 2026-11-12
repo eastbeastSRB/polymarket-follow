@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the favourites list fixed before the freeze — the owner, "keep 20
+and mark the 8", on the supervisor's recommendation): **ARM F IS THE 20
+ACCOUNTS OF RULE 7'S TOP FIFTH AT THE CUT; THE 8 OF THEM WITH A PROFIT
+FACTOR OF AT LEAST 1 IN THE FORMATION WEEKS ARE PRE-REGISTERED AS A SUBSET
+PRINTED AT EACH LOOK, DECIDING NOTHING.** PAPER-FAV (`workers/PAPER-FAV/` in
+the supervisor folder; FIND-6's frozen code, `FROZEN.sha256` 17 of 17 equal,
+the kit `2d3667b5…09aa`; no outcome computed, nothing at or after the cut):
+100 CONFIRM candidates on [2026-10-10, 2026-11-07) (5 holdout), 41 eligible
+for rule 7, all scored; rule 7's own top fifth (k = 20) holds no holdout
+account, so the 20 are exactly it — `favourites-20.txt` SHA-256
+`0f6991d1f70c2ef9fcdb3caf9114a6303e951c8e0cf3351024b396ca5005231d`. Only 8
+of the 41 eligible had a profit factor of at least 1 after base-tier fees in
+those four weeks (rule 7 ranks and has no floor; rank 1's PF is 70.3); all 8
+are in the 20, and 12 of the 20 lost money then. **The subset, fixed now**
+(sorted; SHA-256 `7ca52f0971aa7fc5b813b9619adc5fed4ada9b9617316b9863e7bbc1d247a8ff`):
+0x42aed3bb770d7f028d1a649dc9689f5e1a638a58,
+0x5b61eb45bd64d4904e76f69a9f165d7415606926,
+0x5fb1929cc30f66758a2668cdab2b5b2219f85a62,
+0x7b3675c9e62467a8795cc05f52d246381f4417a2,
+0x85792dbba27bdbdbd89b6d06209abc9e9d5ea60d,
+0x9f801ef76b7976195a280c95ae84d9aed93d778f,
+0xa6a279ae513d06acd243eba5406e3cebed342fb8,
+0xfbdbb8db386baefdc4d9a1af75b0d0b1bcc4dece. At each look the supervisor
+prints FAV's figures for these 8 and for the other 12 from the day's
+position log, with MAIN's statistic, labelled exploring; no code change
+and no verdict word. The 20 are written to `favourites.txt` at the freeze;
+F0 is the freeze's instant (R2).
+
 2026-11-12 (the favourites line's accounts — the owner, "please find 20
 accounts which most fit our requirements we will work test on them. so i
 don't need to send you anything", on the supervisor's proposal): **ARM F
