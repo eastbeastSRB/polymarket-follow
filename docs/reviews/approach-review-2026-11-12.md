@@ -1,6 +1,6 @@
 # APPROACH-REVIEW — the forward paper experiment: its best honest design
 
-APPROACH-REVIEW (Opus 5.5, max), 2026-11-12 09:24Z – 10:07Z (UTC; every stamp
+APPROACH-REVIEW (Opus 5.5, max), 2026-11-12 09:24Z – 10:07Z, Final review 10:14Z – 10:35Z (UTC; every stamp
 from `date -u`), for polymarket-follow's supervisor. The frame is decisions
 2026-11-12, "the way forward". Evidence: the supervisor folder
 `workers/APPROACH-REVIEW/` (`progress.md`, `scripts/`, `out/`; paths below are
@@ -566,8 +566,8 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
   - **DROP** at a look if mean + z·SE < δ, with δ = +10 bps a copy proposed
     as the smallest edge worth having (your number). A drop may come at any
     look; that cannot raise the false-pass rate.
-  - **TOO FEW TO TELL** otherwise; at L3 it reads "no edge as large as ~16 bps
-    a copy was seen".
+  - **TOO FEW TO TELL** otherwise; at L3 it reads "no edge as large as ~21 bps
+    a copy was seen". [Final review, APPROACH-REVIEW, F1: was "~16 bps".]
 - **What the rule does under the likely truth:**
   - if the slow traders carry no skill, the main line's mean sits near −11 (a
     round trip). The drop line is then reached with probability ~0.36 at L2
@@ -590,7 +590,7 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
 |---|---|---|
 | KEEP | on weeks nobody had seen, copying slow directional traders by a fixed rule earned more than a taker's costs, and not through the market's direction alone | keep the log running as a second, independent confirmation; measure the owner's own costs and the real alert delay (v1); the account-level check (H12: drawdowns, streaks, sizing). Still research, never advice |
 | DROP | it does not earn δ at a taker's cost; if the gross's upper bound is also below 2.5 bps, no venue's costs rescue it | close copy-style use; v1 stays a watching and analysis tool; research turns to B5's market uses or B6, by the owner's word |
-| TOO FEW TO TELL (at L3) | no edge as large as ~16 bps a copy; any edge left is smaller than one round trip | treat copying as not shown to pay; continue the log only as the app's long-run scoreboard |
+| TOO FEW TO TELL (at L3) | no edge as large as ~21 bps a copy; any edge left is smaller than about two round trips [Final review, APPROACH-REVIEW, F1: was "~16 bps … smaller than one round trip"] | treat copying as not shown to pay; continue the log only as the app's long-run scoreboard |
 | The broad line negative while the main line is not | the slow filter may matter, or the main line is still noisy | read the main line's own looks; nothing is concluded from the difference alone |
 
 ### C7. What the app should show (data, never advice; R7's rules)
@@ -836,3 +836,157 @@ its abstract only):
 **Our own reports used:** R3, R8, IDEAS-REVIEW, RESEARCH-KIT, FIND-1 to
 FIND-10, FIND-REVIEW-A/B/C, FIND-6, FIND-REVIEW-6, FIND-6-EXITS, R2, R4, R5, R7
 (`docs/reviews/`); polymarket-lab's `docs/claude-external-apis.md` (read only).
+
+## Final review (2026-11-12, 10:14Z – 10:35Z, by APPROACH-REVIEW itself, at the supervisor's request)
+
+**Scope.** My scripts, every number's query, unit and grouping, and this
+report, in the owner's words: dead or unused code, needless fallbacks, wrong
+names, needless comments, simplicity. Also the supervisor's four points: X5
+re-derived by another method, every outside source re-read, page one read as
+the owner, and the "rest of the pool" line. The supervisor had already
+re-priced X3 with its own code: all 1,366 copies equal to 5e-13 bps, the group
+means equal. The findings, by severity, are in `progress.md` (10:14Z and
+after). Each correction is marked in place as "Final review, APPROACH-REVIEW,
+F<n>" and committed by name; nothing is pushed.
+
+| F | Severity | Finding | Commit |
+|---|---|---|---|
+| F1 | **high** | The main line's rate and smallest visible edges came from a count without its own minimum of 10 closed cycles: ~316 entries a week from 183 traders instead of ~131 from 61 (FR1). Page one, B1, B4, C1, C5, C6 and C9 overstated what it can see. Corrected: about 54 / 33 / 21 bps at the three looks, not 41 / 25 / 16. New question 7 | `dcf6d21`, `07c8188`, and the commit adding this section |
+| F2 | medium | The rule's error (the larger one-way CR1) differed from the projections' (two-way). Now one statistic: the two-way error, never below either one-way | `dcf6d21`, `382d366` |
+| F3 | medium | Prints added to X2 and X3 outside the plan written before them: the period split (the source of page one's sign sentence), "map open", "voted at 24 h", "prior hold ≥ 6 h". Named; no rule rests on them | `382d366` |
+| F4 | medium | The rest of the pool's +31.7 ± 25.6 bps was not marked plainly. It is now, where it appears (the X3 row, "What could fool us" 11, the log): within chance, on seen weeks, from accounts chosen partly on profit | `382d366` |
+| F5 | medium | Page one did not say that the 6-hour rule is a filter on how a trader trades, not on past profit, nor why, and showed your favourites only as a beside line. Rewritten; checked sentence by sentence for anything that reads as advice | `07c8188` |
+| F6 | low | Medians written as ranges; "cover the costs in 80 of 84" (it is: a break-even share ≤ 55%); "the whole loss" (the net loss); a stop's gain tied to one fall that X4 never named; the broad row's population | `2591be8`, `382d366`, `07c8188` |
+| F7 | low | Sources, each re-read on its own page (below): w8653's authors; ESMA's item; eToro's tier; ZuluTrade's wording; the 176 subjects; the abstract-only reads marked; Yieldfund removed; "paid … not for followers' results" contradicted by Binance's profit share | `2591be8` |
+| F8 | low | Code: listed below; the run scripts are left as they ran, since they are the runs' evidence | — |
+
+### X5 re-derived by a second method (the supervisor's point 1)
+
+- **FR1 (counts only) found F1.** The main line's own rule leaves 1,424
+  entries since the launch week (146.6 a week, 106 traders) and 525 in the
+  last four weeks (131.3 a week, 61 traders). From 2026-09-03 it gives
+  exactly X3's 1,366.
+- **FR2, a pigeonhole bootstrap** (traders and days drawn independently),
+  disagreed with X5 by about 1.5 times. Its own check at the sample's size
+  shows why: 17.4 bps against the one-way CR1 errors 9.1 and 11.3. Crossing
+  two independent draws makes each copy's weight vary about three times as
+  much (2 × 2 − 1), so copy-level noise is counted about three times
+  (√3 × 9.3 ≈ 16). This bootstrap is known to be conservative (Owen 2007);
+  here it is an upper bound.
+- **FR3, day blocks plus a trader excess,** counts that noise once. An L-day
+  experiment draws L days, each with all its copies. The trader excess (trader
+  blocks minus iid copies, at the sample's size) is held constant, since the
+  same traders followed longer stay as alike as they were. At the sample's own
+  size FR3 reproduces the analytic errors: 11.7 against 11.3, 16.0 against
+  16.3, 5.0 against 4.9, 13.2 against 14.0.
+
+| Smallest edge seen 4 times in 5 (bps a copy) | L1 2026-12-19 | L2 2027-02-06 | L3 2027-05-08 |
+|---|--:|--:|--:|
+| Main line, exits copied — FR3 / X5's model, both at 131 a week | 54.4 / 54.4 | 33.2 / 33.1 | 21.4 / 21.6 |
+| Main line, held 24 h | 71.4 / 73.1 | 48.9 / 50.4 | 37.3 / 38.9 |
+| Broad line, exits copied, at 935 a week | 11.9 / 11.1 | 8.6 / 7.8 | 7.0 / 6.1 |
+| Broad line, held 24 h | 29.5 / 30.6 | 19.6 / 20.2 | 13.8 / 14.8 |
+| (FR2's pigeonhole upper bound: main, exits copied) | 79.5 | 54.7 | 41.1 |
+
+**They agree:** the main line within 1–4%, the broad line within about 15%,
+FR3 being the wider. So "about 11 bps for every directional trader by
+December" stands (11–12), and the main line's figures are corrected as F1
+says. Both methods scale X3's noise to the main line's rate and assume the
+weeks ahead are as noisy as the weeks behind.
+
+### The sources (the supervisor's point 2)
+
+Every outside source was re-read on its own page for its title, authors, year
+and each number or quotation; the evidence list now gives each one's full
+record and its kind.
+
+- **Read in full text:** ESMA's briefing and Apesteguia et al.'s working paper.
+- **Read as pages:** ESMA's two press releases, eToro and Binance.
+- **Read as abstracts only:** Myers et al. (w8653), Verbeek & Wang, Cohen et
+  al., Barber et al., Barras et al., Dorfleitner et al. and Zhai.
+- **Corrected:** w8653's authors are Myers, Poterba & Shackelford (December
+  2001); the four-author list belongs to the 2004 journal version, which was
+  not read.
+- **Removed:** the Yieldfund figure. The study cannot be found, and two
+  secondary pages disagree on what "43.6%" counts.
+- **Not read in the original:** Pan et al. 2012 and Liu et al. 2014, known
+  only through Apesteguia et al.'s review.
+
+### Page one (point 3) and the rest of the pool (point 4)
+
+- **Page one** now says what the filter is (holding time, from the trader's
+  own fills) and what it is not (past profit). It says why: every filter on
+  past results that we tested failed, while holding time is known before the
+  trade and decides whether costs can be covered at all. Your favourites run
+  beside it, frozen at the start and judged as a set. No sentence on the page
+  tells anyone what to trade; keep and drop are named as verdicts on the
+  test.
+- **The rest of the pool** (X3: 33 traders, +31.7 ± 25.6 bps) is marked, where
+  it appears, as within chance (about 1.2 errors by trader, 1.0 by day), on
+  weeks already seen, and from accounts that entered the pool partly through
+  profit boards. It is evidence of nothing.
+
+### The code (F8)
+
+The run scripts are left exactly as they ran: their hashes are in the
+evidence list and in `progress.md`, and every output reproduces from them. The
+findings apply to the next phase's code:
+
+- The nearest-horizon mapping (1, 6, 24, 72 h on the log scale) is written
+  four times (`x1`'s `H4`, `x2` inline, `x3` inline, `x5`'s `H4`). It belongs
+  once in the kit, beside `horizonClass`.
+- `common.mjs`'s `quantile` repeats lib-exits' own.
+- `startRun` returns `out`, which no caller uses (x2 and x3 build their own
+  paths); `readJsonlGz`'s `log?.()` guards a call every caller makes.
+- `x4`'s `stopLegs` is exported with no importer, and its `keep(limit, keyOf,
+  scopeDay)` never uses `scopeDay`.
+- `x5`'s `R3_VOTES` and `Z['0.045']` are unused.
+- `x2`'s `look.filter((e) => e.w !== undefined)` filters nothing.
+- `x1` picks the primary markets by an unexplained date (2026-10-01, after
+  KIOXIA's retirement).
+- `x5`'s 0.75 (traders at the 60% rate) was not in the written plan.
+- Inputs read without a pinned hash, though each run printed what it read and
+  the later scripts pin the same hashes: x1's three pool files, x4's and x5's
+  own copies tables.
+- **Kept, deliberately:** `x5`'s run-1 field (`sbMoM`), printed beside so that
+  run 1's error stays visible.
+- **The Final review's scripts** (`fr1`–`fr3`) pin every input, use the kit's
+  RNG and statistics, and add no helper that exists elsewhere.
+
+### How the design fits the later phases (notes; no code now)
+
+- **The plan subagent builds the weekly scorer from the kit's functions,
+  unchanged,** with the boundary moved to each look's end (a new
+  fingerprint). It needs:
+  - a fills reader for the weeks after the cut, which keeps ids above 2^53:
+    liquidation fills carry such ids (FIND-REVIEW-6, F4), and dropping one
+    breaks a copy's exit chain;
+  - the minute marks and funding extended past the cut;
+  - the collector's books for the VWAP beside;
+  - the rate budget measured, with a page cap and a coverage flag per account.
+- **Question 7** (the closed-cycle minimum) **and δ must be ruled before the
+  freeze;** neither may change after it.
+- **v1's paper log** (R7, page 5) reuses the same scorer with the measured
+  alert delay in place of R8's D, and keeps both readings and R3's
+  e-processes.
+- **Labels:** the experiment keeps classifier v1 for its whole run. If v2
+  passes D1 (after 2026-11-21), its labels are shown beside, never swapped in
+  mid-run.
+- **Things that will happen during the run, each with its rule now:**
+  - markets listed after the freeze have no measured cost and are not in
+    A.0-7's list: left out of the main line, printed apart;
+  - a fee change: the fee in force at each instant, from the collector's rule
+    book;
+  - a split or a retirement: A.0-7's day rule;
+  - a new competition: A.0-8's covariate and its boosted markets;
+  - a collector outage: only the book-VWAP line loses rows, since marks can be
+    re-read;
+  - the owner's venue: its costs are read against the break-even line.
+
+### What this review could not check
+
+- The noise of the 3-cycle population (question 7): measuring it means pricing
+  new copies on seen weeks, an outcome exploration, so it waits for the
+  supervisor's word.
+- How exactly the pigeonhole bootstrap overstates here: √3 is the
+  approximate factor, and FR3 agrees with the model.
