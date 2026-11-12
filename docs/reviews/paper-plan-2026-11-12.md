@@ -1,6 +1,6 @@
 # PAPER-PLAN — the forward paper experiment: its frozen rules, its daily run, its page, its build
 
-PAPER-PLAN (Opus 5.5, max), 2026-11-12 10:53Z – 11:35Z (UTC; every stamp from
+PAPER-PLAN (Opus 5.5, max), 2026-11-12 10:53Z – 11:33Z (UTC; every stamp from
 `date -u`), for polymarket-follow's supervisor. The frame: decisions
 2026-11-12, "APPROACH-REVIEW accepted", and the addition the owner approved the
 same day, "the paper experiment runs daily and gets a page". Evidence: the
