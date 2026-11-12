@@ -1,5 +1,5 @@
 # DRAFT, not a freeze: the paper experiment's files of what runs (rules.md R0)
-# written 2026-11-12T19:04:14.323Z from commit efdc8aa47b114869510fd9f98cf3cb0279fe6bf8
+# written 2026-11-12T20:11:25.144Z from commit fd25007765c28caf16c24da10e8c94d415ba7cff
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; mongodb 7.7.0; pino 10.4.0
 # pnpm-lock.yaml sha256 266a37979261ee129d516e0c91a9ec5bf980158676b6e45ece4267289bd4a3cc
 f3555a2b735dc1b513808adde0bc4c5df87880e1ea0bb8b3f25c50321d8bf756 *dist/paper.js
@@ -7,7 +7,7 @@ d057ce4c6ac684eb333bf722c56be97ddc8aaaee8d2e7526c3165c328ca8543a *dist/paper/acc
 cd08dcda39ae5ac92a8e0da48283b1f1214a9d84dfefabab578503b2eb64da43 *dist/paper/backup.js
 c30dab071a601c49daa0fbdf7eae6700adfbae2e9050ffdedd16f23523010362 *dist/paper/copy.js
 ebd734cecfbd9bce345cf81efbc8c56052b3644e250d8653f53f2554a9e135eb *dist/paper/coverage.js
-e2d1bd2fe8a11a10845f700e4f54947d309faf7acc57322841f849311b77f3cd *dist/paper/daily.js
+7610b8dc2c0bc282fc4c035905429fe1876044b0ef7f863b4af0da0ff07ad251 *dist/paper/daily.js
 015da342005c9d08d400d549837f3dfaf0bb2e0f74a9b7656134c382faa3d42b *dist/paper/gate.js
 7b85f3da1ed8e66a3597c8da966372720a495f1e405eeb13cdb3b50abfe0d57b *dist/paper/instants.js
 83111780eeea67341adddd0f3225c416161a3379c7db35c26ca3292573ed3267 *dist/paper/look.js
@@ -24,7 +24,7 @@ a39f4347ce585da89a67c9a5d07c3f4ccb61e3c2ec6c911460f38c9894d49f97 *dist/paper/rou
 461f3ca781d975705ec6a1565ab217f2873911b03ceae5aa6e8e75b7ab676713 *dist/paper/seed.js
 838415212472add1a2b0848fcb11f1d8c77b53ed31a262565243aca3616efee7 *dist/paper/stats.js
 41c0ac318000d4a49777f20fb899b79ca32680d884614a259ecfdc8ea7fe190a *dist/paper/store.js
-c8f64c9086d2084afdc978c0182fb9f24c257b8c93c805c48141c0c5fd90c721 *dist/paper/summary.js
+8e07856100d0f84f0db2cdb7f71a2fa261cf0f65563ce5380db1704828c8056c *dist/paper/summary.js
 612d58365ba4c2a2d88a3f73a41a08e193d0874458d862b169fc51f218926330 *research/find-6-exits/lib-exits.mjs
 2d3667b5ce90645b41dfee4e6fc425ab3e64c985cb4973bfed6ece5052c409aa *research/kit/FINGERPRINT.sha256
 cfba7a760c2f083acc1f89c5800e20b03202aef2ab0ee4acc7667cb442692e07 *research/kit/agreement.mjs
@@ -60,5 +60,5 @@ d9049045c989d34ddaf62b3406437a1cf847dfce67b038c076bed69e7e0c4bdf *research/kit/t
 cf09d2734b32dfd22c2ad5b2087de46b8aaa73bd112da766549e947df5fc5e31 *research/kit/test/panel.test.mjs
 feb047a7bbf13a3bb4317181fcd2092d176eaf51fecea98a3474e8c06dec05d9 *research/kit/test/runs.test.mjs
 27ca2f4a703d21fd3486b3187b9796c10c86ebe75e615006c411cbf20c3df7c2 *research/kit/test/stats.test.mjs
-e1a75f5ff5fa47fab340827dfd722a4b4a03483616dd1140633105c6221a4d84 *experiment/rules.md
+71fbe139de4c22adceef52d1c58e27cd98bc4bce70f0ff647ad82073cda4d312 *experiment/rules.md
 e527ebac60094a7e4e01c2a32089b391e568b58d05a3c079fb6ab1b06e56d392 *experiment/seed.sha256
