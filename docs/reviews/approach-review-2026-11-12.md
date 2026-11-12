@@ -104,8 +104,13 @@ Heidelberg's server (a bot check, not bypassed) could not be read.
 - **Copying slow leaders' disclosed holdings has paid.** Funds that buy the
   holdings mutual funds disclose earned, after expenses, returns
   "statistically indistinguishable, and possibly higher" than the
-  high-expense funds they copied, in the 1990s (Frank, Poterba, Shackelford &
-  Shoven, NBER w8653, 2001; J. Law & Econ. 2004). On a later sample, copycats
+  high-expense funds they copied, in the 1990s; before expenses the active
+  funds earned significantly more (Myers, Poterba & Shackelford, NBER w8653,
+  December 2001, abstract). [Final review, APPROACH-REVIEW, F7: was "(Frank,
+  Poterba, Shackelford & Shoven, NBER w8653, 2001; J. Law & Econ. 2004)". The
+  working paper I read lists three authors; the four are the 2004 journal
+  version's, which I did not read. The sentence on returns before expenses is
+  added.] On a later sample, copycats
   were "comparable to their target mutual funds" after trading costs and
   expenses. They did better once disclosure became quarterly in 2004, and best
   when copying past winners and funds whose holdings are representative
@@ -115,7 +120,7 @@ Heidelberg's server (a bot check, not bypassed) could not be read.
 - **Copying a kind of trade, chosen by a rule, has paid.** Following only the
   "opportunistic" insider trades (routine ones removed) earned 82 bps a month
   value-weighted, while routine insiders' abnormal returns are "essentially
-  zero" (Cohen, Malloy & Pomorski, NBER w16454, 2010).
+  zero" (Cohen, Malloy & Pomorski, NBER w16454, October 2010, abstract).
   Two things carry it: the selection is by the kind of trade, not by past
   returns, and the horizon is a month.
 - **Fast skill exists, but a follower cannot have it.** The 500 best Taiwanese
@@ -123,15 +128,20 @@ Heidelberg's server (a bot check, not bypassed) could not be read.
   "Less than 1%" of day traders predictably profit (Barber, Lee, Liu & Odean,
   J. Financial Markets 18, 2014, abstract), and the edge is intraday. On a
   perps exchange with public wallets, informed wallets keep their rank between
-  ten-day windows (rank correlation 0.52), but at a one-second horizon, and no
-  follower's costs or delay are modelled (Zhai, arXiv 2608.04373, 2026). Our
+  ten-day windows (rank correlation 0.52), but at a one-second horizon, and the
+  abstract mentions no follower's costs, fees or delay (Zhai, arXiv 2608.04373,
+  v3 2026-08-23, abstract only). [Final review, APPROACH-REVIEW, F7: was "and
+  no follower's costs or delay are modelled": only the abstract was read.] Our
   own FIND-2: #47 made 81% of its profit within two minutes of its trades.
 - **Social trading platforms: not after costs.** Investing in the traders with
   the highest accumulated returns "leads to high losses". Taking the Sharpe
   ratio into account helps, but "no strategy reveals a positive abnormal
-  return after transaction costs" under a four-factor model; very active
-  traders earn less, and follower counts predict nothing (Dorfleitner et al.,
-  QREF 70, 2018, abstract). Two positive studies are known to me only through
+  return after transaction costs" under a four-factor model; "highly active
+  trading behavior is negatively related with the returns", and the abstract
+  finds no wisdom of the crowd, no positive relation of followers or invested
+  capital with returns (Dorfleitner et al., QREF 70, 2018, abstract). [Final
+  review, APPROACH-REVIEW, F7: was "very active traders earn less, and follower
+  counts predict nothing".] Two positive studies are known to me only through
   Apesteguia et al.'s review, not read in the original: on eToro the followed
   traders are "often but not always" the most successful (Pan et al. 2012), and
   copied trades win more often but lose more when they lose (Liu et al. 2014).
@@ -153,39 +163,55 @@ hold: slow traders and long holds.
 
 ### A2. Why copy-trading services thrive while most copiers lose
 
-- **They are paid for money copied and volume, not for followers' results.**
+- **They are paid for money copied, for volume, and with a share of gains,
+  never with a share of losses.** [Final review, APPROACH-REVIEW, F7: was
+  "They are paid for money copied and volume, not for followers' results",
+  which Binance's share of the copiers' profits contradicts.]
   - eToro pays its Popular Investors "up to 1.5% of assets under copy (AUC)" a
-    year, monthly on the average AUC (its Popular Investor page, read
-    2026-11-12).
+    year, paid monthly on the average AUC, from its Champion tier up. The page
+    names no pay on the copiers' results; its performance rules are for the
+    investor's own account (its Popular Investor page, read 2026-11-12).
+    [Final review, APPROACH-REVIEW, F7: the tier and the last sentence added.]
   - Binance gives lead traders "Up to 30% profit share" of copiers' profits,
     owed only above what was already shared, plus "A 10% commission on their
     copy traders' trading fees" (its lead-trader page, updated 2026-09-22).
-  - ZuluTrade paid 0.5 pip on every lot a copier traded, and eToro then paid up
-    to 2% of the copying equity with spread rebates (Apesteguia et al., 2018–19).
+  - ZuluTrade paid 0.5 pip "on trading volume executed through a copier". eToro
+    then paid fixed sums and up to 2% of the copying equity, with up to 100%
+    spread rebates on the leaders' own trades (Apesteguia et al., 2018–19).
+    [Final review, APPROACH-REVIEW, F7: was "0.5 pip on every lot a copier
+    traded … with spread rebates".]
   - A share of gains with no share of losses is an option on the copiers'
     money, which pays for risk. A fee on volume pays for turnover.
 - **Regulators name this.** ESMA's Supervisory Briefing on copy trading (30 March
   2023, ESMA35-42-1428, §2.6, ¶63) says conflicts "can arise in particular from
   the structure of the payment made to the traders whose trades are being
   copied". Its questions ask whether variable pay rests on the "Number and
-  value of trades copied", the "Number of followers" or the AUM. It also asks
+  value of trades copied", the "Number of followers of their strategy" or the
+  "Performance of the average AUM". [Final review, APPROACH-REVIEW, F7: was
+  "the 'Number of followers' or the AUM".] It also asks
   that past performance not be the most prominent element and cover the
   preceding five years, and that forecasts not rest on simulated past
   performance.
-- **Showing success raises risk-taking.** In a laboratory market, information
-  on others' success made 176 subjects take more risk, and a copy button more
-  so. 35% of the subjects who could copy did, and 88% of them copied somebody
-  who had chosen the riskiest asset. The authors' mechanism: "investors with
+- **Showing success raises risk-taking.** In a laboratory market (176
+  subjects in three treatments, Heidelberg, 2017), information on others'
+  success raised risk-taking, and a copy button raised it more. 35% of the
+  subjects who could copy did, and 88% of them copied somebody who had chosen
+  the riskiest asset in the first block. [Final review, APPROACH-REVIEW, F7:
+  was "information on others' success made 176 subjects take more risk"; the
+  176 are the whole experiment, 80 / 48 / 48 by treatment.] The authors'
+  mechanism: "investors with
   high earnings may have just been lucky", and high returns come with high risk
   (Apesteguia, Oechssler & Weidenholzer, UPF WP 1615, revised 2019;
   Management Science 66(12), 2020).
 - **Survivorship and luck.** A ranking shows the survivors of thousands of
   draws. Among US mutual funds, "75% of funds exhibit zero alpha" net of
   expenses, and skilled funds were almost gone by 2006 (Barras, Scaillet &
-  Wermers, J. Finance 65(1), 2010, abstract). A vendor's 90-day count on three
-  crypto exchanges put 97% of leaders in profit on their own accounts, against
-  43.6% of leaders whose followers were in profit (R5's reading of Yieldfund,
-  2026-11-06, not re-read; a vendor, one window).
+  Wermers, J. Finance 65(1), 2010, abstract). [Final review, APPROACH-REVIEW,
+  F7: a sentence removed: "A vendor's 90-day count on three crypto exchanges
+  put 97% of leaders in profit on their own accounts, against 43.6% of leaders
+  whose followers were in profit (R5's reading of Yieldfund …)". The study
+  cannot be found to re-read, and two secondary pages disagree on what its
+  43.6% counts.]
 - **The loss counts.** ESMA, on CFDs: "74-89% of retail accounts typically lose
   money", with average losses per client of €1,600 to €29,000 (press release
   27/03/2018, ESMA71-98-128). **The figure the brief asked to confirm is
@@ -306,13 +332,18 @@ hold: slow traders and long holds.
 
 | Design (entries a week, X1/X5) | Reading | 1 month | 2 | 3 | 6 | 12 |
 |---|---|--:|--:|--:|--:|--:|
-| Every directional entry (~890–940) | exits copied | 9.5 | 7.3 | 6.3 | 5.2 | 4.6 |
+| Every directional entry (~890–940)¹ | exits copied | 9.5 | 7.3 | 6.3 | 5.2 | 4.6 |
 | | held 24 h | 32 | 23 | 20 | 15 | 12 |
 | Slow, usual hold ≥ 6 h, *no* minimum of closed cycles (~316) | exits copied | 37 | 26 | 22 | 15 | 11 |
 | | held 24 h | 50 | 38 | 33 | 27 | 24 |
 | Map-open cells only (~197) | exits copied | 59 | 42 | 34 | 24 | 17 |
 | 20 favourites at R8's rate (~89) | exits copied | 31 | 24 | 21 | 18 | 16 |
 | | held 24 h | 68 | 52 | 46 | 38 | 34 |
+
+¹ [Final review, APPROACH-REVIEW, F6: added. This row is X5's design A: the
+287 directional-at-cut accounts' entries of any label, 885 a week, with the
+board candidates' noise. The broad line itself, every P1 entry, has 935 a week
+(FR1).]
 
 - [Final review, APPROACH-REVIEW, F1: added.] **The main line is not the
   "slow" row above.** Its rule asks for at least 10 closed cycles, which leaves
@@ -426,9 +457,12 @@ copies by them at no cost.
 
 - **Taker (the default of every table):**
   - 4 bps a leg plus half-spread and depth;
-  - a round trip of 8.5–9.7 bps on BTC, ETH and SOL, about 13 on small coins,
-    equities and indices, 8.6–10 on commodities (X1; R8's session-pair table,
-    measured 2026-11-07 and 11-09).
+  - a round trip with a median of 8.5 bps outside US hours and 9.7 in them on
+    BTC, ETH and SOL; 12.8–13.6 on small coins, equities and indices; 8.6–10.0
+    on commodities. Single markets range from 8.1 to 19.1 (X1; R8's
+    session-pair table, measured 2026-11-07 and 11-09). [Final review,
+    APPROACH-REVIEW, F6: was "a round trip of 8.5–9.7 bps on BTC, ETH and SOL,
+    about 13 …, 8.6–10 on commodities", medians written as ranges.]
   - Polymarket's tiers go down to 2 bps a leg at $1B of 30-day volume
     (external-apis).
 - **Maker:** 1.25 bps a leg, no spread, with fills uncertain (B2); the tiers
@@ -459,8 +493,11 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
 - **The reading:** limits cut variance and the worst cases; none turns a mean
   positive, and the changes per copy are within one or two errors. That is
   what theory says: a stop on a price with no drift does not create money.
-- The 2% stop's gain here leans on one fall (2026-11-04/05): the worst day holds
-  18% (board copies) to 50% (slow copies) of the whole loss.
+- The 2% stop's gain may rest on a few events: the worst day holds 18% (board
+  copies) to 50% (slow copies) of the net loss (X4, which did not print which
+  days they were). [Final review, APPROACH-REVIEW, F6: was "leans on one fall
+  (2026-11-04/05): … of the whole loss". Nothing measured here names that
+  fall.]
 - **Recommended:** no limit in the main line, since a stop would change what is
   tested and Iron Rule 4 records every followed entry. The 2% and 5% stops and
   the 7-day limit are lines beside. A daily or per-trader limit is the owner's
@@ -714,33 +751,58 @@ rule.]
 through `loadMarket` (pinned by its manifest). Every run printed the kit's
 fingerprint `2d3667b5…09aa`.
 
-**Web sources** (read 2026-11-12):
+**Web sources** (read 2026-11-12, and each re-read on its own page in the
+Final review: title, authors, year and every number and quotation; "page" =
+the source's own web page, "text" = the full document's text, "abstract" =
+its abstract only):
 - ESMA, "ESMA agrees to prohibit binary options and restrict CFDs to protect
-  retail investors", 27/03/2018, ESMA71-98-128 — https://www.esma.europa.eu/node/84933
-- ESMA, Supervisory Briefing on copy trading, 30 March 2023, ESMA35-42-1428 —
-  https://www.esma.europa.eu/sites/default/files/2023-03/ESMA35-42-1428_Supervisory_Briefing_on_Copy_Trading.pdf
-  (and its press release, https://www.esma.europa.eu/press-news/esma-news/esma-provides-guidance-supervision-copy-trading-services)
-- eToro, Popular Investor page — https://www.etoro.com/copytrader/popular-investor/
-- Binance, "Lead Trader Benefits in Binance Futures Copy Trading" (updated
-  2026-09-22) — https://www.binance.com/en/support/faq/lead-trader-benefits-in-binance-futures-copy-trading-ea9bacf82b9e4ddfae50ebc98565241b
-- Apesteguia, Oechssler & Weidenholzer, "Copy trading", UPF Economics WP 1615
-  (2018, revised 2019) — https://econ-papers.upf.edu/papers/1615.pdf; record
-  https://econpapers.repec.org/RePEc:upf:upfgen:1615; Management Science
-  66(12):5608–5622, 2020
-- Dorfleitner et al., QREF 70:160–171, 2018 — https://ideas.repec.org/a/eee/quaeco/v70y2018icp160-171.html
-- Frank, Poterba, Shackelford & Shoven, "Copycat Funds", NBER w8653 —
-  https://nber.org/papers/w8653
-- Verbeek & Wang, J. Banking & Finance 37(9):3454–3471, 2013 —
+  retail investors", 27/03/2018, ESMA71-98-128 (page) — https://www.esma.europa.eu/node/84933
+- ESMA, Supervisory Briefing on copy trading, 30 March 2023, ESMA35-42-1428
+  (text, through my extractor) —
+  https://www.esma.europa.eu/sites/default/files/2023-03/ESMA35-42-1428_Supervisory_Briefing_on_Copy_Trading.pdf;
+  its press release "ESMA provides guidance for supervision of copy trading
+  services", 30/03/2023 (page) — https://www.esma.europa.eu/press-news/esma-news/esma-provides-guidance-supervision-copy-trading-services
+- eToro, "Want To Be Copied? Join the Popular Investor Program" (page) —
+  https://www.etoro.com/copytrader/popular-investor/
+- Binance, "Lead Trader Benefits in Binance Futures Copy Trading", published
+  2023-08-22, updated 2026-09-22 (page) — https://www.binance.com/en/support/faq/lead-trader-benefits-in-binance-futures-copy-trading-ea9bacf82b9e4ddfae50ebc98565241b
+- Jose Apesteguia, Jörg Oechssler & Simon Weidenholzer, "Copy trading", UPF
+  Economics WP 1615 (2018-07, revised 2019-09; text, through my extractor) —
+  https://econ-papers.upf.edu/papers/1615.pdf; record
+  https://econpapers.repec.org/RePEc:upf:upfgen:1615; published as "Copy
+  Trading", Management Science 66(12):5608–5622, 2020 (the BSE page,
+  https://bse.eu/research/publications/copy-trading)
+- Gregor Dorfleitner, Lukas Fischer, Carina Lung, Philipp Willmertinger, Nico
+  Stang & Natalie Dietrich, "To follow or not to follow – An empirical
+  analysis of the returns of actors on social trading platforms", QREF
+  70(C):160–171, 2018 (abstract) — https://ideas.repec.org/a/eee/quaeco/v70y2018icp160-171.html
+- Mary Margaret Myers, James M. Poterba & Douglas A. Shackelford, "Copycat
+  Funds: Information Disclosure Regulation and the Returns to Active
+  Management in the Mutual Fund Industry", NBER w8653, December 2001
+  (abstract) — https://nber.org/papers/w8653 (the 2004 J. Law & Econ. version,
+  by Frank, Poterba, Shackelford & Shoven, was not read)
+- Marno Verbeek & Yu Wang, "Better than the original? The relative success of
+  copycat funds", J. Banking & Finance 37(9):3454–3471, 2013 (abstract) —
   https://ideas.repec.org/a/eee/jbfina/v37y2013i9p3454-3471.html
-- Cohen, Malloy & Pomorski, "Decoding Inside Information", NBER w16454 —
-  https://www.nber.org/papers/w16454
-- Barber, Lee, Liu & Odean, J. Financial Markets 18:1–24, 2014 —
-  https://ideas.repec.org/a/eee/finmar/v18y2014icp1-24.html
-- Barras, Scaillet & Wermers, J. Finance 65(1):179–216, 2010 —
-  https://ideas.repec.org/a/bla/jfinan/v65y2010i1p179-216.html
-- Zhai, "Public Trader Identity: Adverse Selection and Return Predictability",
-  arXiv 2608.04373 (v3, 2026-08-23) — https://arxiv.org/abs/2608.04373
-- Not read (blocked): SSRN; the Heidelberg discussion-paper server.
+- Lauren Cohen, Christopher Malloy & Lukasz Pomorski, "Decoding Inside
+  Information", NBER w16454, October 2010 (abstract) — https://www.nber.org/papers/w16454
+- Brad M. Barber, Yi-Tsung Lee, Yu-Jane Liu & Terrance Odean, "The
+  cross-section of speculator skill: Evidence from day trading", J. Financial
+  Markets 18(C):1–24, 2014 (abstract) — https://ideas.repec.org/a/eee/finmar/v18y2014icp1-24.html
+- Laurent Barras, Olivier Scaillet & Russ Wermers, "False Discoveries in
+  Mutual Fund Performance: Measuring Luck in Estimated Alphas", J. Finance
+  65(1):179–216, 2010 (abstract) — https://ideas.repec.org/a/bla/jfinan/v65y2010i1p179-216.html
+- Daojing Zhai, "Public Trader Identity: Adverse Selection and Return
+  Predictability", arXiv 2608.04373, v1 2026-08-05, v3 2026-08-23 (abstract) —
+  https://arxiv.org/abs/2608.04373
+- Pan et al. (2012) and Liu et al. (2014): only as described in Apesteguia et
+  al.'s text, not read.
+- Not read (blocked): SSRN; the Heidelberg discussion-paper server. Not found:
+  the Yieldfund study (its sentence removed, F7).
+- [Final review, APPROACH-REVIEW, F7: this list rewritten with the full
+  titles, authors and dates from the pages and with each source's kind. The
+  NBER w8653 entry was "Frank, Poterba, Shackelford & Shoven, 'Copycat Funds',
+  NBER w8653".]
 
 **Our own reports used:** R3, R8, IDEAS-REVIEW, RESEARCH-KIT, FIND-1 to
 FIND-10, FIND-REVIEW-A/B/C, FIND-6, FIND-REVIEW-6, FIND-6-EXITS, R2, R4, R5, R7
