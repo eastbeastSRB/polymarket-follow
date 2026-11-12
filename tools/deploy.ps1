@@ -153,6 +153,28 @@ if ($paper) {
   if ($out.Result.Trim() -ne $KitFingerprint) {
     throw "the copy's kit is not the pinned one ($($out.Result.Trim()) $($err.Result.Trim())): nothing deployed; $next is kept"
   }
+  # The copy's own gate, once a freeze list is in it: a copy whose files differ
+  # from the list would only stop at its first 04:00Z run (exit 4).
+  if (Test-Path -LiteralPath (Join-Path $next 'experiment\FROZEN.sha256')) {
+    $gate = New-Object System.Diagnostics.ProcessStartInfo
+    $gate.FileName = $smoke.FileName
+    $gateUrl = ([Uri](Join-Path $next 'dist\paper\gate.js')).AbsoluteUri
+    # No brace in the code: -f reads braces as its own placeholders.
+    $gate.Arguments = '-e "import(process.argv[1]).then((m) => process.stdout.write(((r) => (r.ok ? `ok ` + r.files : r.problems.join(`; `)))(m.verifyFreeze(process.argv[2]))))" "{0}" "{1}"' -f $gateUrl, $next
+    $gate.UseShellExecute = $false
+    $gate.RedirectStandardOutput = $true
+    $gate.RedirectStandardError = $true
+    $ran = [System.Diagnostics.Process]::Start($gate)
+    $out = $ran.StandardOutput.ReadToEndAsync()
+    $err = $ran.StandardError.ReadToEndAsync()
+    if (-not $ran.WaitForExit(60000)) { $ran.Kill(); throw "the copy's gate did not end within 60 s: nothing deployed; $next is kept" }
+    if (-not $out.Result.StartsWith('ok ')) {
+      throw "the copy's files differ from its freeze list ($($out.Result.Trim()) $($err.Result.Trim())): nothing deployed; $next is kept"
+    }
+    Write-Host "the copy's gate: $($out.Result.Trim()) files as frozen"
+  } else {
+    Write-Host 'the copy holds no freeze list (experiment\FROZEN.sha256): its gate stays closed'
+  }
 }
 
 # A folder cannot be renamed while a process works in it (the check task's

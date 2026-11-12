@@ -12,7 +12,10 @@
  *
  * The final list opens the program's blind gate; it is written only at the
  * freeze (after the fresh rules review), its own SHA-256 recorded in
- * decisions and its commit tagged paper-freeze-1.
+ * decisions and its commit tagged paper-freeze-1. `--final` refuses a tree
+ * that is not clean, and both lists hash a build made here from the tree
+ * (`dist/paper.js` and `dist/paper/` removed first, so no file of an older
+ * build is listed): with a clean tree, what is hashed is HEAD's.
  */
 const { createHash } = require("node:crypto");
 const fs = require("node:fs");
@@ -35,6 +38,21 @@ function filesUnder(rel) {
 
 async function main() {
   const final = process.argv.includes("--final");
+  const git = (...args) =>
+    execFileSync("git", args, { cwd: PKG, encoding: "utf8" }).trim();
+  if (final && git("status", "--porcelain") !== "")
+    throw new Error("the tree is not clean: commit first, then freeze");
+  fs.rmSync(path.join(PKG, "dist", "paper.js"), { force: true });
+  fs.rmSync(path.join(PKG, "dist", "paper"), { recursive: true, force: true });
+  execFileSync(
+    process.execPath,
+    [
+      path.join(PKG, "node_modules", "typescript", "bin", "tsc"),
+      "-p",
+      "tsconfig.build.json",
+    ],
+    { cwd: PKG, stdio: "inherit" },
+  );
   const { FROZEN_SCOPE } = await import(
     pathToFileURL(path.join(PKG, "dist", "paper", "gate.js")).href
   );
@@ -68,14 +86,8 @@ async function main() {
         "utf8",
       ),
     ).version;
-  const commit = execFileSync("git", ["rev-parse", "HEAD"], {
-    cwd: PKG,
-    encoding: "utf8",
-  }).trim();
-  const dirty = execFileSync("git", ["status", "--porcelain"], {
-    cwd: PKG,
-    encoding: "utf8",
-  }).trim();
+  const commit = git("rev-parse", "HEAD");
+  const dirty = git("status", "--porcelain");
   const lock = fs.readFileSync(path.join(PKG, "..", "..", "pnpm-lock.yaml"));
   const head = [
     `# ${final ? "FROZEN" : "DRAFT, not a freeze"}: the paper experiment's files of what runs (rules.md R0)`,

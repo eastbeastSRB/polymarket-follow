@@ -58,6 +58,10 @@
   refused anyway, by the lock (exit 3). The script prints the poller's pid
   before and after.
 
+  With -PaperOnly it registers "polymarket-follow paper" alone and touches
+  none of the collector's three tasks: no re-registration, no start of the
+  poller (decisions 2026-11-12, the two fresh reviews (8)).
+
   Undo: Stop-ScheduledTask -TaskName 'polymarket-follow poller' ends the
   poller; then Unregister-ScheduledTask -TaskName 'polymarket-follow *'
   -Confirm removes the three tasks, and the grant with them (it lives on the
@@ -65,15 +69,21 @@
   recordings (F:\polymarket-follow\recordings), the database
   polymarket_follow and its backups.
 #>
+param(
+  # The experiment's task alone; the collector's three are not touched.
+  [switch]$PaperOnly
+)
 #Requires -RunAsAdministrator
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'task-access.ps1')
 $Poller = 'polymarket-follow poller'
 $run = 'E:\polymarket-follow-run\poller'
 $heartbeat = 'E:\polymarket-follow-run\var\heartbeat.json'
-foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs', 'dist\index.js') {
-  if (-not (Test-Path -LiteralPath (Join-Path $run $file))) {
-    throw "missing $run\$file - run tools\deploy.ps1 first; nothing registered"
+if (-not $PaperOnly) {
+  foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs', 'dist\index.js') {
+    if (-not (Test-Path -LiteralPath (Join-Path $run $file))) {
+      throw "missing $run\$file - run tools\deploy.ps1 first; nothing registered"
+    }
   }
 }
 $paperRun = 'E:\polymarket-follow-run\paper'
@@ -104,56 +114,58 @@ function Get-Heartbeat {
 
 $user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType S4U -RunLevel Limited
-$before = Get-Heartbeat
+$scheduler = New-Object -ComObject Schedule.Service
+$scheduler.Connect()
+if (-not $PaperOnly) {
+  $before = Get-Heartbeat
 
-$pollerTrigger = New-ScheduledTaskTrigger -AtStartup
-$pollerTrigger.Delay = 'PT1M'
-$pollerSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-  -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
-  -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -Priority 4
-$pollerAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'dist\index.js')) -WorkingDirectory $run
-Register-ScheduledTask -TaskName $Poller -Force `
-  -Description 'polymarket-follow: the poller (the collector). Watch-only; see the repository''s docs.' `
-  -Action $pollerAction -Trigger $pollerTrigger -Principal $principal -Settings $pollerSettings | Out-Null
+  $pollerTrigger = New-ScheduledTaskTrigger -AtStartup
+  $pollerTrigger.Delay = 'PT1M'
+  $pollerSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+    -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -Priority 4
+  $pollerAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'dist\index.js')) -WorkingDirectory $run
+  Register-ScheduledTask -TaskName $Poller -Force `
+    -Description 'polymarket-follow: the poller (the collector). Watch-only; see the repository''s docs.' `
+    -Action $pollerAction -Trigger $pollerTrigger -Principal $principal -Settings $pollerSettings | Out-Null
 
-# Started again before anything else can fail (see the header).
-Start-ScheduledTask -TaskName $Poller
-Start-Sleep -Seconds 15
-$after = Get-Heartbeat
-if ($null -eq $after -or $after.ageS -gt 20) {
+  # Started again before anything else can fail (see the header).
   Start-ScheduledTask -TaskName $Poller
   Start-Sleep -Seconds 15
   $after = Get-Heartbeat
+  if ($null -eq $after -or $after.ageS -gt 20) {
+    Start-ScheduledTask -TaskName $Poller
+    Start-Sleep -Seconds 15
+    $after = Get-Heartbeat
+  }
+
+  $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  $registered = $scheduler.GetFolder('\').GetTask($Poller)
+  $sddl = $registered.GetSecurityDescriptor(7)
+  if (-not (Test-RunGranted $sddl $sid)) {
+    $registered.SetSecurityDescriptor("$sddl(A;;GRGX;;;$sid)", 0)
+  }
+
+  $checkAtStartup = New-ScheduledTaskTrigger -AtStartup
+  $checkAtStartup.Delay = 'PT3M'
+  $checkEvery5Min = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) `
+    -RepetitionInterval (New-TimeSpan -Minutes 5)
+  $checkSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -MultipleInstances IgnoreNew
+  $checkArguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}"' -f (Join-Path $run 'poller-check.ps1')
+  $checkAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $checkArguments -WorkingDirectory $run
+  Register-ScheduledTask -TaskName 'polymarket-follow poller check' -Force `
+    -Description 'polymarket-follow: restarts the poller when its heartbeat is older than 2 minutes.' `
+    -Action $checkAction -Trigger @($checkAtStartup, $checkEvery5Min) -Principal $principal -Settings $checkSettings | Out-Null
+
+  $backupTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 5 20)
+  $backupSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
+  $backupAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'backup.cjs')) -WorkingDirectory $run
+  Register-ScheduledTask -TaskName 'polymarket-follow backup' -Force `
+    -Description 'polymarket-follow: the database''s daily dump to F:, its newest copy on E: (see the repository''s docs).' `
+    -Action $backupAction -Trigger $backupTrigger -Principal $principal -Settings $backupSettings | Out-Null
 }
-
-$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$scheduler = New-Object -ComObject Schedule.Service
-$scheduler.Connect()
-$registered = $scheduler.GetFolder('\').GetTask($Poller)
-$sddl = $registered.GetSecurityDescriptor(7)
-if (-not (Test-RunGranted $sddl $sid)) {
-  $registered.SetSecurityDescriptor("$sddl(A;;GRGX;;;$sid)", 0)
-}
-
-$checkAtStartup = New-ScheduledTaskTrigger -AtStartup
-$checkAtStartup.Delay = 'PT3M'
-$checkEvery5Min = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) `
-  -RepetitionInterval (New-TimeSpan -Minutes 5)
-$checkSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-  -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -MultipleInstances IgnoreNew
-$checkArguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}"' -f (Join-Path $run 'poller-check.ps1')
-$checkAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $checkArguments -WorkingDirectory $run
-Register-ScheduledTask -TaskName 'polymarket-follow poller check' -Force `
-  -Description 'polymarket-follow: restarts the poller when its heartbeat is older than 2 minutes.' `
-  -Action $checkAction -Trigger @($checkAtStartup, $checkEvery5Min) -Principal $principal -Settings $checkSettings | Out-Null
-
-$backupTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 5 20)
-$backupSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-  -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
-$backupAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'backup.cjs')) -WorkingDirectory $run
-Register-ScheduledTask -TaskName 'polymarket-follow backup' -Force `
-  -Description 'polymarket-follow: the database''s daily dump to F:, its newest copy on E: (see the repository''s docs).' `
-  -Action $backupAction -Trigger $backupTrigger -Principal $principal -Settings $backupSettings | Out-Null
 
 $paperTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 4)
 $paperSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
@@ -163,7 +175,8 @@ Register-ScheduledTask -TaskName 'polymarket-follow paper' -Force `
   -Description 'polymarket-follow: the paper experiment, once a day at 04:00Z (watch-only; see the repository''s docs).' `
   -Action $paperAction -Trigger $paperTrigger -Principal $principal -Settings $paperSettings | Out-Null
 
-foreach ($name in $Poller, 'polymarket-follow poller check', 'polymarket-follow backup', 'polymarket-follow paper') {
+$names = if ($PaperOnly) { @('polymarket-follow paper') } else { @($Poller, 'polymarket-follow poller check', 'polymarket-follow backup', 'polymarket-follow paper') }
+foreach ($name in $names) {
   $task = Get-ScheduledTask -TaskName $name
   Write-Host "`n== $name - state $($task.State), logon $($task.Principal.LogonType), run level $($task.Principal.RunLevel), priority $($task.Settings.Priority)"
   foreach ($t in $task.Triggers) {
@@ -175,11 +188,13 @@ foreach ($name in $Poller, 'polymarket-follow poller check', 'polymarket-follow 
   if ($name -eq $Poller) { Write-Host "   node: $node, $nodeVersion" }
   Write-Host "   security: $($scheduler.GetFolder('\').GetTask($name).GetSecurityDescriptor(7))"
 }
-$pidBefore = if ($null -eq $before) { 'none' } else { $before.pid }
-if ($null -eq $after -or $after.ageS -gt 20) {
-  Write-Host "`nthe poller: pid $pidBefore before; NO fresh heartbeat now - see $heartbeat, the poller's log in E:\polymarket-follow-run\var\logs and the task's last result (Get-ScheduledTaskInfo -TaskName '$Poller')"
-} elseif ($null -ne $before -and $after.pid -eq $before.pid) {
-  Write-Host "`nthe poller kept running through the re-registration: pid $($after.pid), heartbeat $($after.ageS) s old"
-} else {
-  Write-Host "`nthe poller (re)started: pid $pidBefore before, $($after.pid) now, heartbeat $($after.ageS) s old"
+if (-not $PaperOnly) {
+  $pidBefore = if ($null -eq $before) { 'none' } else { $before.pid }
+  if ($null -eq $after -or $after.ageS -gt 20) {
+    Write-Host "`nthe poller: pid $pidBefore before; NO fresh heartbeat now - see $heartbeat, the poller's log in E:\polymarket-follow-run\var\logs and the task's last result (Get-ScheduledTaskInfo -TaskName '$Poller')"
+  } elseif ($null -ne $before -and $after.pid -eq $before.pid) {
+    Write-Host "`nthe poller kept running through the re-registration: pid $($after.pid), heartbeat $($after.ageS) s old"
+  } else {
+    Write-Host "`nthe poller (re)started: pid $pidBefore before, $($after.pid) now, heartbeat $($after.ageS) s old"
+  }
 }
