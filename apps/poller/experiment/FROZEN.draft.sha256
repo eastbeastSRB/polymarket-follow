@@ -1,5 +1,5 @@
 # DRAFT, not a freeze: the paper experiment's files of what runs (rules.md R0)
-# written 2026-11-12T14:34:21.918Z from commit ef0c21077e565f94dcf05e682782ef5575e2c7a0
+# written 2026-11-12T15:19:19.064Z from commit 6fa14d3906dad4456c039533440393800838268d
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; mongodb 7.7.0; pino 10.4.0
 # pnpm-lock.yaml sha256 266a37979261ee129d516e0c91a9ec5bf980158676b6e45ece4267289bd4a3cc
 f3555a2b735dc1b513808adde0bc4c5df87880e1ea0bb8b3f25c50321d8bf756 *dist/paper.js
@@ -7,7 +7,7 @@ d057ce4c6ac684eb333bf722c56be97ddc8aaaee8d2e7526c3165c328ca8543a *dist/paper/acc
 cd08dcda39ae5ac92a8e0da48283b1f1214a9d84dfefabab578503b2eb64da43 *dist/paper/backup.js
 c30dab071a601c49daa0fbdf7eae6700adfbae2e9050ffdedd16f23523010362 *dist/paper/copy.js
 ebd734cecfbd9bce345cf81efbc8c56052b3644e250d8653f53f2554a9e135eb *dist/paper/coverage.js
-0e724d88f848964de4429a8d0e3a5913bd53ba8ed72461d61927a20ffa1bc988 *dist/paper/daily.js
+a6d307c13065300e22bf19cdcc924080e2c9abe6963af8ef3eaa9b40e0da756d *dist/paper/daily.js
 cdc31c4382b4ffd32fa3f970a6c002ad77c7aa4dc341beae1d9b4ea311467824 *dist/paper/gate.js
 7b85f3da1ed8e66a3597c8da966372720a495f1e405eeb13cdb3b50abfe0d57b *dist/paper/instants.js
 6772da53538e7a65bbc6286b2468c05fea3dfe28973a08e1226d40fa5ab5413a *dist/paper/look.js
