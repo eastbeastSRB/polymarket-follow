@@ -2,7 +2,7 @@
  * The poller (its first part: the collector). Exit codes: 0 a clean stop,
  * 1 a crash, 2 a bad configuration, 3 another poller holds the lock.
  */
-import { COLLECTOR_SHARE, RestClient } from "./api/rest-client.js";
+import { COLLECTOR_LIMITS, ROUTES, RestClient } from "./api/rest-client.js";
 import { realClock } from "./clock.js";
 import { loadConfig, parseRunFor, type Config } from "./config.js";
 import { diskRules, startDiskWatch } from "./health/disk.js";
@@ -40,7 +40,7 @@ try {
 
 const startedAt = Date.now();
 const processStats = startProcessStats();
-const { log, close: closeLog } = createLog(config.STATE_DIR);
+const { log, close: closeLog } = createLog(config.STATE_DIR, "poller");
 
 /**
  * Set before anything else can fail: the task keeps no output, so a crash's
@@ -80,7 +80,7 @@ markCrash = () =>
     reason: "crash",
   });
 const store = Store.open(config.MONGO_URI, config.MONGO_DB, log);
-const client = new RestClient(COLLECTOR_SHARE, recorder, log);
+const client = new RestClient(ROUTES, COLLECTOR_LIMITS, recorder, log);
 /** A server's close of a connection is also a maintenance mark in the rule book (COLLECTOR-PLAN §1.3 item 2). */
 const streams = new Streams(
   {

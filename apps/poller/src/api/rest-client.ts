@@ -1,8 +1,10 @@
 /**
- * The one client of the Perps REST API (code-rules: one client holds the
- * budget and the back-off). Keyless GETs of the routes below only (Iron Rule
- * 1), one at a time, each admitted against the share before it is sent; every
- * call is one line of the hour's `rest` file, which is the call log.
+ * The client of the Perps REST API (code-rules: one client holds the budget
+ * and the back-off). Keyless GETs of its route table only (Iron Rule 1), one
+ * at a time, each admitted against its share and burst before it is sent;
+ * every call is one line of the hour's `rest` file, which is the call log.
+ * Each program has one instance: the poller with the routes below, the paper
+ * experiment with its own (src/paper/routes.ts).
  */
 import type { z } from "zod";
 import { type Clock, realClock } from "../clock.js";
@@ -10,6 +12,7 @@ import type { Logger } from "../log.js";
 import { inNightlyPause, utcDate } from "../schedule.js";
 import type { Recorder } from "../store/files.js";
 import {
+  BURST_CAP,
   BURST_MS,
   WINDOW_MS,
   admissionDelay,
@@ -31,10 +34,41 @@ import {
 } from "./schemas.js";
 
 export const API_BASE = "https://api.perpetuals.polymarket.com";
-export const USER_AGENT = "polymarket-follow";
+/** A generic client name: no project or personal name leaves this machine (code-rules, 2026-11-12). */
+export const USER_AGENT = "data-collector/1.0";
 export const REQUEST_TIMEOUT_MS = 15_000;
 /** The collector's share of the 250 a minute (decisions 2026-11-07, wave 1 closed; COLLECTOR-PLAN §1.1). */
 export const COLLECTOR_SHARE = 50;
+
+/** JSON.parse's reviver; `context.source` is the value's text as received (Node 24). */
+export type Reviver = (
+  key: string,
+  value: unknown,
+  context?: { source?: string },
+) => unknown;
+
+export type RouteSpec = {
+  readonly path: string;
+  readonly weight: number;
+  readonly schema: z.ZodType;
+  readonly reviver?: Reviver;
+};
+
+export type RouteTable = Readonly<Record<string, RouteSpec>>;
+
+/** A client instance's limits and its User-Agent. */
+export type ClientLimits = {
+  share: number;
+  burst: number;
+  userAgent: string;
+};
+
+/** The collector's: 50 a minute, the whole burst cap, its own name. */
+export const COLLECTOR_LIMITS: ClientLimits = {
+  share: COLLECTOR_SHARE,
+  burst: BURST_CAP,
+  userAgent: USER_AGENT,
+};
 
 /**
  * Weights from the spec (external-apis, "Rate limit — measured"); a cached
@@ -76,7 +110,7 @@ export const ROUTES = {
     weight: 10,
     schema: StockSplitsReply,
   },
-} as const;
+} as const satisfies RouteTable;
 
 export type RouteName = keyof typeof ROUTES;
 export type Reply<R extends RouteName> = z.infer<(typeof ROUTES)[R]["schema"]>;
@@ -93,9 +127,10 @@ export type Failure =
 /** `served`: the reply's `date` and `age` headers (CloudFront can serve a reply minutes old). */
 export type Served = { date: string | null; age: string | null };
 
+/** An HTTP error other than a 429 carries its status and body (a 400 can name its cause). */
 export type Outcome<T> =
   | { ok: true; data: T; recvMs: number; served: Served }
-  | { ok: false; reason: Failure };
+  | { ok: false; reason: Failure; status?: number; text?: string };
 
 /** After a 429 from 2 s, after any other failure from 1 s, doubling to 60 s; a success resets it. */
 export function nextBackoffMs(
@@ -121,7 +156,7 @@ export function restPaused(wallMs: number): boolean {
   return inNightlyPause(wallMs) || inNightlyPause(wallMs + REQUEST_TIMEOUT_MS);
 }
 
-export class RestClient {
+export class RestClient<Routes extends RouteTable = typeof ROUTES> {
   readonly counts = {
     calls: 0,
     ok: 0,
@@ -141,23 +176,27 @@ export class RestClient {
   private readonly unknownKeysSeen = new Set<string>();
 
   constructor(
-    private readonly share: number,
+    private readonly routes: Routes,
+    private readonly limits: ClientLimits,
     private readonly recorder: Pick<Recorder, "write">,
     private readonly log: Logger,
     private readonly fetchFn: typeof fetch = fetch,
     private readonly clock: Clock = realClock,
   ) {
-    for (const { path } of Object.values(ROUTES)) {
+    for (const { path, weight } of Object.values(routes)) {
       if (!path.startsWith("/v1/info/")) throw new Error(`route ${path}`);
+      if (weight > limits.share || weight > limits.burst) {
+        throw new Error(`route ${path}: weight ${weight} exceeds the limits`);
+      }
     }
   }
 
   /** Queued behind earlier requests; dropped if it cannot be sent within `maxWaitMs`. */
-  get<R extends RouteName>(
+  get<R extends keyof Routes & string>(
     route: R,
     query: Record<string, string | number> = {},
     maxWaitMs = 30_000,
-  ): Promise<Outcome<Reply<R>>> {
+  ): Promise<Outcome<z.infer<Routes[R]["schema"]>>> {
     const deadline = this.clock.monotonic() + maxWaitMs;
     const run = this.queue.then(() => this.send(route, query, deadline));
     this.queue = run.catch(() => undefined);
@@ -168,12 +207,12 @@ export class RestClient {
     return spentInWindow(this.spends, this.clock.monotonic(), WINDOW_MS);
   }
 
-  private async send<R extends RouteName>(
+  private async send<R extends keyof Routes & string>(
     route: R,
     query: Record<string, string | number>,
     deadline: number,
-  ): Promise<Outcome<Reply<R>>> {
-    const spec = ROUTES[route] as (typeof ROUTES)[RouteName] | undefined;
+  ): Promise<Outcome<z.infer<Routes[R]["schema"]>>> {
+    const spec = (this.routes as RouteTable)[route];
     if (spec === undefined) throw new Error(`unknown route ${String(route)}`);
     const { path, weight } = spec;
     const schema: z.ZodType = spec.schema;
@@ -183,7 +222,13 @@ export class RestClient {
       const wait = Math.max(
         0,
         this.backoffUntil - now,
-        admissionDelay(this.spends, now, weight, this.share),
+        admissionDelay(
+          this.spends,
+          now,
+          weight,
+          this.limits.share,
+          this.limits.burst,
+        ),
       );
       // Also a request whose turn in the queue came after its deadline.
       if (now + wait > deadline) {
@@ -220,7 +265,10 @@ export class RestClient {
     try {
       const res = await this.fetchFn(`${API_BASE}${target}`, {
         method: "GET",
-        headers: { "user-agent": USER_AGENT, accept: "application/json" },
+        headers: {
+          "user-agent": this.limits.userAgent,
+          accept: "application/json",
+        },
         redirect: "error",
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
@@ -252,7 +300,9 @@ export class RestClient {
         { route, status, backoffMs: this.backoffMs },
         "request answered with an error",
       );
-      return { ok: false, reason: rateLimited ? "rate_limited" : "http_error" };
+      return rateLimited
+        ? { ok: false, reason: "rate_limited" }
+        : { ok: false, reason: "http_error", status, text };
     }
     this.backoffMs = 0;
     this.backoffUntil = 0;
@@ -260,7 +310,7 @@ export class RestClient {
     let json: unknown;
     let parsed: z.ZodSafeParseResult<unknown> | undefined;
     try {
-      json = JSON.parse(text);
+      json = JSON.parse(text, spec.reviver);
       parsed = schema.safeParse(json);
     } catch {
       parsed = undefined;
@@ -290,7 +340,12 @@ export class RestClient {
     }
     this.counts.ok += 1;
     this.noteUnknownKeys(route, schema, json, recvMs);
-    return { ok: true, data: parsed.data as Reply<R>, recvMs, served: meta };
+    return {
+      ok: true,
+      data: parsed.data as z.infer<Routes[R]["schema"]>,
+      recvMs,
+      served: meta,
+    };
   }
 
   private backOff(rateLimited: boolean): void {
@@ -319,7 +374,7 @@ export class RestClient {
   }
 
   private noteUnknownKeys(
-    route: RouteName,
+    route: string,
     schema: z.ZodType,
     json: unknown,
     recvMs: number,

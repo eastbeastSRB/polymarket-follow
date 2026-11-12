@@ -91,7 +91,11 @@ line a run in `backup.log`. The stream files have no second copy.
 
 **Commands.** `pnpm verify` (build, lint, test, format check); `node
 dist\status.js` in the run copy's folder (every status row, from files
-only, never a recording); `node dist\once.js board <window> <sort>`,
-`competitions`, `daily-reads` (one pass now, the test database only);
-`node backup.cjs`, `node restore.cjs <dump> polymarket_follow_restore_<date>
-[--drop]` in the run copy's folder.
+only, never a recording); `node backup.cjs`, `node restore.cjs <dump>
+polymarket_follow_restore_<date> [--drop]` in the run copy's folder.
+
+**The REST client** (`api/rest-client.ts`) is one class with an instance per
+program: its route table, its share and burst, and a generic User-Agent
+(`data-collector/1.0` for the poller, which also opens the WebSocket with
+it; no project or personal name, code-rules 2026-11-12). The poller's
+instance holds 50 a minute and 30 in 5 s.

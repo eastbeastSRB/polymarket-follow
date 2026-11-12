@@ -1,16 +1,21 @@
 import { readFileSync, readdirSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pino } from "pino";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { spentInWindow, type Spend } from "../src/api/admission.js";
 import {
   API_BASE,
+  COLLECTOR_LIMITS,
   ROUTES,
   RestClient,
+  USER_AGENT,
   type RouteName,
+  type RouteTable,
 } from "../src/api/rest-client.js";
 import type { Clock } from "../src/clock.js";
+import { PAPER_LIMITS, PAPER_ROUTES } from "../src/paper/routes.js";
 import type { Kind } from "../src/store/files.js";
 
 const log = pino({ level: "silent" });
@@ -47,7 +52,14 @@ function world(
     calls.push({ url, init, at: mono });
     return Promise.resolve(answer(url));
   }) as typeof fetch;
-  const client = new RestClient(50, recorder, log, fetchFn, clock);
+  const client = new RestClient(
+    ROUTES,
+    COLLECTOR_LIMITS,
+    recorder,
+    log,
+    fetchFn,
+    clock,
+  );
   return {
     client,
     lines,
@@ -61,7 +73,7 @@ const meta = (line: Line) =>
   JSON.parse(line.text.split("\t")[0]!) as Record<string, unknown>;
 
 describe("RestClient", () => {
-  it("sends a keyless GET with our user agent and logs the call with its reply", async () => {
+  it("sends a keyless GET with its generic user agent and logs the call with its reply", async () => {
     const w = world(
       () =>
         new Response(TICKERS, {
@@ -78,7 +90,7 @@ describe("RestClient", () => {
     expect(w.calls[0]!.init.method).toBe("GET");
     expect(w.calls[0]!.init.redirect).toBe("error");
     expect(w.calls[0]!.init.headers).toEqual({
-      "user-agent": "polymarket-follow",
+      "user-agent": "data-collector/1.0",
       accept: "application/json",
     });
     expect(w.lines).toHaveLength(1);
@@ -230,10 +242,207 @@ describe("RestClient", () => {
   });
 });
 
+describe("RestClient with the experiment's routes", () => {
+  function paperWorld(answer: () => Response) {
+    let mono = 0;
+    const clock: Clock = {
+      wall: () => NOON + mono,
+      monotonic: () => mono,
+      sleep: (ms) => {
+        mono += ms;
+        return Promise.resolve();
+      },
+    };
+    const calls: Call[] = [];
+    const fetchFn = ((url: string, init: RequestInit) => {
+      calls.push({ url, init, at: mono });
+      return Promise.resolve(answer());
+    }) as typeof fetch;
+    const client = new RestClient(
+      PAPER_ROUTES,
+      PAPER_LIMITS,
+      { write: () => undefined },
+      log,
+      fetchFn,
+      clock,
+    );
+    return { client, calls };
+  }
+
+  it("keeps a fill's ids as the reply's digits, above 2^53 too", async () => {
+    const body =
+      '{"data":[{"trade_id":9007199254740993,"order_id":12345678901234567,"instrument_id":6,"timestamp":1793577600000}],"more":false,"cursor":null}';
+    const w = paperWorld(() => new Response(body, { status: 200 }));
+    const out = await w.client.get("fills", { address: "0xabc" });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.data.data[0]).toMatchObject({
+      trade_id: "9007199254740993",
+      order_id: "12345678901234567",
+      instrument_id: 6,
+      timestamp: 1793577600000,
+    });
+  });
+
+  it("gives an HTTP error's status and body to the caller", async () => {
+    const w = paperWorld(
+      () =>
+        new Response('{"status":"err","error":"account not found"}', {
+          status: 400,
+        }),
+    );
+    expect(await w.client.get("fills", { address: "0xabc" })).toEqual({
+      ok: false,
+      reason: "http_error",
+      status: 400,
+      text: '{"status":"err","error":"account not found"}',
+    });
+  });
+
+  it("holds to 120 a minute and 15 in 5 s", async () => {
+    const w = paperWorld(
+      () => new Response('{"data":[],"more":false}', { status: 200 }),
+    );
+    for (let i = 0; i < 30; i += 1) await w.client.get("fills", {}, 300_000);
+    const spends: Spend[] = [];
+    for (const call of w.calls) {
+      spends.push({ at: call.at, weight: 10 });
+      expect(spentInWindow(spends, call.at, 60_000)).toBeLessThanOrEqual(120);
+      expect(spentInWindow(spends, call.at, 5_000)).toBeLessThanOrEqual(15);
+    }
+    // A read of 10 every 5 s: 12 a minute, 120 tokens.
+    expect(w.calls.map((c) => c.at).slice(0, 3)).toEqual([0, 5_000, 10_000]);
+  });
+
+  it("refuses a route table whose weight cannot fit its limits", () => {
+    expect(
+      () =>
+        new RestClient(
+          PAPER_ROUTES,
+          { ...PAPER_LIMITS, burst: 9 },
+          { write: () => undefined },
+          log,
+        ),
+    ).toThrow(/exceeds the limits/);
+  });
+});
+
+describe("no project or personal name leaves this machine (code-rules, 2026-11-12)", () => {
+  const names = [
+    "polymarket-follow",
+    "polymarket_follow",
+    os.userInfo().username,
+    os.hostname(),
+  ].map((n) => n.toLowerCase());
+  const clean = (text: string) => {
+    for (const n of names) expect(text.toLowerCase()).not.toContain(n);
+  };
+
+  it("sends a generic user agent and query on every route of both clients", async () => {
+    const tables: [RouteTable, typeof COLLECTOR_LIMITS][] = [
+      [ROUTES, COLLECTOR_LIMITS],
+      [PAPER_ROUTES, PAPER_LIMITS],
+    ];
+    const urls: string[] = [];
+    for (const [routes, limits] of tables) {
+      expect(limits.userAgent).toMatch(/^[a-z]+(-[a-z]+)*\/\d+(\.\d+)*$/);
+      clean(limits.userAgent);
+      const seen: { url: string; init: RequestInit }[] = [];
+      // A refused reply: no back-off, so every route is sent at once.
+      const fetchFn = ((url: string, init: RequestInit) => {
+        seen.push({ url, init });
+        return Promise.resolve(new Response("x", { status: 200 }));
+      }) as typeof fetch;
+      let mono = 0;
+      const clock: Clock = {
+        wall: () => NOON + mono,
+        monotonic: () => mono,
+        sleep: (ms) => {
+          mono += ms;
+          return Promise.resolve();
+        },
+      };
+      const client = new RestClient(
+        routes,
+        limits,
+        { write: () => undefined },
+        log,
+        fetchFn,
+        clock,
+      );
+      for (const route of Object.keys(routes)) {
+        await client.get(route, {
+          address: "0x0000000000000000000000000000000000000001",
+          instrument_id: 6,
+          start_timestamp: 1,
+          end_timestamp: 2,
+        });
+      }
+      expect(seen).toHaveLength(Object.keys(routes).length);
+      for (const { url, init } of seen) {
+        urls.push(url);
+        clean(url);
+        clean(JSON.stringify(init.headers));
+        expect(init.headers).toEqual({
+          "user-agent": limits.userAgent,
+          accept: "application/json",
+        });
+      }
+    }
+    expect(urls.every((u) => u.startsWith(`${API_BASE}/v1/info/`))).toBe(true);
+  });
+
+  it("opens the WebSocket with the collector's generic user agent", async () => {
+    const opened: unknown[] = [];
+    vi.stubGlobal(
+      "WebSocket",
+      class {
+        constructor(...args: unknown[]) {
+          opened.push(args);
+        }
+      },
+    );
+    try {
+      const { WS_URL, openSocket } = await import("../src/ws/connection.js");
+      openSocket(WS_URL);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(opened).toEqual([
+      [
+        "wss://ws.perpetuals.polymarket.com/v1/ws",
+        { headers: { "user-agent": USER_AGENT } },
+      ],
+    ]);
+    clean(USER_AGENT);
+  });
+
+  it("names the project under src/ only as the local database's application name", () => {
+    const src = fileURLToPath(new URL("../src", import.meta.url));
+    const hits: string[] = [];
+    for (const file of readdirSync(src, {
+      recursive: true,
+      encoding: "utf8",
+    })) {
+      if (!file.endsWith(".ts")) continue;
+      for (const line of readFileSync(path.join(src, file), "utf8").split(
+        "\n",
+      )) {
+        if (line.includes("polymarket-follow")) {
+          hits.push(`${file.replaceAll("\\", "/")}: ${line.trim()}`);
+        }
+      }
+    }
+    expect(hits).toEqual(['store/db.ts: appName: "polymarket-follow",']);
+  });
+});
+
 describe("Iron Rule 1: watch only", () => {
-  it("knows only GET routes under /v1/info/", () => {
-    for (const { path: p } of Object.values(ROUTES)) {
-      expect(p.startsWith("/v1/info/")).toBe(true);
+  it("knows only GET routes under /v1/info/, in both route tables", () => {
+    for (const routes of [ROUTES, PAPER_ROUTES] as RouteTable[]) {
+      for (const { path: p } of Object.values(routes)) {
+        expect(p.startsWith("/v1/info/")).toBe(true);
+      }
     }
   });
 

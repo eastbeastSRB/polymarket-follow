@@ -37,6 +37,13 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
 - **Geography:** order placement is barred in the US, Canada, Cuba, Iran, North
   Korea, Syria, Crimea, Donetsk, Luhansk; "read-only market data is not subject
   to these restrictions" (docs, Geographic Restrictions page, 2026-11-06).
+- **Which User-Agents the API has seen from this IP** (PAPER-PLAN-REVIEW §9,
+  2026-11-12): the collector's REST calls and WebSocket handshakes carried
+  `polymarket-follow` from its start (2026-11-10) to its next deploy, then
+  `data-collector/1.0` (the code since PAPER-BUILD's part 1, 2026-11-12);
+  PAPER-PLAN's probe sent `polymarket-follow-research` (ten fills calls,
+  2026-11-12 11:09–11:10Z); the paper experiment sends `data-reader/1.0`.
+  The research workers' earlier probes are not listed here.
 - **The web app calls the same host:** polymarket.com's JavaScript bundles
   contain `api.perpetuals.polymarket.com/v1` and `ws.perpetuals.polymarket.com`
   (2026-11-06), so a browser open on polymarket.com/perps from this IP most

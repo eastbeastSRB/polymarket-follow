@@ -1,13 +1,15 @@
 /**
  * Admission against the shared token budget (code-rules, "The Perps API"):
  * a request is sent only when the tokens spent in the trailing 60 s plus its
- * weight fit the caller's share, and the trailing 5 s plus it stay within 30.
+ * weight fit the caller's share, and the trailing 5 s plus it stay within the
+ * caller's burst.
  */
 
 export type Spend = { at: number; weight: number };
 
 export const WINDOW_MS = 60_000;
 export const BURST_MS = 5_000;
+/** The operating budget's burst, all callers together: never more than 30 in any 5 s (decisions 2026-11-07, wave 1 closed). */
 export const BURST_CAP = 30;
 
 /** Spends must be in the order they were made; `at` and `now` are monotonic ms. */
@@ -16,13 +18,16 @@ export function admissionDelay(
   now: number,
   weight: number,
   share: number,
+  burst: number,
 ): number {
-  if (weight > share || weight > BURST_CAP) {
-    throw new Error(`weight ${weight} can never fit a share of ${share}`);
+  if (weight > share || weight > burst) {
+    throw new Error(
+      `weight ${weight} can never fit a share of ${share} and a burst of ${burst}`,
+    );
   }
   return Math.max(
     delayInWindow(spends, now, weight, WINDOW_MS, share),
-    delayInWindow(spends, now, weight, BURST_MS, BURST_CAP),
+    delayInWindow(spends, now, weight, BURST_MS, burst),
   );
 }
 

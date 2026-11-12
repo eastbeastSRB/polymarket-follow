@@ -19,6 +19,10 @@ export const STALE_HEARTBEAT_MS = 2 * 60_000;
 export const LOCK_FILE = "poller.lock";
 export const HEARTBEAT_FILE = "heartbeat.json";
 
+/** A program's lock and the heartbeat that keeps it fresh; the paper experiment has its own pair. */
+export type LockFiles = { lock: string; heartbeat: string };
+const POLLER_FILES: LockFiles = { lock: LOCK_FILE, heartbeat: HEARTBEAT_FILE };
+
 export function lockHeld(
   holderPid: number | null,
   ownPid: number,
@@ -37,10 +41,14 @@ export function lockHeld(
 export type LockResult =
   { taken: true } | { taken: false; holderPid: number; heartbeatAgeMs: number };
 
-export function takeLock(stateDir: string, now = Date.now()): LockResult {
-  const lock = path.join(stateDir, LOCK_FILE);
+export function takeLock(
+  stateDir: string,
+  now = Date.now(),
+  files = POLLER_FILES,
+): LockResult {
+  const lock = path.join(stateDir, files.lock);
   const holderPid = readPid(lock);
-  const heartbeatAgeMs = ageMs(path.join(stateDir, HEARTBEAT_FILE), now);
+  const heartbeatAgeMs = ageMs(path.join(stateDir, files.heartbeat), now);
   if (
     holderPid !== null &&
     lockHeld(holderPid, process.pid, isAlive(holderPid), heartbeatAgeMs)
@@ -63,8 +71,8 @@ export function takeLock(stateDir: string, now = Date.now()): LockResult {
   return { taken: true };
 }
 
-export function releaseLock(stateDir: string): void {
-  const lock = path.join(stateDir, LOCK_FILE);
+export function releaseLock(stateDir: string, files = POLLER_FILES): void {
+  const lock = path.join(stateDir, files.lock);
   if (readPid(lock) === process.pid) rmSync(lock, { force: true });
 }
 

@@ -7,7 +7,12 @@
 import { pino } from "pino";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { spentInWindow, type Spend } from "../src/api/admission.js";
-import { COLLECTOR_SHARE, ROUTES, RestClient } from "../src/api/rest-client.js";
+import {
+  COLLECTOR_LIMITS,
+  COLLECTOR_SHARE,
+  ROUTES,
+  RestClient,
+} from "../src/api/rest-client.js";
 import type { Clock } from "../src/clock.js";
 import { BOARD_PASS_GUARD_MS, boardPassJob } from "../src/jobs/board-pass.js";
 import { competitionPassJob } from "../src/jobs/competition-pass.js";
@@ -92,7 +97,8 @@ async function night(dbReadMs = 0, start = START, minutes = 80) {
     return new Response(JSON.stringify(reply(url)), { status: 200 });
   }) as typeof fetch;
   const client = new RestClient(
-    COLLECTOR_SHARE,
+    ROUTES,
+    COLLECTOR_LIMITS,
     { write: () => undefined },
     log,
     fetchFn,

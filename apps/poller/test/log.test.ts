@@ -7,7 +7,7 @@ import { createLog } from "../src/log.js";
 describe("createLog", () => {
   it("writes a line at once and can be closed straight after it opens", () => {
     const stateDir = mkdtempSync(path.join(tmpdir(), "poller-log-"));
-    const { log, close } = createLog(stateDir);
+    const { log, close } = createLog(stateDir, "poller");
     log.warn({ holderPid: 1 }, "another poller holds the lock; exiting");
     expect(() => close()).not.toThrow();
     const [file] = readdirSync(path.join(stateDir, "logs"));

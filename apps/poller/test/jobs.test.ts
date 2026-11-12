@@ -346,18 +346,18 @@ describe("parseRunFor", () => {
 });
 
 describe("logsToDelete", () => {
-  it("deletes the daily logs older than 30 days and nothing else", () => {
+  it("deletes the program's own daily logs older than 30 days and nothing else", () => {
     const now = Date.parse("2026-12-15T10:00:00Z");
-    expect(
-      logsToDelete(
-        [
-          "poller-2026-11-14.log",
-          "poller-2026-11-15.log",
-          "poller-2026-12-15.log",
-          "stdout.log",
-        ],
-        now,
-      ),
-    ).toEqual(["poller-2026-11-14.log"]);
+    const names = [
+      "poller-2026-11-14.log",
+      "poller-2026-11-15.log",
+      "poller-2026-12-15.log",
+      "paper-2026-11-14.log",
+      "stdout.log",
+    ];
+    expect(logsToDelete(names, now, "poller")).toEqual([
+      "poller-2026-11-14.log",
+    ]);
+    expect(logsToDelete(names, now, "paper")).toEqual(["paper-2026-11-14.log"]);
   });
 });
