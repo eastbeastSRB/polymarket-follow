@@ -1,5 +1,42 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the way forward — the owner, after FIND-6-EXITS: "yeah, we will do
+paper experiment, just want to talk little bit more about everything before i
+move on that implementation. i simply want to be sure that i've found
+initially the best possible cases and scenarios for use"; then "yeah, let's
+do that new search then … also let require from agent to help us to find a
+right approach and way of using of this … now we need to understand how to
+'handle them' and beside what we know to found 'balance' and find right
+combination … please run that agent"): **A FORWARD PAPER EXPERIMENT IS THE
+WAY FORWARD; FIRST ONE RESEARCH SUBAGENT, APPROACH-REVIEW, FINDS THE BEST
+DESIGN FOR IT.** The owner accepts losses as part of the game; what counts
+is that the money won exceeds the money lost. APPROACH-REVIEW (Opus 5.5,
+max; brief in the supervisor folder) reads every result so far and answers:
+(a) the outside evidence on copy trading, from primary sources — when, if
+ever, following has paid and why services that sell it can thrive while
+copiers lose; (b) the six untested directions the supervisor named the same
+morning — traders who hold for days with their exits copied; cheaper
+entries (limit orders, a maker's costs); the later batch's three candidates
+("after a jump", the counter-move before agreement, the top accounts' long
+holds); what more weeks of the collector buy (the smallest edge a test could
+see, month by month); using the data other than by copying (crowd
+positioning, liquidation waves), watch-only; prediction-market traders —
+each with whether our data can test it now or needs new weeks; (c) **how to
+handle the known limits — the balance and the combination** (the owner's
+ask): who to follow by a filter fixed in advance, how to copy (exits,
+holds, which markets and hours, an entry worth copying only when its usual
+move covers its costs), the costs to assume, limits on losses, how long the
+experiment runs and the rule by which it is judged, and what each outcome
+would mean. **Exploring on the weeks before the cut is allowed and counted:**
+each exploration is written down with its reason before it runs, its
+numbers are labelled exploring, and nothing on those weeks decides — the
+forward experiment, on weeks nobody has seen, is the test. The blind store,
+no API calls, never the collector's recordings, database or run folder.
+Never personal trading advice: it recommends research and experiment
+designs and what the app shows, never what to trade. The exams of 11-30 and
+12-19 and the dated checks D1 and D2 are ruled with the experiment's plan.
+Then: the experiment's plan, the owner's approval, the build.
+
 2026-11-12 (FIND-6-EXITS's result — the supervisor records the exploring
 check; it decides nothing, and the way forward stays the owner's): **COPYING
 THE TRADERS' EXITS TOO DOES NOT MAKE ANY GROUP PAY: EVERY GROUP STILL

@@ -3,8 +3,8 @@
 polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built, Final-reviewed
 and records around the clock; research round 2's FIND stage is done and
-nothing passed; v1 is not built; the way forward is the owner's, still
-open.** The plan is the plan page (docs/claude-master-plan.md); what exists is
+nothing passed; v1 is not built; the way forward is a forward paper
+experiment, designed first by a research subagent.** The plan is the plan page (docs/claude-master-plan.md); what exists is
 architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -33,10 +33,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   result; its Final review confirms). **An exploring check that copies the
   traders' exits as well** leaves every group losing (decisions 2026-11-12,
   FIND-6-EXITS's result). The reports: `docs/reviews/find-*`.
-- **Open, the owner's decision:** the way forward (a small forward paper
-  experiment, a pause with the collector recording, a later batch on new
-  weeks, or stopping), and with it the exams of 2026-11-30 and 2026-12-19
-  (nothing registered to confirm) and the dated checks D1 and D2.
+- **The way forward: a forward paper experiment** (decisions 2026-11-12, the
+  way forward). First the research subagent APPROACH-REVIEW finds its best
+  design; the exams of 2026-11-30 and 2026-12-19 (nothing registered to
+  confirm) and the dated checks D1 and D2 are ruled with its plan.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
   closed); the collector's share is 50 a minute and 30 in 5 s.
@@ -44,8 +44,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The owner's decision on the way forward** (the plan page's "The way
-   forward" row). Nothing is started before it.
+1. **APPROACH-REVIEW's report**, then the paper experiment's plan for the
+   owner's approval (the plan page's "The way forward" row). Nothing is built
+   before the approval.
 2. **Small collector follow-ups, when convenient** (COLLECTOR-REVIEW's
    questions as ruled in HANDOVER): drop the boards' `consistent` flag (0 of
    16 in the first board pass); a coverage mark for books that arrive late;
