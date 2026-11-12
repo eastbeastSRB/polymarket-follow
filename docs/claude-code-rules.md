@@ -31,7 +31,9 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **One client, one request at a time, evenly spaced.** The limit is a token
   bucket with a burst of only ~90–100 tokens; the budget is 250 tokens a minute
   for all callers together, never more than 30 in a burst (decisions
-  2026-11-07, wave 1 closed). No cron tick that fires many reads at once. On a
+  2026-11-07, wave 1 closed); since 2026-11-12 the collector's client takes
+  50 a minute and 15 in 5 s, the paper experiment's 120 and 15 (a test sums
+  the callers' literal limits). No cron tick that fires many reads at once. On a
   429: drop the tick, back off at least 2 s, never retry in a loop.
 - **Admit each request before sending it:** the tokens spent in the trailing
   60 s plus this request's weight must fit the share, and the trailing 5 s plus
