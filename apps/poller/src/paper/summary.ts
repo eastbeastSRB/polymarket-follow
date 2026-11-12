@@ -142,16 +142,14 @@ export function lookReport(
   const unpricedShare = set.length
     ? (set.length - priced.length) / set.length
     : 0;
-  const v: Verdict | null =
-    m === null
-      ? null
-      : verdict({
-          mean: m.mean,
-          se: m.se,
-          z,
-          meanD: d?.mean ?? null,
-          unpricedShare,
-        });
+  // R12: with no priced copy there is no SE, so the verdict is TOO FEW TO TELL, or WITHHELD above 2% unpriced.
+  const v: Verdict = verdict({
+    mean: m?.mean ?? 0,
+    se: m?.se ?? null,
+    z,
+    meanD: d?.mean ?? null,
+    unpricedShare,
+  });
   const nets = x.map((i) => i.x);
   const wl = kit.exits.winLoss(nets);
   const holds = priced.map((c) => c.money!.holdMs);

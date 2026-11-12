@@ -354,8 +354,8 @@ deferred to a later arm (F16 (e)).
   mean d; a day within ±0.1 bps is a tie, dropped).
 - **The verdict box:** "Too early to judge — next look <date>." until look 1
   has run; from then on, for the latest look k run, exactly "Look k (<END_k's
-  date>): the main line V." (V its MAIN verdict, R12; "has no verdict" when
-  MAIN had no priced position), then R12's sentence, then "Next look
+  date>): the main line V." (V its MAIN verdict, R12; "has no verdict" for a
+  look result without a MAIN entry), then R12's sentence, then "Next look
   <date>." (the first look not yet run) unless V is KEEP or DROP or no look
   is left; nothing else.
 - **Every position** newest first (the newest 500 on the page), its entry

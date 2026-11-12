@@ -431,6 +431,27 @@ describe("lookReport (R12, R14)", () => {
     );
   });
 
+  it("gives MAIN a verdict with no priced copy: TOO FEW TO TELL for an empty set or a single priced copy, WITHHELD for a set all unpriced (R12)", () => {
+    const report = (cs: CopyRecord[], k: 1 | 2 | 3) =>
+      lookReport(kit, scoredOf(cs), "MAIN", k);
+    const generic =
+      "Keep and drop are verdicts on this test, never instructions to trade.";
+    for (const k of [1, 3] as const) {
+      for (const [cs, want] of [
+        [[], "TOO FEW TO TELL"],
+        [[copy(0, 20, 5)], "TOO FEW TO TELL"],
+        [[copy(0, null, 5), copy(1, null, 5)], "WITHHELD"],
+      ] as const) {
+        const r = report([...cs], k);
+        expect([r.money === null || r.money.se === null, r.verdict]).toEqual([
+          true,
+          want,
+        ]);
+        expect(r.sentence).toBe(generic);
+      }
+    }
+  });
+
   it("prints the lines beside MAIN on its voted copies with MAIN's statistic and no verdict word, and no verdict for the other lines", () => {
     const cs = days(40, (i) => 10 + 3 * i).map((c, i) => ({
       ...c,
@@ -553,13 +574,12 @@ describe("lookReport (R12, R14)", () => {
       days(40, (i) => -50 + wobble(i)),
       [...days(40, (i) => 50 + wobble(i)), copy(40, null, 5)],
       days(40, (i) => (i % 2 ? 500 : -500)),
-      [copy(0, null, null)],
     ];
     const reports = sets.flatMap((cs) =>
       ([1, 2, 3] as const).map((k) => lookReport(kit, scoredOf(cs), "MAIN", k)),
     );
     expect(new Set(reports.map((r) => r.verdict))).toEqual(
-      new Set(["KEEP", "DROP", "WITHHELD", "TOO FEW TO TELL", null]),
+      new Set(["KEEP", "DROP", "WITHHELD", "TOO FEW TO TELL"]),
     );
     const sentences = new Set(reports.map((r) => r.sentence));
     expect(sentences.size).toBe(2);
@@ -633,6 +653,8 @@ describe("lookReport (R12, R14)", () => {
       );
     const pages = [
       pageOf([null, null, null]),
+      // A look result without a MAIN entry: "has no verdict".
+      pageOf([{ k: 1, verdict: null, sentence: null }, null, null]),
       ...reports.map((r) =>
         pageOf(
           ([1, 2, 3] as const).map((k) =>
