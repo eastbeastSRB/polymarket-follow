@@ -29,9 +29,9 @@
   - "polymarket-follow poller check": at start-up after 3 minutes, and every
     5 minutes from now on, for ever; 2 minutes at most a run; one instance.
   - "polymarket-follow backup": node.exe runs the run copy's backup.cjs
-    daily at 06:20 local time as registered in winter, which the trigger keeps
-    in UTC (05:20Z all year: 07:20 local in summer time), and as soon as
-    possible after a missed start; an hour at most a run; one instance.
+    daily at 05:20Z, the time computed from UTC (Get-DailyUtcStart) as the
+    paper task's is, so a registration in summer time keeps it too; as soon
+    as possible after a missed start; an hour at most a run; one instance.
   - "polymarket-follow paper": node.exe itself runs the experiment's own
     copy, E:\polymarket-follow-run\paper\dist\paper.js daily, in that folder;
     daily at 04:00Z, the time computed from UTC (Get-DailyUtcStart), never a
@@ -147,7 +147,7 @@ Register-ScheduledTask -TaskName 'polymarket-follow poller check' -Force `
   -Description 'polymarket-follow: restarts the poller when its heartbeat is older than 2 minutes.' `
   -Action $checkAction -Trigger @($checkAtStartup, $checkEvery5Min) -Principal $principal -Settings $checkSettings | Out-Null
 
-$backupTrigger = New-ScheduledTaskTrigger -Daily -At '06:20'
+$backupTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 5 20)
 $backupSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
 $backupAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}"' -f (Join-Path $run 'backup.cjs')) -WorkingDirectory $run
