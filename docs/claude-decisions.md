@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (PAPER-BUILD's fixes after the two fresh reviews — its technical
+calls inside the supervisor's batch, commits `1d720b7` … `e0c7540`): **THE
+BATCH IS IN; THE DRAFT LIST IS `34df20ff…9714` (60 FILES); NOTHING IS FROZEN.**
+**(1)** `look()` takes `daily()`'s `io`, one rule-book reader for both; the
+band is tCritical(2·normalUpper(z), days − 1) × SE_day. **(2)** The box reads
+"Look k (date): the main line V. <sentence>", plus "Next look <date>." unless
+V is KEEP or DROP; the next look is the first without a result; the day's
+record, manifest and backup come before the page. **(3)** Favourites are
+lower-cased and each once; `checkFavourites` (form, CUT ≤ F0 ≤ the freeze's
+instant, no holdout) is the program's own, run by `paper-freeze.cjs`.
+**(4)** `besideLines` in each look's result (MAIN's voted copies, COMP on
+BROAD's too); only MAIN's line has a verdict and a sentence. **(5)** A split
+event is known by its JSON text; its days run from the record that first
+lists it to the one that drops it, both included, open while listed.
+**(6)** `scoreInput` keeps the fills before END for a run and a look alike.
+**(7)** The collector's burst 15 delays the first request of a restart by up
+to one burst window: the restart test's "at once" bound is now 10 s; the
+night pass's peaks stay 49 / 12. **(8)** The freeze tool builds `dist/paper`
+afresh (also for the draft); `register-tasks.ps1 -PaperOnly`. **(9)** The
+collector's first record is its earliest document; the fee alarm covers the
+primary markets' categories. **(10)** The seed's builders live in
+`scripts/paper-seed.ts` (type-checked and tested, never built);
+`EMPTY_RULE_BOOK` and `CLOSED` in the tests; the kit's competition module is
+no longer loaded. **(11)** 50 deliberate breaks of what decides or is frozen:
+49 killed; the one left, an entry exactly at END, is equivalent (no fill at
+or after END reaches `score`). **(12)** The lows done, but those skipped with
+a reason in PAPER-BUILD's progress. **Checked:** the old-weeks reproduction
+re-run equal line for line; `pnpm verify` green.
+
 2026-11-12 (the paper experiment's two fresh reviews — the supervisor's calls
 inside the approved plan, before the freeze): **BOTH REVIEWS SAY "AFTER
 THESE FIXES"; ONE BATCH OF FIXES GOES TO PAPER-BUILD, THEN EACH REVIEWER

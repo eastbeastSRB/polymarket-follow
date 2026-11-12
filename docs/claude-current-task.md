@@ -26,38 +26,41 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **The paper experiment** (decisions 2026-11-12: APPROACH-REVIEW accepted;
   the paper experiment runs daily and gets a page; its plan approved with its
   review's fixes; PAPER-BUILD's technical calls and four questions; daily()
-  end to end): built in `apps/poller` (`dist/paper.js`, `src/paper/`, the
-  vendored kit and lib-exits in `research/`, `experiment/rules.md`), parts
-  0–5 and a whole run tested end to end over a synthetic world
-  (`test/paper-daily.test.ts`), `pnpm verify` green (33 files, 249 tests).
+  end to end; the two fresh reviews' batch, PAPER-BUILD's fixes): built in
+  `apps/poller` (`dist/paper.js`, `src/paper/`, the vendored kit and
+  lib-exits in `research/`, `experiment/rules.md`), with a run and a look
+  tested end to end over a synthetic world (`test/paper-daily`,
+  `paper-look`, `paper-guards`), `pnpm verify` green (35 files, 280 tests).
   The seed and the pre-cut panel are in
   `F:\polymarket-follow\paper\`. The reproduction on the old weeks matches
-  (FIND-6-EXITS, X3, FIND-3's d, the kit's labels, the main line's counts);
-  the live checks on pre-cut windows match. **Nothing after the cut has been
+  (FIND-6-EXITS, X3, FIND-3's d, the kit's labels, the main line's counts;
+  re-run after the batch, equal); the live checks on pre-cut windows match. **Nothing after the cut has been
   read; the program's gate refuses it until `experiment/FROZEN.sha256`
   exists.** The draft list: `experiment/FROZEN.draft.sha256`
-  (`d6698333…36db4`, 60 files, from `6fa14d3`). Not built: MAKER and VWAP
+  (`34df20ff…9714`, 60 files, from `efdc8aa`). Not built: MAKER and VWAP
   (Q-D).
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
-  closed); the collector's share is 50 a minute and 30 in 5 s; the
-  experiment's 120 and 15.
+  closed); the collector's share is 50 a minute and 15 in 5 s; the
+  experiment's 120 and 15 (live for the collector at its next deploy).
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
 
 ## Next up — IN ORDER
 
-1. **A fresh rules review** of `apps/poller/experiment/rules.md` and the code
-   (a different model), verdict "may run". PAPER-BUILD's four questions are
-   ruled (decisions 2026-11-12).
+1. **Each fresh reviewer re-checks its own findings** against PAPER-BUILD's
+   fixes (decisions 2026-11-12, the two fresh reviews; PAPER-BUILD's fixes).
 2. **The freeze:** the owner's favourites into `experiment/favourites.txt`
-   (`from <F0>`, ≤ 20 addresses), `pnpm verify`, `node tools/paper-freeze.cjs
-   --final`, the commit tagged `paper-freeze-1`, the list's SHA-256 in
-   decisions.
+   (`from <F0>` with F0 the instant `--final` runs, ≤ 20 addresses, none in
+   the holdout; written with the Write tool, LF), `pnpm verify` on a clean
+   tree, `node tools/paper-freeze.cjs --final` (it checks the favourites and
+   refuses a dirty tree), the commit tagged `paper-freeze-1`, the list's
+   SHA-256 in decisions.
 3. **The owner's deploy and registration:** `tools\deploy.ps1` (the collector,
    for its User-Agent), `tools\deploy.ps1 -Program paper`, then
    `tools\register-tasks.ps1` elevated once (adds "polymarket-follow paper",
-   daily 04:00Z, and the backup's trigger, now computed from UTC, 05:20Z);
-   the first run reads the backlog (16–26 h).
+   daily 04:00Z, and the backup's trigger, now computed from UTC, 05:20Z;
+   `-PaperOnly` would add the paper task alone); the first run reads the
+   backlog (16–26 h).
 4. **Small collector follow-ups, when convenient:** drop the boards'
    `consistent` flag; a coverage mark for books that arrive late.
 5. D1 and D2 after the freeze, each with its own share of the remaining 80 a
@@ -79,3 +82,10 @@ optional argument and a test drives whole runs over a synthetic world (the
 gate's refusals, a first run paused at night and resumed, a normal day, a
 Monday's sweep, the log of every copy and the page; 21 of 21 glue mutants
 killed); the draft list again; the backup task's trigger computed from UTC.
+Then the two fresh reviews' batch (`1d720b7` … `e0c7540`): the look takes
+`io` and is tested end to end, its band fixed; the page shows the latest
+look's verdict; favourites checked at the freeze; the lines beside printed at
+the looks; the split rule; a look reads nothing after its END; bursts 15 + 15;
+the freeze and deploy checks, `-PaperOnly`; the kit's rule book before the
+collector's first record; dead code out; 49 of 50 deliberate breaks killed;
+the lows.

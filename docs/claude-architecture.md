@@ -9,7 +9,7 @@ What is planned: the plan page. Why: decisions.
 **What it is.** One Node 24 program, the poller (`apps/poller`, TypeScript,
 the only package of a pnpm workspace), that records Polymarket Perps' public
 data for later study and never trades: public GET `/v1/info/` routes and the
-public WebSocket only, inside a share of 50 weighted tokens a minute and 30
+public WebSocket only, inside a share of 50 weighted tokens a minute and 15
 in any 5 s, no REST call 02:35–03:50Z (the lab's nightly window). The plan:
 `docs/reviews/collector-plan-2026-11-10.md`; its deviations from the stack:
 decisions 2026-11-11 (COLLECTOR-BUILD's technical calls).
@@ -99,7 +99,9 @@ polymarket_follow_restore_<date> [--drop]` in the run copy's folder.
 program: its route table, its share and burst, and a generic User-Agent
 (`data-collector/1.0` for the poller, which also opens the WebSocket with
 it; no project or personal name, code-rules 2026-11-12). The poller's
-instance holds 50 a minute and 30 in 5 s.
+instance holds 50 a minute and 15 in 5 s, the experiment's 120 and 15:
+together the operating budget's 30 in 5 s (decisions 2026-11-12, the two
+fresh reviews (7)).
 
 ## The paper experiment (built 2026-11-12, PAPER-BUILD parts 0–5; not frozen, not deployed)
 
@@ -117,9 +119,12 @@ fingerprint `2d3667b5…09aa`) and FIND-6-EXITS's `lib-exits.mjs` (`612d5836…6
 byte for byte (`-text` in `.gitattributes`, out of Prettier and ESLint), loaded
 by path and typed in `src/paper/research.ts`; `checkKit()` at every load.
 `apps/poller/experiment/`: `rules.md`, `seed.sha256` (the seed's manifest),
-`favourites.txt` (written at the freeze: `from <F0>` and ≤ 20 addresses),
+`favourites.txt` (written at the freeze: `from <F0>` and ≤ 20 addresses,
+read lower-case; checked by the freeze tool: its form, F0 between the cut and
+the freeze, no holdout account — a run refuses a holdout favourite too),
 `FROZEN.draft.sha256` (a draft; the gate opens only on `FROZEN.sha256`).
-`tools/paper-freeze.cjs` writes the list of what runs (`dist/paper.js`,
+`tools/paper-freeze.cjs` builds `dist/paper` afresh and writes the list of
+what runs (`--final` refuses a tree that is not clean) (`dist/paper.js`,
 `dist/paper/`, `research/`, `experiment/`) with the toolchain in its head.
 
 **The blind gate** (`gate.ts`): a request whose window reaches the cut is
@@ -144,7 +149,10 @@ once), `raw\<UTC date>\rest-HH.jsonl(.br)` (every reply, the collector's
 Recorder: the record), `cache\mondays.json.gz` (labels and habits by account
 and Monday), `log\<run date>.jsonl` and `<run date>-positions.jsonl.gz`,
 `manifest\<run date>.sha256`, `page\index.html` and `positions.html` (the
-static page, no script but a staleness note), `looks\L<k>\result.json`,
+static page, no script but a staleness note; its verdict box the latest
+look's MAIN verdict and sentence; written after the day's record),
+`looks\L<k>\result.json` (the five lines, MAIN's verdict alone, and the
+lines beside),
 `checks\` (the build's live checks and rehearsal). After each run what cannot
 be read again is copied to `PAPER_BACKUP` (`E:\backups\polymarket-follow\paper\`).
 Its lock, heartbeat and log: `STATE_DIR\paper.lock`, `paper-heartbeat.json`,
@@ -154,13 +162,20 @@ Its lock, heartbeat and log: `STATE_DIR\paper.lock`, `paper-heartbeat.json`,
 here): the `rulebook` collection of `polymarket_follow`, read only —
 `instruments`/`list` and `instrument`/<id> (close-only, settlement, absence),
 `fees`/`schedule` (the base-tier taker rate by category), `splits`/`events`
-(counted, never read), `competitions`/`list` and `competition_markets`/<id>.
+(each event's numeric `instrument_id` alone read: R6's split days),
+`competitions`/`list` and `competition_markets`/<id>; before its first
+record (2026-11-11T15:47Z) the kit's `rulebook.json` is the rule book, and a
+primary market's fee category missing from a recorded schedule is an alarm.
+The seed was built once by `scripts/paper-seed.ts` (outside `dist`).
 
 **How it is to run** (prepared, tested on a scratch run root only):
 `tools\deploy.ps1 -Program paper` writes its own run copy,
 `E:\polymarket-follow-run\paper\` (the build plus `research\` and
-`experiment\`; smoke: exit 2 without settings and the copy's `checkKit()`),
+`experiment\`; smoke: exit 2 without settings, the copy's `checkKit()`, and,
+once a freeze list is in it, the copy's own gate — a difference keeps the old
+copy),
 refused while its task runs; `tools\register-tasks.ps1` adds the task
 "polymarket-follow paper": node.exe runs `dist\paper.js daily` there daily at
 04:00Z (computed from UTC), S4U, IgnoreNew, 36 h at most, priority 7, start
-when available. Neither is done before the freeze and the owner's word.
+when available; `-PaperOnly` registers that task alone, the collector's three
+untouched. Neither is done before the freeze and the owner's word.
