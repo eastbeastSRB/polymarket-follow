@@ -429,7 +429,12 @@ export function pageData(
       state: c.plan.flag === null ? ("closed" as const) : c.plan.flag,
       net: c.money?.net ?? null,
       flags: [
-        ...(c.unpriced ? [`unpriced: ${c.unpriced}`] : []),
+        // R15: the page never says "follow"; lib-exits' reason is named for the page.
+        ...(c.unpriced
+          ? [
+              `unpriced: ${c.unpriced.replace("the follow instant", "the paper entry")}`,
+            ]
+          : []),
         ...(c.gap ? ["gap"] : []),
         ...c.lines,
       ],

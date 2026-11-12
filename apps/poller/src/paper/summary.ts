@@ -172,7 +172,7 @@ export function lookReport(
       ? null
       : withoutMost(
           x.filter((i) => i.addr !== withoutAccount.key),
-          (i) => String(dayOf(i.tIn)),
+          (i) => new Date(dayOf(i.tIn)).toISOString().slice(0, 10),
         );
   const closedOnly = twoWay(kit, money(priced.filter((c) => !isOpen(c))));
   // R14: Student's t at the look's two-sided level, on the day clusters (df = days - 1).

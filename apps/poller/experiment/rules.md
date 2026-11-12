@@ -38,18 +38,24 @@ does exactly that; a test pins each rule. Every number here is fixed now.
 - **A code defect** (the code not doing what this file says) is fixed only
   through a decisions entry that names it, before the next look, with the
   diff, a test that failed before the fix, and the list of copies whose
-  numbers changed; never a number of this file.
+  numbers changed; never a number of this file. A fix is a new freeze list
+  (`paper-freeze-2`, …), its hash and tag in decisions; a fix in
+  `account.ts` also removes `cache\mondays.json.gz` (it is keyed by the
+  fills, not the code).
 
 ## R1. Instants
 
 - **CUT** = 2026-11-07T00:00:00.000Z. Arm A counts entries with first fill
   t ≥ CUT.
-- **F0** = the freeze's instant, the first line of `favourites.txt` (R2).
-  Arm F counts entries with t ≥ F0.
+- **F0** = the freeze's instant, the first line of `favourites.txt` (R2):
+  the UTC instant, to the second, at which `paper-freeze.cjs --final` is run,
+  recorded in decisions with the list's hash; the freeze refuses an F0 before
+  the cut or after its own instant. Arm F counts entries with t ≥ F0.
 - **A run's END** = 00:00Z of its UTC day; nothing at or after END is used.
 - **The looks:** END₁ = 2026-12-19T00:00Z, END₂ = 2027-02-06T00:00Z,
-  END₃ = 2027-05-08T00:00Z; look k runs once, on the Monday after its date,
-  after that day's run, with END = END_k (R16).
+  END₃ = 2027-05-08T00:00Z; look k runs once, on or after the Monday after
+  its date once the reads through END_k are complete (it waits for them up to
+  a week, R16), with END = END_k: no fill at or after END_k is used.
 - **Weeks** run Monday 00:00Z to Monday 00:00Z; an entry's **Monday M** is the
   latest Monday 00:00Z at or before t.
 - Times are ms since the epoch; a window [a, b) includes a and excludes b.
@@ -62,10 +68,12 @@ does exactly that; a test pins each rule. Every number here is fixed now.
   holdout account's file is ever opened.
 - **The favourites (arm F):** `experiment/favourites.txt`, written at the
   freeze from the owner's list: a first line `from <F0 as an ISO instant>`,
-  then at most 20 lower-case addresses, one a line (lines starting `#` are
-  comments). Pool membership is not needed; judged whole, as one set. A
+  then at most 20 addresses, each once, one a line (read lower-case; lines
+  starting `#` are comments); `paper-freeze.cjs` checks it with the run's own
+  reader before it writes the list, and refuses a holdout account. Pool membership is not needed; judged whole, as one set. A
   holdout account on the list joins only after D1 is scored, with that instant
-  as its own start; an address added later is a new arm.
+  as its own start (a run refuses one before); an address added later is a new
+  arm.
 
 ## R3. Fills
 
@@ -86,7 +94,8 @@ does exactly that; a test pins each rule. Every number here is fixed now.
   P (first CUT; a favourite outside the pool: 30 days before F0's Monday). A
   read asks [P, end) and moves P to its end only when it finished.
 - **The boundary check** of a row (Zod, `FillRow`): the kit's `validFill`
-  with trade_id and order_id strings of digits. A row that fails it, or lies
+  with trade_id and order_id strings of digits, and `adl` or `settlement`, when
+  present, booleans. A row that fails it, or lies
   outside its window, is dropped and counted; its account-day (UTC) inside the
   read becomes a hole (a row without an instant: the read's window).
 - **The schema alarm (F3):** when a run's rejected rows are more than 1% of its
@@ -153,7 +162,10 @@ An entry's market is **primary** when all hold, checked in this order:
    SKHYNIX, SAMSUNG, CXMT out; KIOXIA from its settlement day);
 3. for t ≥ CUT only: the collector's rule book (`rulebook` collection, read
    only) shows no close-only state, settlement or absence from the market list
-   recorded on or before t's UTC day; and no split on t's UTC day: a market
+   recorded on or before t's UTC day (a list record's states from the
+   record's day; a settlement in an instrument's own record from the
+   settlement's own UTC day, as the kit's KIOXIA rule); and no split on t's
+   UTC day: a market
    named by a split event's numeric `instrument_id` (an event without one:
    every equity market) is out on every UTC day the event is in the recorded
    list. A copy of such a market open across one of those days is unpriced.
@@ -253,8 +265,8 @@ their own arm with their own start.
   unpriced, the hour has no trade left, or the long share is null.
 - **A gap copy:** a chain break (lib-exits' `chainBreaks`) on its instrument
   after the entry's first event and up to its last exit used (to END while
-  open), or a hole of the account in [t, that instant]; flagged, printed with
-  and without.
+  open), a hole of the account in [t, that instant], or that instant after
+  the account's P (its tail not read yet); flagged, printed with and without.
 
 ## R12. The statistic and the verdict (MAIN only)
 
@@ -271,7 +283,8 @@ their own arm with their own start.
 - **KEEP** when m − z·SE > 0 and the mean d of the set's copies with a d is
   above 0.
 - When KEEP and DROP both hold, **DROP** (Q-G). **TOO FEW TO TELL**
-  otherwise; at L3 it reads "no edge as large as m + z·SE was seen".
+  otherwise, and when SE cannot be computed (fewer than two traders or two
+  days); at L3 it reads "no edge as large as m + z·SE was seen".
 - The first KEEP or DROP is the test's verdict; later looks print their
   figures marked "after the verdict".
 - Only MAIN's line carries a verdict and its sentence; TEN, BROAD, DAY and
@@ -322,7 +335,9 @@ statistic — the copies priced, the mean net per copy and its two-way SE
 with J > 3 and those with J ≤ 3 (and how many have no J); NOTIONAL, the
 board's accounts and the rest; COMP, without the competitions' days and
 without their boosted markets; the copies the 24 h map would close (R6); and
-MAIN without its gap copies (R11).
+MAIN without its gap copies (R11). Per-copy covariates for later splits
+(funding paid, the trader's long and short counts, the agreement flag) are
+deferred to a later arm (F16 (e)).
 
 ## R15. The daily page
 
@@ -335,7 +350,9 @@ MAIN without its gap copies (R11).
   mean d; a day within ±0.1 bps is a tie, dropped).
 - **The verdict box:** "Too early to judge — next look <date>" until L1; at
   and after a look, R12's verdict line and its sentence, nothing else.
-- **Every position** newest first (the newest 500 on the page); **one row per
+- **Every position** newest first (the newest 500 on the page), its entry
+  price the mark at the end of t + D's minute, plus or minus the spread and
+  depth (R9); **one row per
   MAIN trader**, sorted by address: positions, open, the running mean, a 95%
   band (CR1 by UTC day, Student's t on days − 1) from 20 days with a position,
   else "too few days", under the caption that about 5% of such bands exclude

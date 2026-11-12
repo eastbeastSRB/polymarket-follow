@@ -282,9 +282,11 @@ export function score(input: ScoreInput): Scored {
       const exits = kit.exits.exitsOf(g, liqKeys);
       const plan = planCopyThrough({ t: g.t, D }, exits, end);
       const spanEnd = plan.flag === "open" ? end : (plan.lastExitT ?? g.t);
+      // R11: a gap copy — a chain break, a hole in its span, or its span read only in part.
       const gap =
         kit.exits.crossesBreak(chain, events, g, plan) ||
-        account.state.holes.some((h) => h.from <= spanEnd && h.to > g.t);
+        account.state.holes.some((h) => h.from <= spanEnd && h.to > g.t) ||
+        account.state.P < spanEnd;
       const comp = input.book.competitions.filter(
         (c) => c.start < end && c.end > CUT,
       );

@@ -15,7 +15,8 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { scoreInput } from "../src/paper/daily.js";
+import { pageData, scoreInput } from "../src/paper/daily.js";
+import { renderPage, renderPositions } from "../src/paper/page.js";
 import { CUT, LOOK_ENDS } from "../src/paper/instants.js";
 import { PaperStore } from "../src/paper/store.js";
 import { loadResearch } from "../src/paper/research.js";
@@ -503,5 +504,35 @@ describe("lookReport (R12, R14)", () => {
       );
       expect([r.verdict, r.sentence]).toEqual([null, null]);
     }
+  });
+
+  it("names the day that moves the mean most by its date, and never says 'follow' on the page (R14, R15)", () => {
+    const r = lookReport(
+      kit,
+      scoredOf(days(40, (i) => 50 + 40 * Math.sin(i))),
+      "MAIN",
+      1,
+    );
+    expect(r.withoutItAndTheMostInfluentialDay!.key).toMatch(
+      /^\d{4}-\d{2}-\d{2}$/,
+    );
+    const unpriced = copy(1, null, null, {
+      unpriced: "no mark at the follow instant",
+    });
+    const data = pageData(
+      kit,
+      scoredOf([unpriced]),
+      CUT + 10 * DAY_MS,
+      new Map(),
+      null,
+      [],
+      "",
+      [null, null, null],
+    );
+    expect(data.rows[0]!.flags).toContain(
+      "unpriced: no mark at the paper entry",
+    );
+    expect(renderPage(data)).not.toMatch(/follow/i);
+    expect(renderPositions(data)).not.toMatch(/follow/i);
   });
 });

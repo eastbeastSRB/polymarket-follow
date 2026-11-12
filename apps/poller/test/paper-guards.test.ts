@@ -345,6 +345,28 @@ describe("the experiment's backup and its frozen inputs (Q-F, F10)", () => {
   });
 });
 
+describe("the day's manifest", () => {
+  it("names each file once, with the last hash it had", () => {
+    const root = path.join(scratch, "manifest");
+    const store = new PaperStore(root);
+    store.saveState({ version: 1, accounts: {} });
+    store.saveState({
+      version: 1,
+      accounts: { [addr(1)]: { P: CUT, from: CUT, holes: [] } },
+    });
+    store.flushManifest("2026-11-10");
+    const lines = readFileSync(
+      path.join(root, "manifest", "2026-11-10.sha256"),
+      "utf8",
+    )
+      .trim()
+      .split("\n");
+    expect(lines).toEqual([
+      `${sha256(readFileSync(path.join(root, "state.json")))} *state.json`,
+    ]);
+  });
+});
+
 describe("a Monday's facts at their edges (R5)", () => {
   it("takes the fills strictly before M, and the habits' read window as 30 days", () => {
     const fill = (t: number) => ({ t }) as Fill;

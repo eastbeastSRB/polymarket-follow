@@ -10,8 +10,11 @@
 import { createHash } from "node:crypto";
 import {
   appendFileSync,
+  closeSync,
   existsSync,
+  fsyncSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   renameSync,
@@ -73,7 +76,14 @@ const sha256 = (bytes: Buffer | string): string =>
 /** Written whole to `<file>.tmp`, then renamed over the file. */
 export function writeAtomic(file: string, bytes: Buffer | string): void {
   mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(`${file}.tmp`, bytes);
+  // Flushed before the rename, so that a power cut leaves the old file or the new, never an empty one.
+  const fd = openSync(`${file}.tmp`, "w");
+  try {
+    writeFileSync(fd, bytes);
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
   renameSync(`${file}.tmp`, file);
 }
 
@@ -198,7 +208,11 @@ export class PaperStore {
     if (this.written.length === 0) return;
     const file = path.join(this.root, "manifest", `${runDate}.sha256`);
     mkdirSync(path.dirname(file), { recursive: true });
-    appendFileSync(file, `${this.written.join("\n")}\n`);
+    // The last hash each path had: state.json is rewritten after every account.
+    const last = new Map(
+      this.written.map((line) => [line.slice(line.indexOf(" *") + 2), line]),
+    );
+    appendFileSync(file, `${[...last.values()].join("\n")}\n`);
     this.written.length = 0;
   }
 }

@@ -27,6 +27,7 @@ import {
   votedBy,
   weekList,
   type ScoreInput,
+  type Scored,
 } from "../src/paper/score.js";
 import type { SeedAccount } from "../src/paper/seed.js";
 import type { AccountState, StoredRow } from "../src/paper/store.js";
@@ -390,6 +391,20 @@ describe("the scorer (R4–R11)", () => {
     expect(
       s1.copies.some((c) => c.addr === A && c.iid === 6 && c.t > T1 + HOUR_MS),
     ).toBe(false);
+  });
+
+  it("flags as a gap a copy whose span was read only in part (R11)", () => {
+    const partly = score({
+      ...input(),
+      account: (a) =>
+        accountData(kit, a, seeds.get(a) ?? null, post.get(a) ?? [], {
+          ...(holes.get(a) ?? read),
+          P: END - HOUR_MS,
+        }),
+    });
+    const at = (s: Scored) =>
+      s.copies.find((x) => x.addr === A && x.t === END - 2 * HOUR_MS)!;
+    expect([at(score(input())).gap, at(partly).gap]).toEqual([false, true]);
   });
 
   describe("a split (R6 (3))", () => {
