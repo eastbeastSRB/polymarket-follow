@@ -18,13 +18,14 @@ import {
   fixedInputs,
   loadCache,
   PACKAGE_ROOT,
+  ruleBookOf,
   scoreInput,
   type DailyConfig,
+  type DailyIo,
 } from "./daily.js";
 import { verifyFreeze } from "./gate.js";
 import { CUT, LOOK_ENDS, WEEK_MS, mondayOf } from "./instants.js";
 import { loadResearch } from "./research.js";
-import { parseRuleBook, readRuleBook } from "./rulebook.js";
 import { LINES, score, weekList } from "./score.js";
 import { PaperStore, writeAtomic } from "./store.js";
 import { lookReport } from "./summary.js";
@@ -43,9 +44,11 @@ export async function look(
   log: Logger,
   k: 1 | 2 | 3,
   now = Date.now(),
+  io: DailyIo = {},
 ): Promise<number> {
+  const packageRoot = io.packageRoot ?? PACKAGE_ROOT;
   const store = new PaperStore(config.PAPER_ROOT);
-  const freeze = verifyFreeze(PACKAGE_ROOT);
+  const freeze = verifyFreeze(packageRoot);
   if (!freeze.ok) {
     log.error({ problems: freeze.problems }, "frozen files differ: no look");
     return 4;
@@ -65,13 +68,10 @@ export async function look(
     );
     return 5;
   }
-  const kit = await loadResearch();
-  const fixed = fixedInputs(kit);
+  const kit = await loadResearch(path.join(packageRoot, "research"));
+  const fixed = io.fixed ?? fixedInputs(kit, packageRoot);
   const state = store.readState();
-  const book = parseRuleBook(
-    await readRuleBook(config.MONGO_URI, config.MONGO_DB),
-    [...fixed.kitMarkets.keys()],
-  );
+  const book = await ruleBookOf(config, io, fixed);
   const cache = loadCache(config.PAPER_ROOT);
   const setup = { kit, store, state, book, cache, end };
   const lastMonday = mondayOf(end - 1);

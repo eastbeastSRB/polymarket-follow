@@ -175,11 +175,12 @@ export function lookReport(
           (i) => String(dayOf(i.tIn)),
         );
   const closedOnly = twoWay(kit, money(priced.filter((c) => !isOpen(c))));
+  // R14: Student's t at the look's two-sided level, on the day clusters (df = days - 1).
   const tBand =
-    m?.se === null || m === null
+    m === null || m.seDay === null
       ? null
-      : kit.stats.tCritical(2 * (1 - normalUpper(z)), Math.max(1, m.days - 1)) *
-        m.se;
+      : kit.stats.tCritical(2 * normalUpper(z), Math.max(1, m.days - 1)) *
+        m.seDay;
   return {
     look: k,
     end: new Date(end).toISOString(),

@@ -161,6 +161,18 @@ export function fixedInputs(kit: Research, packageRoot = PACKAGE_ROOT) {
 
 export type FixedInputs = ReturnType<typeof fixedInputs>;
 
+/** The collector's rule book as a run or a look reads it (R6, R9). */
+export async function ruleBookOf(
+  config: DailyConfig,
+  io: DailyIo,
+  fixed: FixedInputs,
+): Promise<RuleBook> {
+  const docs = await (
+    io.ruleBook ?? (() => readRuleBook(config.MONGO_URI, config.MONGO_DB))
+  )();
+  return parseRuleBook(docs, [...fixed.kitMarkets.keys()]);
+}
+
 const MondayCacheFile = z.record(
   z.string(),
   z.object({
@@ -391,12 +403,7 @@ export async function daily(
   const end = runEnd(now);
   const state = store.readState();
   stage("reading the rule book");
-  const book = parseRuleBook(
-    await (
-      io.ruleBook ?? (() => readRuleBook(config.MONGO_URI, config.MONGO_DB))
-    )(),
-    [...fixed.kitMarkets.keys()],
-  );
+  const book = await ruleBookOf(config, io, fixed);
   const cache = loadCache(config.PAPER_ROOT);
   const recorder = new Recorder(path.join(config.PAPER_ROOT, "raw"), log);
   await recorder.start();

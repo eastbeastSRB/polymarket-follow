@@ -1,0 +1,319 @@
+/**
+ * The looks (R1, R12, R14, R16): `look()` end to end over the synthetic world
+ * of `paper-e2e.ts`, and `lookReport` on made-up copies — what decides at a
+ * look (the voted, priced set, its own look's z, the unpriced share, the mean
+ * d) and the printed band.
+ */
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { CUT, LOOK_ENDS } from "../src/paper/instants.js";
+import { loadResearch } from "../src/paper/research.js";
+import { LINES, type CopyRecord, type Scored } from "../src/paper/score.js";
+import { LOOK_Z, twoWay } from "../src/paper/stats.js";
+import { lookReport } from "../src/paper/summary.js";
+import { DAY_MS, HOUR_MS } from "../src/schedule.js";
+import { A, C, at, freeze, makeWorld, positions } from "./paper-e2e.js";
+
+type LookResult = {
+  look: number;
+  frozen: string;
+  afterTheVerdict: { look: number; verdict: string } | null;
+  unreadListedAsHoles: { addr: string; P: number; due: number }[];
+  marketDaysMissing: string[];
+  lines: ReturnType<typeof lookReport>[];
+};
+
+const resultOf = (paper: string, k: number): LookResult =>
+  JSON.parse(
+    readFileSync(path.join(paper, "looks", `L${k}`, "result.json"), "utf8"),
+  ) as LookResult;
+
+/** R12 as written, for a check of the code's verdict: DROP wins, WITHHELD above 2% unpriced. */
+function verdictByHand(f: {
+  mean: number;
+  se: number | null;
+  z: number;
+  meanD: number | null;
+  unpricedShare: number;
+}): string {
+  if (f.unpricedShare > 0.02) return "WITHHELD";
+  if (f.se === null) return "TOO FEW TO TELL";
+  if (f.mean + f.z * f.se < 10) return "DROP";
+  if (f.mean - f.z * f.se > 0 && f.meanD !== null && f.meanD > 0) return "KEEP";
+  return "TOO FEW TO TELL";
+}
+
+describe("a look, look() (R1, R12, R16)", () => {
+  it(
+    "refuses without a freeze, before its Monday and a second time; waits for unfinished reads and runs a week later listing them; writes MAIN's figures as the day's log of every copy gives them; marks a look after the verdict",
+    { timeout: 120_000 },
+    async () => {
+      const tmp = mkdtempSync(path.join(tmpdir(), "paper-look-"));
+      try {
+        const { pkg, paperRoot, run, runLook } = await makeWorld(tmp);
+        const root = paperRoot("paper");
+        const late = paperRoot("paper-late");
+        const END_1 = LOOK_ENDS[0];
+
+        // No freeze: refused, nothing written.
+        expect(await runLook(root, 1, "2026-12-21T05:00:00Z")).toBe(4);
+        expect(existsSync(path.join(root, "looks"))).toBe(false);
+        const frozen = freeze(pkg);
+
+        // The day's run whose END is look 1's: every read from the cut.
+        expect((await run(root, "2026-12-19T04:00:00Z")).exit).toBe(0);
+        // Before its Monday, END_1 + 2 days: refused.
+        expect(await runLook(root, 1, "2026-12-20T23:59:59Z")).toBe(5);
+        expect(existsSync(path.join(root, "looks"))).toBe(false);
+        // On its Monday, the reads complete: it runs, once.
+        expect(await runLook(root, 1, "2026-12-21T05:00:00Z")).toBe(0);
+        expect(await runLook(root, 1, "2026-12-22T05:00:00Z")).toBe(5);
+        const r1 = resultOf(root, 1);
+        expect(r1).toMatchObject({
+          look: 1,
+          frozen,
+          afterTheVerdict: null,
+          unreadListedAsHoles: [],
+          marketDaysMissing: [],
+        });
+        expect(r1.lines.map((l) => l.line)).toEqual([...LINES]);
+
+        // MAIN as the day's log of every copy at END_1 gives it: the voted copies, money on the priced ones.
+        const set = positions(root, "2026-12-19").filter(
+          (c) => c.lines.includes("MAIN") && c.voted,
+        );
+        const priced = set.filter((c) => c.money !== null);
+        const items = priced.map((c) => ({
+          addr: c.addr,
+          tIn: c.tIn,
+          x: c.money!.net,
+        }));
+        const m = twoWay(kit, items)!;
+        const ds = set.flatMap((c) =>
+          c.d.MAIN === null || c.d.MAIN === undefined ? [] : [c.d.MAIN],
+        );
+        const meanD = ds.length
+          ? ds.reduce((s, x) => s + x, 0) / ds.length
+          : null;
+        const main = r1.lines.find((l) => l.line === "MAIN")!;
+        expect(set).toHaveLength(42);
+        expect(main.copies).toBe(42);
+        expect(main.traders).toBe(2);
+        expect(main.z).toBe(2.81);
+        expect(main.unpricedShare).toBe(
+          (set.length - priced.length) / set.length,
+        );
+        expect(main.money!.mean).toBeCloseTo(
+          items.reduce((s, i) => s + i.x, 0) / items.length,
+          9,
+        );
+        expect(main.money!.se).toBeCloseTo(m.se!, 9);
+        expect(main.d!.mean).toBeCloseTo(meanD!, 9);
+        expect(main.verdict).toBe(
+          verdictByHand({
+            mean: m.mean,
+            se: m.se,
+            z: 2.81,
+            meanD,
+            unpricedShare: main.unpricedShare,
+          }),
+        );
+
+        // Unfinished reads: the late folder's last run was on 12-14. The look waits a week, then runs and lists them.
+        expect((await run(late, "2026-12-14T04:00:00Z")).exit).toBe(0);
+        expect(await runLook(late, 1, "2026-12-21T05:00:00Z")).toBe(5);
+        expect(await runLook(late, 1, "2026-12-27T23:59:59Z")).toBe(5);
+        expect(existsSync(path.join(late, "looks"))).toBe(false);
+        expect(await runLook(late, 1, "2026-12-28T00:00:00Z")).toBe(0);
+        const forced = resultOf(late, 1);
+        const read14 = at("2026-12-14T00:00:00Z");
+        expect(forced.unreadListedAsHoles).toEqual([
+          { addr: A, P: read14, due: END_1 },
+          { addr: C, P: read14, due: END_1 },
+        ]);
+        expect(forced.marketDaysMissing).toEqual(
+          ["14", "15", "16", "17", "18"].map((d) => `6 2026-12-${d}`),
+        );
+
+        // After the verdict: a look after one whose MAIN said KEEP or DROP is marked so; after any other, not.
+        mkdirSync(path.join(late, "looks", "L1"), { recursive: true });
+        writeFileSync(
+          path.join(late, "looks", "L1", "result.json"),
+          JSON.stringify({ lines: [{ line: "MAIN", verdict: "DROP" }] }),
+        );
+        expect(await runLook(late, 2, "2027-02-15T00:00:00Z")).toBe(0);
+        expect(resultOf(late, 2).afterTheVerdict).toEqual({
+          look: 1,
+          verdict: "DROP",
+        });
+        expect(await runLook(root, 2, "2027-02-15T00:00:00Z")).toBe(0);
+        expect(resultOf(root, 2).afterTheVerdict).toEqual(
+          main.verdict === "KEEP" || main.verdict === "DROP"
+            ? { look: 1, verdict: main.verdict }
+            : null,
+        );
+        expect(resultOf(root, 2).lines[0]!.z).toBe(2.43);
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  );
+});
+
+/** A made-up copy: a MAIN entry of A or C on day i after the cut, its money `net`, its d `d`. */
+function copy(
+  i: number,
+  net: number | null,
+  d: number | null,
+  over: Partial<CopyRecord> = {},
+): CopyRecord {
+  const t = CUT + i * DAY_MS + 20 * HOUR_MS;
+  return {
+    id: `e${i}-${String(net)}`,
+    addr: i % 2 ? A : C,
+    iid: 6,
+    dir: 1,
+    type: "OPEN",
+    t,
+    D: 80_000,
+    tIn: t + 80_000,
+    monday: 0,
+    lines: ["MAIN"],
+    label: "directional",
+    facts: null,
+    exits: [],
+    plan: { legs: [], flag: null, lastExitT: null },
+    entryPrice: 100,
+    money:
+      net === null
+        ? null
+        : {
+            net,
+            gross: net + 8,
+            fees: 8,
+            funding: 0,
+            holdMs: 10 * HOUR_MS,
+            fullExitMs: 10 * HOUR_MS,
+            fundingMissing: 0,
+            spreadFallback: false,
+          },
+    unpriced: net === null ? "no mark" : null,
+    d: { MAIN: d },
+    dReason: {},
+    voted: true,
+    gap: false,
+    stop2: null,
+    stop5: null,
+    days7: null,
+    jump: null,
+    notional: false,
+    competition: { days: false, boosted: false },
+    mapOpen: null,
+    ...over,
+  };
+}
+
+const scoredOf = (copies: CopyRecord[]): Scored => ({
+  copies,
+  otherMarkets: 0,
+  p1: new Map(),
+});
+
+/** One copy a day for `days` days, the money `base + wobble`, d = `d`. */
+const days = (n: number, net: (i: number) => number, d = 5) =>
+  Array.from({ length: n }, (_, i) => copy(i, net(i), d));
+
+const kit = await loadResearch();
+
+describe("lookReport (R12, R14)", () => {
+  it("prints the band with Student's t at the look's level on the day clusters (df = days - 1)", () => {
+    const want = [2.97, 2.48, 2.19];
+    for (const [k, n] of [
+      [1, 42],
+      [2, 91],
+      [3, 182],
+    ] as const) {
+      const r = lookReport(
+        kit,
+        scoredOf(days(n, (i) => 20 + 30 * Math.sin(i))),
+        "MAIN",
+        k,
+      );
+      expect(r.money!.days).toBe(n);
+      expect(r.tBandHalfWidth! / r.money!.seDay!).toBeCloseTo(want[k - 1]!, 1);
+    }
+  });
+
+  it("decides MAIN from its voted, priced copies, its own look's z, its unpriced share and its mean d", () => {
+    const wobble = (i: number) => 3 * Math.sin(i);
+    const v = (cs: CopyRecord[], k: 1 | 2 | 3 = 1) =>
+      lookReport(kit, scoredOf(cs), "MAIN", k).verdict;
+    expect(v(days(40, (i) => 50 + wobble(i)))).toBe("KEEP");
+    expect(v(days(40, (i) => -50 + wobble(i)))).toBe("DROP");
+    expect(v(days(40, (i) => (i % 2 ? 500 : -500) + wobble(i)))).toBe(
+      "TOO FEW TO TELL",
+    );
+    // KEEP needs d's mean above 0 too.
+    expect(v(days(40, (i) => 50 + wobble(i), -5))).toBe("TOO FEW TO TELL");
+    // One unpriced copy in 41 (2.4%): withheld.
+    expect(v([...days(40, (i) => 50 + wobble(i)), copy(40, null, 5)])).toBe(
+      "WITHHELD",
+    );
+    // Copies not yet voted are not in the set.
+    const unvoted = Array.from({ length: 10 }, (_, i) =>
+      copy(i, -1000, -5, { voted: false, id: `u${i}` }),
+    );
+    const withUnvoted = lookReport(
+      kit,
+      scoredOf([...days(40, (i) => 50 + wobble(i)), ...unvoted]),
+      "MAIN",
+      1,
+    );
+    expect([withUnvoted.copies, withUnvoted.verdict]).toEqual([40, "KEEP"]);
+    // Each look its own z: the mean at 2.5 errors is KEEP at look 3 (2.17), not at look 1 (2.81).
+    const base = days(60, (i) => 40 * Math.sin(i * 1.7) + 15 * Math.cos(i));
+    const m = twoWay(
+      kit,
+      base.map((c) => ({ addr: c.addr, tIn: c.tIn, x: c.money!.net })),
+    )!;
+    const shift = 2.5 * m.se! - m.mean;
+    const shifted = days(
+      60,
+      (i) => 40 * Math.sin(i * 1.7) + 15 * Math.cos(i) + shift,
+    );
+    expect(m.se! * (2.5 + LOOK_Z[2])).toBeGreaterThan(10);
+    expect(v(shifted, 1)).toBe("TOO FEW TO TELL");
+    expect(v(shifted, 3)).toBe("KEEP");
+  });
+
+  it("says at look 3, when too few to tell, the largest edge not ruled out", () => {
+    const r = lookReport(
+      kit,
+      scoredOf(days(40, (i) => (i % 2 ? 500 : -500))),
+      "MAIN",
+      3,
+    );
+    expect(r.verdict).toBe("TOO FEW TO TELL");
+    expect(r.sentence).toBe(
+      `no edge as large as ${(r.money!.mean + LOOK_Z[2] * r.money!.se!).toFixed(1)} bps a copy was seen`,
+    );
+    const r1 = lookReport(
+      kit,
+      scoredOf(days(40, (i) => (i % 2 ? 500 : -500))),
+      "MAIN",
+      1,
+    );
+    expect(r1.sentence).toBe(
+      "Keep and drop are verdicts on this test, never instructions to trade.",
+    );
+  });
+});
