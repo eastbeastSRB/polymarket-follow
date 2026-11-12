@@ -56,7 +56,14 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   service (a User-Agent or other header, a URL, a search) carries a generic
   client name, never "polymarket-follow" or anything about the owner. Found
   2026-11-12: the collector's `USER_AGENT` and PAPER-PLAN's probe named the
-  project (a follow-up fixes the collector's).
+  project; the client now takes the User-Agent per instance (the collector
+  `data-collector/1.0`, the experiment `data-reader/1.0`; PAPER-BUILD), live
+  at the collector's next deploy. A source scan for the names reads comments
+  too.
+- **Ids above 2^53 − 1 exist** (liquidation fills of one account): parse them
+  with a `JSON.parse` reviver that reads `context.source` (Node 24) and keep
+  them as their digits; R2-STYLE's stored ids of that size are rounded
+  (PAPER-BUILD, 2026-11-12).
 - **A WebSocket reader needs a no-frame watchdog:** a connection went silent
   for 8 minutes with no close or error event while the recorder kept writing
   its last-seen values as new rows (R3-WEEKDAY, 2026-11-09). Reconnect after
@@ -91,6 +98,12 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   entry 5).
 - **Recompute a deciding number with independent code** before a result is
   accepted, unit by unit, not only the mean (the three FIND Final reviews).
+- **Vendored frozen code** (the paper experiment's `apps/poller/research/`):
+  byte copies, `-text` after `* text=auto` in `.gitattributes`, kept out of
+  Prettier and ESLint, loaded by path and typed by interfaces, its
+  fingerprint checked at every load; a frozen helper that hard-wires an
+  instant (lib-exits' `planCopy` and the cut) is re-implemented with the
+  run's own end, never called past it (PAPER-PLAN-REVIEW F9).
 
 ## This machine (Windows, Git Bash)
 
@@ -98,8 +111,14 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   running fewer is how a green session still breaks CI.
 - **Git normalises line endings to LF** (`.gitattributes`); Prettier expects
   LF.
-- **Write scripts to a file** (`.mjs` or `.cjs`) — `node -e` breaks on
-  backticks and quotes in Bash.
+- **Write scripts to a file with the Write tool** (`.mjs` or `.cjs`) —
+  `node -e` and heredocs mangle backslashes, backticks and quotes in Bash, and
+  a `sed` with `\\r` wrote a CR byte into a source file (2026-11-12).
+- **`node --test <directory>` fails in Node 24** (MODULE_NOT_FOUND): pass a
+  glob.
+- **A Task Scheduler time is local:** `-At 'HH:MM'` moves by an hour at the
+  clock change; compute the trigger from the UTC instant (the paper task's
+  `Get-DailyUtcStart`; the backup task's `06:20` literal is a follow-up).
 - **Use absolute paths;** batched shell calls share one working directory.
 - **Run checks with `< /dev/null`, to a file, under `timeout`;** stop a server
   by its port, never by a process name.

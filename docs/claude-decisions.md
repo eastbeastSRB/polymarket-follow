@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (PAPER-BUILD's four questions — the supervisor's technical calls
+inside the approved plan, before the freeze and before any week after the
+cut is read): **THE BUILD STANDS AT "RULES READY"; ITS FOUR QUESTIONS ARE
+RULED AS IT RECOMMENDED; ONE END-TO-END TEST COMES BEFORE THE RULES REVIEW.**
+Checked on the supervisor's path: `pnpm verify` green at `51bf0a9` (32
+files, 248 tests; `tsc` on src and test 0 errors); the tree clean; the
+collector's run copy untouched (`dist\index.js` of 2026-11-11 21:22) and its
+task Running, its recordings fresh; the access scans — every call naming a
+collector path wrote code or docs, none read the recordings, the database or
+the run folder; the only holdout name opened was the list `holdout.json`, no
+holdout capture. The reproduction is equal to tables the supervisor had
+re-priced with its own code (FIND-6-EXITS's 1,918 copies and X3's 1,366):
+1,700 of 1,700 non-holdout copies with 0 difference, X3's held 24 h over
+FIND-3's voted set +9.1 ± 13.7 (1,293). **The rulings:** (1) X3 needs no
+per-copy file: equal by definition, to its printed digits and to FIND-3 for
+1,104 of 1,104; (2) **the matched null's removal set is the line's accounts
+at the entry's Monday** (fixed at M, no look-ahead), not FIND-3's
+whole-study set, which cannot be defined going forward (296 of 1,203 old d
+move, at most 40.2 bps); (3) **a Monday's label and habits come from the
+fills before that Monday only** (the kit's index looked ahead through an
+order event straddling M; 4 old rows of one account change); entries and
+exits keep the whole fills; (4) the reproduction leaves out the 6 holdout
+accounts' copies, which the experiment never opens. **Before the rules
+review:** one test that drives `daily()` end to end with an injected fetch
+and root over a synthetic world (the builder's own recommendation), and the
+backup task's trigger computed from UTC like the paper's. The builder
+reached its context limit once and compacted (peak 966k), so its Final
+review goes to a fresh worker.
+
 2026-11-12 (PAPER-BUILD's technical calls — the paper experiment's build,
 parts 0–5 to "rules ready", inside the plan approved the same day; commits
 `51724ca` … `08147f5`): **THE EXPERIMENT IS BUILT TO ITS RULES; NOTHING IS
