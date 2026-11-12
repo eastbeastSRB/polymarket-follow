@@ -10,3 +10,8 @@ pnpm-lock.yaml -diff linguist-generated=true
 
 # Windows batch files keep CRLF: cmd.exe can misread an LF-only batch file.
 *.cmd text eol=crlf
+
+# The vendored research files are frozen by hash, byte for byte: no git
+# setting may convert them (they are LF already; this line, after
+# `* text=auto`, ends every conversion whatever the user's settings say).
+apps/poller/research/** -text

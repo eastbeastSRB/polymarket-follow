@@ -2,6 +2,9 @@ node_modules
 dist
 pnpm-lock.yaml
 
+# Vendored research files, frozen by hash: never reformatted.
+apps/poller/research
+
 # Authored prose — formatted by hand, not by Prettier.
 docs
 CLAUDE.md

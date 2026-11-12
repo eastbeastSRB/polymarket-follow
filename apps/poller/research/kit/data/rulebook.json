@@ -1,0 +1,827 @@
+{
+ "read": {
+  "instruments": "2026-11-10T14:55:01.982Z",
+  "fees": "2026-11-10T14:55:13.099Z",
+  "splits": "2026-11-10T14:55:09.306Z"
+ },
+ "source": "F:/polymarket-follow-research/KIT/raw/plan.jsonl.gz (RESEARCH-KIT planning probe)",
+ "instruments": [
+  {
+   "iid": 1,
+   "symbol": "SP500-USD",
+   "category": "index",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 2,
+   "symbol": "GOLD-USD",
+   "category": "commodity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 3,
+   "symbol": "WTIOIL-USD",
+   "category": "commodity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 4,
+   "symbol": "NAS100-USD",
+   "category": "index",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 5,
+   "symbol": "SILVER-USD",
+   "category": "commodity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 6,
+   "symbol": "BTC-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 7,
+   "symbol": "ETH-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 8,
+   "symbol": "SOL-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 9,
+   "symbol": "SPCX-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 10,
+   "symbol": "HYPE-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 11,
+   "symbol": "MU-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 13,
+   "symbol": "SKHY-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 14,
+   "symbol": "SKHYNIX-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 15,
+   "symbol": "AAPL-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 16,
+   "symbol": "MSFT-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 17,
+   "symbol": "GOOG-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 18,
+   "symbol": "AMZN-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 19,
+   "symbol": "NVDA-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 20,
+   "symbol": "META-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 21,
+   "symbol": "TSLA-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 22,
+   "symbol": "AMD-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 23,
+   "symbol": "INTC-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 24,
+   "symbol": "AVGO-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 25,
+   "symbol": "QCOM-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 26,
+   "symbol": "ARM-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 27,
+   "symbol": "TSM-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 28,
+   "symbol": "ASML-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 29,
+   "symbol": "SNDK-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 30,
+   "symbol": "DRAM-USD",
+   "category": "index",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 31,
+   "symbol": "PUMP-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 32,
+   "symbol": "ZEC-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 33,
+   "symbol": "XRP-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 34,
+   "symbol": "LIT-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 35,
+   "symbol": "KPEPE-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 36,
+   "symbol": "HOOD-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 37,
+   "symbol": "MSTR-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 38,
+   "symbol": "STRC-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 39,
+   "symbol": "CRCL-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 40,
+   "symbol": "COIN-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 41,
+   "symbol": "RKLB-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 42,
+   "symbol": "LITE-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 43,
+   "symbol": "NBIS-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 44,
+   "symbol": "ORCL-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 45,
+   "symbol": "PLTR-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 46,
+   "symbol": "BRENTOIL-USD",
+   "category": "commodity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 47,
+   "symbol": "BABA-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 48,
+   "symbol": "ZM-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 49,
+   "symbol": "DELL-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 50,
+   "symbol": "CXMT-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 51,
+   "symbol": "KIOXIA-USD",
+   "category": "equity",
+   "close_only": true,
+   "settlement": {
+    "sequence": 55959926771,
+    "timestamp": 1790555581797,
+    "price": "353.87",
+    "insurance_debit": "0"
+   },
+   "fee_override": null
+  },
+  {
+   "iid": 52,
+   "symbol": "SAMSUNG-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 53,
+   "symbol": "CRWV-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 54,
+   "symbol": "AAVE-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 55,
+   "symbol": "UNI-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 56,
+   "symbol": "WLD-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 57,
+   "symbol": "NEAR-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 58,
+   "symbol": "KSHIB-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 59,
+   "symbol": "FARTCOIN-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 60,
+   "symbol": "DOGE-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 61,
+   "symbol": "ENA-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 62,
+   "symbol": "ONDO-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 63,
+   "symbol": "SUI-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 64,
+   "symbol": "VVV-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 65,
+   "symbol": "TAO-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 66,
+   "symbol": "ADA-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 67,
+   "symbol": "ZRO-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 68,
+   "symbol": "BNB-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 69,
+   "symbol": "PONS-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 70,
+   "symbol": "CASHCAT-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 71,
+   "symbol": "USELESS-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 72,
+   "symbol": "KAITO-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 73,
+   "symbol": "ARB-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 74,
+   "symbol": "LDO-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 75,
+   "symbol": "AVAX-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 76,
+   "symbol": "LTC-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 77,
+   "symbol": "XPL-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 78,
+   "symbol": "XMR-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 79,
+   "symbol": "LINK-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 80,
+   "symbol": "VIRTUAL-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 81,
+   "symbol": "JUP-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 82,
+   "symbol": "ETHFI-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 83,
+   "symbol": "PENDLE-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 84,
+   "symbol": "MORPHO-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 85,
+   "symbol": "CBRS-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 86,
+   "symbol": "MRVL-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 87,
+   "symbol": "EWY-USD",
+   "category": "index",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 88,
+   "symbol": "NCLD-USD",
+   "category": "index",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 89,
+   "symbol": "SOXL-USD",
+   "category": "index",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 90,
+   "symbol": "UNITREE-USD",
+   "category": "equity",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 96,
+   "symbol": "PRL-USD",
+   "category": "crypto",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": null
+  },
+  {
+   "iid": 97,
+   "symbol": "ANT-USD",
+   "category": "pre_ipo",
+   "close_only": false,
+   "settlement": null,
+   "fee_override": {
+    "end_time": null,
+    "start_time": 1793287415757,
+    "tiers": [
+     {
+      "taker_fee_rate": "0.0002",
+      "maker_fee_rate": "0.0000625"
+     },
+     {
+      "taker_fee_rate": "0.000185",
+      "maker_fee_rate": "0.00005"
+     },
+     {
+      "taker_fee_rate": "0.000175",
+      "maker_fee_rate": "0.00004"
+     },
+     {
+      "taker_fee_rate": "0.00015",
+      "maker_fee_rate": "0.000025"
+     },
+     {
+      "taker_fee_rate": "0.000135",
+      "maker_fee_rate": "0.00001"
+     },
+     {
+      "taker_fee_rate": "0.000125",
+      "maker_fee_rate": "0"
+     },
+     {
+      "taker_fee_rate": "0.0001",
+      "maker_fee_rate": "-0.00005"
+     }
+    ]
+   }
+  }
+ ],
+ "fees": {
+  "taker_fee_rate": "0.0004",
+  "maker_fee_rate": "0.000125",
+  "schedule": {
+   "instrument_type": "perpetual",
+   "category": "equity",
+   "taker_fee_rate": "0.0004",
+   "maker_fee_rate": "0.000125",
+   "tiers": [
+    {
+     "min_volume_30d": "0",
+     "taker_fee_rate": "0.0004",
+     "maker_fee_rate": "0.000125"
+    },
+    {
+     "min_volume_30d": "1000000",
+     "taker_fee_rate": "0.00037",
+     "maker_fee_rate": "0.0001"
+    },
+    {
+     "min_volume_30d": "5000000",
+     "taker_fee_rate": "0.00035",
+     "maker_fee_rate": "0.00008"
+    },
+    {
+     "min_volume_30d": "25000000",
+     "taker_fee_rate": "0.0003",
+     "maker_fee_rate": "0.00005"
+    },
+    {
+     "min_volume_30d": "100000000",
+     "taker_fee_rate": "0.00027",
+     "maker_fee_rate": "0.00002"
+    },
+    {
+     "min_volume_30d": "500000000",
+     "taker_fee_rate": "0.00025",
+     "maker_fee_rate": "0"
+    },
+    {
+     "min_volume_30d": "1000000000",
+     "taker_fee_rate": "0.0002",
+     "maker_fee_rate": "-0.00005"
+    }
+   ]
+  }
+ },
+ "splits": {
+  "events": [],
+  "sequence": 102317252065
+ }
+}
