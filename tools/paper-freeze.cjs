@@ -43,6 +43,24 @@ async function main() {
   );
   if (!files.includes("dist/paper.js"))
     throw new Error("build first: dist/paper.js is missing");
+  // The favourites, checked by the program's own reader before anything is
+  // written (R1, R2): a malformed file would stop every run after the freeze.
+  const favFile = path.join(PKG, "experiment", "favourites.txt");
+  if (final && !fs.existsSync(favFile))
+    throw new Error("experiment/favourites.txt is missing: write it first");
+  if (fs.existsSync(favFile)) {
+    const { checkFavourites } = await import(
+      pathToFileURL(path.join(PKG, "dist", "paper", "daily.js")).href
+    );
+    const fav = checkFavourites(
+      fs.readFileSync(favFile, "utf8"),
+      PKG,
+      Date.now(),
+    );
+    process.stdout.write(
+      `experiment/favourites.txt: F0 ${new Date(fav.from).toISOString()}, ${fav.addrs.length} favourites, none in the holdout\n`,
+    );
+  }
   const version = (pkg) =>
     JSON.parse(
       fs.readFileSync(

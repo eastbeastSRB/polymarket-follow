@@ -76,8 +76,9 @@ const sha256 = (b: Buffer | string) =>
 
 /**
  * The favourites (R2): `from <ISO instant>` — F0, the freeze's instant — then
- * one lower-case address a line, at most 20; the file is written at the
- * freeze and frozen with the rest, so none exists before it.
+ * one address a line, at most 20, each once (read lower-case, as addresses
+ * are stored); the file is written at the freeze and frozen with the rest, so
+ * none exists before it.
  */
 export function readFavourites(
   text: string | null,
@@ -89,17 +90,71 @@ export function readFavourites(
     .filter((l) => l !== "" && !l.startsWith("#"));
   const head = /^from (\S+)$/.exec(lines[0] ?? "");
   const from = head ? Date.parse(head[1]!) : NaN;
-  const addrs = lines.slice(1);
+  const addrs = lines.slice(1).map((a) => a.toLowerCase());
   if (
     !Number.isFinite(from) ||
     addrs.length > 20 ||
+    new Set(addrs).size !== addrs.length ||
     !addrs.every((a) => /^0x[0-9a-f]{40}$/.test(a))
   ) {
     throw new Error(
-      "experiment/favourites.txt: `from <ISO instant>`, then at most 20 lower-case addresses",
+      "experiment/favourites.txt: `from <ISO instant>`, then at most 20 addresses (0x and 40 hex digits), each once",
     );
   }
   return { from, addrs };
+}
+
+/** A holdout account joins the favourites only after D1 is scored (R2): refused, by address. */
+function refuseHoldout(
+  addrs: readonly string[],
+  holdout: ReadonlySet<string>,
+): void {
+  const barred = addrs.filter((a) => holdout.has(a));
+  if (barred.length > 0) {
+    throw new Error(
+      `experiment/favourites.txt: holdout accounts join only after D1 is scored (R2): ${barred.join(", ")}`,
+    );
+  }
+}
+
+/** The kit's population (frozen with the kit): the pool and the holdout (R2). */
+function populationOf(packageRoot: string) {
+  const pop = Population.parse(
+    JSON.parse(
+      readFileSync(
+        path.join(packageRoot, "research", "kit/data/population.json"),
+        "utf8",
+      ),
+    ),
+  );
+  return {
+    pool: pop.accounts
+      .filter((a) => !a.holdout)
+      .map((a) => ({ addr: a.addr, notionalBoard: a.notionalBoard })),
+    holdout: new Set(
+      pop.accounts.filter((a) => a.holdout).map((a) => a.addr.toLowerCase()),
+    ),
+  };
+}
+
+/**
+ * The favourites file as the freeze checks it before it writes the list
+ * (R1, R2): its form, F0 between the cut and the freeze's instant, no holdout
+ * account. Throws the first problem.
+ */
+export function checkFavourites(
+  text: string,
+  packageRoot: string,
+  now: number,
+): { from: number; addrs: string[] } {
+  const fav = readFavourites(text)!;
+  if (fav.from < CUT || fav.from > now) {
+    throw new Error(
+      `experiment/favourites.txt: F0 ${new Date(fav.from).toISOString()} is not between the cut and the freeze`,
+    );
+  }
+  refuseHoldout(fav.addrs, populationOf(packageRoot).holdout);
+  return fav;
 }
 
 const Population = z.object({
@@ -125,11 +180,7 @@ const KitRuleBook = z.object({
 export function fixedInputs(kit: Research, packageRoot = PACKAGE_ROOT) {
   const research = path.join(packageRoot, "research");
   const experiment = path.join(packageRoot, "experiment");
-  const pop = Population.parse(
-    JSON.parse(
-      readFileSync(path.join(research, "kit/data/population.json"), "utf8"),
-    ),
-  );
+  const { pool, holdout } = populationOf(packageRoot);
   const rb = KitRuleBook.parse(
     JSON.parse(
       readFileSync(path.join(research, "kit/data/rulebook.json"), "utf8"),
@@ -138,10 +189,12 @@ export function fixedInputs(kit: Research, packageRoot = PACKAGE_ROOT) {
   const kitMarkets = new Map(rb.instruments.map((i) => [i.iid, i.category]));
   const symbols = new Map(rb.instruments.map((i) => [i.iid, i.symbol]));
   const favFile = path.join(experiment, "favourites.txt");
+  const favourites = readFavourites(
+    existsSync(favFile) ? readFileSync(favFile, "utf8") : null,
+  );
+  refuseHoldout(favourites?.addrs ?? [], holdout);
   return {
-    pool: pop.accounts
-      .filter((a) => !a.holdout)
-      .map((a) => ({ addr: a.addr, notionalBoard: a.notionalBoard })),
+    pool,
     kitMarkets,
     symbols,
     /** The markets read day by day: those in a primary cell at the cut. */
@@ -150,9 +203,7 @@ export function fixedInputs(kit: Research, packageRoot = PACKAGE_ROOT) {
       .sort((a, b) => a - b),
     /** The kit's pinned manifest of the pre-cut panel. */
     pinned: pinnedPanel(research),
-    favourites: readFavourites(
-      existsSync(favFile) ? readFileSync(favFile, "utf8") : null,
-    ),
+    favourites,
     seedManifest: readManifest(
       readFileSync(path.join(experiment, "seed.sha256"), "utf8"),
     ),

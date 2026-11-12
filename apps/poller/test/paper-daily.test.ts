@@ -15,6 +15,11 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  checkFavourites,
+  fixedInputs,
+  readFavourites,
+} from "../src/paper/daily.js";
 import { CUT } from "../src/paper/instants.js";
 import { LINES } from "../src/paper/score.js";
 import { PaperStore } from "../src/paper/store.js";
@@ -308,4 +313,54 @@ describe("a whole run, daily() (R0, R3a, R15; the plan's section 3)", () => {
       }
     },
   );
+});
+
+describe("the favourites (R1, R2)", () => {
+  it("are read lower-case, each once, at most 20; the freeze refuses a bad F0 or a holdout account, and so does a run", async () => {
+    const tmp = mkdtempSync(path.join(tmpdir(), "paper-fav-"));
+    try {
+      const { pkg, kit } = await makeWorld(tmp);
+      const iso = new Date(F0).toISOString();
+      const text = (addrs: string[], from = iso) =>
+        [`from ${from}`, ...addrs, ""].join("\n");
+      const mixed = `0x${A.slice(2).toUpperCase()}`;
+      expect(readFavourites(text([mixed]))).toEqual({ from: F0, addrs: [A] });
+      expect(() => readFavourites(text([A, mixed]))).toThrow(/each once/);
+      const many = Array.from(
+        { length: 21 },
+        (_, i) => `0x${String(i).padStart(40, "0")}`,
+      );
+      expect(() => readFavourites(text(many))).toThrow(/at most 20/);
+      expect(() => readFavourites([A, ""].join("\n"))).toThrow(/from/);
+      const pop = JSON.parse(
+        readFileSync(
+          path.join(pkg, "research", "kit", "data", "population.json"),
+          "utf8",
+        ),
+      ) as { accounts: { addr: string; holdout: boolean }[] };
+      const holdout = pop.accounts.find((a) => a.holdout)!.addr.toLowerCase();
+      const later = at("2026-11-20T00:00:00Z");
+      expect(checkFavourites(text([A, F]), pkg, later)).toEqual({
+        from: F0,
+        addrs: [A, F],
+      });
+      expect(() => checkFavourites(text([A]), pkg, F0 - 1)).toThrow(
+        /not between the cut and the freeze/,
+      );
+      expect(() =>
+        checkFavourites(text([A], "2026-11-06T23:59:59.000Z"), pkg, later),
+      ).toThrow(/not between/);
+      expect(() => checkFavourites(text([A, holdout]), pkg, later)).toThrow(
+        holdout,
+      );
+      // A run refuses a holdout favourite too, loudly.
+      writeFileSync(
+        path.join(pkg, "experiment", "favourites.txt"),
+        text([holdout]),
+      );
+      expect(() => fixedInputs(kit, pkg)).toThrow(holdout);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });
