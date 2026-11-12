@@ -32,7 +32,7 @@ describe("parseConfig", () => {
     ).toThrow(/absolute path/);
   });
 
-  it("reads the run copy's settings, tools/poller.env: the poller's four and the backup's two, nothing else", () => {
+  it("reads the run copy's settings, tools/poller.env: the poller's four, the backup's two and the paper experiment's folder, nothing else", () => {
     const text = readFileSync(
       new URL("../../../tools/poller.env", import.meta.url),
       "utf8",
@@ -43,9 +43,11 @@ describe("parseConfig", () => {
       "BACKUP_ROOT",
       "MONGO_DB",
       "MONGO_URI",
+      "PAPER_ROOT",
       "RECORDINGS_ROOT",
       "STATE_DIR",
     ]);
+    expect(settings.PAPER_ROOT).toBe("F:\\polymarket-follow\\paper");
     expect([settings.BACKUP_ROOT, settings.BACKUP_LATEST]).toEqual([
       "F:\\backups\\polymarket-follow\\db",
       "E:\\backups\\polymarket-follow\\db",

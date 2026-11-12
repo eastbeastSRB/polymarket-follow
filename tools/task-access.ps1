@@ -1,8 +1,16 @@
 <#
-  Who may start a scheduled task; dot-sourced by deploy.ps1 and
-  register-tasks.ps1. Task Scheduler gives a task's own user read only (FR)
-  unless granted more, and starting a task takes execute.
+  Who may start a scheduled task, and a daily trigger's time; dot-sourced by
+  deploy.ps1 and register-tasks.ps1. Task Scheduler gives a task's own user
+  read only (FR) unless granted more, and starting a task takes execute.
 #>
+
+# Today's $HourUtc:00Z as a local DateTime. New-ScheduledTaskTrigger -Daily -At
+# keeps a daily trigger's time in UTC, so the task runs at $HourUtc:00Z all year;
+# a local literal typed now would mean another UTC hour after the next change of
+# the clock (PAPER-PLAN-REVIEW F11).
+function Get-DailyUtcStart([int]$HourUtc) {
+  return [DateTime]::SpecifyKind([DateTime]::UtcNow.Date.AddHours($HourUtc), [DateTimeKind]::Utc).ToLocalTime()
+}
 
 # True when $sddl holds an allow ACE granting $sid execute: GA, GX, FA or FX
 # (no SDDL right ends in G or F, so these never match across two rights), or

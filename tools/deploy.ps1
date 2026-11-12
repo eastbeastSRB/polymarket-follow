@@ -17,15 +17,30 @@
   commit, the poller it stopped, the seconds from the stop to the start.
   <RunRoot>\var is otherwise never touched.
 
-  Usage, from any folder:  powershell -ExecutionPolicy Bypass -File tools\deploy.ps1
+  -Program paper writes the paper experiment's own copy, <RunRoot>\paper,
+  from the same verified build plus apps\poller\research and
+  apps\poller\experiment (byte copies: their files are frozen by hash), so
+  a collector deploy never changes what the experiment runs, nor waits for
+  one of its runs (PAPER-PLAN-REVIEW F11). Its smoke: dist\paper.js without
+  settings exits 2, and research\kit\check.mjs returns the kit's pinned
+  fingerprint. It refuses while the task "polymarket-follow paper" runs; it
+  stops and starts no task.
+
+  Usage, from any folder:  powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 [-Program paper]
 #>
-param([string]$RunRoot = 'E:\polymarket-follow-run')
+param(
+  [string]$RunRoot = 'E:\polymarket-follow-run',
+  [ValidateSet('poller', 'paper')][string]$Program = 'poller'
+)
 $ErrorActionPreference = 'Stop'
-$TaskName = 'polymarket-follow poller'
+$paper = $Program -eq 'paper'
+$TaskName = if ($paper) { 'polymarket-follow paper' } else { 'polymarket-follow poller' }
+$entry = if ($paper) { 'dist\paper.js' } else { 'dist\index.js' }
+$KitFingerprint = '2d3667b5ce90645b41dfee4e6fc425ab3e64c985cb4973bfed6ece5052c409aa'
 $repo = Split-Path $PSScriptRoot -Parent
-$target = Join-Path $RunRoot 'poller'
-$next = Join-Path $RunRoot 'poller.next'
-$old = Join-Path $RunRoot 'poller.old'
+$target = Join-Path $RunRoot $Program
+$next = Join-Path $RunRoot "$Program.next"
+$old = Join-Path $RunRoot "$Program.old"
 $var = Join-Path $RunRoot 'var'
 
 . (Join-Path $PSScriptRoot 'task-access.ps1')
@@ -51,8 +66,11 @@ function Write-DeployLog([string]$text) {
 }
 
 $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-$ours = $null -ne $task -and "$($task.Actions[0].Arguments)".Trim().Trim('"') -ieq (Join-Path $target 'dist\index.js')
-if ($ours -and -not (Test-CanStartTask $TaskName)) {
+$ours = $null -ne $task -and "$($task.Actions[0].Arguments)".Trim().Trim('"').StartsWith((Join-Path $target $entry), [StringComparison]::OrdinalIgnoreCase)
+if ($paper -and $ours -and $task.State -eq 'Running') {
+  throw "the task '$TaskName' is running: deploy after its run ends; nothing deployed"
+}
+if (-not $paper -and $ours -and -not (Test-CanStartTask $TaskName)) {
   throw "this session could not stop and start the task '$TaskName' for the swap (the task grants this account read only): deploy from an elevated PowerShell; nothing deployed"
 }
 
@@ -77,13 +95,24 @@ try {
   # pnpm command would then remove the development packages: install again.
   pnpm install --frozen-lockfile --offline
   if ($LASTEXITCODE -ne 0) { throw "pnpm install after the deploy failed ($LASTEXITCODE)" }
-  foreach ($file in 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs') {
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $next
+  if ($paper) {
+    # Byte copies (Copy-Item never re-encodes): their hashes are frozen.
+    foreach ($dir in 'research', 'experiment') {
+      Copy-Item -LiteralPath (Join-Path $repo "apps\poller\$dir") -Destination (Join-Path $next $dir) -Recurse
+    }
+  } else {
+    foreach ($file in 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs') {
+      Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $next
+    }
   }
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'poller.env') -Destination (Join-Path $next '.env')
+  $typescript = (Get-Content -LiteralPath (Join-Path $repo 'apps\poller\node_modules\typescript\package.json') -Raw | ConvertFrom-Json).version
+  $lockHash = (Get-FileHash -LiteralPath (Join-Path $repo 'pnpm-lock.yaml') -Algorithm SHA256).Hash.ToLowerInvariant()
   Set-Content -LiteralPath (Join-Path $next 'DEPLOYED.txt') -Encoding ASCII -Value @(
     "commit $commit",
-    "deployed $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))"
+    "deployed $((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))",
+    "typescript $typescript",
+    "pnpm-lock.yaml sha256 $lockHash"
   )
 } finally {
   Pop-Location
@@ -94,11 +123,11 @@ try {
 # out of its environment), it stops at its configuration with exit 2.
 $smoke = New-Object System.Diagnostics.ProcessStartInfo
 $smoke.FileName = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
-$smoke.Arguments = '"{0}"' -f (Join-Path $next 'dist\index.js')
+$smoke.Arguments = '"{0}"' -f (Join-Path $next $entry)
 $smoke.WorkingDirectory = Join-Path $next 'dist'
 $smoke.UseShellExecute = $false
 $smoke.RedirectStandardError = $true
-foreach ($name in 'RECORDINGS_ROOT', 'STATE_DIR', 'MONGO_URI', 'MONGO_DB') { $smoke.EnvironmentVariables.Remove($name) }
+foreach ($name in 'RECORDINGS_ROOT', 'STATE_DIR', 'MONGO_URI', 'MONGO_DB', 'PAPER_ROOT') { $smoke.EnvironmentVariables.Remove($name) }
 $started = [System.Diagnostics.Process]::Start($smoke)
 $stderr = $started.StandardError.ReadToEndAsync()
 if (-not $started.WaitForExit(30000)) {
@@ -107,6 +136,23 @@ if (-not $started.WaitForExit(30000)) {
 }
 if ($started.ExitCode -ne 2) {
   throw "the new copy does not load (exit $($started.ExitCode)): $($stderr.Result.Trim()) - nothing deployed; $next is kept"
+}
+if ($paper) {
+  # The kit's own check on the copy: every vendored file byte for byte.
+  $check = New-Object System.Diagnostics.ProcessStartInfo
+  $check.FileName = $smoke.FileName
+  $kitUrl = ([Uri](Join-Path $next 'research\kit\check.mjs')).AbsoluteUri
+  $check.Arguments = '-e "import(process.argv[1]).then((m) => process.stdout.write(m.checkKit()))" "{0}"' -f $kitUrl
+  $check.UseShellExecute = $false
+  $check.RedirectStandardOutput = $true
+  $check.RedirectStandardError = $true
+  $ran = [System.Diagnostics.Process]::Start($check)
+  $out = $ran.StandardOutput.ReadToEndAsync()
+  $err = $ran.StandardError.ReadToEndAsync()
+  if (-not $ran.WaitForExit(30000)) { $ran.Kill(); throw "the kit's check did not end within 30 s: nothing deployed; $next is kept" }
+  if ($out.Result.Trim() -ne $KitFingerprint) {
+    throw "the copy's kit is not the pinned one ($($out.Result.Trim()) $($err.Result.Trim())): nothing deployed; $next is kept"
+  }
 }
 
 # A folder cannot be renamed while a process works in it (the check task's
@@ -128,8 +174,8 @@ function Rename-Retrying([string]$path, [string]$newName) {
 # Removed while the poller still runs, so it adds nothing to the gap.
 if (Test-Path -LiteralPath $old) { Remove-Item -Recurse -Force -LiteralPath $old }
 
-$why = "deploy of $commit"
-$wasRunning = $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
+$why = "deploy of $commit ($Program)"
+$wasRunning = -not $paper -and $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
 if ($wasRunning) {
   $stoppedAt = Get-Date
   try {
@@ -155,12 +201,12 @@ if ($wasRunning) {
 
 $swapError = $null
 try {
-  if (Test-Path -LiteralPath $target) { Rename-Retrying $target 'poller.old' }
+  if (Test-Path -LiteralPath $target) { Rename-Retrying $target "$Program.old" }
   try {
-    Rename-Retrying $next 'poller'
+    Rename-Retrying $next $Program
   } catch {
     # The old copy goes back, so the task starts what it ran before.
-    if (Test-Path -LiteralPath $old) { Rename-Item -LiteralPath $old -NewName 'poller' }
+    if (Test-Path -LiteralPath $old) { Rename-Item -LiteralPath $old -NewName $Program }
     throw
   }
 } catch {

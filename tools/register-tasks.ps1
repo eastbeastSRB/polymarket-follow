@@ -1,7 +1,9 @@
 <#
   Registers the poller's three Windows tasks (COLLECTOR-PLAN sections 1.4 and
-  1.5; decisions 2026-11-10, (7) to (9)). The OWNER runs it from an elevated
-  PowerShell, after tools\deploy.ps1 has written the run copy:
+  1.5; decisions 2026-11-10, (7) to (9)) and the paper experiment's (the
+  paper plan's section 6). The OWNER runs it from an elevated PowerShell,
+  after tools\deploy.ps1 has written the run copies (the experiment's with
+  -Program paper):
 
       powershell -ExecutionPolicy Bypass -File E:\coding\polymarket-follow\tools\register-tasks.ps1
 
@@ -30,6 +32,14 @@
     daily at 06:20 local time as registered in winter, which the trigger keeps
     in UTC (05:20Z all year: 07:20 local in summer time), and as soon as
     possible after a missed start; an hour at most a run; one instance.
+  - "polymarket-follow paper": node.exe itself runs the experiment's own
+    copy, E:\polymarket-follow-run\paper\dist\paper.js daily, in that folder;
+    daily at 04:00Z, the time computed from UTC (Get-DailyUtcStart), never a
+    local literal, which would move to 03:00Z inside the night pause after
+    2027-03-28 (PAPER-PLAN-REVIEW F11); as soon as possible after a missed
+    start; 36 hours at most a run (a first run is 16-26 h); a trigger met while
+    a run goes on is ignored; priority 7, below the poller's 4. Nothing runs
+    after the cut before the freeze: the program's gate refuses it.
   The poller task also grants the registering account read and execute
   (GRGX): by default Task Scheduler gives a task's own user read only, and
   then neither the check task (run level Limited) nor tools\deploy.ps1 from
@@ -64,6 +74,12 @@ $heartbeat = 'E:\polymarket-follow-run\var\heartbeat.json'
 foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs', 'dist\index.js') {
   if (-not (Test-Path -LiteralPath (Join-Path $run $file))) {
     throw "missing $run\$file - run tools\deploy.ps1 first; nothing registered"
+  }
+}
+$paperRun = 'E:\polymarket-follow-run\paper'
+foreach ($file in '.env', 'dist\paper.js', 'research\kit\check.mjs', 'experiment\rules.md') {
+  if (-not (Test-Path -LiteralPath (Join-Path $paperRun $file))) {
+    throw "missing $paperRun\$file - run tools\deploy.ps1 -Program paper first; nothing registered"
   }
 }
 $node = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
@@ -139,12 +155,21 @@ Register-ScheduledTask -TaskName 'polymarket-follow backup' -Force `
   -Description 'polymarket-follow: the database''s daily dump to F:, its newest copy on E: (see the repository''s docs).' `
   -Action $backupAction -Trigger $backupTrigger -Principal $principal -Settings $backupSettings | Out-Null
 
-foreach ($name in $Poller, 'polymarket-follow poller check', 'polymarket-follow backup') {
+$paperTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 4)
+$paperSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+  -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 36) -MultipleInstances IgnoreNew -Priority 7
+$paperAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}" daily' -f (Join-Path $paperRun 'dist\paper.js')) -WorkingDirectory $paperRun
+Register-ScheduledTask -TaskName 'polymarket-follow paper' -Force `
+  -Description 'polymarket-follow: the paper experiment, once a day at 04:00Z (watch-only; see the repository''s docs).' `
+  -Action $paperAction -Trigger $paperTrigger -Principal $principal -Settings $paperSettings | Out-Null
+
+foreach ($name in $Poller, 'polymarket-follow poller check', 'polymarket-follow backup', 'polymarket-follow paper') {
   $task = Get-ScheduledTask -TaskName $name
   Write-Host "`n== $name - state $($task.State), logon $($task.Principal.LogonType), run level $($task.Principal.RunLevel), priority $($task.Settings.Priority)"
   foreach ($t in $task.Triggers) {
     Write-Host ("   trigger {0}: delay '{1}', repeat every '{2}' for '{3}' (empty = for ever)" -f `
       $t.CimClass.CimClassName, $t.Delay, $t.Repetition.Interval, $t.Repetition.Duration)
+    if ($t.StartBoundary) { Write-Host "   starts $($t.StartBoundary)" }
   }
   Write-Host "   action: $($task.Actions[0].Execute) $($task.Actions[0].Arguments), in $($task.Actions[0].WorkingDirectory)"
   if ($name -eq $Poller) { Write-Host "   node: $node, $nodeVersion" }
