@@ -1,5 +1,5 @@
 # DRAFT, not a freeze: the paper experiment's files of what runs (rules.md R0)
-# written 2026-11-12T20:11:25.144Z from commit fd25007765c28caf16c24da10e8c94d415ba7cff
+# written 2026-11-12T20:18:24.769Z from commit 867ddc6ad436e67d5f52c2a08d3416e69cd1f8ab
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; mongodb 7.7.0; pino 10.4.0
 # pnpm-lock.yaml sha256 266a37979261ee129d516e0c91a9ec5bf980158676b6e45ece4267289bd4a3cc
 f3555a2b735dc1b513808adde0bc4c5df87880e1ea0bb8b3f25c50321d8bf756 *dist/paper.js
@@ -24,7 +24,7 @@ a39f4347ce585da89a67c9a5d07c3f4ccb61e3c2ec6c911460f38c9894d49f97 *dist/paper/rou
 461f3ca781d975705ec6a1565ab217f2873911b03ceae5aa6e8e75b7ab676713 *dist/paper/seed.js
 838415212472add1a2b0848fcb11f1d8c77b53ed31a262565243aca3616efee7 *dist/paper/stats.js
 41c0ac318000d4a49777f20fb899b79ca32680d884614a259ecfdc8ea7fe190a *dist/paper/store.js
-8e07856100d0f84f0db2cdb7f71a2fa261cf0f65563ce5380db1704828c8056c *dist/paper/summary.js
+21f507962a6aaed9e4fab3089caf95da3e60ff627a9019c9febb75a2258e1a6d *dist/paper/summary.js
 612d58365ba4c2a2d88a3f73a41a08e193d0874458d862b169fc51f218926330 *research/find-6-exits/lib-exits.mjs
 2d3667b5ce90645b41dfee4e6fc425ab3e64c985cb4973bfed6ece5052c409aa *research/kit/FINGERPRINT.sha256
 cfba7a760c2f083acc1f89c5800e20b03202aef2ab0ee4acc7667cb442692e07 *research/kit/agreement.mjs
@@ -60,5 +60,5 @@ d9049045c989d34ddaf62b3406437a1cf847dfce67b038c076bed69e7e0c4bdf *research/kit/t
 cf09d2734b32dfd22c2ad5b2087de46b8aaa73bd112da766549e947df5fc5e31 *research/kit/test/panel.test.mjs
 feb047a7bbf13a3bb4317181fcd2092d176eaf51fecea98a3474e8c06dec05d9 *research/kit/test/runs.test.mjs
 27ca2f4a703d21fd3486b3187b9796c10c86ebe75e615006c411cbf20c3df7c2 *research/kit/test/stats.test.mjs
-71fbe139de4c22adceef52d1c58e27cd98bc4bce70f0ff647ad82073cda4d312 *experiment/rules.md
+93e5e6b44959a553197f6bbd9a38cc43208f2db277ade56debaf5e225f0efcf2 *experiment/rules.md
 e527ebac60094a7e4e01c2a32089b391e568b58d05a3c079fb6ab1b06e56d392 *experiment/seed.sha256
