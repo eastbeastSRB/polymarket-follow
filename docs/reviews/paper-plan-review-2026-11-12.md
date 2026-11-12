@@ -1,7 +1,7 @@
 # PAPER-PLAN-REVIEW — the fresh review of the paper experiment's plan, before the owner approves it
 
 PAPER-PLAN-REVIEW (Sonnet 5.5, max, a different model from the plan's), 2026-11-12
-11:37Z – 12:21Z (UTC; every stamp from `date -u`), for polymarket-follow's
+11:37Z – 12:20Z (UTC; every stamp from `date -u`), for polymarket-follow's
 supervisor. The plan under review is `docs/reviews/paper-plan-2026-11-12.md`
 (`55e3387`, `91b31bb`), written against decisions 2026-11-12, "APPROACH-REVIEW
 accepted" and "the paper experiment runs daily and gets a page". Evidence: the
