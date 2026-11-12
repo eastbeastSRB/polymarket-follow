@@ -129,7 +129,9 @@ export function primaryMarket(
 ): boolean {
   if (!input.kitMarkets.has(iid)) return false;
   if (!input.kit.cells.inPrimaryCell(iid, t)) return false;
-  if (t >= CUT) {
+  // The collector's rule book counts from its first record; before it, the kit's (R6).
+  const first = input.book.firstRecordAt;
+  if (t >= CUT && first !== null && t >= first) {
     const from = input.book.leftOutFrom.get(iid);
     if (from !== undefined && t >= from) return false;
     if (splitDaysOf(input, iid).some((s) => s.from <= t && t < s.until))
@@ -147,7 +149,7 @@ export function splitDaysOf(input: ScoreInput, iid: number) {
         (s.iid === null && input.kitMarkets.get(iid) === "equity"),
     )
     .map((s) => ({
-      from: s.from,
+      from: Math.max(s.from, input.book.firstRecordAt ?? s.from),
       until: s.to === null ? Infinity : s.to + DAY_MS,
     }));
 }

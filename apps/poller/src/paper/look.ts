@@ -14,6 +14,7 @@ import path from "node:path";
 import type { Logger } from "../log.js";
 import { DAY_MS, utcDate } from "../schedule.js";
 import {
+  feeAlarm,
   fixedInputs,
   loadCache,
   looksDone,
@@ -113,6 +114,7 @@ export async function look(
     unreadListedAsHoles: unread,
     marketDaysMissing: missingDays,
     splitEvents: book.splits,
+    feeAlarm: feeAlarm(book, fixed),
     lines: LINES.map((line) => lookReport(kit, scored, line, k)),
     beside: besideLines(kit, scored),
   };

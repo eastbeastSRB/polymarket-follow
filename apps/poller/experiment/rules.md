@@ -203,7 +203,12 @@ their own arm with their own start.
   record is the first time the collector saw a change), the base-tier taker
   rate it records — an instrument's fee override in force at x, else its
   category's rate in the fee schedule; before the first record, the kit's
-  `feeAt('taker', iid, x)`. Never a lower tier, never a rebate.
+  `feeAt('taker', iid, x)`. Never a lower tier, never a rebate. A primary
+  market's category that a recorded schedule has no rate for is priced at the
+  kit's rate and raised as an alarm on the page and at the looks.
+- **Before the collector's first record** (2026-11-11T15:47Z, the earliest
+  document of its `rulebook`) the rule book is the kit's `rulebook.json`: no
+  collector record leaves out an entry made before it (R6 (3)).
 - **Spread and depth:** the kit's `spreadAt` on R8's session-pair table
   (`data/price-table.json`), as the kit's taker setting.
 - **The panel past the cut:** per market and UTC day d from CUT,

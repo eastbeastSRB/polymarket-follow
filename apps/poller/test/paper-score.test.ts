@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
-import { daily } from "../src/paper/daily.js";
+import { daily, feeAlarm, type FixedInputs } from "../src/paper/daily.js";
 import {
   accountData,
   linesAt,
@@ -17,6 +17,7 @@ import { loadResearch, type PanelFile } from "../src/paper/research.js";
 import {
   EMPTY_RULE_BOOK,
   bookTaker,
+  missingFeeCategories,
   parseRuleBook,
   type RuleBook,
 } from "../src/paper/rulebook.js";
@@ -357,7 +358,9 @@ describe("the scorer (R4–R11)", () => {
     // Gone from the list: left out too.
     expect(book.leftOutFrom.get(14)).toBe(day);
     expect(primaryMarket(i, 6, day - 1)).toBe(true);
-    expect(primaryMarket(i, 6, day)).toBe(false);
+    // Before the collector's first record the kit's rule book holds (R6, R9); from it, the record's day.
+    expect(primaryMarket(i, 6, day)).toBe(true);
+    expect(primaryMarket(i, 6, T1 - 3 * HOUR_MS)).toBe(false);
     expect(primaryMarket(i, 6, CUT - DAY_MS)).toBe(true);
     // Not in the kit's rule book: not primary, and the kit's check is never asked (it throws).
     expect(primaryMarket(i, 999, T1)).toBe(false);
@@ -366,6 +369,28 @@ describe("the scorer (R4–R11)", () => {
     expect(
       score(i).copies.filter((c) => c.addr === A && c.iid === 6),
     ).toHaveLength(0);
+  });
+
+  it("counts the collector's rule book from its first record: before it, the kit's (R6, R9)", () => {
+    // The first record, an hour after A's entry at T1, lists no market 6.
+    const first = parseRuleBook(
+      [
+        {
+          kind: "instruments",
+          key: "list",
+          at: T1 + HOUR_MS,
+          value: [{ instrument_id: 7, symbol: "ETH-USD" }],
+        },
+      ],
+      [...kitMarkets.keys()],
+    );
+    expect(first.firstRecordAt).toBe(T1 + HOUR_MS);
+    expect(first.leftOutFrom.get(6)).toBe(Math.floor(T1 / DAY_MS) * DAY_MS);
+    const s1 = score(input(END, first));
+    expect(s1.copies.some((c) => c.addr === A && c.t === T1)).toBe(true);
+    expect(
+      s1.copies.some((c) => c.addr === A && c.iid === 6 && c.t > T1 + HOUR_MS),
+    ).toBe(false);
   });
 
   describe("a split (R6 (3))", () => {
@@ -398,7 +423,7 @@ describe("the scorer (R4–R11)", () => {
         splits: RuleBook["splits"],
         markets = kitMarkets,
       ): ScoreInput => ({
-        ...input(END, { ...EMPTY_RULE_BOOK, splits }),
+        ...input(END, { ...EMPTY_RULE_BOOK, firstRecordAt: CUT, splits }),
         kitMarkets: markets,
       });
       const plain = score(input());
@@ -548,6 +573,23 @@ describe("the collector's rule book (R6 (3), R9, R13)", () => {
     expect(book.rejected).toBe(2);
     expect(book.competitions).toEqual([
       { id: 1, start: 100, end: 900, boosted: new Set([6]) },
+    ]);
+  });
+
+  it("names the primary markets' fee categories a recorded schedule has no rate for, an alarm (R9)", () => {
+    expect(missingFeeCategories(book, ["crypto", "equity", "crypto"])).toEqual([
+      "equity",
+    ]);
+    expect(missingFeeCategories(EMPTY_RULE_BOOK, ["equity"])).toEqual([]);
+    const fixed = {
+      markets: [6, 2],
+      kitMarkets: new Map([
+        [6, "crypto"],
+        [2, "commodity"],
+      ]),
+    } as unknown as FixedInputs;
+    expect(feeAlarm(book, fixed)).toEqual([
+      "alarm: fee categories missing from the collector's schedule: commodity — their copies are priced at the kit's rate (R9)",
     ]);
   });
 });

@@ -82,6 +82,11 @@ type FeeState = {
 };
 
 export type RuleBook = {
+  /**
+   * The instant of the collector's first record (2026-11-11T15:47Z): before
+   * it the kit's `rulebook.json` is the rule book (R6, R9); null without one.
+   */
+  firstRecordAt: number | null;
   /** A market → the instant (a UTC day) from which it is left out. */
   leftOutFrom: Map<number, number>;
   /**
@@ -102,6 +107,7 @@ export type RuleBook = {
 };
 
 export const EMPTY_RULE_BOOK: RuleBook = {
+  firstRecordAt: null,
   leftOutFrom: new Map(),
   splits: [],
   fees: [],
@@ -117,6 +123,7 @@ export function parseRuleBook(
   markets: readonly number[],
 ): RuleBook {
   const book: RuleBook = {
+    firstRecordAt: null,
     leftOutFrom: new Map(),
     splits: [],
     fees: [],
@@ -135,6 +142,7 @@ export function parseRuleBook(
       return r.success ? [r.data] : [];
     })
     .sort((a, b) => a.at - b.at);
+  book.firstRecordAt = parsed[0]?.at ?? null;
   let schedule: Map<string, number> | null = null;
   let overrides = new Map<number, Override>();
   const competitions = new Map<number, { start: number; end: number }>();
@@ -264,6 +272,21 @@ export function bookTaker(
   const o = state.overrides.get(iid);
   if (o !== undefined && t >= o.start && t < o.end) return o.rate;
   return state.schedule?.get(category) ?? null;
+}
+
+/**
+ * The categories of `categories` that some recorded fee schedule has no rate
+ * for: their copies are priced at the kit's rate, and the page raises an
+ * alarm (R9).
+ */
+export function missingFeeCategories(
+  book: RuleBook,
+  categories: Iterable<string>,
+): string[] {
+  const wanted = [...new Set(categories)].sort();
+  return wanted.filter((c) =>
+    book.fees.some((s) => s.schedule !== null && !s.schedule.has(c)),
+  );
 }
 
 /** Every rule-book document of the kinds above, read only, oldest first. */

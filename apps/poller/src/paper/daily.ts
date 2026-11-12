@@ -32,7 +32,12 @@ import {
   type Research,
 } from "./research.js";
 import { PAPER_LIMITS, PAPER_ROUTES } from "./routes.js";
-import { parseRuleBook, readRuleBook, type RuleBook } from "./rulebook.js";
+import {
+  missingFeeCategories,
+  parseRuleBook,
+  readRuleBook,
+  type RuleBook,
+} from "./rulebook.js";
 import { inLine, pageLine } from "./summary.js";
 import {
   LINES,
@@ -211,6 +216,19 @@ export function fixedInputs(kit: Research, packageRoot = PACKAGE_ROOT) {
 }
 
 export type FixedInputs = ReturnType<typeof fixedInputs>;
+
+/** R9's alarm: the primary markets' categories some recorded fee schedule has no rate for. */
+export function feeAlarm(book: RuleBook, fixed: FixedInputs): string[] {
+  const missing = missingFeeCategories(
+    book,
+    fixed.markets.map((iid) => fixed.kitMarkets.get(iid) ?? ""),
+  );
+  return missing.length === 0
+    ? []
+    : [
+        `alarm: fee categories missing from the collector's schedule: ${missing.join(", ")} — their copies are priced at the kit's rate (R9)`,
+      ];
+}
 
 /** The collector's rule book as a run or a look reads it (R6, R9). */
 export async function ruleBookOf(
@@ -548,6 +566,7 @@ export async function daily(
     book.splits.length === 0
       ? `split events recorded by the collector: 0; rule-book documents refused: ${book.rejected}`
       : `split events recorded by the collector: ${book.splits.length} — alarm: their markets are out of the primary cells on the days listed, and positions open across those days are unpriced (R6): ${scored.copies.filter((c) => c.unpriced === "open across a split day of its market").length} unpriced; rule-book documents refused: ${book.rejected}`,
+    ...feeAlarm(book, fixed),
     ...(recorder.counts.dropped > 0
       ? [
           `raw replies not stored: ${recorder.counts.dropped} (the raw folder refused them)`,
