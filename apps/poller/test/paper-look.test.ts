@@ -32,6 +32,9 @@ type LookResult = {
   lines: ReturnType<typeof lookReport>[];
 };
 
+const pageText = (paper: string) =>
+  readFileSync(path.join(paper, "page", "index.html"), "utf8");
+
 const resultOf = (paper: string, k: number): LookResult =>
   JSON.parse(
     readFileSync(path.join(paper, "looks", `L${k}`, "result.json"), "utf8"),
@@ -71,6 +74,11 @@ describe("a look, look() (R1, R12, R16)", () => {
 
         // The day's run whose END is look 1's: every read from the cut.
         expect((await run(root, "2026-12-19T04:00:00Z")).exit).toBe(0);
+        // The next day's page, before look 1 has run: the next look is still look 1.
+        expect((await run(root, "2026-12-20T04:00:00Z")).exit).toBe(0);
+        expect(pageText(root)).toContain(
+          '<div class="box"><strong>Too early to judge — next look 2026-12-19.</strong></div>',
+        );
         // Before its Monday, END_1 + 2 days: refused.
         expect(await runLook(root, 1, "2026-12-20T23:59:59Z")).toBe(5);
         expect(existsSync(path.join(root, "looks"))).toBe(false);
@@ -128,6 +136,13 @@ describe("a look, look() (R1, R12, R16)", () => {
           }),
         );
 
+        // The page after look 1: its MAIN verdict and sentence (R15), the next look's date if neither KEEP nor DROP.
+        expect((await run(root, "2026-12-21T06:00:00Z")).exit).toBe(0);
+        const decided = main.verdict === "KEEP" || main.verdict === "DROP";
+        expect(pageText(root)).toContain(
+          `<div class="box"><strong>Look 1 (2026-12-19): the main line ${main.verdict}. ${main.sentence}${decided ? "" : " Next look 2027-02-06."}</strong></div>`,
+        );
+
         // Unfinished reads: the late folder's last run was on 12-14. The look waits a week, then runs and lists them.
         expect((await run(late, "2026-12-14T04:00:00Z")).exit).toBe(0);
         expect(await runLook(late, 1, "2026-12-21T05:00:00Z")).toBe(5);
@@ -142,6 +157,21 @@ describe("a look, look() (R1, R12, R16)", () => {
         ]);
         expect(forced.marketDaysMissing).toEqual(
           ["14", "15", "16", "17", "18"].map((d) => `6 2026-12-${d}`),
+        );
+
+        // The page escapes a look's words: the latest look's, here a made-up look 3.
+        mkdirSync(path.join(late, "looks", "L3"), { recursive: true });
+        writeFileSync(
+          path.join(late, "looks", "L3", "result.json"),
+          JSON.stringify({
+            lines: [
+              { line: "MAIN", verdict: "KEEP", sentence: "<i>x</i> & y" },
+            ],
+          }),
+        );
+        expect((await run(late, "2026-12-28T06:00:00Z")).exit).toBe(0);
+        expect(pageText(late)).toContain(
+          "Look 3 (2027-05-08): the main line KEEP. &#60;i&#62;x&#60;/i&#62; &#38; y</strong>",
         );
 
         // After the verdict: a look after one whose MAIN said KEEP or DROP is marked so; after any other, not.

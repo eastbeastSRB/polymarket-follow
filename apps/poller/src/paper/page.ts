@@ -108,8 +108,9 @@ export const PAGE_ROWS = 500;
 
 export function renderPage(p: PageData): string {
   const verdict =
-    p.verdict ??
-    `Too early to judge${p.nextLook === null ? "" : ` — next look ${esc(p.nextLook.date)}`}.`;
+    p.verdict === null
+      ? `Too early to judge${p.nextLook === null ? "" : ` — next look ${esc(p.nextLook.date)}`}.`
+      : esc(p.verdict);
   const traders = p.traders.map(
     (t) =>
       `<tr><td class="l">${esc(t.addr)}</td><td>${t.positions}</td><td>${t.open}</td><td>${bps(t.mean)}</td><td>${t.band === null ? "too few days" : `${bps(t.band.low)} … ${bps(t.band.high)}`}</td></tr>`,

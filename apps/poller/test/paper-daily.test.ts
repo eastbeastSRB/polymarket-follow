@@ -36,6 +36,7 @@ import {
   linesOf,
   logLines,
   makeWorld,
+  type LogRecord,
   marketDays,
   pageLines,
   positions,
@@ -257,6 +258,51 @@ describe("a whole run, daily() (R0, R3a, R15; the plan's section 3)", () => {
         // The run's own backup holds the page and the state.
         expect(existsSync(`${root}-backup/page/index.html`)).toBe(true);
         expect(existsSync(`${root}-backup/state.json`)).toBe(true);
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "writes the day's record before the page, and names a failed backup and the raw replies not stored on the page",
+    { timeout: 60_000 },
+    async () => {
+      const tmp = mkdtempSync(path.join(tmpdir(), "paper-e2e-"));
+      try {
+        const { pkg, paperRoot, run } = await makeWorld(tmp);
+        freeze(pkg);
+        // The raw folder and the backup's folder cannot be made: both are files.
+        const root = paperRoot("paper");
+        writeFileSync(path.join(root, "raw"), "not a folder");
+        writeFileSync(`${root}-backup`, "not a folder");
+        expect((await run(root, "2026-11-10T04:00:00Z")).exit).toBe(0);
+        const [record, failed] = logLines(root, "2026-11-10").slice(-2) as [
+          LogRecord & { rawRepliesNotStored: number },
+          LogRecord,
+        ];
+        expect(record.rawRepliesNotStored).toBeGreaterThan(0);
+        expect(failed).toMatchObject({ line: "the backup failed" });
+        const page = readFileSync(
+          path.join(root, "page", "index.html"),
+          "utf8",
+        );
+        expect(page).toContain(
+          `raw replies not stored: ${record.rawRepliesNotStored} (the raw folder refused them)`,
+        );
+        expect(page).toContain("the backup failed: ");
+        // A page that cannot be written fails the run after the day's record, the manifest and the backup.
+        const other = paperRoot("paper-2");
+        writeFileSync(path.join(other, "page"), "not a folder");
+        await expect(run(other, "2026-11-10T04:00:00Z")).rejects.toThrow();
+        expect(
+          existsSync(path.join(other, "log", "2026-11-10-positions.jsonl.gz")),
+        ).toBe(true);
+        expect(logLines(other, "2026-11-10").at(-1)!.copies).toBeGreaterThan(0);
+        expect(
+          existsSync(path.join(other, "manifest", "2026-11-10.sha256")),
+        ).toBe(true);
+        expect(existsSync(`${other}-backup/state.json`)).toBe(true);
       } finally {
         rmSync(tmp, { recursive: true, force: true });
       }

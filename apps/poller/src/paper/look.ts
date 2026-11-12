@@ -9,14 +9,14 @@
  * test's verdict; a later look prints its figures marked "after the
  * verdict".
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
-import { z } from "zod";
 import type { Logger } from "../log.js";
 import { DAY_MS, utcDate } from "../schedule.js";
 import {
   fixedInputs,
   loadCache,
+  looksDone,
   PACKAGE_ROOT,
   ruleBookOf,
   scoreInput,
@@ -32,12 +32,6 @@ import { lookReport } from "./summary.js";
 
 /** How long past its Monday a look waits for unfinished reads. */
 export const LOOK_WAIT_MS = 7 * DAY_MS;
-
-const Result = z.object({
-  lines: z.array(
-    z.object({ line: z.string(), verdict: z.string().nullable() }),
-  ),
-});
 
 export async function look(
   config: DailyConfig,
@@ -103,23 +97,11 @@ export async function look(
     );
     return 5;
   }
-  const earlier = [1, 2, 3]
-    .filter((j) => j < k)
-    .flatMap((j) => {
-      const file = path.join(
-        config.PAPER_ROOT,
-        "looks",
-        `L${j}`,
-        "result.json",
-      );
-      if (!existsSync(file)) return [];
-      const main = Result.parse(
-        JSON.parse(readFileSync(file, "utf8")),
-      ).lines.find((l) => l.line === "MAIN");
-      return main?.verdict === "KEEP" || main?.verdict === "DROP"
-        ? [{ look: j, verdict: main.verdict }]
-        : [];
-    });
+  const earlier = looksDone(config.PAPER_ROOT).flatMap((l) =>
+    l !== null && l.k < k && (l.verdict === "KEEP" || l.verdict === "DROP")
+      ? [{ look: l.k, verdict: l.verdict }]
+      : [],
+  );
   const scored = score(scoreInput(setup, fixed));
   const result = {
     look: k,

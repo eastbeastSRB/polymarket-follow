@@ -268,6 +268,38 @@ export function scoreInput(s: ScoreSetup, fixed: FixedInputs): ScoreInput {
   };
 }
 
+const LookResultFile = z.object({
+  lines: z.array(
+    z.object({
+      line: z.string(),
+      verdict: z.string().nullable(),
+      sentence: z.string().optional(),
+    }),
+  ),
+});
+
+export type LookDone = {
+  k: 1 | 2 | 3;
+  verdict: string | null;
+  sentence: string | null;
+};
+
+/** Each look's MAIN verdict and sentence from its result file; null for a look not yet run. */
+export function looksDone(paperRoot: string): (LookDone | null)[] {
+  return ([1, 2, 3] as const).map((k) => {
+    const file = path.join(paperRoot, "looks", `L${k}`, "result.json");
+    if (!existsSync(file)) return null;
+    const main = LookResultFile.parse(
+      JSON.parse(readFileSync(file, "utf8")),
+    ).lines.find((l) => l.line === "MAIN");
+    return {
+      k,
+      verdict: main?.verdict ?? null,
+      sentence: main?.sentence ?? null,
+    };
+  });
+}
+
 /** The page's data from a scored run. */
 export function pageData(
   kit: Research,
@@ -277,8 +309,13 @@ export function pageData(
   frozen: PageData["frozen"],
   lacks: string[],
   cost: string,
+  looks: readonly (LookDone | null)[],
 ): PageData {
-  const next = LOOK_ENDS.findIndex((t) => t >= end);
+  // R15: the next look is the first not yet run; at and after a look, its MAIN verdict and sentence.
+  const next = looks.findIndex((l) => l === null);
+  const dateOf = (i: number) =>
+    new Date(LOOK_ENDS[i]!).toISOString().slice(0, 10);
+  const latest = looks.filter((l) => l !== null).at(-1) ?? null;
   const titles = {
     MAIN: "Main line (decides)",
     TEN: "Ten closed cycles",
@@ -335,10 +372,13 @@ export function pageData(
       next < 0
         ? null
         : {
-            date: new Date(LOOK_ENDS[next]!).toISOString().slice(0, 10),
+            date: dateOf(next),
             z: LOOK_Z[next]!,
           },
-    verdict: null,
+    verdict:
+      latest === null
+        ? null
+        : `Look ${latest.k} (${dateOf(latest.k - 1)}): the main line ${latest.verdict ?? "has no verdict"}.${latest.sentence === null ? "" : ` ${latest.sentence}`}${latest.verdict !== "KEEP" && latest.verdict !== "DROP" && next >= 0 ? ` Next look ${dateOf(next)}.` : ""}`,
     lines,
     rows,
     traders,
@@ -454,6 +494,11 @@ export async function daily(
     `market-days missing: ${missingDays.length}`,
     `unpriced positions: ${scored.copies.filter((c) => c.money === null).length}; positions in markets outside the primary cells: ${scored.otherMarkets}`,
     `split events recorded by the collector: ${book.splitEvents}${book.splitEvents > 0 ? " — the rules cannot read them; a recorded fix is needed" : ""}; rule-book documents refused: ${book.rejected}`,
+    ...(recorder.counts.dropped > 0
+      ? [
+          `raw replies not stored: ${recorder.counts.dropped} (the raw folder refused them)`,
+        ]
+      : []),
   ];
   const cost = `this run: ${client.counts.calls} calls, peak ${client.counts.peakMinute} tokens a minute and ${client.counts.peakBurst} in 5 s, ${client.counts.rateLimited} answered 429`;
   const frozenAt =
@@ -468,16 +513,10 @@ export async function daily(
     { sha256: freeze.sha256, at: frozenAt },
     lacks,
     cost,
+    looksDone(config.PAPER_ROOT),
   );
   stage("writing");
-  writeAtomic(
-    path.join(config.PAPER_ROOT, "page", "index.html"),
-    renderPage(data),
-  );
-  writeAtomic(
-    path.join(config.PAPER_ROOT, "page", "positions.html"),
-    renderPositions(data),
-  );
+  // The day's record first (decisions 2026-11-12, PAPER-BUILD's call (8)): every copy, the log line, the manifest, the backup; the page last.
   writeAtomic(
     path.join(config.PAPER_ROOT, "log", `${runDate}-positions.jsonl.gz`),
     gzipSync(scored.copies.map((c) => JSON.stringify(c)).join("\n")),
@@ -492,6 +531,7 @@ export async function daily(
     marketDaysMissing: missingDays.length,
     holes: holes.length,
     copies: scored.copies.length,
+    rawRepliesNotStored: recorder.counts.dropped,
     lines: data.lines.map(({ name, positions, open, money, d }) => ({
       name,
       positions,
@@ -508,8 +548,23 @@ export async function daily(
       "backed up",
     );
   } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
     log.error({ err }, "the backup failed; the run's files stand");
+    store.logLine(runDate, {
+      at: new Date().toISOString(),
+      line: "the backup failed",
+      error: why,
+    });
+    lacks.push(`the backup failed: ${why}`);
   }
+  writeAtomic(
+    path.join(config.PAPER_ROOT, "page", "index.html"),
+    renderPage(data),
+  );
+  writeAtomic(
+    path.join(config.PAPER_ROOT, "page", "positions.html"),
+    renderPositions(data),
+  );
   return 0;
 }
 
