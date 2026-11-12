@@ -116,9 +116,11 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   a `sed` with `\\r` wrote a CR byte into a source file (2026-11-12).
 - **`node --test <directory>` fails in Node 24** (MODULE_NOT_FOUND): pass a
   glob.
-- **A Task Scheduler time is local:** `-At 'HH:MM'` moves by an hour at the
-  clock change; compute the trigger from the UTC instant (the paper task's
-  `Get-DailyUtcStart`; the backup task's `06:20` literal is a follow-up).
+- **A Task Scheduler time literal is local:** `-At 'HH:MM'` is read as local
+  time when the task is registered and stored in UTC, so a registration made
+  in summer time lands an hour earlier in UTC; compute the trigger from the
+  UTC instant (`Get-DailyUtcStart` in `tools/task-access.ps1`, used by the
+  paper and backup tasks since 2026-11-12).
 - **Use absolute paths;** batched shell calls share one working directory.
 - **Run checks with `< /dev/null`, to a file, under `timeout`;** stop a server
   by its port, never by a process name.
