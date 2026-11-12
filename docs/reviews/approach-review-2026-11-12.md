@@ -586,8 +586,8 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
 | # | What (written in `progress.md` before it ran) | Result |
 |---|---|---|
 | X1 | counts and costs only: directional entries by usual hold, the map at the trader's horizon, a list's decay, the round-trip cost | 9,796 entries of 549 accounts in 9.7 weeks (holdout out), 935 a week at the end; usual hold < 1 h 42.5%, ≥ 6 h 31%; the map open for a taker at the trader's horizon for 20.6% (0.5% at 1 h, 87% at 24 h); a list fixed on a Monday keeps ~200 of ~270 accounts active over 4 weeks, its entries falling to 42–85% of week 1's (~62% on average) |
-| X2 | FIND-6-EXITS's 1,918 copies by the trader's usual hold; the map filter; the maker bound | the plumbing equal (0 difference); usual hold < 1 h −5.9 ± 5.3 (gross +4.1); 1–6 h −18.4 ± 10.4; 6–24 h −45.5 ± 16.9; ≥ 24 h −67 ± 92 (35 copies); map open −24.8 ± 16.8; maker bound −8.0 overall |
-| X3 | FIND-3's slow traders (1,366 entries, 105 accounts) with exits copied; maker; delay +5 and +15 min | the plumbing equal to FIND-3's 24 h net (1,104 entries, 0 difference); exits copied −9.9 ± 9.1 (gross +1.1); held 24 h +9.1 ± 13.7; maker −2.0 / +17.0; +5 min −8.4, +15 min −7.2; before 10-10 +20.9 ± 11.0, after −59.4 ± 24.2; day-holders −36.8 ± 40.8 |
+| X2 | FIND-6-EXITS's 1,918 copies by the trader's usual hold; the map filter; the maker bound | the plumbing equal (0 difference); usual hold < 1 h −5.9 ± 5.3 (gross +4.1); 1–6 h −18.4 ± 10.4; 6–24 h −45.5 ± 16.9; ≥ 24 h −67 ± 92 (35 copies); map open −24.8 ± 16.8; maker bound −8.0 overall. [Final review, APPROACH-REVIEW, F3: one printed group, "prior hold ≥ 6 h", was in the script but not in the plan written before the run.] |
+| X3 | FIND-3's slow traders (1,366 entries, 105 accounts) with exits copied; maker; delay +5 and +15 min | the plumbing equal to FIND-3's 24 h net (1,104 entries, 0 difference); exits copied −9.9 ± 9.1 (gross +1.1); held 24 h +9.1 ± 13.7; maker −2.0 / +17.0; +5 min −8.4, +15 min −7.2; before 10-10 +20.9 ± 11.0, after −59.4 ± 24.2; day-holders −36.8 ± 40.8; the notional board's 72 traders −22.6 ± 9.2; **the rest of the pool (33 traders) +31.7 ± 25.6, which is within chance (about 1.2 errors by trader, 1.0 by day), on weeks already seen, and from accounts that entered the pool partly through profit boards: evidence of nothing.** [Final review, APPROACH-REVIEW, F3: three printed groups — "before / from 2026-10-10", "map open at the trader's horizon" and "voted at 24 h" — were in the script but not in the plan written before the run. F4: the rest-of-the-pool line and its reading added.] |
 | X4 | loss limits: stops 2% and 5%, 7 days, daily and trader limits | C4's table: tails cut, no mean turned positive |
 | X5 | the real noise and the smallest visible edge, month by month (dispersion only) | B4's table. **Run 1 was wrong by construction:** a pooled within-trader variance read the different noise of short and long holders as differences between traders, putting a floor of ~22 bps under the broad line's error; run 2 takes the trader component from the observed design effect and reproduces each sample's own error (4.92 against 4.77, 13.97 against 13.97). Both outputs are kept |
 
@@ -596,19 +596,23 @@ before agreement (found on these same weeks, so they cannot add evidence),
 FIND-2's five accounts (chosen on their profit in the window), and results by
 market or hour (too many cells, chosen by outcome). **No design rule here was
 chosen from these results:** the main line's filter is FIND-3's, frozen before;
-the explorations size the design and describe it.
+the explorations size the design and describe it. [Final review,
+APPROACH-REVIEW, F3: one exception to the written plan. Page one's sentence
+that the slow traders' result changed sign comes from the period split, a
+print added to X3 outside that plan. It describes; nothing rests on it as a
+rule.]
 
 ## What could fool us
 
 1. **The market's direction.** X3's slow copies swung from +21 to −59 bps
    between two stretches of the old weeks (before and after 2026-10-10). A few
-   weeks can pass or fail on the
-   drift alone. Guard: KEEP needs d against the matched null to agree; the long
-   share is printed.
-2. **One day or one account.** The worst day held 18–50% of the losses (X4);
+   weeks can pass or fail on the drift alone. Guard: KEEP needs d against the
+   matched null to agree; the long share is printed.
+2. **One day or one account.** The worst day held 18–50% of the net loss (X4);
    one account's afternoon shaped FIND-6's table (FIND-REVIEW-6, F2–F3).
-   Guard: the larger of the day and trader errors; each line printed without
-   its most influential account and day.
+   Guard: the two-way error by trader and by day; each line printed without
+   its most influential account and day. [Final review, APPROACH-REVIEW, F2,
+   F6: was "the larger of the day and trader errors" and "of the losses".]
 3. **Copies open at a look.** FIND-6-EXITS's 20 open copies averaged −575 bps.
    Guard: marked at the look, flagged, printed with and without.
 4. **The minute convention for short holds.** 19% of copies are held under 5
@@ -629,7 +633,12 @@ the explorations size the design and describe it.
 11. **The pool** came partly from profit boards read at the cut. Selection on
     the past does not bias a forward measurement, but the notional-board
     accounts' line is printed apart (FIND-3: the profit-board "rest" did
-    better in the past, as accounts chosen on that past would).
+    better in the past, as accounts chosen on that past would). In X3 that
+    "rest" (33 traders) shows +31.7 ± 25.6 bps a copy with exits copied. That
+    is within chance, on weeks already seen, and from accounts chosen partly
+    on their profit in those weeks: it is evidence of nothing, and no design
+    choice rests on it. [Final review, APPROACH-REVIEW, F4: the last three
+    sentences added.]
 
 ## What stays unknown
 
