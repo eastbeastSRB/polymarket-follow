@@ -232,10 +232,15 @@ hold: slow traders and long holds.
       −59.4 ± 24.2. With the same traders about even against random trades
       (FIND-3), that points to the market's direction, not to the traders.
 - **Now or new weeks:** the old weeks are explored (X3); only new weeks can test.
-- **Smallest visible edge** (X5, every slow entry, ~316 a week): with exits
-  copied about 37 bps after 1 month, 26 after 2, 22 after 3, 15 after 6, 11
-  after 12. Day-holders alone are about a third of the copies, so about 1.7
-  times larger.
+- **Smallest visible edge:** the main line holds ~131 entries a week (FR1, the
+  last four weeks before the cut). With exits copied it sees about 54 bps a
+  copy at the first look (6 weeks), 33 at 13 weeks and 21 at 26 (FR3; X5's
+  model agrees within 1%). Day-holders are 17% of its entries, so alone they
+  see about 2.4 times more. [Final review, APPROACH-REVIEW, F1: was "(X5, every
+  slow entry, ~316 a week): with exits copied about 37 bps after 1 month, 26
+  after 2, 22 after 3, 15 after 6, 11 after 12. Day-holders alone are about a
+  third of the copies, so about 1.7 times larger." That count had no minimum of
+  closed cycles; the main line's rule has ten.]
 - **Verdict: IN the experiment, as its main line** (usual hold ≥ 6 h, the
   rule FIND-3 froze before this review), with day-holders as a line beside.
 
@@ -303,19 +308,27 @@ hold: slow traders and long holds.
 |---|---|--:|--:|--:|--:|--:|
 | Every directional entry (~890–940) | exits copied | 9.5 | 7.3 | 6.3 | 5.2 | 4.6 |
 | | held 24 h | 32 | 23 | 20 | 15 | 12 |
-| Slow traders, usual hold ≥ 6 h (~316) | exits copied | 37 | 26 | 22 | 15 | 11 |
+| Slow, usual hold ≥ 6 h, *no* minimum of closed cycles (~316) | exits copied | 37 | 26 | 22 | 15 | 11 |
 | | held 24 h | 50 | 38 | 33 | 27 | 24 |
 | Map-open cells only (~197) | exits copied | 59 | 42 | 34 | 24 | 17 |
 | 20 favourites at R8's rate (~89) | exits copied | 31 | 24 | 21 | 18 | 16 |
 | | held 24 h | 68 | 52 | 46 | 38 | 34 |
 
+- [Final review, APPROACH-REVIEW, F1: added.] **The main line is not the
+  "slow" row above.** Its rule asks for at least 10 closed cycles, which leaves
+  ~131 entries a week (FR1). At the three looks (6, 13 and 26 weeks) it sees,
+  with exits copied, **54 / 33 / 21 bps**, and held 24 h 71 / 49 / 37 (FR3's
+  day-block bootstrap; X5's model gives 54 / 33 / 22 and 73 / 50 / 39). The
+  slow row describes the same filter without that minimum.
 - If the population's activity decays as a fixed list's does (X1: to about 60%
   within four weeks), these grow by about 15%.
 - **R3's judgement on these numbers.** R3's per-trader verdict needs E ≥ 400 at
   K = 20, which takes months to years even for an edge three times the fees.
   R3's pooled daily vote needs P(vote > 0) = 0.60, which is 369 days, or 0.70,
   which is 83 days. X5 puts that at a true edge of ~14–17 and ~28–35 bps a copy
-  in d for the broad and slow designs, and ~29 / ~59 for 20 favourites.
+  in d for the broad and slow designs, and ~29 / ~59 for 20 favourites. [Final
+  review, APPROACH-REVIEW, F1: added. For the main line, ~19 copies a day, the
+  same formula gives ~19 and ~39 bps.]
 - **FIND-REVIEW-6's F1 agrees:** a small group (the owner's filter's top fifth)
   could see only ~100–150 bps.
 - **What follows:** the money line on a broad, rule-based population is the
@@ -375,8 +388,10 @@ copies by them at no cost.
   FIND-3's definition, frozen 2026-11-11 before this review, so no number here
   was tuned on my explorations.
 - **How many:** every account that qualifies. On the last four weeks before the
-  cut that is ~316 slow entries a week from ~183 traders, and ~935 directional
-  entries a week in all (X1, X5).
+  cut that is ~131 main-line entries a week from 61 traders (~147 a week from
+  106 traders since the launch week), and ~935 directional entries a week in
+  all (FR1). [Final review, APPROACH-REVIEW, F1: was "~316 slow entries a week
+  from ~183 traders", a count without the minimum of 10 closed cycles.]
 - **When fixed:** the rules and the pool at the freeze, before any post-cut
   outcome is read. Accounts that appear after the start are left out (a later
   arm may add them, with its own start).
@@ -462,13 +477,23 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
 
 | Look | Data | z (two-sided) | Main line: edge seen 4 in 5 | Broad line, beside |
 |---|---|--:|--:|--:|
-| L1 2026-12-19 | 6 weeks | 2.81 | ~41 bps (SE ~11.3) | ~11 (SE ~3.1) |
-| L2 2027-02-06 | 13 weeks | 2.43 | ~25 (SE ~7.7) | ~8 |
-| L3 2027-05-08 (final) | 26 weeks | 2.17 | ~16 (SE ~5.4) | ~6 |
+| L1 2026-12-19 | 6 weeks | 2.81 | ~54 bps (SE ~14.9) | ~11–12 (SE ~3.0–3.2) |
+| L2 2027-02-06 | 13 weeks | 2.43 | ~33 (SE ~10.1) | ~8–9 |
+| L3 2027-05-08 (final) | 26 weeks | 2.17 | ~21 (SE ~7.1) | ~6–7 |
 
-  (X5's projections at the full rate; about 15% wider if activity decays.)
+  (FR3's day-block bootstrap and X5's model, at the last four weeks' rates:
+  ~131 a week for the main line, ~935 for the broad line; about 15% wider if
+  activity decays.) [Final review, APPROACH-REVIEW, F1: the main line's column
+  was "~41 bps (SE ~11.3) / ~25 (SE ~7.7) / ~16 (SE ~5.4)", read at a rate of
+  ~316 a week that lacks the minimum of 10 closed cycles. The broad line's
+  column was "~11 (SE ~3.1) / ~8 / ~6", and FR3 widens it a little.]
 - **The statistic:** the main line's money, the mean net per copy (each copy
-  alike), with the larger of its two errors (CR1 by trader, CR1 by UTC day).
+  alike), with its **two-way clustered error**: CR1 by trader and CR1 by UTC
+  day combined (Var_trader + Var_day − Var_iid), never below either one-way
+  error. [Final review, APPROACH-REVIEW, F2: was "with the larger of its two
+  errors (CR1 by trader, CR1 by UTC day)". The projections use the two-way
+  error, and the larger one-way error can be the smaller of the two, as it is
+  for the 24-hour reading here, so one definition now serves both.]
   - **KEEP** at a look if mean − z·SE > 0 **and** the mean d at 24 h against
     the matched null is above zero (so that the market's direction alone
     cannot pass).
@@ -479,10 +504,14 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
     a copy was seen".
 - **What the rule does under the likely truth:**
   - if the slow traders carry no skill, the main line's mean sits near −11 (a
-    round trip). The drop line is then reached with probability ~0.62 by L2
-    and ~0.95 by L3. The broad line's upper bound (−11 + 2.81 × 3.1 ≈ −2) is
-    already below zero at L1;
-  - if a real net edge of +20 bps a copy exists, KEEP is likely by L3.
+    round trip). The drop line is then reached with probability ~0.36 at L2
+    and ~0.79 at L3, each look taken alone. The broad line's upper bound
+    (−11 + 2.81 × 3.2 ≈ −2) is already below zero at L1;
+  - if a real net edge of +20 bps a copy exists, KEEP comes with probability
+    ~0.33 at L2 and ~0.74 at L3, provided d agrees.
+  - [Final review, APPROACH-REVIEW, F1: was "~0.62 by L2 and ~0.95 by L3" and
+    "KEEP is likely by L3". Now Φ((δ − μ − z·SE)/SE) and Φ((μ − z·SE)/SE) on
+    FR3's errors.]
 - **Never changed after the start.** A new idea becomes a new arm with its own
   start date and its own budget.
 - **R3's e-processes stay as R3 designed them,** shown live and valid however
@@ -547,7 +576,7 @@ X4, exploring, on the copies with exits copied (bps a copy, ± by trader):
 
 | Design | For | Against |
 |---|---|---|
-| **Recommended: slow traders, two readings** | the best cost structure for a small skill; the delay does not matter; a rule, not a ranking; both questions answered apart | slow to see: ~41 / 25 / 16 bps at the three looks |
+| **Recommended: slow traders, two readings** | the best cost structure for a small skill; the delay does not matter; a rule, not a ranking; both questions answered apart | slow to see: ~54 / 33 / 21 bps at the three looks [Final review, APPROACH-REVIEW, F1: was "~41 / 25 / 16"]; with a minimum of 3 closed cycles instead of 10 (question 7), about twice the entries |
 | Every directional trader as the main line | the fastest, clearest answer (~11 bps by L1) | tests what R8 and FIND-6-EXITS already measured; costs dominate short holds (gross ~0 to −5) |
 | Your own list of ≤ 20, live in v1 | personal; the real alert delay | needs v1 first; small (~31–70 bps at 1 month); judges your picks as a set, with R3's E ≥ 400 per trader taking months to years |
 | Slow traders, limit-order entries as the main line | the cheapest copy (2.5 bps a round trip if filled) | its fill model is new and untested, and from 2026-11-10 only; better beside first |
@@ -637,6 +666,22 @@ the explorations size the design and describe it.
 6. **Your own favourites:** a line beside, your list frozen at the start and
    judged whole, deciding nothing? *Recommendation: yes,* if you want to see
    your own choice measured. FIND-6 says not to expect it to differ.
+7. [Final review, APPROACH-REVIEW, F1: new.] **The main line's minimum of
+   closed cycles: 10 (FIND-3's rule) or 3 (R7's "thin evidence" line,
+   decisions 2026-11-09, ruling 6)?**
+   - The 10-cycle minimum mechanically removes most multi-day holders, who
+     cannot close ten positions in 30 days: of the entries by traders whose
+     usual hold is three days or more, 11 of 379 meet it (X1).
+   - With 3, the main line holds ~284 entries a week from ~157 traders, 30% of
+     them by day-holders (FR1, counts only), against ~131 from 61, and 17%.
+   - Its smallest visible edge would be roughly 37 / 23 / 15 bps at the three
+     looks *if* its copies were as noisy as X3's. That is not measured: the
+     added holds are longer, so they are probably noisier.
+   - *Recommendation: 3,* a threshold fixed before this review and chosen here
+     by counts, never by results; the 10-cycle line printed beside, for
+     comparability with FIND-3.
+   - Against it: the usual hold of a trader with 3–9 closed cycles is a rougher
+     estimate, and X3's noise does not describe it.
 
 ## Evidence list
 
