@@ -164,6 +164,23 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   9,007,199,254,740,991; none above), correlation with time −0.02. All fit a
   JavaScript number (spec `x-js-safe-integer`); they collide only at scale
   (collision odds: report Q6; corrected 2026-11-07).
+  [2026-11-12, PAPER-BUILD: one account's 3,403 liquidation fills of
+  2026-05-07/08 (`0x7af67514…9ec4`) read again with `JSON.parse`'s reviver
+  (`context.source`, Node 24.13) carry trade and order ids up to 20 digits,
+  e.g. 783588700839428444; R2-STYLE's stored capture holds them rounded
+  through a double (783588700839428500: 14 of 3,403 exact), every other field
+  equal. A reader that needs them exact parses the reply's text.]
+- **Re-reading the past gives the same rows** (PAPER-BUILD, 2026-11-12
+  13:31–14:14Z, 777 calls, 5,060 tokens, all HTTP 200, through a client held
+  to 120 a minute and 15 in 5 s): the fills of 20 accounts over
+  [2026-10-31, the cut) equal R2-STYLE's capture of 2026-11-07 row for row;
+  `mark-history` 1m, `klines` 1m and `funding` of 2026-11-05 and 11-06 for 90
+  markets equal RESEARCH-KIT's panel (pulled 2026-11-10/11) row for row —
+  the settlement of 2026-11-05 20:00Z stamped 46 s late included.
+  `mark-history` asked with the day's end returns the day's 1,440 buckets in
+  two pages (1,000 a page, `more`); `klines` asked with the day's end − 1 ms
+  one or two; `funding` asked for the day's stamps one page of 24, newest
+  first.
 - **Lag:** a fill first showed on the fills read a median 3.96 s after its
   `timestamp` with a 5 s poll per account (p90 6.1 s, max 8.6 s; 92 fills, 3
   accounts, 22:29–22:39Z); minus half the poll interval the API's own lag is about

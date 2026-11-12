@@ -9,3 +9,6 @@ apps/poller/research
 docs
 CLAUDE.md
 README.md
+
+# The experiment's frozen files (rules, favourites, the seed's manifest): hashed at the freeze.
+apps/poller/experiment
