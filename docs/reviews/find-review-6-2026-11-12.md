@@ -40,10 +40,12 @@ race matched within shuffling noise: your filter's adjusted p came out 0.549 and
 
 **What I would add to the pages (nothing changes a number; each is marked in
 FIND-6's report as "Final review, FIND-REVIEW-6, F<n>").**
-1. **For your filter the "no" is weaker than page one says (F1).** Its numbers
-   were noisier than the other six rules' (a few accounts with big swings in a
-   small top group), so the study could only have seen a gap of about **100 bps a
-   copy** for it, not the 62–68 bps written (that holds for the other six).
+1. **The study could see less than page one says, and for your filter much
+   less (F1).** The 62–68 bps written come from a calibration in which every
+   copy has the same noise. On the real noise (the real copies, shuffled between
+   traders so that nothing real is left) a gap caught four times in five is about
+   65–95 bps a copy for the other six rules and about **150 bps a copy for
+   yours**: its small top group is exposed to a few accounts with big swings.
 2. **The "worst losing streak" is not a measure of discipline (F2).** Copies are
    lined up by time across all traders, so a run is a market event. The deep
    runs in five of the table's groups are **one account's** afternoon on 4
@@ -110,7 +112,7 @@ Severity: **high** — an error that changes a number, a sign or the verdict;
 
 | | Finding | Why it matters | Where marked |
 |---|---|---|---|
-| **F1** | **Rule 7's visible effect is about 0.66 risk units (about 100 bps a copy), not 0.40–0.43.** R14's calibration gave every trader similar noise (0.40–0.43 RU, 62–68 bps, 80% power). The look's trader-test errors were 0.121–0.144 RU for rules 1–6 (so (2.15 + 0.84) × error = 0.36–0.43 RU: R14 holds for them) but **0.222 for rule 7** (23 top traders, a few with large swings), so for the owner's filter (2.15 + 0.84) × 0.222 = 0.66 RU, 103 bps at the median unit of 155.8 bps; 2.15 is the t of the deciding p near 0.04 that the race needed. Its estimate was +0.27 | The owner reads page one's "62–68 bps" as what the study could see of *his* filter; it could see about 100 | page one, "What it does not mean"; section 4 |
+| **F1** | **The gap the race could see is larger than page one says (0.40–0.43 risk units, 62–68 bps), most for the owner's filter.** R14's calibration gives every copy the same noise (d with a spread of about 1.3 RU); the real copies' d has 1.77 RU and heavy tails (kurtosis 7), and a few accounts swing far more than the rest. My check (`evidence/power.mjs`, `power2.mjs`): the real copies of the 106 traders moved between traders of the same stratum (a trader's two windows together; no rank effect by construction, the real noise, days and competition flags kept), +δ on every copy of one rule's top fifth, the look's own pass conditions (adjusted p under 0.05 from the resampled best, both estimates up, the two competition lines), 200–250 worlds a cell; 0–1% pass at δ = 0. **A gap caught four times in five: rule 6 about 0.43 RU, rule 1 0.48, rules 2, 3, 5 about 0.55–0.6, rule 4 0.62 (roughly 65–95 bps a copy), rule 7 about 1.0 RU (about 150 bps a copy)**; at δ = 0.4 the six pass 56–75% (rule 7: about half), at about 0.7 the six 82–93% (rule 7: 71%), at 1.2 rule 7 97%. Rule 7's trader-test error in the null worlds has median 0.16 and a 90th percentile of 0.32 (the look's 0.222; the others' medians 0.13–0.14, the look's 0.12–0.14): in the worlds where a high-variance account sits in its small top group (12 and 13 active accounts) it passes only at very large gaps | The owner reads "62–68 bps" as what the study could see; for his own filter it could see only about 150, a "no" that excludes little | page one, "What it does not mean"; section 4 |
 | **F2** | **The "worst run" column is a market event, and its bracket is not the run counted.** Copies are ordered by follow instant across all traders of a group, so a run of losers is many accounts hit by one move. The deepest runs of rules 1, 2, 3, 5 and of rule 7's fifth of the eligible are the same six copies of **one account** (0xc58a5ade…, long, followed 2026-11-04 14:54:54Z–16:17:40Z in DELL-USD and MU-USD; −8,855.9 bps); rules 6 and 7's top groups and "copy everything" run through the same afternoon (−10,516, −10,515, −7,750 bps). The bracket is the deepest run of any length, not the longest (rule 1's top: longest 9 copies, deepest 6 copies). The report said "the look does not print whose" | read as "discipline" the column misleads; the owner asked for a "worst losing streak" | page one after the table; 3.5 |
 | **F3** | **The side observation (note 12) is real arithmetic carried by one account.** I recomputed −0.387, −0.395, −0.289, −0.318 (CR1 errors and p as printed). The account 0xc58a5ade… (82 of the 1,918 copies; in the top fifth of all seven rules in at least one window; long share 0.356) went long 19 times and short 11 times in MU-USD from 2026-11-04 into a real fall (marks continuous, no glitch: 870 → 665 over 3–6 November, 755 → 667 on 5 November 14:00–16:00Z); its 30 copies averaged −1.85 RU (−251 bps net; the matched null expected mostly shorts). Without the account: the four rules' top fifths average −0.11 to −0.21 RU (p 0.16–0.41) and their follower net is 11–20 bps below the rest's (not 33–36); by trader +3, +32, −23, −7 bps (errors 41–49) | the brief asks whether it is worth a line: not as an idea for a study; it is one account's afternoon | 6, item 12 |
 | **F6** | **The test never copies the exit.** Every copy is held 24 hours (ruling (5) of "RESEARCH-KIT accepted"); the follower never leaves when the trader closes. The owner's thesis — disciplined means cutting losers — is mostly about exits. A fixed-hold copy judges a "discipline" filter only by whether its entries beat random entries at 24 hours. Section 7 of the report names "another holding time" but not this | the "no" does not touch the idea of a follower who exits with the trader; I did not test it (new analysis, outside the frozen rules) | 7 |
@@ -247,16 +249,20 @@ recomputation is the stronger check of the code's behaviour).
   by default, beside every per-copy number, the result without the busiest
   trader (F3) and the per-trader median; a pooled time-ordered streak (F2) should
   give way to each trader's own. (4) State the "smallest visible effect" from
-  the realized errors per rule (F1), not from a homogeneous calibration. (5) A
+  the real noise (F1, the real copies moved between traders), not from a
+  homogeneous calibration. (5) A
   copy-with-exit follower is the missing variant for any study of discipline (F6).
 
 ## 6. What I did not do or could not check
 
 - I did not re-run FIND-6's tests, mutants, calibration or look; I did not
-  re-simulate the race's size or power: I rely on RULES-REVIEW-6's re-run in
-  harsher worlds (4.9% and 3.8%) and on my own agreement of the race on the real
-  data (the size claim is theirs; the power claim I recomputed from the
-  realized errors, F1).
+  re-simulate the race's size on drawn worlds: I rely on RULES-REVIEW-6's re-run
+  in harsher worlds (4.9% and 3.8%), on my own agreement of the race on the real
+  data, and on the 0–1% passes of my own worlds without a gap (F1). The power I
+  did recompute, on the real noise (F1); that simulation moves whole traders'
+  copies between traders, so it keeps the real heavy tails but cannot say
+  whether a real gap would be spread evenly over a top fifth's copies, as it
+  assumes.
 - The classifier (`labelAt`) is imported, not rewritten: I checked that its
   output on my own fills gives the same 221 candidate rows and the same P1 flags.
 - The board flag (`notionalBoard`) comes from `population.json`; I did not (and
@@ -271,8 +277,8 @@ recomputation is the stronger check of the code's behaviour).
    *Recommendation: yes.* Show the owner this report's first page with
    FIND-6's.
 2. **Put F1, F2, F6 in the decisions entry that records FIND-6** (one sentence
-   each: rule 7's visible effect about 100 bps; the worst run is one account's
-   afternoon; exits are not copied). *Recommendation: yes*; the owner's decision
+   each: the race could see about 65–95 bps a copy, and about 150 for the owner's
+   filter; the worst run is one account's afternoon; exits are not copied). *Recommendation: yes*; the owner's decision
    to stop or go on rests on how strong the "no" is.
 3. **External-apis:** a dated line that liquidation fills can carry trade or
    order ids above 2^53 (3,403 fills of one account, all taker liquidations,
@@ -286,7 +292,7 @@ recomputation is the stronger check of the code's behaviour).
    on the plan page as a candidate for a later batch, with these fixed in
    advance: a follower who exits when the trader exits (at the same delay and
    a taker's cost), discipline scored on closed and open cycles as rule 7 does,
-   the realized errors per rule used to state what it can see, and a
+   the power stated on the real noise, and a
    without-the-busiest-trader print by default; not before the exams of
    2026-11-30 and 2026-12-19 have used the weeks after the cut. The owner
    decides.
@@ -309,13 +315,14 @@ recomputation is the stronger check of the code's behaviour).
   `workers/FIND-REVIEW-6/evidence/`): `mystats`, `mylines`, `rawlib`, `ruleslib`
   (my libraries); `test-stats`, `run-lines` (lines and race), `run-owner`,
   `rebuild-entries`, `rebuild-cands`, `rules345`, `run-463`, `check-report`,
-  `check-page1`, `check-ownnext`, `placebo`, `ties`, `r7profile`, `deadcode`,
-  `audit-transcript`, `hunt1`–`hunt13`. The longest run: 78 s a population, the
-  heaviest peak 515 MB: none over 1 GB or 5 minutes, so **no slot taken**; no node
-  above 3 GB of heap.
+  `check-page1`, `check-ownnext`, `placebo`, `power`, `power2`, `ties`, `r7profile`, `deadcode`,
+  `audit-transcript`, `hunt1`–`hunt13`. The longest runs: the race, 78 s a
+  population, and the power simulations, about 100 s; the heaviest peak 515 MB:
+  none over 1 GB or 5 minutes, so **no slot taken**; no node above 3 GB of heap.
 - **Rules I bent:** a few `node -e` one-liners (print keys and counts of
   `rulebook.json`, `population.json`, `result.json`; two small edits of my own
-  scripts), one `cat <<EOF` heredoc for a small patch of my own script, and `sed
-  -i` on my own scripts (the brief wants `.mjs` files made with the Write tool).
+  scripts), a few small `cat <<EOF` heredocs for patch scripts (one of my own
+  script, three for exact replacements in the two reports) and `sed -i` on my
+  own scripts (the brief wants `.mjs` files made with the Write tool).
   My first run of rule 7 differed from the look's: my own slip (open cycles built
   from all events, not those before e), found by comparing, fixed, then equal.
