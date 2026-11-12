@@ -43,6 +43,7 @@ describe("parseConfig", () => {
       "BACKUP_ROOT",
       "MONGO_DB",
       "MONGO_URI",
+      "PAPER_BACKUP",
       "PAPER_ROOT",
       "RECORDINGS_ROOT",
       "STATE_DIR",

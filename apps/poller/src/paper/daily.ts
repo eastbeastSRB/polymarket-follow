@@ -17,6 +17,7 @@ import type { Logger } from "../log.js";
 import { DAY_MS, utcDate } from "../schedule.js";
 import { Recorder } from "../store/files.js";
 import { accountData, type MondayCache } from "./account.js";
+import { backupPaper } from "./backup.js";
 import { verifyFreeze } from "./gate.js";
 import { CUT, LOOK_ENDS, mondayOf, runEnd } from "./instants.js";
 import { readThrough } from "./loop.js";
@@ -49,6 +50,7 @@ const EXPERIMENT = path.join(PACKAGE_ROOT, "experiment");
 
 export type DailyConfig = {
   PAPER_ROOT: string;
+  PAPER_BACKUP: string;
   MONGO_URI: string;
   MONGO_DB: string;
 };
@@ -461,6 +463,14 @@ export async function daily(
     shared: sharedFiles(),
   });
   store.flushManifest(runDate);
+  try {
+    log.info(
+      { copied: backupPaper(config.PAPER_ROOT, config.PAPER_BACKUP) },
+      "backed up",
+    );
+  } catch (err) {
+    log.error({ err }, "the backup failed; the run's files stand");
+  }
   return 0;
 }
 

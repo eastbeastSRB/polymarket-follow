@@ -31,6 +31,7 @@ const absolutePath = z
 const PaperConfig = z.object({
   STATE_DIR: absolutePath,
   PAPER_ROOT: absolutePath,
+  PAPER_BACKUP: absolutePath,
 });
 export type PaperConfig = z.infer<typeof PaperConfig>;
 

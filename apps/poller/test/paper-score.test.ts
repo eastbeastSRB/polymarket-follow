@@ -551,6 +551,7 @@ describe("a run without a valid freeze (R0)", () => {
       const exit = await daily(
         {
           PAPER_ROOT: root,
+          PAPER_BACKUP: path.join(pkg, "backup"),
           MONGO_URI: "mongodb://127.0.0.1:1",
           MONGO_DB: "polymarket_follow_test",
         },
@@ -750,5 +751,36 @@ describe("the rehearsal on the old weeks (part 4, F6)", () => {
     } as unknown as ScoreInput;
     expect(() => score(i)).toThrow(/only weeks before the cut/);
     expect(score({ ...i, end: CUT }).copies).toEqual([]);
+  });
+});
+
+describe("the experiment's own backup (Q-F, F10)", () => {
+  it("copies what cannot be read again when the copy is missing or differs, and nothing else", async () => {
+    const { backupPaper } = await import("../src/paper/backup.js");
+    const { writeFileSync, mkdirSync, existsSync } = await import("node:fs");
+    const root = mkdtempSync(path.join(tmpdir(), "paper-backup-root-"));
+    const dest = mkdtempSync(path.join(tmpdir(), "paper-backup-dest-"));
+    try {
+      for (const [f, text] of [
+        ["state.json", "{}"],
+        ["log/2026-11-30.jsonl", "a\n"],
+        ["seed/MANIFEST.sha256", "m"],
+        ["fills/0xab.json.gz", "rows"],
+        ["raw/2026-11-30/rest-04.jsonl", "raw"],
+      ] as const) {
+        mkdirSync(path.dirname(path.join(root, f)), { recursive: true });
+        writeFileSync(path.join(root, f), text);
+      }
+      expect(backupPaper(root, dest)).toBe(3);
+      expect(existsSync(path.join(dest, "fills"))).toBe(false);
+      expect(existsSync(path.join(dest, "raw"))).toBe(false);
+      expect(backupPaper(root, dest)).toBe(0);
+      writeFileSync(path.join(root, "state.json"), "{1}");
+      expect(backupPaper(root, dest)).toBe(1);
+      expect(readFileSync(path.join(dest, "state.json"), "utf8")).toBe("{1}");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(dest, { recursive: true, force: true });
+    }
   });
 });
