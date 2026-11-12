@@ -18,20 +18,40 @@ exploring; X5 ran twice (its first projection had a modelling error, recorded).*
 
 *Words.* A **bp** is 0.01% of a copy's size. A **copy** is the paper position a
 follower would have opened after a trader's new position. A **taker** trades at
-once and pays the fee and the gap between buying and selling prices (here about
-8.5–13 bps in and out); a **maker** waits with a limit order, pays 2.5 bps, but
-may not be filled. **"Against random trades"** compares a copy with trades
+once and pays the fee and the gap between buying and selling prices (here a
+median of about 8.5 to 13.6 bps in and out, by kind of market); a **maker**
+waits with a limit order, pays 2.5 bps, but may not be filled. **"Against
+random trades"** compares a copy with trades
 picked by chance in the same market and hour, so that simply being long in a
 rising market earns nothing. **Exploring** means measured on weeks we have
 already studied: it describes, it never decides.
 
+[Final review, APPROACH-REVIEW, F1, F2, F5, F6: this page was rewritten. The
+main line's size and what it can show are corrected (F1); the error is defined
+once (F2); the page now says plainly that the filter is on how a trader trades,
+and puts your favourites beside it (F5); the costs' wording is fixed (F6). The
+first version is in commit `1924799`.]
+
 **The recommended design — "slow traders, two readings, costs measured":**
-- **Who:** no ranking. Every account of our frozen pool (1,602 accounts, the
-  100 holdout accounts left out) counts while its own trades of the two weeks
-  before mark it as a directional trader. The main line takes the copies of
-  traders whose **usual hold is 6 hours or more** (their median over the 30
-  days before): about 300 new positions a week from about 180 traders, on the
-  last weeks we hold.
+- **Who — a filter on how traders trade, fixed before the start.** A trader's
+  copies count when the trader's **usual holding time** is **6 hours or
+  more**: the median time their positions stayed open over the 30 days before,
+  read from their own trades, with at least 10 positions closed. It is not a
+  filter on how much they earned. Every account of our frozen pool can qualify
+  (1,602 accounts; the 100 holdout accounts are left out) while its own trades
+  of the two weeks before mark it as a directional trader. On the last four
+  weeks before the cut that gave about 130 new positions a week from about 60
+  traders.
+- **Why a filter on *how*, not on *how much*.** Every filter on past results
+  that we tested failed. The month's most profitable traders lost their
+  follower money (R8). Past follower results did not repeat (FIND-1). Seven
+  ranking rules, your discipline filter among them, picked no better traders
+  (FIND-6), and none did with the exits copied either (FIND-6-EXITS). A few
+  weeks' profit is close to a random draw tilted by the market's direction
+  (IDEAS-REVIEW, 2.4). Holding time is a property of the trading itself, known before a
+  trade. It picks the copies whose price move is large enough for a modest
+  skill to cover the costs at all, and makes no guess about who will be lucky
+  next.
 - **What:** every new position (an opening or a flip; not additions), every
   market but the six we leave out, every hour. Each copy: $1,000, entered about
   80 seconds after the trader, at a taker's costs (fees, spread, depth,
@@ -44,35 +64,43 @@ already studied: it describes, it never decides.
 - **How judged, fixed before it starts:** **keep** when the money's lower bound
   is above zero and the judgement points the same way; **drop** when the
   money's upper bound is below +10 bps a copy (the smallest edge worth having:
-  yours to fix); otherwise **too few to tell**.
-- **Beside it, deciding nothing:** every directional trader's copies (the fast
-  ones too); limit-order entries; stops; traders who hold for days; entries
-  right after a price jump; your own favourites.
+  yours to fix); otherwise **too few to tell**. These are verdicts on the
+  test, never instructions to trade.
+- **Your own favourites can still run beside it.** You pick them before the
+  start; they are frozen and judged as a set; you see their numbers next to
+  the main line, and they do not change its verdict. Also beside it, deciding
+  nothing: every directional trader's copies (the fast ones too), limit-order
+  entries, stops, traders who hold for days, and entries right after a price
+  jump.
 
 **Why it is the best balance of what we know.** A round trip costs about the
-same whatever the hold, while the price move grows with it: at 24 hours a
-taker can cover the costs in 80 of 84 markets, at one hour in 2. So a small real
-skill has its best chance with slow traders. For them the delay does not matter
-(copies taken 5 or 15 minutes later did no worse). Picking traders by their past
-failed every test (FIND-1, FIND-6), so the design picks none: a broad rule
-gives the most copies and no picking luck. The two readings answer the two
-questions apart: does it pay, and is it skill or just the market's direction.
-On our old weeks the slow traders' result changed sign between September and
-October, while against random trades they stayed about even (FIND-3): that
-points to the market's direction, not to the traders. And the outside evidence
-agrees: copying has paid only where the leader's information is slow and the
-copier's costs are small.
+same whatever the hold, while the price move grows with it. At 24 hours, 80 of
+84 markets need at most 55 right calls in 100 to cover a taker's costs; at one
+hour, only 2 do. So a small real skill has its best chance with slow traders,
+and on the old weeks a delay of 5 or 15 minutes cost them nothing visible. The
+design ranks no one: a broad rule gives the most copies and no picking luck.
+The two readings answer two questions apart: does it pay, and is it skill or
+only the market's direction? On the old weeks the slow traders' result changed
+sign between September and October while against random trades they stayed
+about even (FIND-3). The outside evidence agrees: copying has paid only where
+the leader's information is slow and the copier's costs are small.
 
-**What it can show, and how soon** (an edge seen four times in five):
-- **The main line:** about **40 bps** a copy by 2026-12-19, **25** by February,
-  **16** by May. A real edge, if one exists, is probably smaller. So the likely
-  answer in December is "too few to tell", and by February or May "drop",
-  unless something real is there.
-- **Every directional trader:** about 11 bps by December. That gives a clear
+**What it can show, and how soon** (an edge seen four times in five, checked
+by a second method in the Final review):
+- **The main line:** about **54 bps** a copy by 2026-12-19, **33** by February,
+  **21** by May. A real edge, if one exists, is probably smaller. So the likely
+  answer is "too few to tell" in December and February. By May it is "drop"
+  about four times in five if there is no skill. A true +20 bps would most
+  likely show by May (about three times in four).
+- **If you lower the minimum of closed positions from 10 to 3** (question 7),
+  the main line has about twice the copies, and edges perhaps a third smaller
+  can be seen. That figure assumes the extra copies are as noisy as these,
+  which is not measured.
+- **Every directional trader:** about 11–12 bps by December. That gives a clear
   forward answer to "does copying them pay at a taker's cost" within six weeks.
 - **On the old weeks (exploring):** slow traders' copies lost 9.9 ± 9.1 bps
-  with the exits copied (+1.1 before costs) and made +9.1 ± 13.7 held a day.
-  Nothing there predicts a pass.
+  with the exits copied (+1.1 before costs) and made +9.1 ± 13.7 held a day
+  (± one error by trader). Nothing there predicts a pass.
 
 **The alternatives, one line each.**
 1. *Every directional trader as the main line:* the fastest and clearest
@@ -85,7 +113,8 @@ copier's costs are small.
 
 **Your decisions** (in full at the end, each with a recommendation): start the
 data at the cut (yes); leave the holdout accounts out (yes); the "drop" line,
-+10 bps (yours); run it first as a weekly script, not as the app (yes).
++10 bps (yours); run it first as a weekly script, not as the app (yes); the
+minimum of closed positions, 3 or 10 (3).
 
 *This is research, not advice on what to trade.*
 
