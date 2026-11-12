@@ -103,7 +103,7 @@ instance holds 50 a minute and 15 in 5 s, the experiment's 120 and 15:
 together the operating budget's 30 in 5 s (decisions 2026-11-12, the two
 fresh reviews (7)).
 
-## The paper experiment (built 2026-11-12, PAPER-BUILD parts 0–5; not frozen, not deployed)
+## The paper experiment (built 2026-11-12; frozen 2026-11-12 20:19:52Z, `paper-freeze-1`, decisions 2026-11-12, the freeze; not yet deployed)
 
 **What it is.** A second entry point of the same package, `dist/paper.js`
 (`src/paper.ts`, `src/paper/`), that reads the pool's fills and every primary
@@ -121,8 +121,10 @@ by path and typed in `src/paper/research.ts`; `checkKit()` at every load.
 `apps/poller/experiment/`: `rules.md`, `seed.sha256` (the seed's manifest),
 `favourites.txt` (written at the freeze: `from <F0>` and ≤ 20 addresses,
 read lower-case; checked by the freeze tool: its form, F0 between the cut and
-the freeze, no holdout account — a run refuses a holdout favourite too),
-`FROZEN.draft.sha256` (a draft; the gate opens only on `FROZEN.sha256`).
+the freeze, no holdout account — a run refuses a holdout favourite too; since
+2026-11-12 F0 2026-11-12T20:19:43Z and PAPER-FAV's 20),
+`FROZEN.sha256` (the freeze: 61 files, `d04d3cd8…f31c`, tag `paper-freeze-1`;
+the gate opens only on it) and `FROZEN.draft.sha256` (the last draft).
 `tools/paper-freeze.cjs` builds `dist/paper` afresh and writes the list of
 what runs (`--final` refuses a tree that is not clean) (`dist/paper.js`,
 `dist/paper/`, `research/`, `experiment/`) with the toolchain in its head.

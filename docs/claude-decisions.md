@@ -1,5 +1,40 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (THE FREEZE of the paper experiment — rules.md R0; the supervisor
+records it after verifying it on its own path, inside the owner's approval
+of the plan): **THE PAPER EXPERIMENT IS FROZEN: `apps/poller/experiment/FROZEN.sha256`,
+61 FILES, SHA-256 `d04d3cd81945057aba59d3475190596090b8962626cec502b006d7430f2ef31c`,
+COMMIT `eadf1e5`, TAG `paper-freeze-1`.** Written by `tools/paper-freeze.cjs
+--final` at 2026-11-12T20:19:52.394Z on the clean tree of `e3b1700`
+(toolchain in its head: node v24.13.0, typescript 6.0.3, zod 4.6.7, mongodb
+7.7.0, pino 10.4.0, pnpm-lock `266a3797…`); it lists `dist/paper.js`, 22
+files of `dist/paper/`, the 35 vendored files of `research/` (the kit
+`2d3667b5…09aa`, lib-exits `612d5836…6330`) and `experiment/` `rules.md`,
+`seed.sha256` and `favourites.txt`. **F0 = 2026-11-12T20:19:43Z** (the first
+line of `favourites.txt`, 9 s before `--final`; PAPER-FIX-CHECK N6);
+`favourites.txt` (SHA-256 `c3fb45f7…d273`) holds exactly PAPER-FAV's 20
+(decisions 2026-11-12, "the favourites list fixed before the freeze").
+**The supervisor's checks:** a fresh build, then every one of the 61 listed
+files equal to its hash; `pnpm verify` green (35 files, 282 tests); the tree
+clean; the favourites equal to PAPER-FAV's file; the access scans of
+PAPER-FREEZE clean; nothing after the cut read by anyone before this entry.
+**The road to it:** PAPER-BUILD's parts 0–5 and its closing tasks;
+PAPER-RULES-REVIEW and PAPER-CODE-REVIEW ("after these fixes"); the batch of
+13 fixes; PAPER-FIX-CHECK ("not yet, because of four small slips");
+PAPER-FREEZE's four mends (no banned word the page can print, the night
+test's timeout, R14, R15, R17) and the edge fix (`867ddc6`: MAIN always has
+a verdict — WITHHELD when all its copies are unpriced, TOO FEW TO TELL with
+no SE). **Accepted with the freeze, as frozen** (PAPER-FIX-CHECK's R-L11):
+the builder's operating numbers — the schema alarm at more than 1% and at
+least 10 rejected rows, an immediate stop at 1,000; the list accounts'
+safety cap of 50 pages a day; the breaker at 5 failed reads in a row; the
+120-second wait of a request. **From here:** a change to any frozen file is
+a defect fix or a new arm (R0), never a quiet edit; the gate opens on this
+list only. **Next:** the owner's deploys — the collector (its generic
+User-Agent and its burst of 15), then `-Program paper` — and
+`register-tasks.ps1 -PaperOnly` from an elevated PowerShell; the first run
+catches up from 2026-11-07; looks at 2026-12-19, 2027-02-06 and 2027-05-08.
+
 2026-11-12 (the favourites list fixed before the freeze — the owner, "keep 20
 and mark the 8", on the supervisor's recommendation): **ARM F IS THE 20
 ACCOUNTS OF RULE 7'S TOP FIFTH AT THE CUT; THE 8 OF THEM WITH A PROFIT

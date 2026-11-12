@@ -3,9 +3,9 @@
 polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built, Final-reviewed
 and records around the clock; research round 2's FIND stage is done and
-nothing passed; the forward paper experiment is built to "rules ready"
-(PAPER-BUILD, 2026-11-12) and waits for its fresh rules review, the freeze and
-the owner's deploy.** The plan is the plan page (docs/claude-master-plan.md);
+nothing passed; the forward paper experiment is built, reviewed three times
+and FROZEN (2026-11-12 20:19:52Z, tag `paper-freeze-1`), and waits for the
+owner's deploy.** The plan is the plan page (docs/claude-master-plan.md);
 what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -18,74 +18,49 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **The collector is live** (architecture, "The collector"): books and trades
   of every market, the minute reads, the nightly passes, the rule book, health
   and `status`, the daily backup. Its code now sends the generic User-Agent
-  `data-collector/1.0` (REST and WebSocket) and `once.js` is gone; the live
-  copy changes at its next deploy (the owner's).
+  `data-collector/1.0` and bursts at most 15 in 5 s; the live copy changes at
+  its next deploy (the owner's).
 - **Research:** R1–R8 closed; R8 FAILS; round 2's FIND: nothing passes; the
   exploring check with exits copied leaves every group losing (decisions
   2026-11-12). The reports: `docs/reviews/`.
-- **The paper experiment** (decisions 2026-11-12: APPROACH-REVIEW accepted;
-  the paper experiment runs daily and gets a page; its plan approved with its
-  review's fixes; PAPER-BUILD's technical calls and four questions; daily()
-  end to end; the two fresh reviews' batch, PAPER-BUILD's fixes): built in
-  `apps/poller` (`dist/paper.js`, `src/paper/`, the vendored kit and
-  lib-exits in `research/`, `experiment/rules.md`), with a run and a look
-  tested end to end over a synthetic world (`test/paper-daily`,
-  `paper-look`, `paper-guards`), `pnpm verify` green (35 files, 280 tests).
-  The seed and the pre-cut panel are in
-  `F:\polymarket-follow\paper\`. The reproduction on the old weeks matches
-  (FIND-6-EXITS, X3, FIND-3's d, the kit's labels, the main line's counts;
-  re-run after the batch, equal); the live checks on pre-cut windows match. **Nothing after the cut has been
-  read; the program's gate refuses it until `experiment/FROZEN.sha256`
-  exists.** The draft list: `experiment/FROZEN.draft.sha256`
-  (`34df20ff…9714`, 60 files, from `efdc8aa`). Not built: MAKER and VWAP
-  (Q-D).
+- **The paper experiment** (architecture, "The paper experiment"; decisions
+  2026-11-12, from "APPROACH-REVIEW accepted" to "the freeze"): MAIN — the
+  slow traders of the frozen pool by rule — decides at the looks of
+  2026-12-19, 2027-02-06 and 2027-05-08; beside it every directional trader,
+  the favourites (the owner's filter's top 20 at the cut, the 8 with a profit
+  factor of at least 1 pre-registered) and the other lines. **Frozen:**
+  `apps/poller/experiment/FROZEN.sha256`, 61 files, `d04d3cd8…f31c`, F0
+  2026-11-12T20:19:43Z; `pnpm verify` green (35 files, 282 tests). **Nothing
+  after the cut has been read;** the gate opens only on that list.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
-  closed); the collector's share is 50 a minute and 15 in 5 s; the
-  experiment's 120 and 15 (live for the collector at its next deploy).
-- GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
+  closed); the collector's share is 50 a minute and 15 in 5 s, the
+  experiment's 120 and 15.
+- GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes (the tag
+  `paper-freeze-1` too).
 
 ## Next up — IN ORDER
 
-1. **Each fresh reviewer re-checks its own findings** against PAPER-BUILD's
-   fixes (decisions 2026-11-12, the two fresh reviews; PAPER-BUILD's fixes).
-2. **The freeze:** the owner's favourites into `experiment/favourites.txt`
-   (`from <F0>` with F0 the instant `--final` runs, ≤ 20 addresses, none in
-   the holdout; written with the Write tool, LF), `pnpm verify` on a clean
-   tree, `node tools/paper-freeze.cjs --final` (it checks the favourites and
-   refuses a dirty tree), the commit tagged `paper-freeze-1`, the list's
-   SHA-256 in decisions.
-3. **The owner's deploy and registration:** `tools\deploy.ps1` (the collector,
-   for its User-Agent), `tools\deploy.ps1 -Program paper`, then
-   `tools\register-tasks.ps1` elevated once (adds "polymarket-follow paper",
-   daily 04:00Z, and the backup's trigger, now computed from UTC, 05:20Z;
-   `-PaperOnly` would add the paper task alone); the first run reads the
-   backlog (16–26 h).
+1. **The owner's deploy and registration,** at an agreed time:
+   `tools\deploy.ps1` (the collector: its User-Agent and burst),
+   `tools\deploy.ps1 -Program paper`, then `tools\register-tasks.ps1
+   -PaperOnly` from an elevated PowerShell (the task "polymarket-follow
+   paper", daily 04:00Z). The supervisor checks each from its logs.
+2. **The first run** reads the backlog from 2026-11-07 (16–26 h, pausing
+   02:35–03:50Z); then daily. The supervisor checks its log, budget and page.
+3. **D1 and D2,** after the freeze, each with its own share of the remaining
+   80 a minute.
 4. **Small collector follow-ups, when convenient:** drop the boards'
-   `consistent` flag; a coverage mark for books that arrive late.
-5. D1 and D2 after the freeze, each with its own share of the remaining 80 a
-   minute.
+   `consistent` flag; a coverage mark for books that arrive late; the backup
+   task's trigger from UTC takes effect when the tasks are next registered.
+5. **The v1 plan** (the plan page), early December.
 
 ## Last session (2026-11-12)
 
-PAPER-BUILD built the forward paper experiment, parts 0–5 (commits
-`51724ca` … `08147f5`): the vendored kit and lib-exits; the client with a
-route table, burst and User-Agent per instance; the experiment's reads, gate,
-loop, holes, alarm and files; the seed and the panel join, checked against
-the kit and live on pre-cut windows (777 calls, 5,060 tokens); the scorer,
-statistics, verdict, page, look and entry point (45 of 45 mutants killed);
-the reproduction on the old weeks and a rehearsal page; rules.md final, the
-draft freeze list, deploy.ps1 `-Program paper` and the paper task in
-register-tasks.ps1, tested on a scratch run root only. Then, before the rules
-review (`6fa14d3` … `7c6f978`): `daily()` takes its outside inputs as one
-optional argument and a test drives whole runs over a synthetic world (the
-gate's refusals, a first run paused at night and resumed, a normal day, a
-Monday's sweep, the log of every copy and the page; 21 of 21 glue mutants
-killed); the draft list again; the backup task's trigger computed from UTC.
-Then the two fresh reviews' batch (`1d720b7` … `e0c7540`): the look takes
-`io` and is tested end to end, its band fixed; the page shows the latest
-look's verdict; favourites checked at the freeze; the lines beside printed at
-the looks; the split rule; a look reads nothing after its END; bursts 15 + 15;
-the freeze and deploy checks, `-PaperOnly`; the kit's rule book before the
-collector's first record; dead code out; 49 of 50 deliberate breaks killed;
-the lows.
+FIND-6 (the owner's filter) failed and its Final review confirmed it; an
+exploring check with exits copied left every group losing. The owner chose a
+forward paper experiment; APPROACH-REVIEW found its design, PAPER-PLAN planned
+it, PAPER-PLAN-REVIEW reviewed the plan; PAPER-BUILD built it (parts 0–5, an
+end-to-end test, a batch of 13 fixes from PAPER-RULES-REVIEW and
+PAPER-CODE-REVIEW); PAPER-FIX-CHECK read the fixes; PAPER-FAV picked the
+favourites; PAPER-FREEZE mended four slips and froze it.
