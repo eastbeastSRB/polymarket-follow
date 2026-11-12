@@ -44,8 +44,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-11, through decisions 2026-11-11 (round 2's FIND
-results).*
+*Brought in step on 2026-11-12, through decisions 2026-11-12 (FIND-6-EXITS's
+result).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -82,8 +82,8 @@ results).*
 | | When | What | Who |
 |---|---|---|---|
 | ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
-| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task registered by the owner (2026-11-11); the whole collector's Final review done (COLLECTOR-REVIEW, 15 findings, 14 fixed and live since 20:22Z; decisions 2026-11-11); the poller task's normal priority waits for the owner's re-registration; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
-| ✅ | 2026-11-11 | **Phase 2 — research round 2, FIND: NOTHING PASSES.** The kit and the first measurements accepted; seven studies (entries 1, 2, 3, 4, 5, 7, 9, 10), rules frozen and reviewed before one look each, three fresh Final reviews: every result stands; no entry registered; the gate (entry 1) fails, so entry 6 does not run and ranking traders stops for now (decisions 2026-11-11, round 2's FIND results) | research subagents |
+| 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task registered by the owner (2026-11-11); the whole collector's Final review done (COLLECTOR-REVIEW, 15 findings, 14 fixed and live since 20:22Z; decisions 2026-11-11); the poller task runs node itself at normal priority; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
+| ✅ | 2026-11-11 | **Phase 2 — research round 2, FIND: NOTHING PASSES.** The kit and the first measurements accepted; seven studies (entries 1, 2, 3, 4, 5, 7, 9, 10), rules frozen and reviewed before one look each, three fresh Final reviews: every result stands; no entry registered; the gate (entry 1) fails (decisions 2026-11-11, round 2's FIND results); entry 6 then ran once with the owner's filter on the owner's lift and fails too (decisions 2026-11-12, FIND-6's result); copying the traders' exits as well, an exploring check, leaves every group losing (decisions 2026-11-12, FIND-6-EXITS's result) | research subagents |
 | ⏸️ | the owner's call | **The way forward** — a small forward paper experiment, a pause with the collector recording, a later batch, or stopping; with it the exams of 11-30 and 12-19 (nothing to confirm) and the dated checks D1 (after 11-21) and D2 (after 11-30) | the owner |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
@@ -307,6 +307,12 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Done lately
 
+- ✅ 11-12 **FIND-6-EXITS — FIND-6's copies with the trader's exits copied
+  (exploring, decides nothing):** every group still loses; copying every
+  candidate lost 16 bps a copy against 13 held a day; the owner's filter's top
+  fifth 24 against 53, its rest 14; the traders leave within about 47 minutes
+  and a round trip's cost eats the move (decisions 2026-11-12, FIND-6-EXITS's
+  result).
 - ✅ 11-12 **FIND-6 — seven ways of ranking traders, the owner's filter
   among them:** none picks traders whose next weeks a follower could use; the
   filter's top fifth lost 53 bps a copy against the rest's 3, within chance;

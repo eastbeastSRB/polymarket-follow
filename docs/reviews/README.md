@@ -11,6 +11,7 @@ plan page or external-apis — or it does not exist.
 
 | Review | What | Accepted |
 |---|---|---|
+| `find-6-exits-2026-11-12.md` | FIND-6-EXITS (exploring, decides nothing): FIND-6's 1,918 copies re-priced so that each leaves when the trader leaves — every group still loses (every candidate −15.8 bps a copy against −13.0 held 24 h; the owner's filter's top fifth −23.9 against −53.0, its rest −13.7); the traders leave within about 47 minutes and the round trip's cost eats the move; the supervisor re-priced all 1,918 with its own code, equal | decisions 2026-11-12, FIND-6-EXITS's result |
 | `find-review-6-2026-11-12.md` | FIND-REVIEW-6 (Sonnet): the Final review of FIND-6 — every line, the race and the owner's table rebuilt with independent code; the result stands; what the no covers (a large gap only; entries held 24 h, the trader's exits never copied) | decisions 2026-11-12, FIND-6's result |
 | `find-6-2026-11-12.md` | FIND-6 (entry 6 with the owner's filter): seven ranking rules raced on two windows — no rule's top fifth beats the rest (smallest adjusted p 0.112); the owner's filter's top fifth −53 bps a copy against the rest's −3, within chance; copying every candidate lost about 13 bps a copy; not registered | decisions 2026-11-12, FIND-6's result |
 | `find-6-rules-review-2026-11-12.md` | RULES-REVIEW-6 (Sonnet): the fresh read of FIND-6's rules before its look — fixed, blind, frozen; the race keeps its size; may look after five medium and thirteen low fixes | decisions 2026-11-12, FIND-6's rules review |

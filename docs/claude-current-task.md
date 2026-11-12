@@ -22,13 +22,17 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   Sunday restore test. Three Windows tasks, registered by the owner: the
   poller (node itself, normal priority), its 5-minute check (proven live
   2026-11-11 20:38Z), the backup. The first competition pass ran 2026-11-11
-  23:15Z (58 pages, 5,726 rows, complete).
+  23:15Z (58 pages, 5,726 rows, complete); the first board pass stored 16 of
+  16 boards (15,984 rows, done 23:55:54Z).
 - **Research:** R1–R8 closed; **R8 FAILS** (decisions 2026-11-09). **Round 2's
   FIND: nothing passes** (decisions 2026-11-11, round 2's FIND results): the
   gate (entry 1) shows no week-to-week persistence of traders' follower
-  results, so entry 6 does not run and ranking traders stops for now; entries
-  2, 3, 4, 5, 7, 9 and 10 fail; three fresh Final reviews confirmed every
-  result with their own code. The reports: `docs/reviews/find-*-2026-11-11.md`.
+  results; entries 2, 3, 4, 5, 7, 9 and 10 fail; three fresh Final reviews
+  confirmed every result with their own code. **Entry 6 with the owner's
+  filter** then ran once and fails too (decisions 2026-11-12, FIND-6's
+  result; its Final review confirms). **An exploring check that copies the
+  traders' exits as well** leaves every group losing (decisions 2026-11-12,
+  FIND-6-EXITS's result). The reports: `docs/reviews/find-*`.
 - **Open, the owner's decision:** the way forward (a small forward paper
   experiment, a pause with the collector recording, a later batch on new
   weeks, or stopping), and with it the exams of 2026-11-30 and 2026-12-19
@@ -43,17 +47,17 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 1. **The owner's decision on the way forward** (the plan page's "The way
    forward" row). Nothing is started before it.
 2. **Small collector follow-ups, when convenient** (COLLECTOR-REVIEW's
-   questions as ruled in HANDOVER): drop the boards' `consistent` flag once
-   the first board pass is checked; a coverage mark for books that arrive
-   late; delete `once.js`.
+   questions as ruled in HANDOVER): drop the boards' `consistent` flag (0 of
+   16 in the first board pass); a coverage mark for books that arrive late;
+   delete `once.js`.
 3. **Whatever the owner chooses**, planned first and approved, by the
    workflow in the supervisor's folder.
 
-## Last session (2026-11-11)
+## Last session (2026-11-12)
 
-The collector's parts 4–7 were built, deployed and Final-reviewed (14
-fixes); the poller task now runs node itself at normal priority; the backup
-task was registered. RESEARCH-KIT was accepted with its additions; seven FIND
-studies wrote rules, passed a fresh rules review, looked once each, and
-failed; three fresh Final reviews confirmed them. Default usage from now on;
-Fable only in rare cases (the owner, 2026-11-11).
+FIND-6 (entry 6 with the owner's "disciplined traders" filter) wrote its
+rules, passed a fresh rules review, looked once and failed; its Final review
+rebuilt every number and confirms it. On the owner's yes, an exploring check
+re-priced FIND-6's copies with the traders' exits copied: every group still
+loses; the supervisor re-priced all 1,918 copies with its own code, equal.
+Default usage; Fable only in rare cases (the owner, 2026-11-11).

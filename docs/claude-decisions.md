@@ -1,5 +1,38 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (FIND-6-EXITS's result — the supervisor records the exploring
+check; it decides nothing, and the way forward stays the owner's): **COPYING
+THE TRADERS' EXITS TOO DOES NOT MAKE ANY GROUP PAY: EVERY GROUP STILL
+LOSES.** Report `docs/reviews/find-6-exits-2026-11-12.md` (`4f2a567`; one
+run 2026-11-12 08:38:07–08:38:09Z; FROZEN `9aea7d09…`; its plumbing check:
+held 24 h equal to FIND-6's `netBps` for 1,918 of 1,918 copies). **The
+supervisor's own path:** an independent re-pricing of all 1,918 copies
+(`verify/FIND-6-EXITS/reprice.mjs` in the supervisor folder: the exits walked
+from the kit's order events, priced in one pass as R8's `mirroredReturn`,
+not as a sum of legs) equals the worker's for every copy to 5e-13 bps, with
+the same open-at-the-cut flags; page one's group means rebuilt from it;
+both access scans 0. **Per copy, ± one error by trader:** every candidate
+−15.8 ± 4.9 bps with exits copied against −13.0 ± 10.1 held 24 h (paired
+−2.9 ± 9.5); the owner's filter's top fifth −23.9 ± 11.5 (held 24 h −53.0),
+its rest −13.7 ± 5.7 (−2.6); top − rest −10 ± 13 bps (exploring p 0.43);
+much of the top fifth's gain is one account (`0xc58a5ade…`; without it +13
+± 19 bps instead of +29); rule 4's top fifth goes from +21 to −18; no rule's
+top fifth is above zero. The traders leave fast (median 47 min; 44% of
+copies within 30 min): before costs the copies lost 5.4 bps, a round trip
+costs about 10.4. An instant follower (D = 0) loses 16.6: the ~80 s delay
+costs nothing measurable here. A liquidation closing the whole copy changes
+no group by more than 2.5 bps. 20 copies open at the cut (−575 bps on
+average; without them every candidate −9.9), 0 unpriced, 0 crossing a gap
+in the capture. With R8's −20.23 bps for its 50 traders with exits copied
+(decisions 2026-11-09), the two measurements agree: on these weeks,
+copying exits did not rescue copying. **Noted for later (FIND-6-EXITS's
+questions, as recommended):** "copy the exits of disciplined traders" only
+as a later batch on new weeks with its rules first, copies under about 5
+minutes priced by the second (19% of copies here); a forward paper log keeps
+both readings of every alert, as R3 already plans (the fixed horizon for
+the judgement, the copied exits for the money) — the owner's call when the
+way forward is planned.
+
 2026-11-12 (the exploring check's Q1, before any outcome is seen — the
 supervisor's correction of its own wording, within the owner's "Yes, run the
 check"): **A PARTIAL LIQUIDATION CLOSES ITS SHARE OF THE COPY, NOT THE WHOLE
