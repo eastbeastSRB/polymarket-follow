@@ -309,7 +309,8 @@ export function scoreInput(s: ScoreSetup, fixed: FixedInputs): ScoreInput {
         s.kit,
         addr,
         loadSeed(seedDir, fixed.seedManifest, addr),
-        s.store.readRows(addr),
+        // R1: nothing at or after END is used (a look reads nothing a later run stored).
+        s.store.readRows(addr).filter((r) => r.timestamp < s.end),
         s.state.accounts[addr] ?? { P: CUT, from: CUT, holes: [] },
       ),
     market: marketsThrough(s.kit, s.store, s.end, fixed.pinned),

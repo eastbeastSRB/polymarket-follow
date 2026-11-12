@@ -15,13 +15,30 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { scoreInput } from "../src/paper/daily.js";
 import { CUT, LOOK_ENDS } from "../src/paper/instants.js";
+import { EMPTY_RULE_BOOK } from "../src/paper/rulebook.js";
+import { PaperStore } from "../src/paper/store.js";
 import { loadResearch } from "../src/paper/research.js";
-import { LINES, type CopyRecord, type Scored } from "../src/paper/score.js";
+import {
+  LINES,
+  score,
+  type CopyRecord,
+  type Scored,
+} from "../src/paper/score.js";
 import { LOOK_Z, twoWay } from "../src/paper/stats.js";
 import { besideLines, lookReport } from "../src/paper/summary.js";
 import { DAY_MS, HOUR_MS } from "../src/schedule.js";
-import { A, C, at, freeze, makeWorld, positions } from "./paper-e2e.js";
+import {
+  A,
+  C,
+  at,
+  day,
+  freeze,
+  makeWorld,
+  positions,
+  slow,
+} from "./paper-e2e.js";
 
 type LookResult = {
   look: number;
@@ -199,6 +216,55 @@ describe("a look, look() (R1, R12, R16)", () => {
             : null,
         );
         expect(resultOf(root, 2).lines[0]!.z).toBe(2.43);
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it(
+    "reads nothing after its END: an exit a later run stored never reaches an earlier look (R1)",
+    { timeout: 60_000 },
+    async () => {
+      const tmp = mkdtempSync(path.join(tmpdir(), "paper-look-"));
+      try {
+        const { pkg, kit, fixed, paperRoot, run } = await makeWorld(tmp);
+        freeze(pkg);
+        const root = paperRoot("paper");
+        // Read through 12-21: A's position of 12-18, open at END_1, and its exit on 12-19 are stored.
+        expect((await run(root, "2026-12-21T04:00:00Z")).exit).toBe(0);
+        const store = new PaperStore(root);
+        const a18 = slow[A]!.out.find((x) => day(x.open) === "2026-12-18")!;
+        const END_1 = LOOK_ENDS[0];
+        expect(a18.close).toBeGreaterThan(END_1);
+        expect(store.readRows(A).some((r) => r.timestamp === a18.close)).toBe(
+          true,
+        );
+        // Scored at END_1, as a look scores (the market listed, so that the copy exists): open, not crossing.
+        const scored = score(
+          scoreInput(
+            {
+              kit,
+              store,
+              state: store.readState(),
+              book: EMPTY_RULE_BOOK,
+              cache: new Map(),
+              end: END_1,
+            },
+            fixed,
+          ),
+        );
+        const c = scored.copies.find((x) => x.addr === A && x.t === a18.open)!;
+        expect(c.plan.flag).toBe("open");
+        expect(c.plan.legs).toEqual([
+          {
+            h: END_1 - 1 - c.tIn,
+            part: 1,
+            kind: "cut",
+            forced: false,
+            liq: false,
+          },
+        ]);
       } finally {
         rmSync(tmp, { recursive: true, force: true });
       }
