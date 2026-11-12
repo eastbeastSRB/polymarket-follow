@@ -231,7 +231,7 @@ describe("a whole run, daily() (R0, R3a, R15; the plan's section 3)", () => {
           expect(c.money!.fees).toBeLessThan(2 * BOOK_TAKER * 1e4 * 1.1);
         }
         expect(page).toContain(
-          "split events recorded by the collector: 1 — the rules cannot read them; a recorded fix is needed; rule-book documents refused: 1",
+          "split events recorded by the collector: 1 — alarm: their markets are out of the primary cells on the days listed, and positions open across those days are unpriced (R6): 0 unpriced; rule-book documents refused: 1",
         );
         const all = readFileSync(
           path.join(root, "page", "positions.html"),

@@ -7,8 +7,10 @@
  * - a market is left out of the primary cells from the UTC day of the first
  *   record that shows it close-only, settled or gone from the list (for
  *   entries at or after the cut only, so the kit's own rule stands before it);
- * - a split: no event has ever been seen and its shape is not known, so an
- *   event is counted and flagged, never guessed (Iron Rule 3);
+ * - a split (R6): an event's shape is not known, so only its numeric
+ *   `instrument_id` is read; the market it names (an event without one: every
+ *   equity market) is out of the primary cells on every UTC day the event is
+ *   in the recorded list;
  * - the base-tier taker fee from each record's instant (never a lower tier,
  *   never a rebate): an instrument's fee override in force, else its
  *   category's rate in the fee schedule; before the first record, the kit's;
@@ -82,8 +84,12 @@ type FeeState = {
 export type RuleBook = {
   /** A market → the instant (a UTC day) from which it is left out. */
   leftOutFrom: Map<number, number>;
-  /** Split events recorded: none is read (their shape is unknown); each is flagged. */
-  splitEvents: number;
+  /**
+   * Each split event recorded (R6): the market its numeric `instrument_id`
+   * names (null: every equity market) and the UTC days it was listed,
+   * `from` to `to` (null: still listed), both days included.
+   */
+  splits: { iid: number | null; from: number; to: number | null }[];
   fees: FeeState[];
   competitions: {
     id: number;
@@ -97,7 +103,7 @@ export type RuleBook = {
 
 export const EMPTY_RULE_BOOK: RuleBook = {
   leftOutFrom: new Map(),
-  splitEvents: 0,
+  splits: [],
   fees: [],
   competitions: [],
   rejected: 0,
@@ -112,7 +118,7 @@ export function parseRuleBook(
 ): RuleBook {
   const book: RuleBook = {
     leftOutFrom: new Map(),
-    splitEvents: 0,
+    splits: [],
     fees: [],
     competitions: [],
     rejected: 0,
@@ -134,6 +140,8 @@ export function parseRuleBook(
   const competitions = new Map<number, { start: number; end: number }>();
   const boosted = new Map<number, Set<number>>();
   const noteFees = (at: number) => book.fees.push({ at, schedule, overrides });
+  /** The split events listed now, by their text, with the day each was first listed. */
+  const listed = new Map<string, { iid: number | null; from: number }>();
   for (const doc of parsed) {
     if (doc.kind === "instruments" && doc.key === "list") {
       const rows = z.array(InstrumentRow).safeParse(doc.value);
@@ -183,8 +191,24 @@ export function parseRuleBook(
       noteFees(doc.at);
     } else if (doc.kind === "splits" && doc.key === "events") {
       const events = z.array(z.unknown()).safeParse(doc.value);
-      if (!events.success) book.rejected += 1;
-      else book.splitEvents = Math.max(book.splitEvents, events.data.length);
+      if (!events.success) {
+        book.rejected += 1;
+        continue;
+      }
+      const now = new Map(events.data.map((e) => [JSON.stringify(e), e]));
+      for (const [key, e] of now) {
+        if (listed.has(key)) continue;
+        const id = z.object({ instrument_id: z.number().int() }).safeParse(e);
+        listed.set(key, {
+          iid: id.success ? id.data.instrument_id : null,
+          from: dayOf(doc.at),
+        });
+      }
+      for (const [key, s] of [...listed]) {
+        if (now.has(key)) continue;
+        book.splits.push({ ...s, to: dayOf(doc.at) });
+        listed.delete(key);
+      }
     } else if (doc.kind === "competitions" && doc.key === "list") {
       const rows = z.array(CompetitionRow).safeParse(doc.value);
       if (!rows.success) {
@@ -216,6 +240,7 @@ export function parseRuleBook(
   book.competitions = [...competitions]
     .sort((a, b) => a[0] - b[0])
     .map(([id, c]) => ({ id, ...c, boosted: boosted.get(id) ?? new Set() }));
+  for (const s of listed.values()) book.splits.push({ ...s, to: null });
   return book;
 }
 

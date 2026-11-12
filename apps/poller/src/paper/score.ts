@@ -9,7 +9,7 @@
  * Accounts are taken one at a time; only their copies and the week fills the
  * nulls leave out are kept.
  */
-import { HOUR_MS } from "../schedule.js";
+import { DAY_MS, HOUR_MS } from "../schedule.js";
 import {
   history,
   linesAt,
@@ -132,8 +132,24 @@ export function primaryMarket(
   if (t >= CUT) {
     const from = input.book.leftOutFrom.get(iid);
     if (from !== undefined && t >= from) return false;
+    if (splitDaysOf(input, iid).some((s) => s.from <= t && t < s.until))
+      return false;
   }
   return true;
+}
+
+/** R6: a market's split days, [from, until): an event naming it, or naming none when the market is an equity. */
+export function splitDaysOf(input: ScoreInput, iid: number) {
+  return input.book.splits
+    .filter(
+      (s) =>
+        s.iid === iid ||
+        (s.iid === null && input.kitMarkets.get(iid) === "equity"),
+    )
+    .map((s) => ({
+      from: s.from,
+      until: s.to === null ? Infinity : s.to + DAY_MS,
+    }));
 }
 
 /** R9: the base-tier taker fee in force (the collector's rule book, else the kit's), the kit's spread table. */
@@ -329,6 +345,14 @@ export function score(input: ScoreInput): Scored {
     copies.push(record);
     if (mk === null) {
       record.unpriced = "no mark at the follow instant";
+      continue;
+    }
+    // R6: a copy open across a split day of its market is unpriced.
+    const out = c.tIn + Math.max(0, ...c.plan.legs.map((l) => l.h));
+    if (
+      splitDaysOf(input, c.iid).some((s) => s.from <= out && c.tIn < s.until)
+    ) {
+      record.unpriced = "open across a split day of its market";
       continue;
     }
     const markIn = kit.panel.markAtMinuteEnd(mk, c.tIn);

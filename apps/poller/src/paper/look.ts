@@ -112,6 +112,7 @@ export async function look(
     afterTheVerdict: earlier[0] ?? null,
     unreadListedAsHoles: unread,
     marketDaysMissing: missingDays,
+    splitEvents: book.splits,
     lines: LINES.map((line) => lookReport(kit, scored, line, k)),
     beside: besideLines(kit, scored),
   };

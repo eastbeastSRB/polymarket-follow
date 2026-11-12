@@ -544,7 +544,9 @@ export async function daily(
     })`,
     `market-days missing: ${missingDays.length}`,
     `unpriced positions: ${scored.copies.filter((c) => c.money === null).length}; positions in markets outside the primary cells: ${scored.otherMarkets}`,
-    `split events recorded by the collector: ${book.splitEvents}${book.splitEvents > 0 ? " — the rules cannot read them; a recorded fix is needed" : ""}; rule-book documents refused: ${book.rejected}`,
+    book.splits.length === 0
+      ? `split events recorded by the collector: 0; rule-book documents refused: ${book.rejected}`
+      : `split events recorded by the collector: ${book.splits.length} — alarm: their markets are out of the primary cells on the days listed, and positions open across those days are unpriced (R6): ${scored.copies.filter((c) => c.unpriced === "open across a split day of its market").length} unpriced; rule-book documents refused: ${book.rejected}`,
     ...(recorder.counts.dropped > 0
       ? [
           `raw replies not stored: ${recorder.counts.dropped} (the raw folder refused them)`,

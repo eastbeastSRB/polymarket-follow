@@ -367,6 +367,71 @@ describe("the scorer (R4–R11)", () => {
       score(i).copies.filter((c) => c.addr === A && c.iid === 6),
     ).toHaveLength(0);
   });
+
+  describe("a split (R6 (3))", () => {
+    const day = (t: number) => Math.floor(t / DAY_MS) * DAY_MS;
+    const splitDoc = (when: number, events: unknown) => ({
+      kind: "splits",
+      key: "events",
+      at: when,
+      value: events,
+    });
+
+    it("reads only an event's numeric instrument_id, and the days it was listed", () => {
+      const b = parseRuleBook(
+        [
+          splitDoc(T1, [{ instrument_id: 6, ratio: "x" }, { name: "AAPL" }]),
+          splitDoc(T1 + DAY_MS + 5, [{ name: "AAPL" }]),
+          splitDoc(T1 + 3 * DAY_MS, { not: "a list" }),
+        ],
+        [...kitMarkets.keys()],
+      );
+      expect(b.splits).toEqual([
+        { iid: 6, from: day(T1), to: day(T1 + DAY_MS) },
+        { iid: null, from: day(T1), to: null },
+      ]);
+      expect(b.rejected).toBe(1);
+    });
+
+    it("leaves a market out on its split days and leaves unpriced a copy open across one; an event without a market takes every equity market", () => {
+      const withSplits = (
+        splits: RuleBook["splits"],
+        markets = kitMarkets,
+      ): ScoreInput => ({
+        ...input(END, { ...EMPTY_RULE_BOOK, splits }),
+        kitMarkets: markets,
+      });
+      const plain = score(input());
+      const a = plain.copies.find((c) => c.addr === A && c.t === T1)!;
+      expect(a.money).not.toBeNull();
+      // The day after A's entry is a split day of market 6, and A's copy is open then.
+      const across = score(
+        withSplits([{ iid: 6, from: day(T1 + DAY_MS), to: day(T1 + DAY_MS) }]),
+      );
+      const c = across.copies.find((x) => x.addr === A && x.t === T1)!;
+      expect([c.money, c.unpriced]).toEqual([
+        null,
+        "open across a split day of its market",
+      ]);
+      // On the entry's own day: no copy, counted in another market.
+      const onIt = score(withSplits([{ iid: 6, from: day(T1), to: day(T1) }]));
+      expect(onIt.copies.some((x) => x.addr === A && x.t === T1)).toBe(false);
+      expect(onIt.otherMarkets).toBeGreaterThan(plain.otherMarkets);
+      // Another market's split changes nothing.
+      expect(
+        score(withSplits([{ iid: 7, from: day(T1), to: null }])).copies,
+      ).toEqual(plain.copies);
+      // An event without a market: every equity market, and only those.
+      const open = [{ iid: null, from: day(T1), to: null }];
+      expect(score(withSplits(open)).copies).toEqual(plain.copies);
+      const equity = new Map([...kitMarkets, [6, "equity"]]);
+      expect(
+        score(withSplits(open, equity)).copies.some(
+          (x) => x.addr === A && x.t === T1,
+        ),
+      ).toBe(false);
+    });
+  });
 });
 
 describe("the collector's rule book (R6 (3), R9, R13)", () => {
@@ -479,7 +544,7 @@ describe("the collector's rule book (R6 (3), R9, R13)", () => {
 
   it("leaves a settled market out from its settlement's day, counts split events and refused documents, and keeps competitions with their boosted markets", () => {
     expect(book.leftOutFrom.get(7)).toBe(2 * DAY_MS);
-    expect(book.splitEvents).toBe(1);
+    expect(book.splits).toEqual([{ iid: null, from: 0, to: null }]);
     expect(book.rejected).toBe(2);
     expect(book.competitions).toEqual([
       { id: 1, start: 100, end: 900, boosted: new Set([6]) },

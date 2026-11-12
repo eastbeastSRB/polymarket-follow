@@ -153,8 +153,11 @@ An entry's market is **primary** when all hold, checked in this order:
    SKHYNIX, SAMSUNG, CXMT out; KIOXIA from its settlement day);
 3. for t ≥ CUT only: the collector's rule book (`rulebook` collection, read
    only) shows no close-only state, settlement or absence from the market list
-   recorded on or before t's UTC day. A split event in it is counted and
-   flagged on the page (its shape is unknown; it is never guessed).
+   recorded on or before t's UTC day; and no split on t's UTC day: a market
+   named by a split event's numeric `instrument_id` (an event without one:
+   every equity market) is out on every UTC day the event is in the recorded
+   list. A copy of such a market open across one of those days is unpriced.
+   Both are counted, printed, and raised as an alarm on the page.
 No 24 h cost map (Q1); copies the map would close are printed apart at a
 look. Entries in other markets are counted apart and priced in no line.
 
