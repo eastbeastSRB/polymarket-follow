@@ -262,11 +262,81 @@ export function lookReport(
       next === null || m === null
         ? null
         : smallestEdge(m.se, next.z, daysOfData, next.days),
-    verdict: v,
+    // R12: only MAIN's line carries a verdict; the others print the same figures, deciding nothing.
+    verdict: line === "MAIN" ? v : null,
     sentence:
-      v === "TOO FEW TO TELL" && k === 3 && m?.se != null
-        ? `no edge as large as ${(m.mean + z * m.se).toFixed(1)} bps a copy was seen`
-        : "Keep and drop are verdicts on this test, never instructions to trade.",
+      line !== "MAIN"
+        ? null
+        : v === "TOO FEW TO TELL" && k === 3 && m?.se != null
+          ? `no edge as large as ${(m.mean + z * m.se).toFixed(1)} bps a copy was seen`
+          : "Keep and drop are verdicts on this test, never instructions to trade.",
+  };
+}
+
+/** MAIN's statistic for a set (R12): the copies priced, the mean net per copy and its two-way SE. */
+function statOf(
+  kit: Research,
+  cs: readonly CopyRecord[],
+  value?: (c: CopyRecord) => number | null,
+) {
+  const m = twoWay(kit, money(cs, value));
+  return m === null
+    ? { n: 0, mean: null, se: null }
+    : { n: m.n, mean: m.mean, se: m.se };
+}
+
+/**
+ * The lines beside MAIN at a look (R6, R7, R11, R13, R14), deciding nothing
+ * and with no verdict word: on MAIN's voted copies (COMP on BROAD's too),
+ * each with MAIN's statistic.
+ */
+export function besideLines(kit: Research, scored: Scored) {
+  const voted = (line: LineName) => inLine(scored, line).filter((c) => c.voted);
+  const main = voted("MAIN");
+  const comp = (cs: readonly CopyRecord[]) => ({
+    withoutCompetitionDays: statOf(
+      kit,
+      cs.filter((c) => !c.competition.days),
+    ),
+    withoutBoostedMarkets: statOf(
+      kit,
+      cs.filter((c) => !c.competition.boosted),
+    ),
+  });
+  return {
+    STOP2: statOf(kit, main, (c) => c.stop2),
+    STOP5: statOf(kit, main, (c) => c.stop5),
+    DAYS7: statOf(kit, main, (c) => c.days7),
+    JUMP: {
+      above3: statOf(
+        kit,
+        main.filter((c) => c.jump !== null && c.jump > 3),
+      ),
+      upTo3: statOf(
+        kit,
+        main.filter((c) => c.jump !== null && c.jump <= 3),
+      ),
+      withoutJ: main.filter((c) => c.jump === null).length,
+    },
+    NOTIONAL: {
+      board: statOf(
+        kit,
+        main.filter((c) => c.notional),
+      ),
+      rest: statOf(
+        kit,
+        main.filter((c) => !c.notional),
+      ),
+    },
+    COMP: { MAIN: comp(main), BROAD: comp(voted("BROAD")) },
+    mapWouldClose: statOf(
+      kit,
+      main.filter((c) => c.mapOpen === false),
+    ),
+    withoutGapCopies: statOf(
+      kit,
+      main.filter((c) => !c.gap),
+    ),
   };
 }
 

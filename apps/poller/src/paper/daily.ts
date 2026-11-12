@@ -324,7 +324,7 @@ const LookResultFile = z.object({
     z.object({
       line: z.string(),
       verdict: z.string().nullable(),
-      sentence: z.string().optional(),
+      sentence: z.string().nullish(),
     }),
   ),
 });

@@ -266,6 +266,8 @@ their own arm with their own start.
   otherwise; at L3 it reads "no edge as large as m + z·SE was seen".
 - The first KEEP or DROP is the test's verdict; later looks print their
   figures marked "after the verdict".
+- Only MAIN's line carries a verdict and its sentence; TEN, BROAD, DAY and
+  FAV print the same figures with none, deciding nothing.
 
 ## R13. The lines beside — their formulas (F14)
 
@@ -304,6 +306,15 @@ visible at the next look, (z_next + 0.8416) × SE × √(days so far ÷ days at 
 next look). Venue lines (Binance's 5 bps a side, the owner's Finotive
 figures) are reporting arithmetic outside these rules; Finotive is shown only
 as its rule against copying and its cost facts, with no result line (Q7).
+
+**The lines beside, at each look**, deciding nothing and with no verdict
+word, on MAIN's voted copies at END_k (COMP on BROAD's too), each with MAIN's
+statistic — the copies priced, the mean net per copy and its two-way SE
+(R12): STOP2, STOP5 and DAYS7 (each copy's own net, R13); JUMP, the copies
+with J > 3 and those with J ≤ 3 (and how many have no J); NOTIONAL, the
+board's accounts and the rest; COMP, without the competitions' days and
+without their boosted markets; the copies the 24 h map would close (R6); and
+MAIN without its gap copies (R11).
 
 ## R15. The daily page
 

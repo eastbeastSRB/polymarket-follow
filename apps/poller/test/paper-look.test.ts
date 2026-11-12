@@ -19,7 +19,7 @@ import { CUT, LOOK_ENDS } from "../src/paper/instants.js";
 import { loadResearch } from "../src/paper/research.js";
 import { LINES, type CopyRecord, type Scored } from "../src/paper/score.js";
 import { LOOK_Z, twoWay } from "../src/paper/stats.js";
-import { lookReport } from "../src/paper/summary.js";
+import { besideLines, lookReport } from "../src/paper/summary.js";
 import { DAY_MS, HOUR_MS } from "../src/schedule.js";
 import { A, C, at, freeze, makeWorld, positions } from "./paper-e2e.js";
 
@@ -30,6 +30,7 @@ type LookResult = {
   unreadListedAsHoles: { addr: string; P: number; due: number }[];
   marketDaysMissing: string[];
   lines: ReturnType<typeof lookReport>[];
+  beside: ReturnType<typeof besideLines>;
 };
 
 const pageText = (paper: string) =>
@@ -126,6 +127,12 @@ describe("a look, look() (R1, R12, R16)", () => {
         );
         expect(main.money!.se).toBeCloseTo(m.se!, 9);
         expect(main.d!.mean).toBeCloseTo(meanD!, 9);
+        expect(r1.beside.withoutGapCopies.n).toBe(
+          priced.filter((c) => !c.gap).length,
+        );
+        expect(
+          r1.lines.filter((l) => l.verdict !== null).map((l) => l.line),
+        ).toEqual(main.verdict === null ? [] : ["MAIN"]);
         expect(main.verdict).toBe(
           verdictByHand({
             mean: m.mean,
@@ -345,5 +352,90 @@ describe("lookReport (R12, R14)", () => {
     expect(r1.sentence).toBe(
       "Keep and drop are verdicts on this test, never instructions to trade.",
     );
+  });
+
+  it("prints the lines beside MAIN on its voted copies with MAIN's statistic and no verdict word, and no verdict for the other lines", () => {
+    const cs = days(40, (i) => 10 + 3 * i).map((c, i) => ({
+      ...c,
+      lines: i < 30 ? (["MAIN", "BROAD"] as const) : (["BROAD"] as const),
+      voted: i !== 7,
+      stop2: i % 4 === 0 ? null : c.money!.net - 1,
+      stop5: c.money!.net - 2,
+      days7: c.money!.net + 3,
+      jump: i % 3 === 0 ? null : i % 3 === 1 ? 5 : 1,
+      notional: i % 2 === 0,
+      competition: { days: i % 5 === 0, boosted: i % 7 === 0 },
+      mapOpen: i % 6 !== 0,
+      gap: i % 8 === 0,
+    })) as CopyRecord[];
+    const b = besideLines(kit, scoredOf(cs));
+    const main = cs.filter((c) => c.lines.includes("MAIN") && c.voted);
+    const broad = cs.filter((c) => c.voted);
+    const check = (
+      got: { n: number; mean: number | null; se: number | null },
+      sel: CopyRecord[],
+      value: (c: CopyRecord) => number | null = (c) => c.money!.net,
+    ) => {
+      const items = sel.flatMap((c) => {
+        const x = value(c);
+        return x === null ? [] : [{ addr: c.addr, tIn: c.tIn, x }];
+      });
+      const m = twoWay(kit, items)!;
+      expect(got).toEqual({ n: items.length, mean: m.mean, se: m.se });
+    };
+    check(b.STOP2, main, (c) => c.stop2);
+    check(b.STOP5, main, (c) => c.stop5);
+    check(b.DAYS7, main, (c) => c.days7);
+    check(
+      b.JUMP.above3,
+      main.filter((c) => c.jump !== null && c.jump > 3),
+    );
+    check(
+      b.JUMP.upTo3,
+      main.filter((c) => c.jump !== null && c.jump <= 3),
+    );
+    expect(b.JUMP.withoutJ).toBe(main.filter((c) => c.jump === null).length);
+    check(
+      b.NOTIONAL.board,
+      main.filter((c) => c.notional),
+    );
+    check(
+      b.NOTIONAL.rest,
+      main.filter((c) => !c.notional),
+    );
+    check(
+      b.COMP.MAIN.withoutCompetitionDays,
+      main.filter((c) => !c.competition.days),
+    );
+    check(
+      b.COMP.MAIN.withoutBoostedMarkets,
+      main.filter((c) => !c.competition.boosted),
+    );
+    check(
+      b.COMP.BROAD.withoutCompetitionDays,
+      broad.filter((c) => !c.competition.days),
+    );
+    check(
+      b.COMP.BROAD.withoutBoostedMarkets,
+      broad.filter((c) => !c.competition.boosted),
+    );
+    check(
+      b.mapWouldClose,
+      main.filter((c) => c.mapOpen === false),
+    );
+    check(
+      b.withoutGapCopies,
+      main.filter((c) => !c.gap),
+    );
+    expect(JSON.stringify(b)).not.toMatch(/KEEP|DROP|TOO FEW|WITHHELD|verdict/);
+    for (const line of ["TEN", "BROAD", "DAY", "FAV"] as const) {
+      const r = lookReport(
+        kit,
+        scoredOf(cs.map((c) => ({ ...c, lines: [line] }))),
+        line,
+        1,
+      );
+      expect([r.verdict, r.sentence]).toEqual([null, null]);
+    }
   });
 });

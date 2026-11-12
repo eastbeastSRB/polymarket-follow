@@ -28,7 +28,7 @@ import { CUT, LOOK_ENDS, WEEK_MS, mondayOf } from "./instants.js";
 import { loadResearch } from "./research.js";
 import { LINES, score, weekList } from "./score.js";
 import { PaperStore, writeAtomic } from "./store.js";
-import { lookReport } from "./summary.js";
+import { besideLines, lookReport } from "./summary.js";
 
 /** How long past its Monday a look waits for unfinished reads. */
 export const LOOK_WAIT_MS = 7 * DAY_MS;
@@ -113,6 +113,7 @@ export async function look(
     unreadListedAsHoles: unread,
     marketDaysMissing: missingDays,
     lines: LINES.map((line) => lookReport(kit, scored, line, k)),
+    beside: besideLines(kit, scored),
   };
   writeAtomic(
     path.join(dir, "result.json"),
