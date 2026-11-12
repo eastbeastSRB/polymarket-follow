@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (APPROACH-REVIEW accepted — the owner, "ok, agree with all
+recommendation", on the supervisor's seven recommendations after the Final
+review): **THE FORWARD PAPER EXPERIMENT FOLLOWS SLOW TRADERS BY A RULE, NOT
+A RANKING, WITH TWO READINGS OF EVERY COPY; ITS PLAN COMES NEXT.** Report
+`docs/reviews/approach-review-2026-11-12.md` (`1924799`; its own Final
+review `dcf6d21`…`ebf3d03`: F1 high, the main line's rate was taken without
+its own minimum of closed cycles, corrected). **The supervisor's own path:**
+X3 re-priced with independent code, all 1,366 copies equal; the main line's
+counts re-counted from the pool's entries, equal to FR1 (525 copies in the
+last 4 weeks before the cut, 131 a week, 61 traders; with a minimum of 3
+closed cycles 284 a week, 157 traders; every directional entry 936 a week,
+326 traders); a rough scaling of X3's error agrees with the corrected
+visible edges; both access scans 0. **The design, as accepted:** who — the
+kit's frozen pool, the 100 holdout accounts left out, an entry counting when
+its account is labelled directional on the 14 days before the entry's
+Monday; the main line — traders whose median hold over the 30 days before is
+6 h or more **with at least 3 closed cycles** (question 7), the 10-cycle line
+printed beside; what — openings and flips in the primary cells, every hour,
+$1,000 a copy at t + R8's delay at a taker's costs with funding; two
+readings — the money with the trader's exits copied (FIND-6-EXITS's rule)
+and the judgement, d at 24 h against the exact matched null; the data from
+the cut, 2026-11-07T00:00Z, with the rules frozen before anyone reads those
+weeks; looks at 2026-12-19, 2027-02-06 and 2027-05-08 with the false-pass
+budget spent 0.5% / 1.5% / 3%; **keep** when the money's lower bound is
+above zero and d is above zero, **drop** when the money's upper bound is
+below **δ = +10 bps a copy** (the owner's, on the recommendation), otherwise
+too few to tell — verdicts on the test, never instructions to trade; beside
+it, deciding nothing: every directional entry (a clear answer on copying
+everyone by about 12 bps at the first look), the 10-cycle line, maker
+entries with a fill model, stops and a 7-day limit, day-holders, "after a
+jump", and **the owner's own favourites**, frozen at the start and judged
+whole; the pool only (the wider universe a later arm); **first a weekly
+script**, v1's paper log reusing it later. What it can see, with 10 cycles:
+about 54 / 33 / 21 bps a copy at the three looks (with 3 cycles more copies,
+its noise not yet measured); with no skill "drop" is likely by February or
+May. Not run: measuring the 3-cycle group's noise on the seen weeks (the
+forward data will show it). **Next:** a plan subagent writes the exact
+rules and the build (reading fills past the cut within the budget, the
+prices from 2026-11-07 to the collector's start, the kit's pricing past the
+cut, one cost line per venue the owner named — Finotive, Binance futures,
+Polymarket — from their official pages), a fresh review of the plan, the
+owner's approval, the build; the exams of 11-30 and 12-19 and the dated
+checks D1 and D2 are ruled in that plan.
+
 2026-11-12 (the way forward — the owner, after FIND-6-EXITS: "yeah, we will do
 paper experiment, just want to talk little bit more about everything before i
 move on that implementation. i simply want to be sure that i've found

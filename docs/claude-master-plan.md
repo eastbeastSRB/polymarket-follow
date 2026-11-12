@@ -44,8 +44,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-12, through decisions 2026-11-12 (the way
-forward).*
+*Brought in step on 2026-11-12, through decisions 2026-11-12 (APPROACH-REVIEW
+accepted).*
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -84,7 +84,7 @@ forward).*
 | ✅ | 2026-11-10 | **Phase 0 — preparation:** P0-1 the record, P0-2 the second copies, P0-3 DOCS-SWEEP, P0-4 IDEAS-REVIEW, all done ("The road to v1") | the supervisor; two subagents |
 | 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task registered by the owner (2026-11-11); the whole collector's Final review done (COLLECTOR-REVIEW, 15 findings, 14 fixed and live since 20:22Z; decisions 2026-11-11); the poller task runs node itself at normal priority; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
 | ✅ | 2026-11-11 | **Phase 2 — research round 2, FIND: NOTHING PASSES.** The kit and the first measurements accepted; seven studies (entries 1, 2, 3, 4, 5, 7, 9, 10), rules frozen and reviewed before one look each, three fresh Final reviews: every result stands; no entry registered; the gate (entry 1) fails (decisions 2026-11-11, round 2's FIND results); entry 6 then ran once with the owner's filter on the owner's lift and fails too (decisions 2026-11-12, FIND-6's result); copying the traders' exits as well, an exploring check, leaves every group losing (decisions 2026-11-12, FIND-6-EXITS's result) | research subagents |
-| 🔵 | since 2026-11-12 | **The way forward: a forward paper experiment** (decisions 2026-11-12, the way forward). First APPROACH-REVIEW finds its best design: the outside evidence on copy trading, the six untested directions, and how to handle the known limits (who to follow, how to copy, costs, loss limits, how long, how it is judged); then the experiment's plan, the owner's approval, the build. The exams of 11-30 and 12-19 and the dated checks D1 (after 11-21) and D2 (after 11-30) are ruled with the plan | a research subagent; then a plan subagent |
+| 🔵 | since 2026-11-12 | **The way forward: a forward paper experiment** (decisions 2026-11-12, the way forward). Its design is accepted (decisions 2026-11-12, APPROACH-REVIEW accepted): slow traders (usual hold 6 h or more, at least 3 closed cycles) from the frozen pool by a rule, not a ranking; two readings of every copy (the money with the exits copied; the judgement at 24 h against random trades); data from 2026-11-07; looks 2026-12-19, 2027-02-06, 2027-05-08; keep / drop at +10 bps / too few to tell; every directional trader and the owner's favourites beside; first a weekly script. Next: the experiment's plan (with the owner's venues as cost lines), its review, the owner's approval, the build. The exams of 11-30 and 12-19 and the dated checks D1 (after 11-21) and D2 (after 11-30) are ruled in that plan | a plan subagent |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
@@ -307,6 +307,11 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Done lately
 
+- ✅ 11-12 **APPROACH-REVIEW — the paper experiment's design:** the outside
+  evidence (copying has paid only with slow information and small costs);
+  slow traders by a rule, two readings of every copy, three looks to May;
+  the owner accepted all seven recommendations (decisions 2026-11-12,
+  APPROACH-REVIEW accepted).
 - ✅ 11-12 **FIND-6-EXITS — FIND-6's copies with the trader's exits copied
   (exploring, decides nothing):** every group still loses; copying every
   candidate lost 16 bps a copy against 13 held a day; the owner's filter's top

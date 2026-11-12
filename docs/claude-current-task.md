@@ -34,9 +34,11 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   traders' exits as well** leaves every group losing (decisions 2026-11-12,
   FIND-6-EXITS's result). The reports: `docs/reviews/find-*`.
 - **The way forward: a forward paper experiment** (decisions 2026-11-12, the
-  way forward). First the research subagent APPROACH-REVIEW finds its best
-  design; the exams of 2026-11-30 and 2026-12-19 (nothing registered to
-  confirm) and the dated checks D1 and D2 are ruled with its plan.
+  way forward), its design accepted (decisions 2026-11-12, APPROACH-REVIEW
+  accepted): slow traders by a rule, two readings of every copy, data from
+  2026-11-07, looks 2026-12-19, 2027-02-06 and 2027-05-08, first a weekly
+  script. The exams of 2026-11-30 and 2026-12-19 (nothing registered to
+  confirm) and the dated checks D1 and D2 are ruled in its plan.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
   closed); the collector's share is 50 a minute and 30 in 5 s.
@@ -44,9 +46,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **APPROACH-REVIEW's report**, then the paper experiment's plan for the
-   owner's approval (the plan page's "The way forward" row). Nothing is built
-   before the approval.
+1. **The paper experiment's plan** by a plan subagent, its fresh review and
+   the owner's approval (the plan page's "The way forward" row); its rules
+   are frozen before anyone reads the weeks after 2026-11-07. Nothing is
+   built before the approval.
 2. **Small collector follow-ups, when convenient** (COLLECTOR-REVIEW's
    questions as ruled in HANDOVER): drop the boards' `consistent` flag (0 of
    16 in the first board pass); a coverage mark for books that arrive late;
