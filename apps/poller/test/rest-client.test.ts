@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pino } from "pino";
 import { describe, expect, it, vi } from "vitest";
-import { spentInWindow, type Spend } from "../src/api/admission.js";
+import { BURST_CAP, spentInWindow, type Spend } from "../src/api/admission.js";
 import {
   API_BASE,
   COLLECTOR_LIMITS,
@@ -198,7 +198,7 @@ describe("RestClient", () => {
     expect(w.lines).toHaveLength(0);
   });
 
-  it("admits every request inside 50 a minute and 30 in 5 s", async () => {
+  it("admits every request inside 50 a minute and 15 in 5 s", async () => {
     const w = world(() => new Response(TICKERS, { status: 200 }));
     const outs = await Promise.all(
       Array.from({ length: 40 }, () => w.client.get("tickers", {}, 300_000)),
@@ -208,11 +208,11 @@ describe("RestClient", () => {
     for (const call of w.calls) {
       spends.push({ at: call.at, weight: 2 });
       expect(spentInWindow(spends, call.at, 60_000)).toBeLessThanOrEqual(50);
-      expect(spentInWindow(spends, call.at, 5_000)).toBeLessThanOrEqual(30);
+      expect(spentInWindow(spends, call.at, 5_000)).toBeLessThanOrEqual(15);
     }
-    expect(w.calls.map((c) => c.at).slice(14, 17)).toEqual([0, 5_000, 5_000]);
+    expect(w.calls.map((c) => c.at).slice(6, 9)).toEqual([0, 5_000, 5_000]);
     expect(w.calls[25]!.at).toBe(60_000);
-    expect(w.client.counts).toMatchObject({ peakMinute: 50, peakBurst: 30 });
+    expect(w.client.counts).toMatchObject({ peakMinute: 50, peakBurst: 14 });
   });
 
   it("drops a request whose turn in the queue comes after its deadline", async () => {
@@ -466,5 +466,19 @@ describe("Iron Rule 1: watch only", () => {
       expect(text, file).not.toMatch(/\b(POST|PUT|PATCH|DELETE)\b/);
       expect(text, file).not.toMatch(/method:\s*["'`](?!GET["'`])/i);
     }
+  });
+});
+
+describe("the operating budget across the callers (decisions 2026-11-07; 2026-11-12, the two fresh reviews (7))", () => {
+  it("adds up to at most 250 a minute and 30 in 5 s: the collector 50 and 15, the experiment 120 and 15", () => {
+    expect(BURST_CAP).toBe(30);
+    expect([COLLECTOR_LIMITS.share, COLLECTOR_LIMITS.burst]).toEqual([50, 15]);
+    expect([PAPER_LIMITS.share, PAPER_LIMITS.burst]).toEqual([120, 15]);
+    expect(COLLECTOR_LIMITS.burst + PAPER_LIMITS.burst).toBeLessThanOrEqual(
+      BURST_CAP,
+    );
+    expect(COLLECTOR_LIMITS.share + PAPER_LIMITS.share).toBeLessThanOrEqual(
+      250,
+    );
   });
 });

@@ -236,7 +236,8 @@ describe("the night's passes beside the minute reads", () => {
 });
 
 describe("a start inside a pass's window (a restart)", () => {
-  const AT_ONCE_MS = 5_000;
+  // "At once": within two windows of the collector's burst of 15 in 5 s (decisions 2026-11-12, the two fresh reviews (7)).
+  const AT_ONCE_MS = 10_000;
 
   it("runs the competition pass at once from 23:15Z until the board pass begins, and no other pass", async () => {
     const start = Date.parse("2026-11-10T23:20:00Z");

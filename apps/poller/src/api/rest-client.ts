@@ -12,7 +12,6 @@ import type { Logger } from "../log.js";
 import { inNightlyPause, utcDate } from "../schedule.js";
 import type { Recorder } from "../store/files.js";
 import {
-  BURST_CAP,
   BURST_MS,
   WINDOW_MS,
   admissionDelay,
@@ -63,10 +62,14 @@ export type ClientLimits = {
   userAgent: string;
 };
 
-/** The collector's: 50 a minute, the whole burst cap, its own name. */
+/**
+ * The collector's: 50 a minute and 15 in 5 s — with the experiment's 15, the
+ * operating budget's 30 in 5 s for all callers together (`BURST_CAP`;
+ * decisions 2026-11-12, the two fresh reviews (7)) — and its own name.
+ */
 export const COLLECTOR_LIMITS: ClientLimits = {
   share: COLLECTOR_SHARE,
-  burst: BURST_CAP,
+  burst: 15,
   userAgent: USER_AGENT,
 };
 
