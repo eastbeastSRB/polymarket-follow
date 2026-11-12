@@ -1,5 +1,22 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the paper experiment runs daily and gets a page — the owner, "i
+think it is better to make some page where i can test that paper in real
+time", then, on the supervisor's two-step proposal, "ok, agree, add it"):
+**THE EXPERIMENT'S SCRIPT RUNS ONCE A DAY, NOT ONCE A WEEK, AND A SIMPLE
+LOCAL PAGE SHOWS ITS LOG.** The page, read only: every paper copy (trader,
+market, the follow instant, the price after the delay), which are open and
+which closed, the running result per line and per trader with its error
+band, and "too early to judge" until each look — keep or drop appear only
+at the three looks (2026-12-19, 2027-02-06, 2027-05-08) and are verdicts on
+the test, never instructions to trade. Why daily and not live: reading
+about 160–330 accounts every half minute would not fit the operating budget;
+once a day is cheap. The rules stay frozen whatever the page shows. Live
+alerts and live paper copies for the owner's favourites come with v1's app
+(its plan stays planned for early December), on the same page. PAPER-PLAN
+adds both to its plan: the daily run's budget, where the page lives, how v1
+reuses it.
+
 2026-11-12 (APPROACH-REVIEW accepted — the owner, "ok, agree with all
 recommendation", on the supervisor's seven recommendations after the Final
 review): **THE FORWARD PAPER EXPERIMENT FOLLOWS SLOW TRADERS BY A RULE, NOT

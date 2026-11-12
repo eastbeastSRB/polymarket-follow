@@ -36,8 +36,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **The way forward: a forward paper experiment** (decisions 2026-11-12, the
   way forward), its design accepted (decisions 2026-11-12, APPROACH-REVIEW
   accepted): slow traders by a rule, two readings of every copy, data from
-  2026-11-07, looks 2026-12-19, 2027-02-06 and 2027-05-08, first a weekly
-  script. The exams of 2026-11-30 and 2026-12-19 (nothing registered to
+  2026-11-07, looks 2026-12-19, 2027-02-06 and 2027-05-08, a script once a
+  day with a simple page showing its log (decisions 2026-11-12, the paper
+  experiment runs daily and gets a page). The exams of 2026-11-30 and 2026-12-19 (nothing registered to
   confirm) and the dated checks D1 and D2 are ruled in its plan.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
