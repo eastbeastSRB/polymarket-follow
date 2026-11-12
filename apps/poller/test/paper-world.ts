@@ -162,8 +162,8 @@ export function answer(world: World, url: URL): Response {
   }
 }
 
-/** The real client on a clock that moves only when something waits; each call takes `latencyMs`. */
-export function client(world: World, startWall: number, latencyMs = 300) {
+/** The synthetic API as a fetch, on a clock that moves only when something waits; each call takes `latencyMs`. */
+export function fakeApi(world: World, startWall: number, latencyMs = 300) {
   let mono = 0;
   const clock: Clock = {
     wall: () => startWall + mono,
@@ -180,6 +180,12 @@ export function client(world: World, startWall: number, latencyMs = 300) {
     mono += latencyMs;
     return Promise.resolve(answer(world, url));
   }) as typeof fetch;
+  return { fetchFn, clock, calls };
+}
+
+/** The real client on the synthetic API (`fakeApi`). */
+export function client(world: World, startWall: number, latencyMs = 300) {
+  const { fetchFn, clock, calls } = fakeApi(world, startWall, latencyMs);
   const rest = new RestClient(
     PAPER_ROUTES,
     PAPER_LIMITS,

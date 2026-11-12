@@ -558,7 +558,7 @@ describe("a run without a valid freeze (R0)", () => {
         pino({ level: "silent" }),
         () => undefined,
         now,
-        pkg,
+        { packageRoot: pkg },
       );
       expect(exit).toBe(4);
       expect(readdirSync(root)).toEqual(["log"]);

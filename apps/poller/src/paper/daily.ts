@@ -13,6 +13,7 @@ import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
 import { RestClient } from "../api/rest-client.js";
+import type { Clock } from "../clock.js";
 import type { Logger } from "../log.js";
 import { DAY_MS, utcDate } from "../schedule.js";
 import { Recorder } from "../store/files.js";
@@ -46,13 +47,28 @@ import { PaperStore, writeAtomic, type State } from "./store.js";
 
 /** The package's folder: the repository's `apps/poller`, or the run copy's. */
 export const PACKAGE_ROOT = path.join(RESEARCH_ROOT, "..");
-const EXPERIMENT = path.join(PACKAGE_ROOT, "experiment");
 
 export type DailyConfig = {
   PAPER_ROOT: string;
   PAPER_BACKUP: string;
   MONGO_URI: string;
   MONGO_DB: string;
+};
+
+/**
+ * What a run takes from outside itself, each by default the real one: the
+ * package's folder (its freeze, research files and experiment files), the API
+ * and the clock it is asked on, the collector's rule-book documents, and the
+ * run's fixed inputs. A test replaces them to drive a whole run over a
+ * synthetic world (the kit's pool, markets and panel pin are its own data,
+ * frozen by its fingerprint, so a synthetic world comes in as `fixed`).
+ */
+export type DailyIo = {
+  packageRoot?: string;
+  fetchFn?: typeof fetch;
+  clock?: Clock;
+  ruleBook?: () => Promise<unknown[]>;
+  fixed?: FixedInputs;
 };
 
 const sha256 = (b: Buffer | string) =>
@@ -105,24 +121,23 @@ const KitRuleBook = z.object({
   ),
 });
 
-/** The run's fixed inputs: the pool, the kit's markets, the favourites, the seed's frozen manifest. */
-export function fixedInputs(kit: Research) {
+/** The run's fixed inputs: the pool, the kit's markets and panel pin, the favourites, the seed's frozen manifest. */
+export function fixedInputs(kit: Research, packageRoot = PACKAGE_ROOT) {
+  const research = path.join(packageRoot, "research");
+  const experiment = path.join(packageRoot, "experiment");
   const pop = Population.parse(
     JSON.parse(
-      readFileSync(
-        path.join(RESEARCH_ROOT, "kit/data/population.json"),
-        "utf8",
-      ),
+      readFileSync(path.join(research, "kit/data/population.json"), "utf8"),
     ),
   );
   const rb = KitRuleBook.parse(
     JSON.parse(
-      readFileSync(path.join(RESEARCH_ROOT, "kit/data/rulebook.json"), "utf8"),
+      readFileSync(path.join(research, "kit/data/rulebook.json"), "utf8"),
     ),
   );
   const kitMarkets = new Map(rb.instruments.map((i) => [i.iid, i.category]));
   const symbols = new Map(rb.instruments.map((i) => [i.iid, i.symbol]));
-  const favFile = path.join(EXPERIMENT, "favourites.txt");
+  const favFile = path.join(experiment, "favourites.txt");
   return {
     pool: pop.accounts
       .filter((a) => !a.holdout)
@@ -133,14 +148,18 @@ export function fixedInputs(kit: Research) {
     markets: [...kitMarkets.keys()]
       .filter((iid) => kit.cells.inPrimaryCell(iid, CUT - 1))
       .sort((a, b) => a - b),
+    /** The kit's pinned manifest of the pre-cut panel. */
+    pinned: pinnedPanel(research),
     favourites: readFavourites(
       existsSync(favFile) ? readFileSync(favFile, "utf8") : null,
     ),
     seedManifest: readManifest(
-      readFileSync(path.join(EXPERIMENT, "seed.sha256"), "utf8"),
+      readFileSync(path.join(experiment, "seed.sha256"), "utf8"),
     ),
   };
 }
+
+export type FixedInputs = ReturnType<typeof fixedInputs>;
 
 const MondayCacheFile = z.record(
   z.string(),
@@ -175,8 +194,12 @@ export function saveCache(root: string, cache: MondayCache): void {
 }
 
 /** The markets through `end`: the pre-cut panel joined with the market-days present. */
-export function marketsThrough(kit: Research, store: PaperStore, end: number) {
-  const pinned = pinnedPanel(RESEARCH_ROOT);
+export function marketsThrough(
+  kit: Research,
+  store: PaperStore,
+  end: number,
+  pinned: ReadonlyMap<string, string>,
+) {
   const built = new Map<number, Market | null>();
   return (iid: number): Market | null => {
     if (built.has(iid)) return built.get(iid)!;
@@ -207,10 +230,7 @@ export type ScoreSetup = {
   end: number;
 };
 
-export function scoreInput(
-  s: ScoreSetup,
-  fixed: ReturnType<typeof fixedInputs>,
-): ScoreInput {
+export function scoreInput(s: ScoreSetup, fixed: FixedInputs): ScoreInput {
   const seedDir = path.join(s.store.root, "seed");
   return {
     kit: s.kit,
@@ -229,7 +249,7 @@ export function scoreInput(
         s.store.readRows(addr),
         s.state.accounts[addr] ?? { P: CUT, from: CUT, holes: [] },
       ),
-    market: marketsThrough(s.kit, s.store, s.end),
+    market: marketsThrough(s.kit, s.store, s.end, fixed.pinned),
     book: s.book,
     cache: s.cache,
     kitMarkets: fixed.kitMarkets,
@@ -316,8 +336,10 @@ export function pageData(
 }
 
 /** The shared files the experiment ran with, and the runtime (F4: information, not a stop). */
-export function sharedFiles(): Record<string, string> {
-  const dist = path.join(PACKAGE_ROOT, "dist");
+export function sharedFiles(
+  packageRoot = PACKAGE_ROOT,
+): Record<string, string> {
+  const dist = path.join(packageRoot, "dist");
   const out: Record<string, string> = { node: process.version };
   for (const f of [
     "api/rest-client.js",
@@ -335,7 +357,7 @@ export function sharedFiles(): Record<string, string> {
     out[f] = existsSync(file) ? sha256(readFileSync(file)) : "missing";
   }
   for (const f of ["DEPLOYED.txt", "package.json"]) {
-    const file = path.join(PACKAGE_ROOT, f);
+    const file = path.join(packageRoot, f);
     if (existsSync(file)) out[f] = readFileSync(file, "utf8").trim();
   }
   return out;
@@ -346,8 +368,9 @@ export async function daily(
   log: Logger,
   stage: (what: string) => void,
   now = Date.now(),
-  packageRoot = PACKAGE_ROOT,
+  io: DailyIo = {},
 ): Promise<number> {
+  const packageRoot = io.packageRoot ?? PACKAGE_ROOT;
   const runDate = utcDate(now);
   const store = new PaperStore(config.PAPER_ROOT);
   const freeze = verifyFreeze(packageRoot);
@@ -363,19 +386,28 @@ export async function daily(
     );
     return 4;
   }
-  const kit = await loadResearch();
-  const fixed = fixedInputs(kit);
+  const kit = await loadResearch(path.join(packageRoot, "research"));
+  const fixed = io.fixed ?? fixedInputs(kit, packageRoot);
   const end = runEnd(now);
   const state = store.readState();
   stage("reading the rule book");
   const book = parseRuleBook(
-    await readRuleBook(config.MONGO_URI, config.MONGO_DB),
+    await (
+      io.ruleBook ?? (() => readRuleBook(config.MONGO_URI, config.MONGO_DB))
+    )(),
     [...fixed.kitMarkets.keys()],
   );
   const cache = loadCache(config.PAPER_ROOT);
   const recorder = new Recorder(path.join(config.PAPER_ROOT, "raw"), log);
   await recorder.start();
-  const client = new RestClient(PAPER_ROUTES, PAPER_LIMITS, recorder, log);
+  const client = new RestClient(
+    PAPER_ROUTES,
+    PAPER_LIMITS,
+    recorder,
+    log,
+    io.fetchFn,
+    io.clock,
+  );
   const setup = { kit, store, state, book, cache, end };
   stage("reading");
   const loop = await readThrough({
@@ -460,7 +492,7 @@ export async function daily(
       money,
       d,
     })),
-    shared: sharedFiles(),
+    shared: sharedFiles(packageRoot),
   });
   store.flushManifest(runDate);
   try {
@@ -479,7 +511,7 @@ export async function daily(
  * it before); another's 30 days before F0's Monday, so that its first Monday's
  * label and habits are read (R5).
  */
-function readsOfFavourites(fixed: ReturnType<typeof fixedInputs>) {
+function readsOfFavourites(fixed: FixedInputs) {
   const fav = fixed.favourites;
   if (fav === null) return [];
   const pool = new Set(fixed.pool.map((p) => p.addr));
