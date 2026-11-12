@@ -76,7 +76,8 @@ outside the session (S4U), run level Limited:
   a heartbeat older than 2 minutes → stop the task, wait for the lock's
   node process to end, start it, one line in `check.log`.
 - **"polymarket-follow backup"** (prepared in `register-tasks.ps1`, waiting
-  for the owner's re-run): `backup.cjs` daily at 05:20Z.
+  for the owner's re-run): `backup.cjs` daily at 05:20Z, the time computed
+  from UTC as the paper task's is.
 A deploy stops the task (`tools\poller-task.ps1`), swaps the copy and starts
 it again: a gap of a few seconds, logged in `deploy.log` and `coverage.jsonl`.
 

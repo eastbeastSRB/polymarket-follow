@@ -25,16 +25,19 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   2026-11-12). The reports: `docs/reviews/`.
 - **The paper experiment** (decisions 2026-11-12: APPROACH-REVIEW accepted;
   the paper experiment runs daily and gets a page; its plan approved with its
-  review's fixes; PAPER-BUILD's technical calls): built in `apps/poller`
-  (`dist/paper.js`, `src/paper/`, the vendored kit and lib-exits in
-  `research/`, `experiment/rules.md`), parts 0–5, `pnpm verify` green (32
-  files, 248 tests). The seed and the pre-cut panel are in
+  review's fixes; PAPER-BUILD's technical calls and four questions; daily()
+  end to end): built in `apps/poller` (`dist/paper.js`, `src/paper/`, the
+  vendored kit and lib-exits in `research/`, `experiment/rules.md`), parts
+  0–5 and a whole run tested end to end over a synthetic world
+  (`test/paper-daily.test.ts`), `pnpm verify` green (33 files, 249 tests).
+  The seed and the pre-cut panel are in
   `F:\polymarket-follow\paper\`. The reproduction on the old weeks matches
   (FIND-6-EXITS, X3, FIND-3's d, the kit's labels, the main line's counts);
   the live checks on pre-cut windows match. **Nothing after the cut has been
   read; the program's gate refuses it until `experiment/FROZEN.sha256`
   exists.** The draft list: `experiment/FROZEN.draft.sha256`
-  (`23f0e343…f4fd4`, 60 files). Not built: MAKER and VWAP (Q-D).
+  (`d6698333…36db4`, 60 files, from `6fa14d3`). Not built: MAKER and VWAP
+  (Q-D).
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
   closed); the collector's share is 50 a minute and 30 in 5 s; the
@@ -43,24 +46,21 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The supervisor answers PAPER-BUILD's questions** (its closing message
-   and `workers/PAPER-BUILD/progress.md`): Q2 d's removal set (as built: the
-   line's accounts at M), Q3 a Monday's facts from the fills before M (as
-   built), Q1 and Q4 (the reproduction's scope).
-2. **A fresh rules review** of `apps/poller/experiment/rules.md` and the code
-   (a different model), verdict "may run".
-3. **The freeze:** the owner's favourites into `experiment/favourites.txt`
+1. **A fresh rules review** of `apps/poller/experiment/rules.md` and the code
+   (a different model), verdict "may run". PAPER-BUILD's four questions are
+   ruled (decisions 2026-11-12).
+2. **The freeze:** the owner's favourites into `experiment/favourites.txt`
    (`from <F0>`, ≤ 20 addresses), `pnpm verify`, `node tools/paper-freeze.cjs
    --final`, the commit tagged `paper-freeze-1`, the list's SHA-256 in
    decisions.
-4. **The owner's deploy and registration:** `tools\deploy.ps1` (the collector,
+3. **The owner's deploy and registration:** `tools\deploy.ps1` (the collector,
    for its User-Agent), `tools\deploy.ps1 -Program paper`, then
    `tools\register-tasks.ps1` elevated once (adds "polymarket-follow paper",
-   daily 04:00Z); the first run reads the backlog (16–26 h).
-5. **Small collector follow-ups, when convenient:** drop the boards'
-   `consistent` flag; a coverage mark for books that arrive late; the backup
-   task's trigger computed from UTC as the paper's is.
-6. D1 and D2 after the freeze, each with its own share of the remaining 80 a
+   daily 04:00Z, and the backup's trigger, now computed from UTC, 05:20Z);
+   the first run reads the backlog (16–26 h).
+4. **Small collector follow-ups, when convenient:** drop the boards'
+   `consistent` flag; a coverage mark for books that arrive late.
+5. D1 and D2 after the freeze, each with its own share of the remaining 80 a
    minute.
 
 ## Last session (2026-11-12)
@@ -73,4 +73,9 @@ the kit and live on pre-cut windows (777 calls, 5,060 tokens); the scorer,
 statistics, verdict, page, look and entry point (45 of 45 mutants killed);
 the reproduction on the old weeks and a rehearsal page; rules.md final, the
 draft freeze list, deploy.ps1 `-Program paper` and the paper task in
-register-tasks.ps1, tested on a scratch run root only.
+register-tasks.ps1, tested on a scratch run root only. Then, before the rules
+review (`6fa14d3` … `7c6f978`): `daily()` takes its outside inputs as one
+optional argument and a test drives whole runs over a synthetic world (the
+gate's refusals, a first run paused at night and resumed, a normal day, a
+Monday's sweep, the log of every copy and the page; 21 of 21 glue mutants
+killed); the draft list again; the backup task's trigger computed from UTC.

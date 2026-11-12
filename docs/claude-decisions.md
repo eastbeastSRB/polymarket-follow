@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (PAPER-BUILD's closing tasks — daily() end to end and the backup
+task's time, the supervisor's two tasks before the rules review; commits
+`6fa14d3`, `c40c4ea`, `7c6f978`): **A RUN'S OUTSIDE INPUTS ARE ONE OPTIONAL
+ARGUMENT OF `daily()`; THE BACKUP TASK'S TIME IS COMPUTED FROM UTC.** **(1)**
+`daily(config, log, stage, now, io)`: `io` holds the package folder, the
+fetch and clock of the run's client, the rule book's documents and the run's
+fixed inputs, each by default the real one (`src/paper.ts` passes none). Two
+more than the fetch and package root the task named, because a unit test has
+no database and because the kit's pool, markets and panel pin are the kit's
+own data under its fingerprint, so a synthetic world cannot come in through
+the package folder: the test takes the real `fixedInputs` from its package
+folder and replaces only those three. The package folder now also gives the
+kit, the experiment's files and the panel's pin (in production the same
+folder as before, the program's own). **(2)** `test/paper-daily.test.ts`
+drives `daily()` over a synthetic world — the gate's two refusals (no list;
+a frozen file changed) with no request sent; a first run from 02:32Z paused
+before 02:35Z, resumed at 04:00Z and equal, copy for copy and in its state,
+to one run without the pause; a normal day (the list and the day's market
+data only); a Monday's sweep; the trader's exits after the cut on every copy;
+the log of every copy, the log's record, the page's five lines, the
+positions page, the manifest and the backup — and kills 21 of 21 deliberate
+slips in `daily()`'s glue. **(3)** The backup task: `Get-DailyUtcStart 5 20`
+in place of the literal `06:20` (in memory today both store 05:20Z; a
+registration on 2027-04-01 would store 04:20Z from the literal, 05:20Z from
+the computed time); nothing registered. The draft freeze list again: 60
+files, `d6698333f611133fa9388c86bcaa22f5c7252772128224445170caaaec436db4`
+(only `dist/paper/daily.js` changed).
+
 2026-11-12 (PAPER-BUILD's four questions — the supervisor's technical calls
 inside the approved plan, before the freeze and before any week after the
 cut is read): **THE BUILD STANDS AT "RULES READY"; ITS FOUR QUESTIONS ARE
