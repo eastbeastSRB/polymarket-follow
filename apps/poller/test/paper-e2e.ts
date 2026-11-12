@@ -266,6 +266,14 @@ export const TITLES: Record<LineName, string> = {
   FAV: "Your favourites",
 };
 
+/** The words of a page's text that R15 bans: follow, copy, signal, edge, skill, in any form. */
+export const bannedWords = (html: string): string[] =>
+  html
+    .replace(/<[^>]*>/g, " ")
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => /^(follow|copy|copie|signal|edge|skill)/.test(w));
+
 export type Counts = {
   positions: number;
   traders: number;

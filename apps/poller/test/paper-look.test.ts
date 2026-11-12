@@ -15,8 +15,16 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { pageData, scoreInput } from "../src/paper/daily.js";
+import {
+  BACKUP_FAILED,
+  lacksOf,
+  pageData,
+  scoreInput,
+  type FixedInputs,
+  type LookDone,
+} from "../src/paper/daily.js";
 import { renderPage, renderPositions } from "../src/paper/page.js";
+import { parseRuleBook } from "../src/paper/rulebook.js";
 import { CUT, LOOK_ENDS } from "../src/paper/instants.js";
 import { PaperStore } from "../src/paper/store.js";
 import { loadResearch } from "../src/paper/research.js";
@@ -33,7 +41,9 @@ import {
   A,
   C,
   at,
+  bannedWords,
   day,
+  docs,
   freeze,
   makeWorld,
   positions,
@@ -399,7 +409,7 @@ describe("lookReport (R12, R14)", () => {
     expect(v(shifted, 3)).toBe("KEEP");
   });
 
-  it("says at look 3, when too few to tell, the largest edge not ruled out", () => {
+  it("says at look 3, when too few to tell, the largest mean result not ruled out", () => {
     const r = lookReport(
       kit,
       scoredOf(days(40, (i) => (i % 2 ? 500 : -500))),
@@ -408,7 +418,7 @@ describe("lookReport (R12, R14)", () => {
     );
     expect(r.verdict).toBe("TOO FEW TO TELL");
     expect(r.sentence).toBe(
-      `no edge as large as ${(r.money!.mean + LOOK_Z[2] * r.money!.se!).toFixed(1)} bps a copy was seen`,
+      `no mean result as large as ${(r.money!.mean + LOOK_Z[2] * r.money!.se!).toFixed(1)} bps a position was seen`,
     );
     const r1 = lookReport(
       kit,
@@ -534,5 +544,111 @@ describe("lookReport (R12, R14)", () => {
     );
     expect(renderPage(data)).not.toMatch(/follow/i);
     expect(renderPositions(data)).not.toMatch(/follow/i);
+  });
+
+  it("puts on the page no word R15 bans, with every verdict and sentence at every look, every unpriced reason and every alarm (R12, R15)", () => {
+    const wobble = (i: number) => 3 * Math.sin(i);
+    const sets = [
+      days(40, (i) => 50 + wobble(i)),
+      days(40, (i) => -50 + wobble(i)),
+      [...days(40, (i) => 50 + wobble(i)), copy(40, null, 5)],
+      days(40, (i) => (i % 2 ? 500 : -500)),
+      [copy(0, null, null)],
+    ];
+    const reports = sets.flatMap((cs) =>
+      ([1, 2, 3] as const).map((k) => lookReport(kit, scoredOf(cs), "MAIN", k)),
+    );
+    expect(new Set(reports.map((r) => r.verdict))).toEqual(
+      new Set(["KEEP", "DROP", "WITHHELD", "TOO FEW TO TELL", null]),
+    );
+    const sentences = new Set(reports.map((r) => r.sentence));
+    expect(sentences.size).toBe(2);
+    expect([...sentences].some((s) => s!.startsWith("no mean result"))).toBe(
+      true,
+    );
+
+    // Every reason a position is unpriced, a gap, every line and every kind of leg on the rows.
+    const legs = (["REDUCE", "CLOSE", "FLIP", "cut"] as const).map((kind) => ({
+      h: HOUR_MS,
+      part: 0.25,
+      kind,
+      forced: false,
+      liq: false,
+    }));
+    const rows = [
+      "no mark at the follow instant",
+      "no mark at an exit instant",
+      "a funding settlement without a mark",
+      "open across a split day of its market",
+    ].map((unpriced, i) =>
+      copy(i, null, null, {
+        unpriced,
+        gap: true,
+        lines: [...LINES],
+        plan: { legs, flag: i % 2 ? "open" : "crossing", lastExitT: null },
+      }),
+    );
+    // Every alarm: each way a reading ends, each cause of a hole, a split event, a fee category missing, raw replies not stored, a failed backup.
+    const book = parseRuleBook(docs, [6, 2]);
+    const fixed = {
+      markets: [6, 2],
+      kitMarkets: new Map([
+        [6, "crypto"],
+        [2, "commodity"],
+      ]),
+    } as unknown as FixedInputs;
+    const holes = [
+      "rejected rows",
+      "account not found",
+      "page cap",
+      "safety cap",
+    ].map((cause) => ({ addr: A, cause }));
+    const lacks = [
+      ...(["done", "paused", "schema alarm", "api failing"] as const).flatMap(
+        (end) => [
+          ...lacksOf(end, holes, 3, scoredOf(rows), book, fixed, 2),
+          ...lacksOf(end, [], 0, scoredOf([]), EMPTY_RULE_BOOK, fixed, 0),
+        ],
+      ),
+      BACKUP_FAILED,
+    ];
+    for (const alarm of [
+      "reading ended: schema alarm — ",
+      "split events recorded by the collector: 1 — alarm: ",
+      "alarm: fee categories missing from the collector's schedule: commodity — ",
+      "raw replies not stored: 2 ",
+    ])
+      expect(lacks.some((l) => l.startsWith(alarm))).toBe(true);
+
+    const pageOf = (looks: (LookDone | null)[]) =>
+      pageData(
+        kit,
+        scoredOf(rows),
+        CUT + 10 * DAY_MS,
+        new Map([[6, "BTC-USD"]]),
+        { sha256: "ab".repeat(32), at: "2026-11-12" },
+        lacks,
+        "this run: 3 calls, peak 30 tokens a minute and 10 in 5 s, 0 answered 429",
+        looks,
+      );
+    const pages = [
+      pageOf([null, null, null]),
+      ...reports.map((r) =>
+        pageOf(
+          ([1, 2, 3] as const).map((k) =>
+            k <= r.look
+              ? { k, verdict: r.verdict, sentence: r.sentence }
+              : null,
+          ),
+        ),
+      ),
+    ];
+    expect(new Set(pages.map((p) => p.verdict)).size).toBe(pages.length);
+    for (const p of pages)
+      expect([
+        p.verdict,
+        bannedWords(renderPage(p)),
+        bannedWords(renderPositions(p)),
+      ]).toEqual([p.verdict, [], []]);
   });
 });

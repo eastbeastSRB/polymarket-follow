@@ -284,7 +284,10 @@ their own arm with their own start.
   above 0.
 - When KEEP and DROP both hold, **DROP** (Q-G). **TOO FEW TO TELL**
   otherwise, and when SE cannot be computed (fewer than two traders or two
-  days); at L3 it reads "no edge as large as m + z·SE was seen".
+  days). **MAIN's sentence:** at L3, TOO FEW TO TELL with an SE, "no mean
+  result as large as X bps a position was seen", X = m + z·SE; otherwise
+  "Keep and drop are verdicts on this test, never instructions to trade."
+  Both reach the page (R15) and use none of its banned words.
 - The first KEEP or DROP is the test's verdict; later looks print their
   figures marked "after the verdict".
 - Only MAIN's line carries a verdict and its sentence; TEN, BROAD, DAY and
@@ -315,8 +318,9 @@ gap copies; the money mean with its two-way SE and both one-way lower bounds
 (m − z·SE_trader, m − z·SE_day); beside, deciding nothing, the band with
 Student's t at the same level on the day clusters (df = days − 1); d's mean
 with its two-way SE and d's null reasons; the gross before costs with its lower
-bound m_gross − z·SE_gross, worded "positions of this line would have paid at
-any round trip below X bps"; fees and funding; the win share and the average
+bound m_gross − z·SE_gross, printed as a number in bps, `breakEvenRoundTrip`
+(positions of this line would have paid at any round trip of costs below it);
+fees and funding; the win share and the average
 win against the average loss, labelled "exits can flatter these; only money
 measures"; the hold (median, quartiles); the worst UTC day and the worst
 trader (lowest sums); the paper equity's largest fall at $1,000 a copy, copies
@@ -348,8 +352,12 @@ deferred to a later arm (F16 (e)).
   next look will use; a crossing between looks decides nothing"); the running
   d mean with its band (voted only); R3's e-value (a day's vote: the sign of its
   mean d; a day within ±0.1 bps is a tie, dropped).
-- **The verdict box:** "Too early to judge — next look <date>" until L1; at
-  and after a look, R12's verdict line and its sentence, nothing else.
+- **The verdict box:** "Too early to judge — next look <date>." until look 1
+  has run; from then on, for the latest look k run, exactly "Look k (<END_k's
+  date>): the main line V." (V its MAIN verdict, R12; "has no verdict" when
+  MAIN had no priced position), then R12's sentence, then "Next look
+  <date>." (the first look not yet run) unless V is KEEP or DROP or no look
+  is left; nothing else.
 - **Every position** newest first (the newest 500 on the page), its entry
   price the mark at the end of t + D's minute, plus or minus the spread and
   depth (R9); **one row per
@@ -374,7 +382,8 @@ run that crashes before its result exists is not a look.
 ## R17. The reads' budget (Q10, F1, F11)
 
 The experiment's own client: 120 weighted tokens a minute and 15 in any 5 s
-beside the collector's 50 and 30 (170 of the 250 allowed); the User-Agent
+beside the collector's 50 and 15 (170 of the 250 allowed a minute, 30 in 5 s
+together); the User-Agent
 `data-reader/1.0`; one request at a time, each admitted before it is sent; a
 429 backs off from 2 s, an HTTP error from 1 s, doubling to 60 s; each read
 tried at most three times. The cost by formula: 10 tokens a fills page, and a

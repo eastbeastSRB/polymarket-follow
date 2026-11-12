@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  BACKUP_FAILED,
   checkFavourites,
   fixedInputs,
   readFavourites,
@@ -33,6 +34,7 @@ import {
   F_FROM,
   N,
   at,
+  bannedWords,
   copyAt,
   day,
   expectCopies,
@@ -233,6 +235,7 @@ describe("a whole run, daily() (R0, R3a, R15; the plan's section 3)", () => {
         expect(page).toContain(
           "split events recorded by the collector: 1 — alarm: their markets are out of the primary cells on the days listed, and positions open across those days are unpriced (R6): 0 unpriced; rule-book documents refused: 1",
         );
+        expect(bannedWords(page)).toEqual([]);
         const all = readFileSync(
           path.join(root, "page", "positions.html"),
           "utf8",
@@ -295,7 +298,8 @@ describe("a whole run, daily() (R0, R3a, R15; the plan's section 3)", () => {
         expect(page).toContain(
           `raw replies not stored: ${record.rawRepliesNotStored} (the raw folder refused them)`,
         );
-        expect(page).toContain("the backup failed: ");
+        expect(page).toContain(BACKUP_FAILED);
+        expect(bannedWords(page)).toEqual([]);
         // A page that cannot be written fails the run after the day's record, the manifest and the backup.
         const other = paperRoot("paper-2");
         writeFileSync(path.join(other, "page"), "not a folder");

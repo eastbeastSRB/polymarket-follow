@@ -21,7 +21,7 @@ import { accountData, type MondayCache } from "./account.js";
 import { backupPaper } from "./backup.js";
 import { verifyFreeze } from "./gate.js";
 import { CUT, LOOK_ENDS, mondayOf, runEnd } from "./instants.js";
-import { readThrough } from "./loop.js";
+import { readThrough, type LoopEnd } from "./loop.js";
 import { joinDays, loadPrecut, marketThrough, pinnedPanel } from "./market.js";
 import { renderPage, renderPositions, type PageData } from "./page.js";
 import { paperRequest } from "./reader.js";
@@ -226,9 +226,47 @@ export function feeAlarm(book: RuleBook, fixed: FixedInputs): string[] {
   return missing.length === 0
     ? []
     : [
-        `alarm: fee categories missing from the collector's schedule: ${missing.join(", ")} — their copies are priced at the kit's rate (R9)`,
+        `alarm: fee categories missing from the collector's schedule: ${missing.join(", ")} — positions in their markets are priced at the kit's rate (R9)`,
       ];
 }
+
+/**
+ * What the data lacks, and the alarms, as the page names them (R3, R6, R9,
+ * R15): how the reading ended, the holes by cause, the market-days missing,
+ * the unpriced positions, the split events, the fee alarm and the raw replies
+ * not stored.
+ */
+export function lacksOf(
+  end: LoopEnd,
+  holes: readonly { addr: string; cause: string }[],
+  missingDays: number,
+  scored: Scored,
+  book: RuleBook,
+  fixed: FixedInputs,
+  rawDropped: number,
+): string[] {
+  return [
+    `reading ended: ${end}${end === "schema alarm" ? " — a reply's shape has changed; nothing new is read until a recorded fix" : ""}`,
+    `holes: ${holes.length} in ${new Set(holes.map((h) => h.addr)).size} accounts (${
+      Object.entries(countCauses(holes))
+        .map(([c, n]) => `${c} ${n}`)
+        .join(", ") || "none"
+    })`,
+    `market-days missing: ${missingDays}`,
+    `unpriced positions: ${scored.copies.filter((c) => c.money === null).length}; positions in markets outside the primary cells: ${scored.otherMarkets}`,
+    book.splits.length === 0
+      ? `split events recorded by the collector: 0; rule-book documents refused: ${book.rejected}`
+      : `split events recorded by the collector: ${book.splits.length} — alarm: their markets are out of the primary cells on the days listed, and positions open across those days are unpriced (R6): ${scored.copies.filter((c) => c.unpriced === "open across a split day of its market").length} unpriced; rule-book documents refused: ${book.rejected}`,
+    ...feeAlarm(book, fixed),
+    ...(rawDropped > 0
+      ? [`raw replies not stored: ${rawDropped} (the raw folder refused them)`]
+      : []),
+  ];
+}
+
+/** The page's line for a failed backup (R15: the error's text names the project's folders; it is in the day's log). */
+export const BACKUP_FAILED =
+  "the backup failed: its error is in the log of the run";
 
 /** The collector's rule book as a run or a look reads it (R6, R9). */
 export async function ruleBookOf(
@@ -559,25 +597,15 @@ export async function daily(
   const holes = Object.entries(state.accounts).flatMap(([addr, a]) =>
     a.holes.map((h) => ({ addr, ...h })),
   );
-  const lacks = [
-    `reading ended: ${loop.end}${loop.end === "schema alarm" ? " — a reply's shape has changed; nothing new is read until a recorded fix" : ""}`,
-    `holes: ${holes.length} in ${new Set(holes.map((h) => h.addr)).size} accounts (${
-      Object.entries(countCauses(holes))
-        .map(([c, n]) => `${c} ${n}`)
-        .join(", ") || "none"
-    })`,
-    `market-days missing: ${missingDays.length}`,
-    `unpriced positions: ${scored.copies.filter((c) => c.money === null).length}; positions in markets outside the primary cells: ${scored.otherMarkets}`,
-    book.splits.length === 0
-      ? `split events recorded by the collector: 0; rule-book documents refused: ${book.rejected}`
-      : `split events recorded by the collector: ${book.splits.length} — alarm: their markets are out of the primary cells on the days listed, and positions open across those days are unpriced (R6): ${scored.copies.filter((c) => c.unpriced === "open across a split day of its market").length} unpriced; rule-book documents refused: ${book.rejected}`,
-    ...feeAlarm(book, fixed),
-    ...(recorder.counts.dropped > 0
-      ? [
-          `raw replies not stored: ${recorder.counts.dropped} (the raw folder refused them)`,
-        ]
-      : []),
-  ];
+  const lacks = lacksOf(
+    loop.end,
+    holes,
+    missingDays.length,
+    scored,
+    book,
+    fixed,
+    recorder.counts.dropped,
+  );
   const cost = `this run: ${client.counts.calls} calls, peak ${client.counts.peakMinute} tokens a minute and ${client.counts.peakBurst} in 5 s, ${client.counts.rateLimited} answered 429`;
   const frozenAt =
     fixed.favourites === null
@@ -633,7 +661,7 @@ export async function daily(
       line: "the backup failed",
       error: why,
     });
-    lacks.push(`the backup failed: ${why}`);
+    lacks.push(BACKUP_FAILED);
   }
   writeAtomic(
     path.join(config.PAPER_ROOT, "page", "index.html"),

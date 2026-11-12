@@ -603,7 +603,7 @@ describe("the collector's rule book (R6 (3), R9, R13)", () => {
       ]),
     } as unknown as FixedInputs;
     expect(feeAlarm(book, fixed)).toEqual([
-      "alarm: fee categories missing from the collector's schedule: commodity — their copies are priced at the kit's rate (R9)",
+      "alarm: fee categories missing from the collector's schedule: commodity — positions in their markets are priced at the kit's rate (R9)",
     ]);
   });
 });

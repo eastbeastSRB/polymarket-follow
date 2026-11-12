@@ -268,7 +268,7 @@ export function lookReport(
       line !== "MAIN"
         ? null
         : v === "TOO FEW TO TELL" && k === 3 && m?.se != null
-          ? `no edge as large as ${(m.mean + z * m.se).toFixed(1)} bps a copy was seen`
+          ? `no mean result as large as ${(m.mean + z * m.se).toFixed(1)} bps a position was seen`
           : "Keep and drop are verdicts on this test, never instructions to trade.",
   };
 }

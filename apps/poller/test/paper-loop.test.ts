@@ -104,65 +104,70 @@ describe("the reading loop: one rule for the first run, a missed day and Mondays
   const root = path.join(scratch, "monday");
   const weekList = () => list;
 
-  it("pauses at the night window, sends nothing in it, and the next start finishes the week from each P", async () => {
-    const first = run(world, root, Date.parse("2026-11-16T02:00:00Z"), MON3, {
-      pool,
-      weekList,
-    });
-    const one = await first.done;
-    expect(one.end).toBe("paused");
-    const pauseFrom = Date.parse("2026-11-16T02:34:45Z");
-    const pauseTo = Date.parse("2026-11-16T03:50:00Z");
-    expect(first.calls.every((c) => c.wall < pauseFrom)).toBe(true);
-    expect(first.calls.at(-1)!.wall).toBeGreaterThan(pauseFrom - 10_000);
-    const readBefore = Object.values(first.state.accounts).filter(
-      (a) => a.P === MON2,
-    ).length;
-    expect(readBefore).toBeGreaterThan(100);
-    expect(readBefore).toBeLessThan(600);
+  // Each state save is flushed to disk, so a busy disk slows this test (PAPER-FIX-CHECK N2).
+  it(
+    "pauses at the night window, sends nothing in it, and the next start finishes the week from each P",
+    { timeout: 30_000 },
+    async () => {
+      const first = run(world, root, Date.parse("2026-11-16T02:00:00Z"), MON3, {
+        pool,
+        weekList,
+      });
+      const one = await first.done;
+      expect(one.end).toBe("paused");
+      const pauseFrom = Date.parse("2026-11-16T02:34:45Z");
+      const pauseTo = Date.parse("2026-11-16T03:50:00Z");
+      expect(first.calls.every((c) => c.wall < pauseFrom)).toBe(true);
+      expect(first.calls.at(-1)!.wall).toBeGreaterThan(pauseFrom - 10_000);
+      const readBefore = Object.values(first.state.accounts).filter(
+        (a) => a.P === MON2,
+      ).length;
+      expect(readBefore).toBeGreaterThan(100);
+      expect(readBefore).toBeLessThan(600);
 
-    const second = run(world, root, pauseTo, MON3, { pool, weekList });
-    const two = await second.done;
-    expect(two.end).toBe("done");
-    expect(second.calls.every((c) => c.wall >= pauseTo)).toBe(true);
-    for (const calls of [first.calls, second.calls]) {
-      expect(peaks(calls).minute).toBeLessThanOrEqual(120);
-      expect(peaks(calls).burst).toBeLessThanOrEqual(15);
-    }
-    expect(second.rest.counts.dropped).toBe(0);
+      const second = run(world, root, pauseTo, MON3, { pool, weekList });
+      const two = await second.done;
+      expect(two.end).toBe("done");
+      expect(second.calls.every((c) => c.wall >= pauseTo)).toBe(true);
+      for (const calls of [first.calls, second.calls]) {
+        expect(peaks(calls).minute).toBeLessThanOrEqual(120);
+        expect(peaks(calls).burst).toBeLessThanOrEqual(15);
+      }
+      expect(second.rest.counts.dropped).toBe(0);
 
-    // Every account read to the Monday, but the one the API does not know.
-    const state = second.store.readState();
-    for (const a of pool) {
-      if (a === addr(4)) continue;
-      expect([a, state.accounts[a]!.P]).toEqual([a, MON3]);
-    }
-    expect(state.accounts[addr(4)]!.holes).toMatchObject([
-      { from: CUT, cause: "account not found" },
-    ]);
-    // The busy account: 10 pages in its first account-week, then a hole to its Monday.
-    expect(state.accounts[addr(3)]!.holes).toEqual([
-      {
-        from: CUT + 999 * 60_000,
-        to: MON2,
-        cause: "page cap",
-        readOn: "2026-11-16",
-      },
-    ]);
-    expect(second.store.readRows(addr(3))).toHaveLength(1_000);
-    // The list accounts uncapped; the big id exactly.
-    expect(second.store.readRows(addr(1))).toHaveLength(150);
-    expect(second.store.readRows(addr(2))[0]!.trade_id).toBe(
-      "9007199254740993",
-    );
-    // Every market-day from the cut to the Monday.
-    for (const iid of MARKETS) {
-      expect(second.store.marketDays(iid).size).toBe(9);
-      const day = second.store.readMarketDay(iid, MON2);
-      expect(day.marks.filter((m) => m !== null)).toHaveLength(1_440);
-      expect(day.funding).toHaveLength(24);
-    }
-  });
+      // Every account read to the Monday, but the one the API does not know.
+      const state = second.store.readState();
+      for (const a of pool) {
+        if (a === addr(4)) continue;
+        expect([a, state.accounts[a]!.P]).toEqual([a, MON3]);
+      }
+      expect(state.accounts[addr(4)]!.holes).toMatchObject([
+        { from: CUT, cause: "account not found" },
+      ]);
+      // The busy account: 10 pages in its first account-week, then a hole to its Monday.
+      expect(state.accounts[addr(3)]!.holes).toEqual([
+        {
+          from: CUT + 999 * 60_000,
+          to: MON2,
+          cause: "page cap",
+          readOn: "2026-11-16",
+        },
+      ]);
+      expect(second.store.readRows(addr(3))).toHaveLength(1_000);
+      // The list accounts uncapped; the big id exactly.
+      expect(second.store.readRows(addr(1))).toHaveLength(150);
+      expect(second.store.readRows(addr(2))[0]!.trade_id).toBe(
+        "9007199254740993",
+      );
+      // Every market-day from the cut to the Monday.
+      for (const iid of MARKETS) {
+        expect(second.store.marketDays(iid).size).toBe(9);
+        const day = second.store.readMarketDay(iid, MON2);
+        expect(day.marks.filter((m) => m !== null)).toHaveLength(1_440);
+        expect(day.funding).toHaveLength(24);
+      }
+    },
+  );
 
   it("on the next day reads only the week's list and that day's markets, and asks no finished week for its list", async () => {
     const asked: number[] = [];
