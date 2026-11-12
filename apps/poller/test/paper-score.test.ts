@@ -15,7 +15,6 @@ import { marketThrough } from "../src/paper/market.js";
 import { renderPage, type PageData } from "../src/paper/page.js";
 import { loadResearch, type PanelFile } from "../src/paper/research.js";
 import {
-  EMPTY_RULE_BOOK,
   bookTaker,
   missingFeeCategories,
   parseRuleBook,
@@ -32,7 +31,7 @@ import {
 import type { SeedAccount } from "../src/paper/seed.js";
 import type { AccountState, StoredRow } from "../src/paper/store.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
-import { addr } from "./paper-world.js";
+import { EMPTY_RULE_BOOK, addr } from "./paper-world.js";
 
 const kit = await loadResearch();
 const A2 = addr(0xa2);

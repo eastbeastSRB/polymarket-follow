@@ -20,15 +20,14 @@ import {
   type Market,
   type PanelFile,
 } from "../src/paper/research.js";
+import { loadSeed, readManifest } from "../src/paper/seed.js";
 import {
   SEED_MANIFEST,
   SeedBlindError,
   buildSeed,
   captureFile,
-  loadSeed,
   readCapture,
-  readManifest,
-} from "../src/paper/seed.js";
+} from "../scripts/paper-seed.js";
 import type { MarketDay } from "../src/paper/store.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { addr, row } from "./paper-world.js";

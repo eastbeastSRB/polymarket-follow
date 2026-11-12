@@ -311,13 +311,6 @@ export type Research = {
     ) => Cr1;
     tCritical: (p: number, df: number) => number;
   };
-  competition: {
-    COMPETITION: { start: number; end: number; boosted: string[] };
-    inCompetition: (
-      iid: number,
-      t: number,
-    ) => { days: boolean; boosted: boolean };
-  };
   exits: {
     OPEN_EPS: number;
     liquidationKeys: (events: readonly OrderEvent[]) => Set<string>;
@@ -383,7 +376,6 @@ export async function loadResearch(root = RESEARCH_ROOT): Promise<Research> {
     panel: await load("kit/panel.mjs"),
     nulls: await load("kit/nulls.mjs"),
     stats: await load("kit/stats.mjs"),
-    competition: await load("kit/competition.mjs"),
     exits: await load("find-6-exits/lib-exits.mjs"),
   };
 }

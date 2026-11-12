@@ -9,7 +9,7 @@
  * before each hour. The kit's readers then use it unchanged.
  */
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { z } from "zod";
@@ -48,25 +48,6 @@ export function pinnedPanel(researchRoot: string): Map<string, string> {
       "utf8",
     ),
   );
-}
-
-/** Copies every pinned panel file byte for byte and checks each copy; a file already there must hold the same bytes. */
-export function copyPrecutPanel(
-  from: string,
-  to: string,
-  pinned: ReadonlyMap<string, string>,
-): number {
-  mkdirSync(to, { recursive: true });
-  for (const [name, hash] of pinned) {
-    const target = path.join(to, name);
-    if (!existsSync(target)) copyFileSync(path.join(from, name), target);
-    const got = sha256(readFileSync(target));
-    if (got !== hash)
-      throw new Error(
-        `panel copy ${name}: SHA-256 ${got} is not the pinned ${hash}`,
-      );
-  }
-  return pinned.size;
 }
 
 /** One market's pre-cut panel file from the experiment's copy, checked against the pin. */

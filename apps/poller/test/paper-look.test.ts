@@ -17,7 +17,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { scoreInput } from "../src/paper/daily.js";
 import { CUT, LOOK_ENDS } from "../src/paper/instants.js";
-import { EMPTY_RULE_BOOK } from "../src/paper/rulebook.js";
 import { PaperStore } from "../src/paper/store.js";
 import { loadResearch } from "../src/paper/research.js";
 import {
@@ -39,6 +38,7 @@ import {
   positions,
   slow,
 } from "./paper-e2e.js";
+import { EMPTY_RULE_BOOK } from "./paper-world.js";
 
 type LookResult = {
   look: number;

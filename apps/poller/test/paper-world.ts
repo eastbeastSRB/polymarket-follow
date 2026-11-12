@@ -10,9 +10,20 @@ import { pino } from "pino";
 import { RestClient } from "../src/api/rest-client.js";
 import type { Clock } from "../src/clock.js";
 import { PAPER_LIMITS, PAPER_ROUTES } from "../src/paper/routes.js";
+import type { RuleBook } from "../src/paper/rulebook.js";
 import { MINUTE_MS } from "../src/schedule.js";
 
 export const log = pino({ level: "silent" });
+
+/** A rule book with no record: the kit's alone (R6, R9). */
+export const EMPTY_RULE_BOOK: RuleBook = {
+  firstRecordAt: null,
+  leftOutFrom: new Map(),
+  splits: [],
+  fees: [],
+  competitions: [],
+  rejected: 0,
+};
 
 /** A fill row as the API writes it; `big` writes trade_id as an integer literal beyond 2^53. */
 export type RawRow = Record<string, unknown> & { timestamp: number };
@@ -76,7 +87,7 @@ function body(world: World, value: unknown): string {
   return text;
 }
 
-export function answer(world: World, url: URL): Response {
+function answer(world: World, url: URL): Response {
   const q = (k: string) => url.searchParams.get(k);
   const num = (k: string) => Number(q(k));
   const iid = num("instrument_id");

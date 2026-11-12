@@ -106,15 +106,6 @@ export type RuleBook = {
   rejected: number;
 };
 
-export const EMPTY_RULE_BOOK: RuleBook = {
-  firstRecordAt: null,
-  leftOutFrom: new Map(),
-  splits: [],
-  fees: [],
-  competitions: [],
-  rejected: 0,
-};
-
 const dayOf = (t: number) => Math.floor(t / DAY_MS) * DAY_MS;
 
 /** `markets`: the kit's rule book's instruments (a market missing from a list record is gone). */

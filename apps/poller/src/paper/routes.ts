@@ -7,7 +7,6 @@
  */
 import { z } from "zod";
 import type { ClientLimits, Reviver, RouteTable } from "../api/rest-client.js";
-import type { Fill, Research } from "./research.js";
 
 /** The experiment's share beside the collector's 50: 120 a minute, 15 in any 5 s (decisions 2026-11-12, Q10). */
 export const PAPER_LIMITS: ClientLimits = {
@@ -23,7 +22,7 @@ const numText = z
   .string()
   .refine((s) => s.length > 0 && Number.isFinite(Number(s)), "not a number");
 
-/** The page; its rows are checked one by one (`parseFillRows`), so one bad row drops itself, not the page. */
+/** The page; its rows are checked one by one (`FillRow`, in `readFills`), so one bad row drops itself, not the page. */
 export const FillsPage = z.object({
   data: z.array(z.unknown()),
   more: z.boolean(),
@@ -104,24 +103,3 @@ export const FillRow = z.object({
 
 /** A row that failed `FillRow`: its timestamp when it has a usable one. */
 export type RejectedRow = { t: number | null };
-
-/** The rows of a page: the valid ones normalized by the kit's `normFill`, the rest counted with their instant. */
-export function parseFillRows(
-  rows: readonly unknown[],
-  normFill: Research["fills"]["normFill"],
-): { fills: Fill[]; rejected: RejectedRow[] } {
-  const fills: Fill[] = [];
-  const rejected: RejectedRow[] = [];
-  for (const row of rows) {
-    const parsed = FillRow.safeParse(row);
-    if (parsed.success) {
-      fills.push(normFill(parsed.data));
-      continue;
-    }
-    const t = safeInt.safeParse(
-      (row as { timestamp?: unknown } | null)?.timestamp,
-    );
-    rejected.push({ t: t.success ? t.data : null });
-  }
-  return { fills, rejected };
-}

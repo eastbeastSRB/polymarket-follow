@@ -15,7 +15,6 @@ import type { Outcome, RestClient } from "../src/api/rest-client.js";
 import { covered } from "../src/paper/coverage.js";
 import {
   BlindGateError,
-  CLOSED,
   checkWindow,
   verifyFreeze,
 } from "../src/paper/gate.js";
@@ -24,14 +23,13 @@ import { rejectedHoles } from "../src/paper/loop.js";
 import { paperRequest, readFills, readMarketDay } from "../src/paper/reader.js";
 import { reparseHoles } from "../src/paper/reparse.js";
 import { loadResearch } from "../src/paper/research.js";
-import {
-  FillRow,
-  parseFillRows,
-  type PaperRoutes,
-} from "../src/paper/routes.js";
+import { FillRow, type PaperRoutes } from "../src/paper/routes.js";
 import { FOREVER, PaperStore, type AccountState } from "../src/paper/store.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { addr, client, emptyWorld, row } from "./paper-world.js";
+
+/** The gate before any freeze. */
+const CLOSED = { open: false } as const;
 
 const scratch = mkdtempSync(path.join(tmpdir(), "paper-read-"));
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
@@ -161,19 +159,20 @@ describe("a fill row's check (R3)", () => {
       trade_id: "9007199254740993",
       order_id: "5",
     };
-    const { fills, rejected } = parseFillRows(
-      [
-        good,
-        { ...good, side: "flat" },
-        { ...good, price: "" },
-        { ...good, total_fee: null },
-        { ...good, taker: "yes" },
-        { ...good, trade_id: "1e3" },
-        { ...good, timestamp: 1.5 },
-        "not a row",
-      ],
-      kit.fills.normFill,
-    );
+    const rows: unknown[] = [
+      good,
+      { ...good, side: "flat" },
+      { ...good, price: "" },
+      { ...good, total_fee: null },
+      { ...good, taker: "yes" },
+      { ...good, trade_id: "1e3" },
+      { ...good, timestamp: 1.5 },
+      "not a row",
+    ];
+    const fills = rows.flatMap((r) => {
+      const p = FillRow.safeParse(r);
+      return p.success ? [kit.fills.normFill(p.data)] : [];
+    });
     expect(fills).toEqual([
       {
         t: DAY1,
@@ -192,14 +191,15 @@ describe("a fill row's check (R3)", () => {
         forced: false,
       },
     ]);
-    expect(rejected).toEqual([
-      { t: DAY1 },
-      { t: DAY1 },
-      { t: DAY1 },
-      { t: DAY1 },
-      { t: DAY1 },
-      { t: null },
-      { t: null },
+    expect(rows.map((r) => FillRow.safeParse(r).success)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
     ]);
     // A row the kit accepts with numeric ids passes here with the same digits.
     const numeric = row(2, DAY1);

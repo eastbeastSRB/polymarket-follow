@@ -15,8 +15,6 @@ export class BlindGateError extends Error {}
 
 export type Gate = { readonly open: boolean };
 
-export const CLOSED: Gate = { open: false };
-
 /** Refuses a window that reaches the cut while the gate is closed. */
 export function checkWindow(
   gate: Gate,
