@@ -179,8 +179,9 @@ Exploring:
   +0.4 ± 3.8). So the takers' side says something the price path does not.
 - X9, how sturdy: in small coins every one of the seven weeks is above zero
   (+82.4 … +13.2), both halves (+34.0 ± 11.5, +40.0 ± 14.1), and no single
-  market carries it (+27.4 to +39.7 when each is left out). But with each
-  market-day counted once it is +19.4 ± 10.1, and +6.7 ± 8.3 without its
+  market carries it (+27.4 to +39.7 when each is left out). But for the
+  takers not in the pool, with each market-day counted once, it is +19.4 ±
+  10.1 (against +51.1 with each trade counted), and +6.7 ± 8.3 without its
   three best days: the result lives where trading is heaviest.
 
 **M2. Two readings of one number were never set side by side.** R8 §4 reads
@@ -209,9 +210,10 @@ side of such trades or in the market's own habits.
 **M4. Liquidations and the largest jumps were never measured; in small coins
 the price came back after both.** IDEAS-REVIEW's study 18 and APPROACH-REVIEW
 B5 name liquidations; neither ran. Exploring:
-- X5, X9: after a pool account's liquidation in a small coin the mark moved
-  against the forced side by **−24.5 ± 8.4** bps in an hour and **−147.6 ±
-  36.4** in a day (431 market-minutes, 66 days, 153 accounts). Halves −119.6 ±
+- X5, X9: after a pool account's liquidation in a small coin the mark's move,
+  signed by the forced side, was **−24.5 ± 8.4** bps in an hour and **−147.6 ±
+  36.4** in a day — minus means the price came back (431 market-minutes, 66
+  days, 153 accounts). Halves −119.6 ±
   53.5 and −173.8 ± 49.3; nine of ten weeks below zero; without 2026-11-04 and
   11-05 −134.4 ± 35.6; forced sells −150.3 ± 52.4, forced buys −142.9 ± 67.3;
   29 of 36 markets below zero; −164.5 to −139.9 when each market is left out,
