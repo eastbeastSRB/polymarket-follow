@@ -1,5 +1,56 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the paper experiment's two fresh reviews — the supervisor's calls
+inside the approved plan, before the freeze): **BOTH REVIEWS SAY "AFTER
+THESE FIXES"; ONE BATCH OF FIXES GOES TO PAPER-BUILD, THEN EACH REVIEWER
+RE-CHECKS ITS OWN FINDINGS, THEN THE FREEZE.** PAPER-RULES-REVIEW
+(`docs/reviews/paper-rules-review-2026-11-12.md`, `3e59dd3`: may freeze
+after these fixes; 1 high, 5 medium, 14 low) and PAPER-CODE-REVIEW
+(`docs/reviews/paper-code-review-2026-11-12.md`, `b4320cc`: after these
+fixes; 2 high, 6 medium, 11 low); both found the same two faults first —
+`look()` and its report are tested by nothing, and the look's Student-t
+band is always about 0 (`2·normalUpper(z)`, not `2·(1 − normalUpper(z))`);
+both confirm the blind gate, the collector equal apart from its
+User-Agent, and MAIN's numbers recomputed equal. Their access scans: clean
+(every collector path named was a grep or a stub). **The calls:** (1)
+`look()` takes `daily()`'s `io`, and the look and its report get end-to-end
+tests; the band uses the day-cluster error, as R14 says; (2) **the daily
+page shows the latest look's MAIN verdict and sentence** (the owner's page
+ruling); (3) **favourites:** lower-cased when read, checked at the freeze
+(format, F0, no holdout, no duplicates), and a holdout favourite is
+refused; (4) **every line promised at the looks is printed by `look`** —
+STOP2, STOP5, DAYS7, the JUMP and NOTIONAL splits, COMP, the map's closed
+copies, with and without gap copies — with MAIN's statistic (the mean net
+per copy and its two-way error), **no verdict word for any line but MAIN**,
+tested; (5) **a stock split:** the `stock-splits` events have never been
+seen non-empty, so the rule needs no knowledge of their shape — a market
+named by an event's numeric `instrument_id` (else every equity market) is
+out of the primary cells on every UTC day its event is in the recorded list,
+a copy of it open across such a day is unpriced, and both are counted,
+printed and raised as an alarm on the page (the approved plan said "no split
+on t's UTC day"; the build had made it "counted and flagged"); (6) **the
+look reads nothing after its own end** (END_k), so a later exit never
+reaches an earlier look; (7) **the bursts keep the owner's rule of 30 in 5 s
+for all callers** (decisions 2026-11-07): the collector's burst becomes 15
+and the experiment's 15 (the collector's measured peak is 12 in 5 s; its
+share of 50 a minute is unchanged), tested; (8) `paper-freeze.cjs --final`
+refuses a dirty tree and ties `dist` to HEAD; the paper deploy's smoke test
+runs the copy's own gate; `register-tasks.ps1` can register the paper task
+alone, without touching the collector's three; (9) the page is written after
+the day's record; a backup failure and dropped records are visible on the
+page; (10) the rule book before the collector's first record (2026-11-11
+15:47Z; 11 documents so far, counted by the supervisor without reading
+values) is the kit's `rulebook.json`, and a fee category missing from the
+schedule raises an alarm; (11) the dead code in the frozen scope is deleted,
+the seed's builders move out of `src/`, `start` and the rehearsal stay (for
+re-running the old-weeks reproduction after a defect fix); (12) the
+surviving deliberate breaks that touch what decides or what is frozen are
+killed by new tests; (13) the low findings as each reviewer recommended
+(the word "follow" off the page, R1's order enforced, R0's defect fix
+means a new list, the entry price and F16(e) in the rules, R12 when the
+error cannot be computed). Then a new draft freeze list, `pnpm verify`
+green, and each reviewer re-checks its own findings against the fixes.
+
 2026-11-12 (PAPER-BUILD's closing tasks — daily() end to end and the backup
 task's time, the supervisor's two tasks before the rules review; commits
 `6fa14d3`, `c40c4ea`, `7c6f978`): **A RUN'S OUTSIDE INPUTS ARE ONE OPTIONAL
