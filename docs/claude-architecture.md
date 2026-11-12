@@ -103,7 +103,7 @@ instance holds 50 a minute and 15 in 5 s, the experiment's 120 and 15:
 together the operating budget's 30 in 5 s (decisions 2026-11-12, the two
 fresh reviews (7)).
 
-## The paper experiment (built 2026-11-12; frozen 2026-11-12 20:19:52Z, `paper-freeze-1`, decisions 2026-11-12, the freeze; not yet deployed)
+## The paper experiment (built and frozen 2026-11-12, `paper-freeze-1`, decisions 2026-11-12, the freeze; deployed by the owner 2026-11-12 20:25:42Z, its task registered, the first run started 20:26:43Z)
 
 **What it is.** A second entry point of the same package, `dist/paper.js`
 (`src/paper.ts`, `src/paper/`), that reads the pool's fills and every primary

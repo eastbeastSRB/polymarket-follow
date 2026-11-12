@@ -4,8 +4,8 @@ polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built, Final-reviewed
 and records around the clock; research round 2's FIND stage is done and
 nothing passed; the forward paper experiment is built, reviewed three times
-and FROZEN (2026-11-12 20:19:52Z, tag `paper-freeze-1`), and waits for the
-owner's deploy.** The plan is the plan page (docs/claude-master-plan.md);
+and FROZEN (2026-11-12 20:19:52Z, tag `paper-freeze-1`), deployed by the
+owner, and its first run is catching up from 2026-11-07.** The plan is the plan page (docs/claude-master-plan.md);
 what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -41,13 +41,14 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The owner's deploy and registration,** at an agreed time:
-   `tools\deploy.ps1` (the collector: its User-Agent and burst),
-   `tools\deploy.ps1 -Program paper`, then `tools\register-tasks.ps1
-   -PaperOnly` from an elevated PowerShell (the task "polymarket-follow
-   paper", daily 04:00Z). The supervisor checks each from its logs.
+1. **Done 2026-11-12 (the owner):** the collector deployed 20:25:10Z (its
+   User-Agent `data-collector/1.0`, burst 15; stopped and started in 1.4 s,
+   both streams open), the experiment 20:25:42Z (its copy's gate "ok 61"),
+   its task registered (daily 04:00Z, IgnoreNew, 36 h limit, priority 7),
+   the first run started by hand 20:26:43Z.
 2. **The first run** reads the backlog from 2026-11-07 (16–26 h, pausing
-   02:35–03:50Z); then daily. The supervisor checks its log, budget and page.
+   02:35–03:50Z, continued by the 04:00Z run); then daily. The supervisor
+   checks its log, budget and page.
 3. **D1 and D2,** after the freeze, each with its own share of the remaining
    80 a minute.
 4. **Small collector follow-ups, when convenient:** drop the boards'
