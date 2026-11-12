@@ -1,5 +1,59 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (PAPER-BUILD's technical calls — the paper experiment's build,
+parts 0–5 to "rules ready", inside the plan approved the same day; commits
+`51724ca` … `08147f5`): **THE EXPERIMENT IS BUILT TO ITS RULES; NOTHING IS
+FROZEN, DEPLOYED OR REGISTERED; THESE CALLS.** **(1) Where the rules live:**
+the experiment's routes, schemas and the id-keeping parse are in
+`src/paper/routes.ts`, not in the collector's `ROUTES` (the review's F4 wins
+over the plan: every rule that decides what is read is frozen); the client
+takes a route table, share, burst and User-Agent per instance —
+`data-collector/1.0` (the poller, REST and WebSocket; its behaviour otherwise
+equal, the night test's peaks 49 / 12 unchanged) and `data-reader/1.0`
+(120 / 15); an HTTP error hands its status and body to the caller (a 400
+"account not found" is a standing hole). `once.js` is deleted. **(2) The
+stored fills** are per account (`fills\<addr>.json.gz`, the validated rows,
+ids as digits), rewritten whole, not the plan's `fills\<run date>`: the
+scorer takes one account at a time in bounded memory; the raw replies stay
+the append-only record. **(3) The reads:** the schema alarm at more than 1%
+rejected rows and at least 10 (1,000 stop the run at once), a read with a
+rejected row applied only at the run's end without the alarm; the list's
+safety cap 50 pages an account-day; five failed reads in a row end a run;
+requests wait up to 120 s so a backed-off one is never dropped; a funding
+row is filed under the hour its stamp falls in (equal to the kit's panel on
+180 market-days). **(4) A Monday's label and habits come from the fills
+before M only** (rules.md R5; the plan's R4 built them on the whole fills):
+an order event whose fills straddle M changed 4 of 11,526 old rows (one
+account's long share) the kit's way; the facts are then fixed once read and
+cached exactly (F11) — the supervisor's question Q3. **(5) d's removal set is
+the line's accounts at M** (the plan's R10), not FIND-3's whole study: 296 of
+FIND-3's 1,203 d move, at most 40.2 bps — question Q2. **(6) The experiment
+runs from its own run copy** (`deploy.ps1 -Program paper`,
+`E:\polymarket-follow-run\paper\`), so a collector deploy never changes what
+it runs nor waits for its run (F11); its task's trigger is 04:00Z computed
+from UTC (stored `04:00:00Z`, checked in memory, nothing registered). **(7)
+It backs itself up** after each run to `PAPER_BACKUP` on E: (Q-F): the state,
+logs, manifests, looks, page, seed and pre-cut panel. **(8) The daily log
+writes every copy's state each day** (gzip), not changes only (F18): the
+honest record first; about 1 MB a day. **(9) Venue lines** are look-report
+arithmetic outside rules.md (F18); MAKER and VWAP are not built (Q-D).
+**Checked:** the seed equals the kit's `readAccount` fill for fill for 1,602
+of 1,602 accounts (3,403 more rows: one account's ids above 2^53, which
+R2-STYLE stored rounded through a double — the API's are exact); the market
+object from the copied panel equals the kit's for 91 of 91 markets bit for
+bit; live, pre-cut windows only (777 calls, 5,060 tokens, peaks 120 / 15):
+20 accounts' week and 180 market-days equal row for row, 90 joined objects
+bit for bit; the reproduction at END = CUT — FIND-6-EXITS 1,700 of 1,700
+non-holdout copies equal with 0 difference (exits copied, held 24 h, D = 0;
+the 218 others are holdout accounts, never opened), X3's 1,366 copies at its
+printed figures (−9.9 ± 9.1; +9.1 ± 13.7; 1,104 of 1,104 per entry), FIND-3's
+d 1,086 of 1,203 (the rest in hours of the holdout's trades), labels at 26
+Mondays 11,525 of 11,526 pool rows, the main line 1,137 / 157 and 525 / 61;
+the rehearsal's compute 12.6 s cold and 4.9 s cached; 45 of 45 deciding
+mutants and 29 of 29 of the reads' killed. The draft freeze list:
+`FROZEN.draft.sha256` `23f0e3434f3810781b5e30c98bfd8a0cee92ca1e5830b7ac12670932771f4fd4`
+(60 files; the scratch deploy holds exactly them).
+
 2026-11-12 (the paper experiment's plan approved — the owner, "yes approve,
 lets proceed like that", on the supervisor's recommendation to approve the
 plan with every fix of its fresh review and every recommendation; the

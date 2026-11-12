@@ -3,9 +3,10 @@
 polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) is built, Final-reviewed
 and records around the clock; research round 2's FIND stage is done and
-nothing passed; v1 is not built; the way forward is a forward paper
-experiment, designed first by a research subagent.** The plan is the plan page (docs/claude-master-plan.md); what exists is
-architecture.
+nothing passed; the forward paper experiment is built to "rules ready"
+(PAPER-BUILD, 2026-11-12) and waits for its fresh rules review, the freeze and
+the owner's deploy.** The plan is the plan page (docs/claude-master-plan.md);
+what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -14,58 +15,62 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Where things stand
 
-- **The collector is live** (architecture, "The collector"; decisions
-  2026-11-11, COLLECTOR-BUILD's technical calls and COLLECTOR-REVIEW's
-  calls): books and trades of every market, the minute reads, the nightly
-  competition (23:15Z), board (23:38Z) and daily (00:20Z) passes, the rule
-  book and universe, health and `status`, the daily backup (05:20Z) with a
-  Sunday restore test. Three Windows tasks, registered by the owner: the
-  poller (node itself, normal priority), its 5-minute check (proven live
-  2026-11-11 20:38Z), the backup. The first competition pass ran 2026-11-11
-  23:15Z (58 pages, 5,726 rows, complete); the first board pass stored 16 of
-  16 boards (15,984 rows, done 23:55:54Z).
-- **Research:** R1–R8 closed; **R8 FAILS** (decisions 2026-11-09). **Round 2's
-  FIND: nothing passes** (decisions 2026-11-11, round 2's FIND results): the
-  gate (entry 1) shows no week-to-week persistence of traders' follower
-  results; entries 2, 3, 4, 5, 7, 9 and 10 fail; three fresh Final reviews
-  confirmed every result with their own code. **Entry 6 with the owner's
-  filter** then ran once and fails too (decisions 2026-11-12, FIND-6's
-  result; its Final review confirms). **An exploring check that copies the
-  traders' exits as well** leaves every group losing (decisions 2026-11-12,
-  FIND-6-EXITS's result). The reports: `docs/reviews/find-*`.
-- **The way forward: a forward paper experiment** (decisions 2026-11-12, the
-  way forward), its design accepted (decisions 2026-11-12, APPROACH-REVIEW
-  accepted): slow traders by a rule, two readings of every copy, data from
-  2026-11-07, looks 2026-12-19, 2027-02-06 and 2027-05-08, a script once a
-  day with a simple page showing its log (decisions 2026-11-12, the paper
-  experiment runs daily and gets a page). Its plan is approved with its
-  review's fixes (decisions 2026-11-12, the paper experiment's plan
-  approved): the exams of 2026-11-30 and 2026-12-19 are closed (12-19 is the
-  first look); D1 and D2 run after the freeze.
+- **The collector is live** (architecture, "The collector"): books and trades
+  of every market, the minute reads, the nightly passes, the rule book, health
+  and `status`, the daily backup. Its code now sends the generic User-Agent
+  `data-collector/1.0` (REST and WebSocket) and `once.js` is gone; the live
+  copy changes at its next deploy (the owner's).
+- **Research:** R1–R8 closed; R8 FAILS; round 2's FIND: nothing passes; the
+  exploring check with exits copied leaves every group losing (decisions
+  2026-11-12). The reports: `docs/reviews/`.
+- **The paper experiment** (decisions 2026-11-12: APPROACH-REVIEW accepted;
+  the paper experiment runs daily and gets a page; its plan approved with its
+  review's fixes; PAPER-BUILD's technical calls): built in `apps/poller`
+  (`dist/paper.js`, `src/paper/`, the vendored kit and lib-exits in
+  `research/`, `experiment/rules.md`), parts 0–5, `pnpm verify` green (32
+  files, 248 tests). The seed and the pre-cut panel are in
+  `F:\polymarket-follow\paper\`. The reproduction on the old weeks matches
+  (FIND-6-EXITS, X3, FIND-3's d, the kit's labels, the main line's counts);
+  the live checks on pre-cut windows match. **Nothing after the cut has been
+  read; the program's gate refuses it until `experiment/FROZEN.sha256`
+  exists.** The draft list: `experiment/FROZEN.draft.sha256`
+  (`23f0e343…f4fd4`, 60 files). Not built: MAKER and VWAP (Q-D).
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
-  closed); the collector's share is 50 a minute and 30 in 5 s.
+  closed); the collector's share is 50 a minute and 30 in 5 s; the
+  experiment's 120 and 15.
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes.
 
 ## Next up — IN ORDER
 
-1. **PAPER-BUILD builds the paper experiment in parts** (the plan's section
-   6 with its review's fixes), then a fresh rules review, the freeze (its
-   hash in decisions), the owner's deploy and task registration, the first
-   run. Nothing after 2026-11-07 is read before the freeze, and the code
-   refuses it.
-2. **Small collector follow-ups, when convenient** (COLLECTOR-REVIEW's
-   questions as ruled in HANDOVER): drop the boards' `consistent` flag (0 of
-   16 in the first board pass); a coverage mark for books that arrive late.
-   (`once.js` and the generic User-Agent go with PAPER-BUILD's part 1.)
-3. **Whatever the owner chooses**, planned first and approved, by the
-   workflow in the supervisor's folder.
+1. **The supervisor answers PAPER-BUILD's questions** (its closing message
+   and `workers/PAPER-BUILD/progress.md`): Q2 d's removal set (as built: the
+   line's accounts at M), Q3 a Monday's facts from the fills before M (as
+   built), Q1 and Q4 (the reproduction's scope).
+2. **A fresh rules review** of `apps/poller/experiment/rules.md` and the code
+   (a different model), verdict "may run".
+3. **The freeze:** the owner's favourites into `experiment/favourites.txt`
+   (`from <F0>`, ≤ 20 addresses), `pnpm verify`, `node tools/paper-freeze.cjs
+   --final`, the commit tagged `paper-freeze-1`, the list's SHA-256 in
+   decisions.
+4. **The owner's deploy and registration:** `tools\deploy.ps1` (the collector,
+   for its User-Agent), `tools\deploy.ps1 -Program paper`, then
+   `tools\register-tasks.ps1` elevated once (adds "polymarket-follow paper",
+   daily 04:00Z); the first run reads the backlog (16–26 h).
+5. **Small collector follow-ups, when convenient:** drop the boards'
+   `consistent` flag; a coverage mark for books that arrive late; the backup
+   task's trigger computed from UTC as the paper's is.
+6. D1 and D2 after the freeze, each with its own share of the remaining 80 a
+   minute.
 
 ## Last session (2026-11-12)
 
-FIND-6 (entry 6 with the owner's "disciplined traders" filter) wrote its
-rules, passed a fresh rules review, looked once and failed; its Final review
-rebuilt every number and confirms it. On the owner's yes, an exploring check
-re-priced FIND-6's copies with the traders' exits copied: every group still
-loses; the supervisor re-priced all 1,918 copies with its own code, equal.
-Default usage; Fable only in rare cases (the owner, 2026-11-11).
+PAPER-BUILD built the forward paper experiment, parts 0–5 (commits
+`51724ca` … `08147f5`): the vendored kit and lib-exits; the client with a
+route table, burst and User-Agent per instance; the experiment's reads, gate,
+loop, holes, alarm and files; the seed and the panel join, checked against
+the kit and live on pre-cut windows (777 calls, 5,060 tokens); the scorer,
+statistics, verdict, page, look and entry point (45 of 45 mutants killed);
+the reproduction on the old weeks and a rehearsal page; rules.md final, the
+draft freeze list, deploy.ps1 `-Program paper` and the paper task in
+register-tasks.ps1, tested on a scratch run root only.
