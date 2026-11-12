@@ -89,8 +89,10 @@ in the others, never there.
   format:check, in CI's order, once the skeleton exists), a **docs sweep**,
   docs/claude-current-task.md rewritten, work committed by name on main (the
   owner pushes). The sweep: search every doc (docs/*.md but decisions and
-  reviews, plus CLAUDE.md) for each name, value and behaviour the session
-  changed; fix the hits; list the rest in the closing message.
+  reviews, plus CLAUDE.md and `apps/poller/experiment/rules.md`) for each
+  name, value and behaviour the session changed; fix the hits (a hit in the
+  frozen rules is listed, never edited); list the rest in the closing
+  message.
 
 ## External APIs
 Polymarket Perps' public API (keyless reads; the IP budget and every endpoint
