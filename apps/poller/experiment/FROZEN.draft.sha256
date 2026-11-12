@@ -1,12 +1,13 @@
 # DRAFT, not a freeze: the paper experiment's files of what runs (rules.md R0)
-# written 2026-11-12T14:31:03.570Z from commit 60f609ee895d36b2c3cbdb89a624c0826a628792
+# written 2026-11-12T14:34:21.918Z from commit ef0c21077e565f94dcf05e682782ef5575e2c7a0
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; mongodb 7.7.0; pino 10.4.0
 # pnpm-lock.yaml sha256 266a37979261ee129d516e0c91a9ec5bf980158676b6e45ece4267289bd4a3cc
 f3555a2b735dc1b513808adde0bc4c5df87880e1ea0bb8b3f25c50321d8bf756 *dist/paper.js
 d057ce4c6ac684eb333bf722c56be97ddc8aaaee8d2e7526c3165c328ca8543a *dist/paper/account.js
+cd08dcda39ae5ac92a8e0da48283b1f1214a9d84dfefabab578503b2eb64da43 *dist/paper/backup.js
 c30dab071a601c49daa0fbdf7eae6700adfbae2e9050ffdedd16f23523010362 *dist/paper/copy.js
 ebd734cecfbd9bce345cf81efbc8c56052b3644e250d8653f53f2554a9e135eb *dist/paper/coverage.js
-9125627aa285516f05cacbd5ae87176e0b944e82721ab747d6aabe9d5de5d462 *dist/paper/daily.js
+0e724d88f848964de4429a8d0e3a5913bd53ba8ed72461d61927a20ffa1bc988 *dist/paper/daily.js
 cdc31c4382b4ffd32fa3f970a6c002ad77c7aa4dc341beae1d9b4ea311467824 *dist/paper/gate.js
 7b85f3da1ed8e66a3597c8da966372720a495f1e405eeb13cdb3b50abfe0d57b *dist/paper/instants.js
 6772da53538e7a65bbc6286b2468c05fea3dfe28973a08e1226d40fa5ab5413a *dist/paper/look.js
@@ -18,7 +19,7 @@ ea061283c5a22a254efa4221dcbba64fa2ad3d69ceb96da7a4e9c2dbb6edc0ac *dist/paper/mar
 b16c1a777b6975f42e67a9a213146f8499c267b0c2606efba1d2d581a3c8a565 *dist/paper/research.js
 2eaaf68723290008d5707df1898eaf1539c41481867460e9bd30f1866d5e0852 *dist/paper/routes.js
 0a0a4f85847f993c22bc4355bef07e5ab3b2734e6ab69a42b0d383a3e677c1d8 *dist/paper/rulebook.js
-3aa7f3a40a08d3e9508fddb96e411fb6ea625dd2fd099b94aa704143b7554aff *dist/paper/run.js
+7ca85ffa4ddabb54a85bcd71027e824e77c60962b856316d564d3f587ad7191a *dist/paper/run.js
 992920dec9bdbb7892352a153cdfbce42c2a2e590c3d83ef314b3338c4504230 *dist/paper/score.js
 e0c53a5aaa8a2e04db269e19d983323f4afad6cb2f373940b736913256aa1dd1 *dist/paper/seed.js
 838415212472add1a2b0848fcb11f1d8c77b53ed31a262565243aca3616efee7 *dist/paper/stats.js
