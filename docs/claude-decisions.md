@@ -1,5 +1,55 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (an exploring check: FIND-6's copies with the trader's exits
+copied — the owner, "Yes, run the check", 2026-11-12 ~08:05Z, on the
+supervisor's recommendation after FIND-REVIEW-6's F6): **FIND-6-EXITS
+RE-PRICES FIND-6'S COPIES SO THAT EACH ONE LEAVES WHEN THE TRADER LEAVES; IT
+DECIDES NOTHING.** FIND-6's weeks were looked at once already, so this is
+exploring: logged, never registered, never a reason to re-run FIND-6 or to
+try other numbers for the owner's filter on these weeks; a forward paper
+test or a later batch on new weeks decides. Why the studies held a fixed
+24 h (told to the owner the same morning): the random-trade yardstick must
+be held the same way; a trader's exits can fake a win rate though never
+money (R3's disposition trap); 1 and 6 h cannot pay a taker's costs (ruling
+(5) of "RESEARCH-KIT accepted"). R8 printed copied exits once, as money, for
+its 50 traders: −20.23 bps a copy [−42.23, −2.91], against −16.60 for its
+fixed hold (`docs/reviews/r8-pretest-2026-11-09.md`). **Fixed before any
+outcome is seen:** (1) **the copies:** FIND-6's deciding line, the same
+1,918 entries of the board's candidates in both windows
+(`F:\polymarket-follow-research\FIND-6\look-entries.jsonl.gz`), each entered
+at its own follow instant t + D, priced as FIND-6 priced it (the kit's
+`leg`, the taker setting); (2) **the exit, R8's mirrored money** (decisions
+2026-11-09; R8's rules.json "mirrored_money"): each REDUCE, CLOSE, FLIP or
+forced event of the trader on the entry's instrument and side after its
+first fill (the kit's `buildEntries` exits) closes that share of what is
+still open of the copy (all of it on a close, flip or liquidation), at the
+event's first fill + the entry's own D; adds are not copied; a re-open
+merged inside the 60-s window does not re-open the copy; the copy's result
+is the share-weighted sum of the kit's `leg` from t + D to each exit instant
+(fees on both legs, spread and depth at each instant, funding on what is
+still open); (3) **the cut:** a copy still open at 2026-11-07T00:00Z, or
+whose exit instant falls at or after it, is marked at the last mark the kit
+serves before the cut with the exit's costs, and flagged; nothing at or
+after the cut is read; an unpriced copy (a missing mark, the funding-hour
+rule) is counted, never guessed; (4) **the groups:** each of the seven
+rules' top fifth and its rest exactly as FIND-6's look formed them
+(`result.json`, `board.tops`), and every candidate alike; (5) **printed per
+group:** traders, copies, copies open at the cut; the follower's net per
+copy with exits copied (the mean over copies, each alike, with its CR1 error
+by trader); the same copies held 24 h, which must equal FIND-6's `netBps`
+(the check of the plumbing); exits copied minus 24 h, paired; the win share
+and the average win against the average loss (exits can flatter both, R3);
+the median hold; and beside: the gross before costs, the same exits at D = 0
+(what the delay costs), the closed copies only, without account 0xc58a5ade…
+(FIND-REVIEW-6, F2–F3), without copies whose exit chain crosses a gap in
+the capture (F5); and per rule the top minus the rest (Welch on the traders'
+means, and the entry-weighted difference with CR1), every p labelled
+exploring; (6) **how:** Opus 5.5, xhigh; tested on synthetic cases (R8's
+mirrored-money test among them), the scripts frozen by hash before the one
+run; the report `docs/reviews/find-6-exits-2026-11-12.md` with a plain page
+for the owner; the supervisor re-prices a seeded sample of copies on its own
+path instead of a Final review, since nothing is decided. Never advice.
+
 2026-11-12 (FIND-6's result — the supervisor records the report and its Final
 review; the way forward stays the owner's): **FIND-6 FAILS: NO RANKING RULE,
 THE OWNER'S FILTER INCLUDED, PICKS TRADERS WHOSE NEXT WEEKS A FOLLOWER COULD
