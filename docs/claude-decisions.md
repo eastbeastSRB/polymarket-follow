@@ -1,5 +1,46 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the paper experiment's plan approved — the owner, "yes approve,
+lets proceed like that", on the supervisor's recommendation to approve the
+plan with every fix of its fresh review and every recommendation; the
+owner's aim, the same message: "final idea is to make profitable tool for my
+purpose, to understand everything, have prof for that, and basically filter
+all 'wrong and bad' and try to found the best results and confirm them"):
+**PAPER-PLAN IS APPROVED WITH PAPER-PLAN-REVIEW'S FIXES; PAPER-BUILD BUILDS
+IT IN PARTS.** Plan `docs/reviews/paper-plan-2026-11-12.md` (`55e3387`);
+review `docs/reviews/paper-plan-review-2026-11-12.md` (`9aac35f`; may be
+approved after the fixes named; its two code findings F5 and F9 confirmed by
+the supervisor: the kit and lib-exits hold 0 CR bytes, and lib-exits'
+`planCopy` compares with the cut at its lines 37 and 45). **The rulings:**
+the plan's eleven questions as recommended — Q1 the 24 h cost map is not in
+MAIN (its closed cells printed apart); Q2 the whole pool read once a week;
+Q3 a cap of 10 pages an account-week for accounts off the lists, with a
+safety cap for list accounts; Q4 the code in `apps/poller` (a second entry
+point) with the kit and lib-exits vendored byte for byte; Q5 the owner's
+favourites count from the freeze, not from the cut; Q6 five lines on the
+daily page, the rest at the looks; Q7 as the review's Q-B: **Finotive is
+shown only as its rule against copying (help article 955, terms §7.10) and
+its cost facts, with no result line and nothing on the daily page**; Q8 the
+exams of 2026-11-30 and 2026-12-19 are closed (nothing registered) and
+2026-12-19 is the experiment's first look; Q9 and the review's Q-C: D1 and
+D2 run after the freeze, with their own budget share; Q10 the experiment's
+share of 120 tokens a minute and 15 in 5 s; Q11 the first keep or drop ends
+the test — and the review's Q-A one weekly loop for the first run, a missed
+day and Mondays (list accounts uncapped, resumable, the figure by formula),
+Q-D MAKER and VWAP a separate sub-part that may join later as its own arm
+and never delays the freeze, Q-E the freeze hashes what runs and tags its
+commit, Q-F the pre-cut panel and the seed copied into the experiment's
+folder, checked by manifest and backed up, Q-G when KEEP and DROP both
+hold, DROP wins. Every finding F1–F18 is folded into the build and its
+rules. **Also:** requests to outside services carry a generic client name
+(code-rules, 2026-11-12): the client's User-Agent becomes an option, the
+experiment passes a generic one, and the collector's constant changes too
+(deployed with the experiment by the owner); `once.js` is deleted. **The
+gates:** nothing after the cut is read, and the code refuses it, until
+`rules.md` is final, a fresh rules review says "may run" and the supervisor
+records the frozen hash here; nothing is deployed or registered without the
+owner, who registers the experiment's task.
+
 2026-11-12 (the paper experiment runs daily and gets a page — the owner, "i
 think it is better to make some page where i can test that paper in real
 time", then, on the supervisor's two-step proposal, "ok, agree, add it"):

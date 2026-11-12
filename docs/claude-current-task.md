@@ -38,8 +38,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   accepted): slow traders by a rule, two readings of every copy, data from
   2026-11-07, looks 2026-12-19, 2027-02-06 and 2027-05-08, a script once a
   day with a simple page showing its log (decisions 2026-11-12, the paper
-  experiment runs daily and gets a page). The exams of 2026-11-30 and 2026-12-19 (nothing registered to
-  confirm) and the dated checks D1 and D2 are ruled in its plan.
+  experiment runs daily and gets a page). Its plan is approved with its
+  review's fixes (decisions 2026-11-12, the paper experiment's plan
+  approved): the exams of 2026-11-30 and 2026-12-19 are closed (12-19 is the
+  first look); D1 and D2 run after the freeze.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07, wave 1
   closed); the collector's share is 50 a minute and 30 in 5 s.
@@ -47,14 +49,15 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The paper experiment's plan** by a plan subagent, its fresh review and
-   the owner's approval (the plan page's "The way forward" row); its rules
-   are frozen before anyone reads the weeks after 2026-11-07. Nothing is
-   built before the approval.
+1. **PAPER-BUILD builds the paper experiment in parts** (the plan's section
+   6 with its review's fixes), then a fresh rules review, the freeze (its
+   hash in decisions), the owner's deploy and task registration, the first
+   run. Nothing after 2026-11-07 is read before the freeze, and the code
+   refuses it.
 2. **Small collector follow-ups, when convenient** (COLLECTOR-REVIEW's
    questions as ruled in HANDOVER): drop the boards' `consistent` flag (0 of
-   16 in the first board pass); a coverage mark for books that arrive late;
-   delete `once.js`.
+   16 in the first board pass); a coverage mark for books that arrive late.
+   (`once.js` and the generic User-Agent go with PAPER-BUILD's part 1.)
 3. **Whatever the owner chooses**, planned first and approved, by the
    workflow in the supervisor's folder.
 
