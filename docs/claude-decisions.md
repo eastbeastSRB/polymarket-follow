@@ -1,5 +1,23 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (the favourites line's accounts — the owner, "please find 20
+accounts which most fit our requirements we will work test on them. so i
+don't need to send you anything", on the supervisor's proposal): **ARM F
+(THE FAVOURITES, BESIDE MAIN, DECIDING NOTHING) HOLDS THE 20 ACCOUNTS THAT
+BEST FIT THE OWNER'S "DISCIPLINED TRADERS" FILTER ON THE WEEKS BEFORE THE
+CUT.** The filter is FIND-6's rule 7 (decisions 2026-11-11, "entry 6 runs
+with the owner's filter"; with RULES-REVIEW-6's M1), computed by FIND-6's
+own frozen code on its CONFIRM formation window [2026-10-10, 2026-11-07)
+over the notional board's candidates (FIND-6 R2, R12); the first 20 in rule
+7's order that are not holdout accounts (the experiment refuses those). The
+list uses only fills before the cut, so it cannot be fitted to the weeks it
+is tested on; FIND-6 found the filter's top fifth no better on the old
+weeks, and this line tests it forward. Computed by PAPER-FAV (no repository
+change), checked by the supervisor, written to `favourites.txt` at the
+freeze; F0 stays the freeze's instant (ruling Q5, as frozen in R2). MAIN —
+the slow traders by rule, about 160 accounts — still decides; every
+directional trader (BROAD) and the other lines stay beside it.
+
 2026-11-12 (PAPER-BUILD's fixes after the two fresh reviews — its technical
 calls inside the supervisor's batch, commits `1d720b7` … `e0c7540`): **THE
 BATCH IS IN; THE DRAFT LIST IS `34df20ff…9714` (60 FILES); NOTHING IS FROZEN.**
