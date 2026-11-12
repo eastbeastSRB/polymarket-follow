@@ -307,6 +307,11 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Done lately
 
+- ✅ 11-12 **FIND-6 — seven ways of ranking traders, the owner's filter
+  among them:** none picks traders whose next weeks a follower could use; the
+  filter's top fifth lost 53 bps a copy against the rest's 3, within chance;
+  the trader's own exits were never copied (decisions 2026-11-12, FIND-6's
+  result).
 - ✅ 11-11 **Research round 2, FIND — nothing passes:** traders' results do
   not persist from week to week (the gate); slow traders, kinds of entries,
   algorithms' large orders, agreement, the first minute and R8's US-open

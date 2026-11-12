@@ -1,5 +1,26 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (FIND-6's result — the supervisor records the report and its Final
+review; the way forward stays the owner's): **FIND-6 FAILS: NO RANKING RULE,
+THE OWNER'S FILTER INCLUDED, PICKS TRADERS WHOSE NEXT WEEKS A FOLLOWER COULD
+USE.** Report `docs/reviews/find-6-2026-11-12.md` (one look, 2026-11-12
+01:57Z); Final review `docs/reviews/find-review-6-2026-11-12.md` (Sonnet,
+independent code: every line, the race, the owner's table and all 2,009 copies
+rebuilt from the raw fills — equal; the result stands with seven corrections
+of wording). The race's smallest adjusted p was 0.112 (rule 3, the wrong way);
+the owner's filter (rule 7): adjusted p 0.55, its top fifth −53 bps a copy
+against the rest's −3, within chance; its eligible accounts −8 against −19,
+within chance; copying every candidate lost about 13 bps a copy (about the
+cost of a round trip, 10.2 bps). Not registered; the lift of decisions
+2026-11-10 (2) ends here. **What the "no" covers (the Final review):** the
+race could see only a large gap — about 65–95 bps a copy for most rules and
+about 150 for the owner's filter (F1); the "worst run" column is mostly one
+market event (one account's six long copies on 2026-11-04, F2); and every FIND
+study judged **entries held a fixed 24 hours**, never a follower who also
+copies the trader's exits — so a trader's discipline in cutting losers was not
+tested (F6), a candidate for the owner's forward paper experiment or a later
+batch.
+
 2026-11-12 (FIND-6's rules review; two rulings fixed before its look — the
 supervisor, on RULES-REVIEW-6's recommendations, within the owner's stated
 intent for the filter): **THE OWNER'S FILTER COUNTS A LOSER STILL OPEN AT THE

@@ -151,6 +151,8 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   timestamp, price and quantity; the tape `side` is the TAKER's side (a maker
   fill shows the opposite side). Both accounts of a trade share the trade_id.
 - **IDs are random 53-bit integers**, not time-ordered, not growing: 4,063
+  [2026-11-12, FIND-REVIEW-6: liquidation fills can carry trade ids above
+  2^53−1 — 3,403 fills of one account, dropped by the id check.]
   trade_ids and order_ids spread evenly over 0…2^53−1 (max 99.98% of
   9,007,199,254,740,991; none above), correlation with time −0.02. All fit a
   JavaScript number (spec `x-js-safe-integer`); they collide only at scale
