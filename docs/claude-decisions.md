@@ -1,5 +1,28 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-12 (FIND-6's rules review; two rulings fixed before its look — the
+supervisor, on RULES-REVIEW-6's recommendations, within the owner's stated
+intent for the filter): **THE OWNER'S FILTER COUNTS A LOSER STILL OPEN AT THE
+WINDOW'S END; ITS TOP FIFTH IS PRINTED ALSO AS A FIFTH OF THE ELIGIBLE.**
+Report `docs/reviews/find-6-rules-review-2026-11-12.md` (RULES-REVIEW-6,
+Sonnet, a different model from the study's): FIND-6's rules are fixed, blind
+and frozen, the code does what they say, the race keeps its size (re-run in
+harsher null worlds: 4.9% and 3.8%); verdict "may look after these fixes"; no
+high finding. **(M1) Rule 7, the owner's filter, scores every cycle still open
+at the formation window's end as closed at that instant's mark, with a closing
+taker fee** — an account that carries its losers open must not score as
+disciplined (the owner's words: "more disciplined"); rule 6 stays as entry 6
+writes it. **(M2) Rule 7 keeps the race's common k** (a fifth of all
+candidates, so about half of its eligible accounts); printed beside, deciding
+nothing: the filter's eligible accounts alone, and its top fifth of the
+eligible (k = round(eligible ÷ 5)); a test pins k to the candidates. The
+owner's page states that a "no" means "no difference large enough for these
+weeks to see" (FIND-6 sees about 0.4 risk units, about 62–68 bps) and shows
+each rule's top minus the rest with its error and its adjusted p. A run that
+crashes before `result.json` exists is not a look. Every other finding
+(M3–M5, L1–L13) is fixed by FIND-6 as the review recommends before it freezes
+again.
+
 2026-11-11 (entry 6 runs with the owner's filter — the owner lifts the gate for
 one study, on the supervisor's proposal): **ONE MORE FIND STUDY, FIND-6: A RACE
 BETWEEN RANKING RULES, THE OWNER'S "DISCIPLINED TRADERS" FILTER AMONG THEM.**

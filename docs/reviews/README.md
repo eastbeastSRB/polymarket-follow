@@ -11,6 +11,7 @@ plan page or external-apis — or it does not exist.
 
 | Review | What | Accepted |
 |---|---|---|
+| `find-6-rules-review-2026-11-12.md` | RULES-REVIEW-6 (Sonnet): the fresh read of FIND-6's rules before its look — fixed, blind, frozen; the race keeps its size; may look after five medium and thirteen low fixes | decisions 2026-11-12, FIND-6's rules review |
 | `find-review-a-2026-11-11.md` | FIND-REVIEW-A (Fable): the Final review of FIND-1, FIND-3 and FIND-4 — every entry and statistic recomputed with its own code; all three "no" stand; FIND-4's one-draw placebo corrected (the "after a jump" near miss is unexplained, not the market's); the null's hour window cleared | decisions 2026-11-11, round 2's FIND results |
 | `find-review-b-2026-11-11.md` | FIND-REVIEW-B (Fable): the Final review of FIND-5-10, FIND-7 and FIND-9 — every unit recomputed; all four results stand; entry 7's set-apart busiest accounts lose the same | decisions 2026-11-11, round 2's FIND results |
 | `find-review-c-2026-11-11.md` | FIND-REVIEW-C (Fable): the Final review of FIND-2 — 13,111 numbers recomputed, 0 different; the result stands; 49 of R8's 50 banked a loss in R8's weeks | decisions 2026-11-11, round 2's FIND results |
