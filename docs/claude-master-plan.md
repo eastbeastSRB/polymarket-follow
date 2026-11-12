@@ -321,8 +321,9 @@ review, the supervisor re-computing on its own path what decides.
 - ✅ 11-11 **Research round 2, FIND — nothing passes:** traders' results do
   not persist from week to week (the gate); slow traders, kinds of entries,
   algorithms' large orders, agreement, the first minute and R8's US-open
-  cell show nothing a follower could use; 49 of R8's 50 banked a loss in the
-  weeks R8 followed them; three fresh Final reviews confirm every result
+  cell show nothing a follower could use; R8's 50 other than #47 banked a
+  loss together in the weeks R8 followed them (18 of the 49 above zero, 28
+  below); three fresh Final reviews confirm every result
   (decisions 2026-11-11, round 2's FIND results).
 - ✅ 11-11 **RESEARCH-KIT — the panel, the kit, the first measurements:**
   one-minute prices of 91 markets to the cut, equal to R8's capture; one kit
