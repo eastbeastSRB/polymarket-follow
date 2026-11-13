@@ -4,9 +4,11 @@ polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) records around the
 clock; the forward paper experiment is FROZEN (2026-11-12, tag
 `paper-freeze-1`), deployed and reading its backlog; MARKET-1, the forward
-paper test of the liquidation wave, is built and fixed after its two fresh
-reviews (2026-11-13, MARKET-BUILD then MARKET-FIX) and waits for a fresh
-fix-check, then its freeze.** The plan is the plan page
+paper test of the liquidation wave, is built, fixed after its two fresh
+reviews and fix-checked (2026-11-13, MARKET-BUILD, MARKET-FIX,
+MARKET-FIX-CHECK); MARKET-FIX-2 made the last batch (M0's wording, seven
+breaks pinned, a new draft list); it waits for the supervisor's check, then
+its freeze.** The plan is the plan page
 (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -24,9 +26,15 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **MARKET-1** (architecture, "MARKET-1"; decisions 2026-11-13, from "MARKET-1's
   plan approved" to "MARKET-FIX's technical calls"): `dist/market1.js`, rules
   `apps/poller/market1/rules.md`, the draft freeze list
-  `market1/FROZEN.draft.sha256` (64 files, `3073e097…ed27`, from `79312a8`).
+  `market1/FROZEN.draft.sha256` (64 files, `94828ff9…6460`, from `43efd04`;
+  against the last, `3073e097…ed27`, only `market1/rules.md`'s hash differs).
   Both reviews said "after these fixes"; the owner approved the whole batch;
-  MARKET-FIX made calls 1–12 (`20ec89c` … `ab19562`). The old weeks still
+  MARKET-FIX made calls 1–12 (`20ec89c` … `ab19562`); MARKET-FIX-CHECK said
+  "ready to freeze after M0's wording"; MARKET-FIX-2 made the supervisor's
+  calls 1–3 (decisions 2026-11-13, MARKET-FIX-CHECK): M0's two bullets word
+  for word as the report gives them (`afb2e5c`), tests that kill k01, k02,
+  k06, k07, k09, k11, k12 (`43efd04`, outside the list), the draft list
+  (`6a1ffa9`). The old weeks still
   agree: the reproduction's every fill, entry and position is byte-identical
   before and after the fixes (153 entries, +309.7 ± 67.7); the bridge
   rehearsal equals MARKET-BUILD's (1,362 of 1,363 positions to 1e-9 bps, the
@@ -43,10 +51,8 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **MARKET-1's fresh fix-check** against both reports' findings and the
-   ruling's calls 1–12 (decisions 2026-11-13); MARKET-FIX's two questions
-   (the rehearsal hook kept; M0's "every reader takes the gate" after the
-   look's dead check went) answered with it.
+1. **The supervisor's check of MARKET-FIX-2:** the rule diff word for word
+   against the report, the seven breaks killed.
 2. **The freeze:** `node tools/market1-freeze.cjs --final` on a clean tree,
    the hash and the tag `market1-freeze-1` recorded in decisions.
 3. **The owner:** `tools\deploy.ps1 -Program market1`, then
@@ -75,4 +81,10 @@ look's verdict as one pure function, the verdict box after a verdict, dead
 code out, the rules' wording; new tests for the look end to end, the
 recordings' integrity, the run's lock and heartbeat, the prints, the backup
 and the entry point; the paper experiment's freeze verified after every
-commit.
+commit. MARKET-FIX-CHECK found every finding fixed or accepted and one rule
+sentence no longer exact (M0's "every reader"); MARKET-FIX-2 replaced M0's
+two bullets with the report's exact words, pinned the run's order (an early
+read of the paper store fails loudly), the program's exit code and lock
+release, C's window end, S's zero basket and the parent of a store, and
+wrote the new draft list; `pnpm verify` green (380 tests) and the paper
+experiment's freeze verified after each commit.

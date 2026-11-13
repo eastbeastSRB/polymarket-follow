@@ -211,11 +211,14 @@ and exit 4. The sealed data: every reader of the recordings, the rule book
 and the paper experiment's files (`inputs.ts`, `recordings.ts`) takes the
 gate and refuses first, before opening anything, a read reaching the cut
 while it is closed; the gate is open only from a verified freeze (`gateOf`),
-and a look's own readiness reads (`state.json`, the market-day listing) come
-after that check. The page's freeze date is read from the list's head line
-(a list without it stops the run).
+and a look's own readiness reads (`state.json`, the market-day listing) take
+no gate: they come after that check and the paper run's wait (rules.md M0,
+pinned by `test/market1-order.test.ts`). The kit's fingerprint and
+lib-exits' hash are checked when the kit loads, after the freeze check (a
+difference is a crash, exit 1). The page's freeze date is read from the
+list's head line (a list without it stops the run).
 `tools/market1-freeze.cjs` writes the list (`--final` on a clean tree;
-the draft `market1/FROZEN.draft.sha256`, 64 files, `3073e097…ed27`) and
+the draft `market1/FROZEN.draft.sha256`, 64 files, `94828ff9…6460`) and
 refuses when one of the eleven paper files differs from the paper
 experiment's freeze. A paper fix to one of the eleven stops MARKET-1 until a
 re-freeze; to any other paper file it changes nothing here.
