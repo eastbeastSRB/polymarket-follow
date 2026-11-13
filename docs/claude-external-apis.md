@@ -384,3 +384,98 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   smallest receive − `ts` in a minute stayed 99–120 ms through the day.
 - Every fills-channel, orders, balances and backstop channel is private
   (authentication needed) and was not touched.
+
+## Other venues (research, read-only)
+
+Added 2026-11-13 by WAVE-CHECKS (`docs/reviews/wave-checks-2026-11-13.md`;
+requests numbered in its progress file). Every call keyless, read-only,
+User-Agent `research-check/1.0`; Iron Rule 1 as widened 2026-11-13. A fact
+read from a venue's page is as that page read on the day.
+
+### AWS public-blockchain bucket (Hyperliquid and Lighter copies)
+
+- **Access (2026-11-13 23:29Z):** `aws-public-blockchain`, region us-east-2,
+  plain HTTPS GET with no credentials: listing
+  `https://aws-public-blockchain.s3.us-east-2.amazonaws.com/?list-type=2&prefix=<p>&delimiter=/&max-keys=1000`
+  (XML; `IsTruncated`, then `start-after`), a file at
+  `https://aws-public-blockchain.s3.us-east-2.amazonaws.com/<key>`. Both
+  answered 200 without a signature; no requester-pays header. The registry
+  entry lists Hyperliquid, Lighter Core and Lighter on Robinhood Chain
+  (`registry.opendata.aws/aws-public-blockchain/`, read 2026-11-13).
+- **Hyperliquid, `v1.1/hyperliquid/mainnet/` (listed 2026-11-13 23:29–23:35Z):**
+  `node_fills_by_block/hourly/<YYYYMMDD>/<hour>.lz4` 2025-07-27 → 2026-11-13,
+  475 days, none missing; `node_fills/hourly/…` 2025-05-25 → 2025-07-27;
+  `node_trades/hourly/…` 2025-03-22 → 2025-05-25 and a stray 2025-06-21;
+  `market_data/<YYYYMMDD>/<hour>/l2Book/<COIN>.lz4` 1,285 days 2023-04-15 →
+  2026-11-12, holes on 2024-01-10, 2024-02-01, 2025-10-17 → 22,
+  2025-11-18 → 25, 2026-07-08, 2026-07-12 → 17; `asset_ctxs/<YYYYMMDD>.csv.lz4`
+  2023-05-20 → 2026-11-12 (1,272 files, about 10.3 GB); `explorer_blocks/`;
+  `misc_events_by_block/hourly/`.
+- **Sizes:** `node_fills_by_block` 2025-07-28: 24 files, 744,235,010 B, 21–31 MB
+  an hour; `node_fills` 2025-07-01: 392,895,496 B, 13–15 MB an hour;
+  `l2Book` 2025-07-28 12h: 201 coin files, 101,180,205 B, 0.1–0.7 MB each.
+  Files carry the `.lz4` frame format (decoded by `lz4js` 0.2.0): 25,096,071 B
+  of 2025-07-28 12h became 120,851,547 B.
+- **Fill file line (`node_fills_by_block`, read 2025-07-28 12h):**
+  `{local_time, block_time, block_number, events: [[user, fill], …]}`; fill
+  `{coin, px, sz, side "A"|"B", time (ms), startPosition, dir, closedPnl,
+  hash, oid, crossed, fee, tid, feeToken, cloid?, builder?, builderFee?,
+  liquidation?}`; `liquidation` `{liquidatedUser, markPx, method}`. **Both
+  legs of a liquidation match carry it:** the liquidated account's own leg
+  (user = `liquidatedUser`, `crossed` true, `startPosition` non-zero and
+  opposite to the side) and the counterparty's (a maker, `crossed` false),
+  with one `tid` and one `hash`. Method seen in that hour: "market".
+- **Lighter, `v1.1/lighter/core/mainnet/trades/date=YYYY-MM-DD/trades.parquet`
+  (2025-07-01: 53,421,855 B, ZSTD Parquet, one row group, header 770,163
+  rows, 43 columns, read 2026-11-13 23:32Z):** `id, created_at, updated_at,
+  ask_account_id, bid_account_id, size, price, usdc_amount, ask_id, bid_id,
+  l2_block_height, timestamp (ms), tx_hash, market_id, trade_type, is_maker_ask,
+  fee_account_id, maker_fee, taker_fee, taker_position_size_before,
+  taker_entry_quote_before, taker_initial_margin_fraction_before,
+  taker_position_sign_changed, maker_position_size_before,
+  maker_entry_quote_before, maker_initial_margin_fraction_before,
+  maker_position_sign_changed, ask_client_id, bid_client_id, transaction_time,
+  ask_account_pnl, bid_account_pnl, integrator_* (4), taker/maker_allocated_
+  margin_usdc_before/_after, ask_order_version, bid_order_version,
+  public_market_index`. `trade_type` values that day: "trade", "liquidation".
+  Prices and sizes are scaled integers; no coin name (only `market_id`).
+  Lighter's guide (read 2026-11-13) lists no trade columns and no licence.
+- **Terms (read 2026-11-13):** the registry's licence link is a code licence
+  (MIT-style; the sample repository's README: MIT-0), silent on the data.
+  Hyperliquid's app terms (June 15, 2026 version) and Lighter's terms
+  (December 29, 2025 version) govern their Interface or Services, bar
+  residents of listed countries, and say nothing about research use, public
+  data or bulk download; Lighter's section 5 forbids API use that damages or
+  impairs the Services. Details: the review.
+
+### Hyperliquid's public info API (`POST https://api.hyperliquid.xyz/info`)
+
+- **Keyless; `Content-Type: application/json`** (2026-11-13 23:33Z; seven
+  reads, all 200). `{"type":"meta"}` (17,743 B): `{universe, marginTables,
+  collateralToken}`; 235 `universe` entries `{szDecimals, name, maxLeverage,
+  marginTableId, isDelisted?, onlyIsolated?, marginMode?}`, 59 flagged
+  delisted; names `kPEPE`, `kSHIB` for the 1000-fold coins; an asset's id is
+  its index in the list. All 38 of MARKET-1's coins are present and not
+  delisted (indices SOL 5 … USELESS 233).
+- `{"type":"perpDexs"}` (22,350 B): an array whose first element is `null`
+  (the main dex), then 10 builder dexes (`xyz, flx, vntl, hyna, km, abcd, cash,
+  para, mkts, io`), each `{name, fullName, deployer, oracleUpdater,
+  feeRecipient, assetToStreamingOiCap, subDeployers, assetToFundingMultiplier,
+  assetToFundingInterestRate, assetToFundingClamp}`; builder markets are named
+  `dex:COIN`.
+- `{"type":"vaultDetails","vaultAddress":"0xdfc24b07…"}` (the documentation's
+  HLP address; 62,779 B): HLP, `relationship {type "parent", data
+  {childAddresses: 7}}`, `followers` 100 rows.
+- `{"type":"userFills","user":…}`: 2,000 fills at 637–658 KB; fields as the
+  file's plus `twapId` (null). Of two HLP children read, one carried no
+  `liquidation` object, the other (`0x2e3d94f0…`) did, method "backstop".
+- `{"type":"userFillsByTime","user":…,"startTime":ms,"endTime":ms}` answered
+  for a window of 2025-07-28 (reaching back more than a year, for one
+  account) and one of 2026-08-22; the reply's record equals the file's.
+- **A backstop liquidation (one example, 2026-08-22 05:13Z):** the liquidated
+  account's own fill is `crossed` false, fee "0.0", `dir` "Liquidated Isolated
+  Short", `side` "B"; the vault's is `crossed` true, `startPosition` "0.0",
+  fee "0.0", `side` "A", `liquidation.method` "backstop", `liquidatedUser`
+  the other account. The same account's earlier fills (21 s before) were
+  method "market", `crossed` true, `dir` "Close Short", several fills at one
+  `time` and `hash`.
