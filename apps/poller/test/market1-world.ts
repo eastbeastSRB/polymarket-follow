@@ -5,6 +5,10 @@
  * its levels changed, and the first sample of each hour regardless), driven
  * through fake time. Every value is made up.
  */
+import { createHash } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { brotliCompressSync } from "node:zlib";
 import { pino } from "pino";
 import { vi } from "vitest";
 import type { CoverageEvent } from "../src/health/coverage.js";
@@ -13,6 +17,50 @@ import { BookSampler } from "../src/ws/book-sampler.js";
 
 export const log = pino({ level: "silent" });
 export const at = (iso: string) => Date.parse(iso);
+const sha256 = (b: Buffer | string) =>
+  createHash("sha256").update(b).digest("hex");
+
+/**
+ * A closed day written by hand in the collector's format: its book hour files
+ * (lines `<receive time>\t<text>`, Brotli; or bytes as given), its coverage
+ * (the nightly REST pause by default), and a manifest naming each file with
+ * its SHA-256.
+ */
+export function writeDay(
+  dir: string,
+  date: string,
+  hours: Record<string, string[] | Buffer>,
+  coverage = [
+    `${at(`${date}T02:35:00Z`)}\t{"event":"rest_pause","state":"start"}`,
+  ],
+): void {
+  const day = path.join(dir, date);
+  mkdirSync(day, { recursive: true });
+  const files: { name: string; sha256: string; lines: number }[] = [];
+  for (const [hh, content] of Object.entries(hours)) {
+    const bytes = Buffer.isBuffer(content)
+      ? content
+      : brotliCompressSync(`${content.join("\n")}\n`);
+    const name = `book-${hh}.jsonl.br`;
+    writeFileSync(path.join(day, name), bytes);
+    files.push({
+      name,
+      sha256: sha256(bytes),
+      lines: Buffer.isBuffer(content) ? 0 : content.length,
+    });
+  }
+  const text = `${coverage.join("\n")}\n`;
+  writeFileSync(path.join(day, "coverage.jsonl"), text);
+  files.push({
+    name: "coverage.jsonl",
+    sha256: sha256(text),
+    lines: coverage.length,
+  });
+  writeFileSync(
+    path.join(day, "manifest.json"),
+    JSON.stringify({ date, files }),
+  );
+}
 
 export type Item =
   | {

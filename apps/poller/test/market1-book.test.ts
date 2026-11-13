@@ -122,6 +122,16 @@ describe("the walk as a taker (M7)", () => {
     );
     expect(short.price).toBeCloseTo((99 * 4 + 98 * 6) / 10, 12);
     expect(short).toMatchObject({ deepest: 2, short: true });
+    // A level exactly the size of what is left ends the walk there.
+    expect(
+      walkClose(
+        [
+          [99, 10],
+          [98, 5],
+        ],
+        10,
+      ),
+    ).toEqual({ price: 99, units: 10, deepest: 1, short: false });
   });
 });
 
@@ -266,6 +276,46 @@ describe("the gaps of the record (M7)", () => {
       "book channel refused",
     );
     expect(gapAt(gaps, 32, at("2026-11-20T15:20:00Z"))).toBeNull();
+  });
+
+  it("a refused channel or a closed connection never reopened runs to the end of time; a second stop does not move the first", () => {
+    const m = GAP_MARGIN_MS;
+    expect(
+      gapsOf([
+        ev("2026-11-20T10:00:00Z", { event: "process_stop", pid: 1 }),
+        ev("2026-11-20T10:05:00Z", { event: "process_stop", pid: 1 }),
+        ev("2026-11-20T10:10:00Z", { event: "process_start", pid: 2 }),
+        ev("2026-11-20T11:00:00Z", {
+          event: "sub_refused",
+          conn: "book-3",
+          channel: "book::31",
+        }),
+        ev("2026-11-20T12:00:15Z", {
+          event: "ws_close",
+          conn: "book-4",
+          lastFrameAt: at("2026-11-20T12:00:00Z"),
+        }),
+      ]),
+    ).toEqual([
+      {
+        from: at("2026-11-20T10:00:00Z") - m,
+        to: at("2026-11-20T10:10:00Z") + m,
+        iid: null,
+        cause: "collector stopped",
+      },
+      {
+        from: at("2026-11-20T11:00:00Z") - m,
+        to: Infinity,
+        iid: 31,
+        cause: "book channel refused",
+      },
+      {
+        from: at("2026-11-20T12:00:00Z") - m,
+        to: Infinity,
+        iid: null,
+        cause: "book connection closed",
+      },
+    ]);
   });
 });
 

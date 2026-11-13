@@ -1,8 +1,7 @@
-import { createHash } from "node:crypto";
 import {
   appendFileSync,
-  mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -10,7 +9,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { brotliCompressSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { bookSource, gapAt, gapsOf } from "../src/market1/book.js";
+import { bookSource, gapAt, gapsOf, hourGap } from "../src/market1/book.js";
 import { SealedError } from "../src/market1/gate.js";
 import {
   booksAt,
@@ -24,7 +23,8 @@ import {
   type Days,
 } from "../src/market1/recordings.js";
 import { CUT } from "../src/paper/instants.js";
-import { at, record, type Item } from "./market1-world.js";
+import { HOUR_MS } from "../src/schedule.js";
+import { at, record, writeDay, type Item } from "./market1-world.js";
 
 const OPEN = { open: true };
 const CLOSED = { open: false } as const;
@@ -210,53 +210,11 @@ afterAll(() => {
     rmSync(d, { recursive: true, force: true });
 });
 
-const sha256 = (b: Buffer | string) =>
-  createHash("sha256").update(b).digest("hex");
-
 /** An empty folder for days written by hand, removed after the file's tests. */
 function handRoot(): string {
   const dir = mkdtempSync(path.join(tmpdir(), "market1-days-"));
   handWritten.push(dir);
   return dir;
-}
-
-/**
- * A closed day written by hand in the collector's format: its book hour files
- * (lines `<receive time>\t<text>`, Brotli; or bytes as given), its
- * coverage, and a manifest naming each file with its SHA-256.
- */
-function writeDay(
-  dir: string,
-  date: string,
-  hours: Record<string, string[] | Buffer>,
-  coverage = [`${t(date, "02:35:00")}\t{"event":"rest_pause","state":"start"}`],
-): void {
-  const day = path.join(dir, date);
-  mkdirSync(day, { recursive: true });
-  const files: { name: string; sha256: string; lines: number }[] = [];
-  for (const [hh, content] of Object.entries(hours)) {
-    const bytes = Buffer.isBuffer(content)
-      ? content
-      : brotliCompressSync(`${content.join("\n")}\n`);
-    const name = `book-${hh}.jsonl.br`;
-    writeFileSync(path.join(day, name), bytes);
-    files.push({
-      name,
-      sha256: sha256(bytes),
-      lines: Buffer.isBuffer(content) ? 0 : content.length,
-    });
-  }
-  const text = `${coverage.join("\n")}\n`;
-  writeFileSync(path.join(day, "coverage.jsonl"), text);
-  files.push({
-    name: "coverage.jsonl",
-    sha256: sha256(text),
-    lines: coverage.length,
-  });
-  writeFileSync(
-    path.join(day, "manifest.json"),
-    JSON.stringify({ date, files }),
-  );
 }
 
 describe("the recordings as MARKET-1 reads them (M7), written by the collector's own Recorder and BookSampler", () => {
@@ -303,11 +261,13 @@ describe("the recordings as MARKET-1 reads them (M7), written by the collector's
       "disk",
       "cut_line_dropped",
     ]);
-    expect([dayAlarm(999, 10), dayAlarm(1_000, 10), dayAlarm(900, 9)]).toEqual([
-      true,
-      false,
-      false,
-    ]);
+    // More than 1% and at least 10 lines: 9 of 100 is 9%, but under the floor.
+    expect([
+      dayAlarm(999, 10),
+      dayAlarm(1_000, 10),
+      dayAlarm(900, 9),
+      dayAlarm(100, 9),
+    ]).toEqual([true, false, false, false]);
     const d4 = checks.get(D4)!;
     expect(d4.failed).toBe(20);
     expect(d4.alarm).toBe(true);
@@ -421,6 +381,153 @@ describe("days written by hand (M7)", () => {
       recv: x - 4_900,
       file: `${D1}/book-10.jsonl.br`,
       text: spaced,
+    });
+  });
+
+  const frame8 = (ts: number, bid: string) =>
+    JSON.stringify({
+      ch: "book::8",
+      ts,
+      data: { b: [[bid, "5"]], a: [["101", "5"]] },
+    });
+  const wholeDay = (date: string, cause: string) =>
+    Array.from({ length: 24 }, (_, h) =>
+      hourGap(t(date, "00:00:00") + h * HOUR_MS, cause),
+    );
+  const checkAll = async (dir: string, dates: readonly string[]) => {
+    const out = new Map<string, DayCheck>();
+    for (const d of dates) out.set(d, await checkDay(OPEN, dir, d));
+    return out;
+  };
+
+  it("makes a whole day a gap when its coverage differs from its manifest, is missing or unlisted, or holds a line that does not parse", async () => {
+    const dir = handRoot();
+    const dates = [D1, D2, "2026-11-22", D4, "2026-11-24"];
+    const pause = (d: string) =>
+      `${t(d, "02:35:00")}\t{"event":"rest_pause","state":"start"}`;
+    for (const d of dates)
+      writeDay(dir, d, {}, d === D2 ? ["not a line", pause(d)] : [pause(d)]);
+    appendFileSync(path.join(dir, D1, "coverage.jsonl"), "x\n");
+    rmSync(path.join(dir, "2026-11-22", "coverage.jsonl"));
+    const manifest = path.join(dir, D4, "manifest.json");
+    const listed = JSON.parse(readFileSync(manifest, "utf8")) as {
+      files: { name: string }[];
+    };
+    listed.files = listed.files.filter((f) => f.name !== "coverage.jsonl");
+    writeFileSync(manifest, JSON.stringify(listed));
+    const checks = await checkAll(dir, dates);
+    expect(
+      dates.map((d) => {
+        const c = checks.get(d)!;
+        return [c.coverage, c.coverageFailed, c.events];
+      }),
+    ).toEqual([
+      ["differs", 0, []],
+      [
+        "ok",
+        1,
+        [{ at: t(D2, "02:35:00"), event: "rest_pause", state: "start" }],
+      ],
+      ["missing", 0, []],
+      ["missing", 0, []],
+      [
+        "ok",
+        0,
+        [
+          {
+            at: t("2026-11-24", "02:35:00"),
+            event: "rest_pause",
+            state: "start",
+          },
+        ],
+      ],
+    ]);
+    const unread = "the day's coverage cannot be read";
+    expect(
+      dayGaps(recordingDays(OPEN, dir, END), [...checks.values()]),
+    ).toEqual([
+      ...wholeDay(D1, unread),
+      ...wholeDay(D2, unread),
+      ...wholeDay("2026-11-22", unread),
+      ...wholeDay(D4, unread),
+      // A readable coverage leaves the hours without a book file.
+      ...wholeDay("2026-11-24", "book hour file missing"),
+    ]);
+  });
+
+  it("calls a book hour file that matches its manifest but cannot be decompressed unreadable: its hour is a gap", async () => {
+    const dir = handRoot();
+    const line = `${t(D1, "10:00:01")}\t${frame8(t(D1, "10:00:00.900"), "99")}`;
+    const whole = brotliCompressSync(`${line}\n`.repeat(2_000));
+    writeDay(dir, D1, {
+      "10": [line],
+      "11": whole.subarray(0, whole.length >> 1),
+    });
+    const check = await checkDay(OPEN, dir, D1);
+    expect(check.hours.find((h) => h.hour === "10")).toEqual({
+      hour: "10",
+      state: "ok",
+      lines: 1,
+      failed: 0,
+    });
+    expect(check.hours.find((h) => h.hour === "11")!.state).toBe("unreadable");
+    expect(dayGaps(recordingDays(OPEN, dir, END), [check])).toContainEqual(
+      hourGap(t(D1, "11:00:00"), "book hour file unreadable"),
+    );
+  });
+
+  it("never reads a book hour file that changed after its day was checked: its hour is a gap", async () => {
+    const dir = handRoot();
+    const x = t(D1, "10:30:00");
+    writeDay(dir, D1, { "10": [`${x - 4_900}\t${frame8(x - 5_000, "99")}`] });
+    writeDay(dir, D2, {});
+    const checks = await checkAll(dir, [D1, D2]);
+    appendFileSync(path.join(dir, D1, "book-10.jsonl.br"), "x");
+    const { found, changed } = await booksAt(
+      OPEN,
+      dir,
+      recordingDays(OPEN, dir, END),
+      checks,
+      [{ iid: 8, x }],
+    );
+    expect(found.size).toBe(0);
+    expect(changed).toEqual([
+      hourGap(t(D1, "10:00:00"), "book hour file changed since its check"),
+    ]);
+  });
+
+  it("makes a day without a closed folder between two closed days a gap of its 24 hours", () => {
+    const dir = handRoot();
+    writeDay(dir, D1, {});
+    writeDay(dir, "2026-11-22", {});
+    expect(dayGaps(recordingDays(OPEN, dir, END), [])).toEqual(
+      wholeDay(D2, "missing day"),
+    );
+  });
+
+  it("takes, of a market's lines in the hours read, the one with the latest ts, whichever file holds it", async () => {
+    const dir = handRoot();
+    const x = t(D1, "11:00:10");
+    // Hour 10's file holds the newer frame; hour 11's, by its receive time, an older one.
+    writeDay(dir, D1, {
+      "10": [
+        `${t(D1, "10:59:59.600")}\t${frame8(t(D1, "10:59:59.500"), "77")}`,
+      ],
+      "11": [
+        `${t(D1, "11:00:00.300")}\t${frame8(t(D1, "10:59:58.000"), "55")}`,
+      ],
+    });
+    writeDay(dir, D2, {});
+    const { found } = await booksAt(
+      OPEN,
+      dir,
+      recordingDays(OPEN, dir, END),
+      await checkAll(dir, [D1, D2]),
+      [{ iid: 8, x }],
+    );
+    expect(found.get(`8|${x}`)).toMatchObject({
+      book: { ts: t(D1, "10:59:59.500"), bids: [[77, 5]], asks: [[101, 5]] },
+      file: `${D1}/book-10.jsonl.br`,
     });
   });
 });
