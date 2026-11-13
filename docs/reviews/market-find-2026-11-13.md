@@ -103,12 +103,13 @@ and weekends: nothing.
 
 **3. The MARKET-1 lines I recommend** (exact in section 3)
 - **WAVE — the one line that decides.** When a tracked account is liquidated
-  in a small coin and at least two tracked accounts have been liquidated that
-  way within the hour: the other side, $1,000, at the recorded book 2 minutes
-  later, held 24 hours. At most one entry an hour a coin.
+  in a small coin and, this one counted, at least two different tracked
+  accounts have been liquidated that way in small coins within the hour: the
+  other side, $1,000, at the recorded book 2 minutes later, held 24 hours.
+  At most one entry an hour a coin.
 - **Beside it, deciding nothing:** every liquidation (and those outside a
   wave); the wave entered 1 and 3 hours late (what a slow tool would get);
-  JUMP and TAPE, each split by "in a wave or not" and "against the hour's
+  JUMP split by "in a wave or not"; TAPE split by "against the last hour's
   move or with it"; the daily losers-against-winners portfolio; BTC and ETH
   at the wave's moments.
 - **Why one line:** the three agreed lines turned out to be one family —
@@ -660,12 +661,12 @@ errors than this table.
 
 1. **One deciding line (WAVE) in place of three?** *Recommendation: yes.* A
    jump showed nothing outside a wave and the tape's lead is thin after
-   costs. Against: the wave was found on the
-   weeks it is measured on. "Every liquidation", the lead as first found, is
-   the less chosen cell: if the wave shape was chance it is the sharper test
-   (71 bps against 136 by May, section 4); if the shape is real it is the
-   blunter one (a third of its episodes carry the move, so it would need a
-   wave move of about 210 bps against 136 [arithmetic: 71 ÷ 0.34]).
+   costs. Against: the wave was found on the weeks it is measured on. "Every
+   liquidation", the lead as first found, is the less chosen cell: if the
+   wave shape was chance it is the sharper test (71 bps against 136 by May,
+   section 4); if the shape is real it is the blunter one (a third of its
+   episodes carry the move, so it would need a wave move of about 210 bps
+   against 136 [arithmetic: 71 ÷ 0.34]).
 2. **The wave counted by accounts (two or more), not by coins?**
    *Recommendation: yes;* one account closed out across coins showed nothing.
 3. **Held one day, not two?** *Recommendation: one day;* the second adds +71
