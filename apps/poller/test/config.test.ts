@@ -32,7 +32,7 @@ describe("parseConfig", () => {
     ).toThrow(/absolute path/);
   });
 
-  it("reads the run copy's settings, tools/poller.env: the poller's four, the backup's two and the paper experiment's folder, nothing else", () => {
+  it("reads the run copy's settings, tools/poller.env: the poller's four, the backup's two, the paper experiment's and MARKET-1's folders, nothing else", () => {
     const text = readFileSync(
       new URL("../../../tools/poller.env", import.meta.url),
       "utf8",
@@ -41,6 +41,8 @@ describe("parseConfig", () => {
     expect(Object.keys(settings).sort()).toEqual([
       "BACKUP_LATEST",
       "BACKUP_ROOT",
+      "MARKET1_BACKUP",
+      "MARKET1_ROOT",
       "MONGO_DB",
       "MONGO_URI",
       "PAPER_BACKUP",
@@ -49,6 +51,10 @@ describe("parseConfig", () => {
       "STATE_DIR",
     ]);
     expect(settings.PAPER_ROOT).toBe("F:\\polymarket-follow\\paper");
+    expect([settings.MARKET1_ROOT, settings.MARKET1_BACKUP]).toEqual([
+      "F:\\polymarket-follow\\market1",
+      "E:\\backups\\polymarket-follow\\market1",
+    ]);
     expect([settings.BACKUP_ROOT, settings.BACKUP_LATEST]).toEqual([
       "F:\\backups\\polymarket-follow\\db",
       "E:\\backups\\polymarket-follow\\db",

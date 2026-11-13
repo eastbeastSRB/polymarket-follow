@@ -26,16 +26,27 @@
   fingerprint. It refuses while the task "polymarket-follow paper" runs; it
   stops and starts no task.
 
-  Usage, from any folder:  powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 [-Program paper]
+  -Program market1 writes MARKET-1's own copy, <RunRoot>\market1, the same way
+  from the same verified build plus apps\poller\research and
+  apps\poller\market1 (byte copies). Its smoke: dist\market1.js without
+  settings exits 2, the kit's fingerprint, and, once market1\FROZEN.sha256 is
+  in it, the copy's own gate (dist\market1\gate.js). It refuses while the
+  task "polymarket-follow market1" runs; it stops and starts no task.
+
+  Usage, from any folder:  powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 [-Program paper|market1]
 #>
 param(
   [string]$RunRoot = 'E:\polymarket-follow-run',
-  [ValidateSet('poller', 'paper')][string]$Program = 'poller'
+  [ValidateSet('poller', 'paper', 'market1')][string]$Program = 'poller'
 )
 $ErrorActionPreference = 'Stop'
+# The two programs with their own copy and task, run once a day, never swapped under a run.
+$daily = $Program -ne 'poller'
 $paper = $Program -eq 'paper'
-$TaskName = if ($paper) { 'polymarket-follow paper' } else { 'polymarket-follow poller' }
-$entry = if ($paper) { 'dist\paper.js' } else { 'dist\index.js' }
+$TaskName = "polymarket-follow $Program"
+$entry = "dist\$(@{ poller = 'index'; paper = 'paper'; market1 = 'market1' }[$Program]).js"
+$frozenDir = if ($paper) { 'experiment' } else { 'market1' }
+$gateModule = if ($paper) { 'dist\paper\gate.js' } else { 'dist\market1\gate.js' }
 $KitFingerprint = '2d3667b5ce90645b41dfee4e6fc425ab3e64c985cb4973bfed6ece5052c409aa'
 $repo = Split-Path $PSScriptRoot -Parent
 $target = Join-Path $RunRoot $Program
@@ -67,10 +78,10 @@ function Write-DeployLog([string]$text) {
 
 $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 $ours = $null -ne $task -and "$($task.Actions[0].Arguments)".Trim().Trim('"').StartsWith((Join-Path $target $entry), [StringComparison]::OrdinalIgnoreCase)
-if ($paper -and $ours -and $task.State -eq 'Running') {
+if ($daily -and $ours -and $task.State -eq 'Running') {
   throw "the task '$TaskName' is running: deploy after its run ends; nothing deployed"
 }
-if (-not $paper -and $ours -and -not (Test-CanStartTask $TaskName)) {
+if (-not $daily -and $ours -and -not (Test-CanStartTask $TaskName)) {
   throw "this session could not stop and start the task '$TaskName' for the swap (the task grants this account read only): deploy from an elevated PowerShell; nothing deployed"
 }
 
@@ -95,9 +106,9 @@ try {
   # pnpm command would then remove the development packages: install again.
   pnpm install --frozen-lockfile --offline
   if ($LASTEXITCODE -ne 0) { throw "pnpm install after the deploy failed ($LASTEXITCODE)" }
-  if ($paper) {
+  if ($daily) {
     # Byte copies (Copy-Item never re-encodes): their hashes are frozen.
-    foreach ($dir in 'research', 'experiment') {
+    foreach ($dir in 'research', $frozenDir) {
       Copy-Item -LiteralPath (Join-Path $repo "apps\poller\$dir") -Destination (Join-Path $next $dir) -Recurse
     }
   } else {
@@ -127,7 +138,7 @@ $smoke.Arguments = '"{0}"' -f (Join-Path $next $entry)
 $smoke.WorkingDirectory = Join-Path $next 'dist'
 $smoke.UseShellExecute = $false
 $smoke.RedirectStandardError = $true
-foreach ($name in 'RECORDINGS_ROOT', 'STATE_DIR', 'MONGO_URI', 'MONGO_DB', 'PAPER_ROOT') { $smoke.EnvironmentVariables.Remove($name) }
+foreach ($name in 'RECORDINGS_ROOT', 'STATE_DIR', 'MONGO_URI', 'MONGO_DB', 'PAPER_ROOT', 'PAPER_BACKUP', 'MARKET1_ROOT', 'MARKET1_BACKUP') { $smoke.EnvironmentVariables.Remove($name) }
 $started = [System.Diagnostics.Process]::Start($smoke)
 $stderr = $started.StandardError.ReadToEndAsync()
 if (-not $started.WaitForExit(30000)) {
@@ -137,7 +148,7 @@ if (-not $started.WaitForExit(30000)) {
 if ($started.ExitCode -ne 2) {
   throw "the new copy does not load (exit $($started.ExitCode)): $($stderr.Result.Trim()) - nothing deployed; $next is kept"
 }
-if ($paper) {
+if ($daily) {
   # The kit's own check on the copy: every vendored file byte for byte.
   $check = New-Object System.Diagnostics.ProcessStartInfo
   $check.FileName = $smoke.FileName
@@ -155,10 +166,10 @@ if ($paper) {
   }
   # The copy's own gate, once a freeze list is in it: a copy whose files differ
   # from the list would only stop at its first 04:00Z run (exit 4).
-  if (Test-Path -LiteralPath (Join-Path $next 'experiment\FROZEN.sha256')) {
+  if (Test-Path -LiteralPath (Join-Path $next "$frozenDir\FROZEN.sha256")) {
     $gate = New-Object System.Diagnostics.ProcessStartInfo
     $gate.FileName = $smoke.FileName
-    $gateUrl = ([Uri](Join-Path $next 'dist\paper\gate.js')).AbsoluteUri
+    $gateUrl = ([Uri](Join-Path $next $gateModule)).AbsoluteUri
     # No brace in the code: -f reads braces as its own placeholders.
     $gate.Arguments = '-e "import(process.argv[1]).then((m) => process.stdout.write(((r) => (r.ok ? `ok ` + r.files : r.problems.join(`; `)))(m.verifyFreeze(process.argv[2]))))" "{0}" "{1}"' -f $gateUrl, $next
     $gate.UseShellExecute = $false
@@ -173,7 +184,7 @@ if ($paper) {
     }
     Write-Host "the copy's gate: $($out.Result.Trim()) files as frozen"
   } else {
-    Write-Host 'the copy holds no freeze list (experiment\FROZEN.sha256): its gate stays closed'
+    Write-Host "the copy holds no freeze list ($frozenDir\FROZEN.sha256): its gate stays closed"
   }
 }
 
@@ -197,7 +208,7 @@ function Rename-Retrying([string]$path, [string]$newName) {
 if (Test-Path -LiteralPath $old) { Remove-Item -Recurse -Force -LiteralPath $old }
 
 $why = "deploy of $commit ($Program)"
-$wasRunning = -not $paper -and $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
+$wasRunning = -not $daily -and $ours -and (Get-ScheduledTask -TaskName $TaskName).State -eq 'Running'
 if ($wasRunning) {
   $stoppedAt = Get-Date
   try {

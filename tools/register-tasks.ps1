@@ -62,6 +62,18 @@
   none of the collector's three tasks: no re-registration, no start of the
   poller (decisions 2026-11-12, the two fresh reviews (8)).
 
+  With -Market1Only it registers "polymarket-follow market1" alone, after
+  tools\deploy.ps1 -Program market1, and touches none of the other four:
+  node.exe itself runs E:\polymarket-follow-run\market1\dist\market1.js daily
+  in that folder, daily at 10:30Z (computed from UTC, Get-DailyUtcStart),
+  after the paper experiment's Monday read; as soon as possible after a
+  missed start; 12 hours at most a run; a trigger met while a run goes on is
+  ignored; priority 7. Its program makes no request, so the night pause does
+  not apply; it waits for the paper experiment's run to be over before it
+  reads that experiment's files. Nothing runs after the cut before its
+  freeze: the program's gate refuses it. A run without the switch registers
+  the four tasks as before and leaves MARKET-1's alone.
+
   Undo: Stop-ScheduledTask -TaskName 'polymarket-follow poller' ends the
   poller; then Unregister-ScheduledTask -TaskName 'polymarket-follow *'
   -Confirm removes the three tasks, and the grant with them (it lives on the
@@ -71,15 +83,19 @@
 #>
 param(
   # The experiment's task alone; the collector's three are not touched.
-  [switch]$PaperOnly
+  [switch]$PaperOnly,
+  # MARKET-1's task alone; the other four are not touched.
+  [switch]$Market1Only
 )
 #Requires -RunAsAdministrator
 $ErrorActionPreference = 'Stop'
+if ($PaperOnly -and $Market1Only) { throw '-PaperOnly and -Market1Only each register one task alone: give one; nothing registered' }
+$collector = -not $PaperOnly -and -not $Market1Only
 . (Join-Path $PSScriptRoot 'task-access.ps1')
 $Poller = 'polymarket-follow poller'
 $run = 'E:\polymarket-follow-run\poller'
 $heartbeat = 'E:\polymarket-follow-run\var\heartbeat.json'
-if (-not $PaperOnly) {
+if ($collector) {
   foreach ($file in '.env', 'poller-check.ps1', 'poller-task.ps1', 'backup.cjs', 'restore.cjs', 'dist\index.js') {
     if (-not (Test-Path -LiteralPath (Join-Path $run $file))) {
       throw "missing $run\$file - run tools\deploy.ps1 first; nothing registered"
@@ -87,9 +103,19 @@ if (-not $PaperOnly) {
   }
 }
 $paperRun = 'E:\polymarket-follow-run\paper'
-foreach ($file in '.env', 'dist\paper.js', 'research\kit\check.mjs', 'experiment\rules.md') {
-  if (-not (Test-Path -LiteralPath (Join-Path $paperRun $file))) {
-    throw "missing $paperRun\$file - run tools\deploy.ps1 -Program paper first; nothing registered"
+if (-not $Market1Only) {
+  foreach ($file in '.env', 'dist\paper.js', 'research\kit\check.mjs', 'experiment\rules.md') {
+    if (-not (Test-Path -LiteralPath (Join-Path $paperRun $file))) {
+      throw "missing $paperRun\$file - run tools\deploy.ps1 -Program paper first; nothing registered"
+    }
+  }
+}
+$market1Run = 'E:\polymarket-follow-run\market1'
+if ($Market1Only) {
+  foreach ($file in '.env', 'dist\market1.js', 'research\kit\check.mjs', 'market1\rules.md') {
+    if (-not (Test-Path -LiteralPath (Join-Path $market1Run $file))) {
+      throw "missing $market1Run\$file - run tools\deploy.ps1 -Program market1 first; nothing registered"
+    }
   }
 }
 $node = (Get-Command node.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
@@ -116,7 +142,7 @@ $user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType S4U -RunLevel Limited
 $scheduler = New-Object -ComObject Schedule.Service
 $scheduler.Connect()
-if (-not $PaperOnly) {
+if ($collector) {
   $before = Get-Heartbeat
 
   $pollerTrigger = New-ScheduledTaskTrigger -AtStartup
@@ -167,15 +193,25 @@ if (-not $PaperOnly) {
     -Action $backupAction -Trigger $backupTrigger -Principal $principal -Settings $backupSettings | Out-Null
 }
 
-$paperTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 4)
-$paperSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-  -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 36) -MultipleInstances IgnoreNew -Priority 7
-$paperAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}" daily' -f (Join-Path $paperRun 'dist\paper.js')) -WorkingDirectory $paperRun
-Register-ScheduledTask -TaskName 'polymarket-follow paper' -Force `
-  -Description 'polymarket-follow: the paper experiment, once a day at 04:00Z (watch-only; see the repository''s docs).' `
-  -Action $paperAction -Trigger $paperTrigger -Principal $principal -Settings $paperSettings | Out-Null
+if (-not $Market1Only) {
+  $paperTrigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 4)
+  $paperSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 36) -MultipleInstances IgnoreNew -Priority 7
+  $paperAction = New-ScheduledTaskAction -Execute $node -Argument ('"{0}" daily' -f (Join-Path $paperRun 'dist\paper.js')) -WorkingDirectory $paperRun
+  Register-ScheduledTask -TaskName 'polymarket-follow paper' -Force `
+    -Description 'polymarket-follow: the paper experiment, once a day at 04:00Z (watch-only; see the repository''s docs).' `
+    -Action $paperAction -Trigger $paperTrigger -Principal $principal -Settings $paperSettings | Out-Null
+} else {
+  $market1Trigger = New-ScheduledTaskTrigger -Daily -At (Get-DailyUtcStart 10 30)
+  $market1Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 12) -MultipleInstances IgnoreNew -Priority 7
+  $market1Action = New-ScheduledTaskAction -Execute $node -Argument ('"{0}" daily' -f (Join-Path $market1Run 'dist\market1.js')) -WorkingDirectory $market1Run
+  Register-ScheduledTask -TaskName 'polymarket-follow market1' -Force `
+    -Description 'polymarket-follow: MARKET-1, a paper test of the liquidation wave, once a day at 10:30Z (watch-only; see the repository''s docs).' `
+    -Action $market1Action -Trigger $market1Trigger -Principal $principal -Settings $market1Settings | Out-Null
+}
 
-$names = if ($PaperOnly) { @('polymarket-follow paper') } else { @($Poller, 'polymarket-follow poller check', 'polymarket-follow backup', 'polymarket-follow paper') }
+$names = if ($PaperOnly) { @('polymarket-follow paper') } elseif ($Market1Only) { @('polymarket-follow market1') } else { @($Poller, 'polymarket-follow poller check', 'polymarket-follow backup', 'polymarket-follow paper') }
 foreach ($name in $names) {
   $task = Get-ScheduledTask -TaskName $name
   Write-Host "`n== $name - state $($task.State), logon $($task.Principal.LogonType), run level $($task.Principal.RunLevel), priority $($task.Settings.Priority)"
@@ -188,7 +224,7 @@ foreach ($name in $names) {
   if ($name -eq $Poller) { Write-Host "   node: $node, $nodeVersion" }
   Write-Host "   security: $($scheduler.GetFolder('\').GetTask($name).GetSecurityDescriptor(7))"
 }
-if (-not $PaperOnly) {
+if ($collector) {
   $pidBefore = if ($null -eq $before) { 'none' } else { $before.pid }
   if ($null -eq $after -or $after.ageS -gt 20) {
     Write-Host "`nthe poller: pid $pidBefore before; NO fresh heartbeat now - see $heartbeat, the poller's log in E:\polymarket-follow-run\var\logs and the task's last result (Get-ScheduledTaskInfo -TaskName '$Poller')"
