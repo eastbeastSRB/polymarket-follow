@@ -22,7 +22,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { daily, type DailyIo } from "../src/market1/daily.js";
+import { daily, verdictBox, type DailyIo } from "../src/market1/daily.js";
 import { PAPER_FILES, frozenFiles } from "../src/market1/gate.js";
 import { kitData } from "../src/market1/inputs.js";
 import { look, lookMonday } from "../src/market1/look.js";
@@ -139,7 +139,11 @@ beforeAll(async () => {
     }
   }
   // A's forced sell is read; B's (the same millisecond, another coin) only after the Monday sweep.
-  store.addRows(A, [forcedSell(1, WAVE_T, 8)]);
+  // A's second forced sell, on 11-20: its legs wait for 11-21, which never closes here.
+  store.addRows(A, [
+    forcedSell(1, WAVE_T, 8),
+    forcedSell(3, at("2026-11-20T12:00:00Z"), 8),
+  ]);
   store.saveState({
     version: 1,
     accounts: {
@@ -255,6 +259,37 @@ const positionsOf = (date: string) =>
         },
     );
 
+describe("the verdict box (M14)", () => {
+  it("names the next look until a KEEP or a DROP, or until no look is left", () => {
+    const r = (verdict: "KEEP" | "DROP" | "WITHHELD", k: number) => ({
+      look: k,
+      end: `${["2026-12-19", "2027-02-06", "2027-05-08"][k - 1]}T00:00:00.000Z`,
+      verdict,
+      sentence: "S.",
+    });
+    expect(verdictBox([null, null, null])).toEqual([
+      "Too early to judge — next look 2026-12-19.",
+    ]);
+    expect(verdictBox([r("WITHHELD", 1), null, null])).toEqual([
+      "Look 1 (2026-12-19): WAVE WITHHELD.",
+      "S.",
+      "Next look 2027-02-06.",
+    ]);
+    expect(verdictBox([r("KEEP", 1), null, null])).toEqual([
+      "Look 1 (2026-12-19): WAVE KEEP.",
+      "S.",
+    ]);
+    expect(verdictBox([r("DROP", 1), r("WITHHELD", 2), null])).toEqual([
+      "Look 2 (2027-02-06): WAVE WITHHELD.",
+      "S.",
+      "Next look 2027-05-08.",
+    ]);
+    expect(
+      verdictBox([r("WITHHELD", 1), r("WITHHELD", 2), r("WITHHELD", 3)]),
+    ).toEqual(["Look 3 (2027-05-08): WAVE WITHHELD.", "S."]);
+  });
+});
+
 describe("MARKET-1's daily run and look, end to end", () => {
   it("refuses without a valid freeze with nothing sealed opened, then runs a day, a Monday's sweep, a look and the page", async () => {
     // 1. No freeze: exit 4, one log line, nothing else written; the paper store untouched.
@@ -314,7 +349,9 @@ describe("MARKET-1's daily run and look, end to end", () => {
     ).toBe(0);
     const first = positionsOf("2026-11-21");
     expect(first.filter((p) => p.line === "WAVE")).toEqual([]);
-    expect(first.filter((p) => p.line === "B1").map((p) => p.iid)).toEqual([8]);
+    expect(first.filter((p) => p.line === "B1").map((p) => p.iid)).toEqual([
+      8, 8,
+    ]);
     const line1 = logOf("2026-11-21").at(-1)!;
     expect(line1).toMatchObject({
       end: "2026-11-21T00:00:00.000Z",
@@ -387,7 +424,27 @@ describe("MARKET-1's daily run and look, end to end", () => {
     expect(
       await daily(config, log, noStage, at("2026-11-22T11:30:00Z"), io),
     ).toBe(0);
-    expect(logOf("2026-11-22").at(-1)).toMatchObject({ legsDecided: 0 });
+    expect(logOf("2026-11-22").at(-1)).toMatchObject({
+      legsDecided: 0,
+      format: { daysChecked: 0 },
+    });
+    // The 11-20 episode: both legs before END, its entry's next day not closed: pending (F3).
+    const late = positionsOf("2026-11-22").find(
+      (p) => p.line === "B1" && p.priced === null,
+    );
+    expect(late).toBeDefined();
+    // WAVE's headline on complete weeks only (F4): the pool's other accounts are read through the cut.
+    const page2 = readFileSync(
+      path.join(config.MARKET1_ROOT, "page", "index.html"),
+      "utf8",
+    );
+    expect(page2).toContain(
+      "WAVE, complete weeks (positions before 2026-11-02)",
+    );
+    expect(page2).toContain("<p>0 positions on 0 days in 0 markets;");
+    expect(page2).toContain(
+      "Partial: the rest of the pool is read on Monday — 2 positions from 2026-11-02.",
+    );
     const again = positionsOf("2026-11-22").filter((p) => p.line === "WAVE");
     expect(again.map((p) => p.priced!.net)).toEqual(
       wave.map((p) => p.priced!.net),
@@ -397,6 +454,7 @@ describe("MARKET-1's daily run and look, end to end", () => {
     const monday = lookMonday(1);
     expect(new Date(monday).toISOString()).toBe("2026-12-21T00:00:00.000Z");
     expect(await look(config, log, 1, monday - 1, io)).toBe(5);
+    expect(logOf("2026-12-20").at(-1)!.line).toBe("the look is not due");
     expect(await look(config, log, 1, monday + DAY_MS, io)).toBe(5);
     expect(logOf("2026-12-22").at(-1)!.line).toMatch(
       /^the look is not ready: /,
@@ -432,5 +490,58 @@ describe("MARKET-1's daily run and look, end to end", () => {
     expect(after).toContain("Look 1 (2026-12-19): WAVE WITHHELD.");
     expect(after).toContain("Next look 2027-02-06.");
     expect(bannedWords(after)).toEqual([]);
+
+    // 8. Look 2 at its own limit.
+    expect(await look(config, log, 2, lookMonday(2) + 8 * DAY_MS, io)).toBe(0);
+    const result2 = JSON.parse(
+      readFileSync(
+        path.join(config.MARKET1_ROOT, "looks", "L2", "result.json"),
+        "utf8",
+      ),
+    ) as { z: number; look: number };
+    expect(result2).toMatchObject({ look: 2, z: 2.43 });
+
+    // 9. A coin the rule book leaves out from 11-18 enters no WAVE position (M3), and the page names it.
+    const leftOut = await daily(
+      config,
+      log,
+      noStage,
+      at("2026-11-22T12:30:00Z"),
+      {
+        ...io,
+        ruleBook: () =>
+          Promise.resolve([
+            {
+              kind: "instrument",
+              key: "10",
+              at: at("2026-11-18T01:00:00Z"),
+              value: {
+                instrument_id: 10,
+                symbol: "HYPE-USD",
+                close_only: true,
+              },
+            },
+          ]),
+      },
+    );
+    expect(leftOut).toBe(0);
+    expect(
+      positionsOf("2026-11-22")
+        .filter((p) => p.line === "WAVE")
+        .map((p) => p.iid),
+    ).toEqual([8]);
+    const page3 = readFileSync(
+      path.join(config.MARKET1_ROOT, "page", "index.html"),
+      "utf8",
+    );
+    expect(page3).toContain("Coins left out: HYPE-USD from 2026-11-18");
+
+    // 10. A rehearsal runs only on weeks before the cut.
+    await expect(
+      daily(config, log, noStage, at("2026-11-22T12:30:00Z"), {
+        ...io,
+        rehearsal: { from: CUT - 7 * DAY_MS, start: CUT - 7 * DAY_MS },
+      }),
+    ).rejects.toThrow(/only on weeks before the cut/);
   }, 180_000);
 });
