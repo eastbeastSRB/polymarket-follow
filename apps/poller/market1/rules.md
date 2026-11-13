@@ -61,7 +61,11 @@ in brackets as exploring prints, deciding nothing.
   hours, to 00:00Z on 2026-11-11, are left out so that every day cluster is a
   whole day). WAVE and every line beside it count entries with t ≥ START,
   but P (M12).
-- **A run's END** = 00:00Z of its UTC day; nothing at or after END is used.
+- **A run's END** = 00:00Z of its UTC day: no fill, mark, price or position
+  at or after END is used. The recordings at or after END are read only as
+  M7 says: each closed day's check and its gaps (the coverage of the days
+  after a leg's, F3), and a book line received late (the hour after a leg's,
+  its `ts` before END).
 - **The looks:** END₁ = 2026-12-19T00:00Z, END₂ = 2027-02-06T00:00Z,
   END₃ = 2027-05-08T00:00Z (the paper experiment's).
 - Times are ms since the epoch in the server's time (a fill's `timestamp`, a
@@ -274,10 +278,13 @@ forced sells and 39 forced buys; +309.7 ± 67.7 bps gross on marks, net
   markets** (F5).
 - **DROP** when m + z·SE < **δ = +50 bps** (the owner's line).
 - **KEEP** when m − z·SE > 0 **and** the mean excess (M9) over the set's
-  priced positions with a BASE cell is above 0 (F1: a market's drift cannot
-  pass as the effect); positions without a BASE cell are left out of that
-  mean and counted.
-- When KEEP and DROP both hold, **DROP**. **TOO FEW TO TELL** otherwise.
+  priced positions that have one is above 0 (F1: a market's drift cannot
+  pass as the effect); a position without a BASE cell, or without the marks
+  of its gross on marks, has no excess: it is left out of that mean and
+  counted.
+- **The order:** WITHHELD, then TOO FEW TO TELL, then DROP, then KEEP; the
+  first that holds is the verdict, so when KEEP and DROP both hold, **DROP**.
+  **TOO FEW TO TELL** when none holds.
 - **The sentence:** at L3, TOO FEW TO TELL with an SE: "No mean result as
   large as X bps a position was seen.", X = m + z·SE; otherwise "Keep and drop
   are verdicts on this test, never instructions to trade."
@@ -292,7 +299,9 @@ at t (M3), and printed in three readings: the net at
 the book; the gross on marks; and the excess (the gross on marks minus dir ×
 BASE). Its statistic: M10's two-way SE when it spans several markets, the
 CR1 SE by day for a single market. Each look's set: its positions with
-x_out < END_k. [Old weeks, MARKET-FIND, gross on marks unless said.]
+x_out < END_k. [Old weeks, MARKET-FIND, gross on marks unless said; the ±
+are MARKET-FIND's two-way errors, which M10's error exceeds where a one-way
+error is larger: B1, B2, B6's forced buys and OWN.]
 
 - **B1 EPISODES** — every 60-minute episode: a counted fill whose market's
   previous counted fill (in M4's order) is more than 60 minutes before it,
@@ -322,20 +331,21 @@ x_out < END_k. [Old weeks, MARKET-FIND, gross on marks unless said.]
   with x_in ≤ y < x_out at any x_in = y), the worst position and the worst
   5%'s average (the lowest ⌈5% of n⌉ nets). [on MARKET-FIND's additive net:
   −1,875 on 2026-09-09 over five; 2,370; 19; −1,101.9; −699.4]
-- **OWN, the coin's own part** (F1) — WAVE's gross on marks minus the mean
-  move, over the same instants, of the other small coins with both marks (at
-  least 5 of them). [+74.9 ± 48.7]
+- **OWN, the coin's own part** (F1) — WAVE's gross on marks minus dir × the
+  mean move, over the same instants, of the other small coins with both
+  marks (at least 5 of them). [+74.9 ± 48.7]
 - **P BEFORE THE BOOKS** — M5's entries with t in [CUT, START), every leg at
   the mark (no book was recorded), flagged; their windows count no fill
   before CUT (the store starts there).
 - **C COMPETITIONS** — WAVE without the positions whose t lies in a
-  competition window the collector's rule book lists; and WAVE without those
-  in a market boosted above 1 by a competition whose window holds t.
+  competition window [start, end) the collector's rule book lists; and WAVE
+  without those in a market boosted above 1 by a competition whose window
+  holds t.
 - **S THE MARKET'S DIRECTION** — WAVE by UTC month of t; and by the sign of
   the small-coin basket's move over the 7 days before t (the mean, over the
   small coins with both of the kit's marks, of the mark at t − 1 min ÷ the
   mark at t − 7 d, less 1; at least 5 coins), crossed with forced sells and
-  buys.
+  buys; a basket of exactly 0, or of fewer than 5 coins, is "unknown".
 - **BASE, the matched baseline** (F10) — for market i and the 4-hour UTC
   block b of x_in: the mean of (marks[j + 1,440] ÷ marks[j] − 1) × 10⁴ over
   every whole minute j in [START, END − 24 h) of market i whose minute lies in
@@ -354,10 +364,12 @@ depth-short legs; the share not priced at the book and the means with and
 without those positions (F6); the money mean with its two-way SE and the
 one-way SEs by day, by market and by week; the band with Student's t on day
 clusters (df = days − 1); the gross before costs with its lower bound; fees;
-funding; the win share; the median and quartiles of the net; the entry's
-cost at the book (median, p90) and the mean net of the third with the
-highest entry cost; the gross on marks; the excess, its two-way SE and its
-lower bound (m_ex − z·SE_ex) and the positions without a BASE cell (F1); OWN;
+funding; the win share; the median and quartiles of the net (a quartile q
+is the value at index ⌊q·n⌋ of the n sorted nets); the entry's cost at the
+book (median, p90) and the mean net of the third with the highest entry
+cost; the gross on marks; the excess, its two-way SE and its lower bound
+(m_ex − z·SE_ex) and the priced positions without an excess (no BASE cell,
+or no marks for the gross on marks) (F1); OWN;
 B11; the mean without the two days that add most, each day left out (lowest
 and highest), each market left out; the share of positions on the five
 busiest days; positions a week; the pool's activity a week (accounts with a
@@ -366,7 +378,8 @@ fills); the reader's holes (the pool's holes by cause; WAVE's windows
 [t − 60 min, t] that touch a hole of any pool account); the pool's
 liquidation fills (M4's test) in crypto markets outside M3; the coins left
 out (M3); the days with the alarm (M7); the smallest edge visible at the
-next look, (z_next + 0.8416) × SE × √(days so far ÷ days at the next look).
+next look, (z_next + 0.8416212, the normal's point of 80% power, the paper
+experiment's) × SE × √(days so far ÷ days at the next look).
 Venue lines (another exchange's fees) are reporting arithmetic outside these
 rules. The look's report tells the owner that BASE removes a period's
 average drift, not a regime inside it (S beside).
@@ -381,8 +394,11 @@ average drift, not a regime inside it (S beside).
   "the pool's trades read through <the earliest P of the pool's accounts
   without a standing hole>"; "the waves are found in the accounts the paper
   experiment has read: within a week about a seventh of them, the rest after
-  its Monday read" (F4); the alarms (book lines failing, days with the alarm,
-  fees); the coins left out (M3); the frozen hash and the freeze's date, with
+  its Monday read" (F4); the alarms (each day whose book lines fail M7's
+  schema, each day whose coverage cannot be read, the book hour files changed
+  since their check, the rule-book documents refused, a recorded fee other
+  than 4 bps, a failed backup); the coins left out (M3); the frozen hash and
+  the freeze's date, with
   "The rules were frozen on <date> before any MARKET-1 result existed;
   whatever this page shows, they do not change."
 - **The verdict box:** "Too early to judge — next look <date>." until look 1
