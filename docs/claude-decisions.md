@@ -1,5 +1,72 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (MARKET-FIX's technical calls — MARKET-1's fix batch, inside the
+owner's ruling of the same day; commits `20ec89c` … `ab19562`): **THE
+RULING'S CALLS 1–12 ARE MADE; THE NEW DRAFT LIST IS
+`3073e0971016893f47d603f92f3b2844c777c3afabf28e4d3492e5d91b31ed27` (64
+FILES, FROM `79312a8`); NOTHING IS FROZEN; THESE CALLS.**
+**(1) The freeze's date** is read right after the freeze verified, before
+anything sealed is opened, so a list without its `# written` line stops the
+run with nothing read (exit 1 by the crash handler). **(2) The settings'
+refusal** (call 5): one refine per own folder, naming it; "inside" includes
+equal; paths compared by `path.relative` (case ignored on Windows); a sibling
+whose name only begins like a store is allowed; the two own folders against
+each other were not ruled and are not checked. **(3) The refusal's line**
+(call 10): `<setting>: <message>`, joined by "; ", "the command: …" for the
+command line. **(4) L5 as ruled, with two consequences:** the look's readiness
+reads (`state.json`, the market-day listing) take no gate now — the deleted
+check could not fire, they come after the freeze check (MARKET-FIX's Q2);
+booksAt trusts the pre-filter's market (a text with a duplicate `ch` key or a
+leading zero, which the server does not send, would no longer be skipped).
+The rehearsal hook stays: its comments already say the old weeks alone pass
+it (MARKET-FIX's Q1). **(5) L6's one-liners** are the code review's Q2 list:
+`DAY_MS` and `dayOf` imported, `DayCheck` as `z.infer`, `RunRecord` exported
+and used by the look (its log lines, its books file and its manifest); the
+reproduction script takes `dayOf` from the paper's stats. **(6)**
+`lookVerdict(kit, wave, k)` takes the look, not z: the sentence needs it.
+**(7) After a verdict** each later look adds one line on the page, without its
+sentence. **(8) The tests:** `market1-look` (MARKET-RULES-REVIEW's made-up
+looks rebuilt as pure worlds through `computeAll`), `market1-look-run` (a
+small world ready for look 1, with its own frozen package),
+`market1-entry` (the built program); `writeDay` moved to `market1-world`.
+Exit 4 of the built program is tested through `daily` and `look` (the
+repository's package gets its list at `--final`, so a process test would
+change meaning); exit 1 through `look 3` before its Monday, which stops at
+its first log line with or without a list. The EPERM test runs where the
+platform refuses a signal to pid 4 (Windows) or 1. The Student band is
+checked against t computed apart (3.695608 and 2.994155 at 9 degrees). The
+tests that run looks, processes or held files carry their own time limits,
+so a busy machine (or a break run beside other suites) cannot fail them.
+MARKET-FIX's own breaks of its fixed lines found two gaps in its own tests (a
+folder named "..m1" inside a store; the prints' lower bounds at looks 2 and 3
+taken at look 1's z), closed by `ab19562`.
+**Checked:** 249 deliberate breaks in scratch copies (MARKET-BUILD's 75, the
+rules review's 41, the code review's 77 and its first session's 37 rebuilt
+from their recorded descriptions, 19 of MARKET-FIX's own; 13 re-aimed where a
+fix moved their text): 238 killed on `da21622` and 2 more (f09, f16) on
+`ab19562`, no kill by a time limit alone; 3 broke code that call 8 deleted
+(m69, m73, r30); 6 equivalent, listed: an open position at END − 2 ms (the
+same minute as END − 1 ms), a forced look's legs past END (in no set), legs
+at or past END decided at a look and P's legs decided (record lines only,
+no price changes), an account whose P is the cut read (the window [CUT, CUT)
+is empty), and f02 (the throw above still guards the line it changed).
+MARKET-BUILD's 75: 75 killed. The old weeks: the reproduction's printed
+figures pass
+before (`3821416`) and after (`79312a8`), and its dumps of every counted fill
+(727), entry (153) and position with its price (1,376) are byte-identical
+(+309.7 ± 67.7); MARKET-FIND's own lists (MARKET-BUILD's scratchpad) were
+outside MARKET-FIX's reads, so their fill-for-fill case was not re-run — the
+build it held equal is the one before. The bridge rehearsal after the fixes:
+1,363 positions, 1,362 equal to the reproduction to 1e-9 bps, the same one
+listed (two BTC legs in one second), 196 pending at the first run and 0 at
+the end, 2,709 legs at the book, 5 at the mark through the recorded stop —
+MARKET-BUILD's report in every field but its timings. The draft list equals
+a clean scratch build and MARKET-1's own gate accepts it. The paper
+experiment's freeze, 61 files `d04d3cd8…f31c`, verified after every commit;
+`pnpm verify` green (376 tests). **Next:** a fresh fix-check against both
+reports and calls 1–12, then `--final`, the hash here and the tag
+`market1-freeze-1`, then the owner's deploy and task.
+
 2026-11-13 (MARKET-1's two fresh reviews — the owner's ruling on the fixes,
 before the freeze): **BOTH REVIEWS SAY "AFTER THESE FIXES"; THE OWNER
 APPROVED THE WHOLE BATCH ("everything is clear, i agree with everything, you

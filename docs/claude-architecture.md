@@ -182,7 +182,7 @@ refused while its task runs; `tools\register-tasks.ps1` adds the task
 when available; `-PaperOnly` registers that task alone, the collector's three
 untouched. Neither is done before the freeze and the owner's word.
 
-## MARKET-1 (built to "rules ready" 2026-11-13 by MARKET-BUILD; not frozen, deployed or registered)
+## MARKET-1 (built to "rules ready" 2026-11-13 by MARKET-BUILD, its two reviews' fixes by MARKET-FIX the same day; not frozen, deployed or registered)
 
 **What it is.** A third entry point of the same package, `dist/market1.js`
 (`src/market1.ts`, `src/market1/`), the forward paper test of the liquidation
@@ -199,7 +199,8 @@ client. Commands: `daily` (the task's), `look <1|2|3>` (once each); exit codes
 not due, not ready or already run, or the paper experiment's run still live
 after 6 hours. Settings, no defaults: `STATE_DIR`, `MARKET1_ROOT`,
 `MARKET1_BACKUP`, `PAPER_ROOT`, `RECORDINGS_ROOT`, `MONGO_URI`, `MONGO_DB`
-(`tools\poller.env`).
+(`tools\poller.env`); `MARKET1_ROOT` or `MARKET1_BACKUP` equal to or inside
+`PAPER_ROOT` or `RECORDINGS_ROOT` is refused (exit 2, one line naming it).
 
 **Its gates** (`gate.ts`). The freeze: `market1/FROZEN.sha256` must list every
 file of what runs — `dist/market1.js`, `dist/market1/`, the eleven paper files
@@ -207,10 +208,14 @@ it imports or reads with (`dist/paper/` `instants`, `store`, `routes`,
 `rulebook`, `market`, `research`, `seed`, `stats`, `loop`, `reader`,
 `reparse`), `research/` and `market1/` — each with its hash; else one log line
 and exit 4. The sealed data: every reader of the recordings, the rule book
-and the paper experiment's files takes the gate and refuses first, before
-opening anything, a read reaching the cut while it is closed.
+and the paper experiment's files (`inputs.ts`, `recordings.ts`) takes the
+gate and refuses first, before opening anything, a read reaching the cut
+while it is closed; the gate is open only from a verified freeze (`gateOf`),
+and a look's own readiness reads (`state.json`, the market-day listing) come
+after that check. The page's freeze date is read from the list's head line
+(a list without it stops the run).
 `tools/market1-freeze.cjs` writes the list (`--final` on a clean tree;
-the draft `market1/FROZEN.draft.sha256`, 64 files, `cc5cd6bd…6076`) and
+the draft `market1/FROZEN.draft.sha256`, 64 files, `3073e097…ed27`) and
 refuses when one of the eleven paper files differs from the paper
 experiment's freeze. A paper fix to one of the eleven stops MARKET-1 until a
 re-freeze; to any other paper file it changes nothing here.
