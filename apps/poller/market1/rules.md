@@ -171,7 +171,8 @@ forced sells and 39 forced buys; +309.7 ± 67.7 bps gross on marks, net
 - **A day's alarm** (F18): when more than 1% of a closed day's book lines,
   and at least 10, fail the schema, the whole day is a gap and the page and
   the log say so.
-- **The book at x:** the last book line of the market with `ts` ≤ x.
+- **The book at x:** the last book line of the market with `ts` ≤ x in those
+  three hour files; none there is "no book line".
 - **Live at x** when (1) that line's `ts` ≥ x − 3,660,000 ms — the collector
   writes every live market's book at the start of each hour, so an older line
   means a gap — and (2) no gap covers x.
@@ -181,14 +182,18 @@ forced sells and 39 forced buys; +309.7 ± 67.7 bps gross on marks, net
   `ws_close` of a `book-` connection, from its `lastFrameAt` (else the
   event), to that connection's next `ws_resumed` (its `firstFrameAt`) or
   `ws_open`, for every market (the record does not say which markets a
-  connection holds); a `process_stop` to the next `process_start`, and a
+  connection holds); a `sub_refused` of a `book::<iid>` channel: that
+  market, to that connection's next `ws_open` (the collector marks no stall
+  for a refused channel); a `process_stop` to the next `process_start`, and a
   `process_start`'s `lastHeartbeatAt` to that start; a recordings `disk`
   event in state `stop` to the next recordings `disk` event in another state;
   a `write_failed`, `cut_line_dropped` or `compression_failed` naming a book
   file: that file's hour; a book hour file missing from a closed day's
   manifest or folder, failing to decompress or differing from its manifest:
-  its hour; a day with the alarm, and a missing day: the whole day. A gap
-  opened and not yet closed in the days read runs to the end of time.
+  its hour; a day with the alarm, a day whose `coverage.jsonl` is missing,
+  differs from its manifest or holds a line that does not parse, and a
+  missing day: the whole day. A gap opened and not yet closed in the days
+  read runs to the end of time.
 - **Pending, not a gap** (F3): a leg at x waits, unpriced for now, until the
   UTC day after x's day is closed or missing; the next run prices it.
 - **Usable** when both sides hold at least one level with price and size
