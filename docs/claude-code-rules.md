@@ -80,6 +80,14 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   suite, see a test fail.
 - **Mutation-check what decides something:** break each rule on purpose and
   see a test fail; a crash or a timeout counts as killed.
+- **Run deliberate breaks only in a scratch copy** (`git archive HEAD`),
+  never in the working tree. A harness that rewrites the real source is one
+  crash away from leaving a break behind, and from a frozen list that hashes
+  it (MARKET-CODE-REVIEW L11, 2026-11-13).
+- **No soft fallback for a parse of our own file:** when a file we write
+  (a freeze list, a manifest) fails to parse, raise an error. Never show
+  "unknown". MARKET-1's page would have printed "frozen on unknown" for good
+  (MARKET-CODE-REVIEW M1, 2026-11-13).
 - **Build the world a rare rule needs:** a synthetic search finds one
   cheaply; when a search finds none, build it from the rule's algebra.
 - **A rule that fixes an instant is read at that instant,** never at the
@@ -116,6 +124,9 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **Write scripts to a file with the Write tool** (`.mjs` or `.cjs`) —
   `node -e` and heredocs mangle backslashes, backticks and quotes in Bash, and
   a `sed` with `\\r` wrote a CR byte into a source file (2026-11-12).
+  **Read a regex back from the file after writing it:** MARKET-1's
+  `/^# written (\S+)/` lost its backslash and matched only the letter S, and
+  no test noticed (2026-11-13).
 - **`node --test <directory>` fails in Node 24** (MODULE_NOT_FOUND): pass a
   glob.
 - **A Task Scheduler time literal is local:** `-At 'HH:MM'` is read as local

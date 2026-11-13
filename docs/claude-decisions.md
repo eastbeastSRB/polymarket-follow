@@ -1,5 +1,107 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (MARKET-1's two fresh reviews — the owner's ruling on the fixes,
+before the freeze): **BOTH REVIEWS SAY "AFTER THESE FIXES"; THE OWNER
+APPROVED THE WHOLE BATCH ("everything is clear, i agree with everything, you
+can start"); ONE FRESH FIXER, THEN A FRESH FIX-CHECK, THEN THE FREEZE.**
+
+**The reports.**
+- MARKET-RULES-REVIEW (`docs/reviews/market-rules-review-2026-11-13.md`,
+  `f4e2e06` and `7af4968`): may freeze after these fixes; 3 medium and 8 low
+  findings, numbered 1–11.
+- MARKET-CODE-REVIEW (`docs/reviews/market-code-review-2026-11-13.md`,
+  `a16d5aa` and `cbd06d1`): after these fixes; no high; 5 medium (M1–M5) and
+  11 low (L1–L11).
+- A sign-in failure stopped the first pair at about 09:49Z. Successors on the
+  same briefs re-confirmed every finding before it went in.
+
+**What both confirm.**
+- Every ruling and F1–F19 is in the rules, and nothing is added.
+- The draft list (64 files, `cc5cd6bd…6076`) equals a clean build.
+- The paper experiment is undisturbed: its freeze verifies (61 files,
+  `d04d3cd8…`), nothing writes under its root, and its lock is waited for.
+- The seal holds.
+- The old-weeks reproduction and the bridge rehearsal re-run equal.
+
+**Access.** The scans are clean. For the rehearsal, a reviewer copied the
+paper experiment's `seed` and `panel-precut` and the kit's `pool-weeks`.
+These are pre-cut and not sealed, and the seed verified 1,602 of 1,602
+against `experiment/seed.sha256` afterwards.
+
+**The calls, all made before `--final`:**
+
+1. `freezeDate` reads `\S+`. A list without its head line is an error, not
+   "unknown", and the end-to-end page test asserts the date (rules 1, code
+   M1).
+2. The book-line pre-filter allows JSON whitespace. The collector stores the
+   server's text verbatim, so a spaced frame must still match; it is tested
+   with one (code M2).
+3. M11 says the order: WITHHELD, then TOO FEW TO TELL, then DROP before KEEP.
+   This is the code's order (rules 3).
+4. After the test's first KEEP or DROP, the page keeps that look's verdict on
+   show and labels each later look "after the verdict", and M14 says so.
+   This is what M11 already promises (rules 4, code L7).
+5. `MARKET1_ROOT` or `MARKET1_BACKUP` inside `PAPER_ROOT` or
+   `RECORDINGS_ROOT` is refused at start (code L8).
+6. The look's verdict assembly becomes one small pure function, pinned by
+   tests built from MARKET-RULES-REVIEW's made-up looks (rules 2, code M4).
+   Those looks are:
+   - KEEP;
+   - TOO FEW by F1;
+   - DROP by the recorded fee;
+   - TOO FEW by days, by markets and by noise;
+   - KEEP with a forced leg;
+   - WITHHELD.
+7. New tests kill the surviving deliberate breaks that touch what decides,
+   what is frozen, or the live programs' safety. They cover:
+   - the look's freeze check and paper-run wait (M3);
+   - the recordings reader's integrity branches (M5);
+   - the lock and heartbeat names and the paper's, the heartbeat catch,
+     `EPERM` read as alive, the 6-hour wait and the rename tries (L1);
+   - the recorded fee and the fee alarm (L2);
+   - the printed numbers (L3);
+   - the backup's seven folders and its hash compare (L4);
+   - the builder's own additions a2, d and e (rules 7);
+   - START, F5's minimum for DROP, and the exit codes (L8).
+
+   Equivalent breaks are listed, not tested.
+8. Dead and test-only code in the frozen scope is deleted (L5). Of the
+   copies (L6), only the one-line ones are removed. The `lock.ts` helpers and
+   the shared `daily`/`look` preamble stay until a second arm exists.
+9. Rule wording is corrected (rules 5, 6 and 11):
+   - M1 against M7 (the hour after, and later days' coverage);
+   - OWN's "dir ×";
+   - the source of the ± for B1, B2, B6 and OWN;
+   - the small words.
+10. **Accepted as they are:**
+    - a malformed `manifest.json` stops the run loudly with exit 1 (rules 9);
+    - six support files stay outside the list, as in the paper experiment
+      (rules 8);
+    - the naming and shape notes (L9, L10) wait for a second arm;
+    - the raw Zod dump at a bad setting (L8) becomes one readable line only
+      if that is a one-line change.
+11. **Answered by the supervisor:**
+    - **A book level's size is in units of the coin.** In the founding probe
+      (2026-11-06), 100 of 100 fills charge exactly 2.000000 bps of quantity
+      × price across 7 instruments, including small coins 10 and 70. The
+      spec gives trades' quantity "in no. of contracts" with no multiplier
+      anywhere (the supervisor's
+      `verify/MARKET-RULES-REVIEW/size-unit.out.txt`). So `book.ts`'s walk
+      stands; the first run's data confirm it.
+    - **F: has 1,551.6 GB free** (2026-11-13 10:52Z).
+    - **The collector's `rulebook` grows only when a rule changes or a
+      server closes a connection** (`store/db.ts`, `noteRule` and
+      `noteEvent`), so reading it whole each run is cheap.
+12. Every fix commit keeps the paper experiment's freeze verifying.
+    Deliberate breaks run only in a scratch copy, never in the working tree
+    (L11).
+
+**Then:**
+- a new draft freeze list and `pnpm verify` green;
+- a fresh fix-check against both reports' findings;
+- `market1-freeze.cjs --final`, with the hash and the tag `market1-freeze-1`
+  recorded here.
+
 2026-11-13 (MARKET-BUILD's technical calls — MARKET-1's build to "rules
 ready", inside the plan approved the same day; commits `79b3984` …
 `32923a7`): **MARKET-1 IS BUILT TO ITS RULES; ITS DRAFT FREEZE LIST IS
