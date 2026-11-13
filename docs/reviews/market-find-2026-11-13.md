@@ -737,7 +737,10 @@ checked the coin count only; A12c, written while proofreading, checks the
 recommended line (153 entries on 47 days, +309.7). A6's plan said "two
 fits"; four were printed. Prints outside the written plans are in section
 7's last column. I listed the first names in `F:\polymarket-follow\paper\`
-and the file names of `panel-precut\` (nothing opened but `seed\`).
+and the file names of `panel-precut\` (nothing opened but `seed\`). After the
+third commit: one more shell command failed to parse (the closing entry of
+`progress.md`; rewritten through the Write tool), and that entry's stamp was
+first written as an estimate (02:49Z) and corrected from the clock (02:48Z).
 
 **Facts the supervisor may want in external-apis** (from stored captures:
 R8's tape read 2026-11-09, the seed; counted 2026-11-13):
