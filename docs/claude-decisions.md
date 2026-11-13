@@ -1,5 +1,52 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (two outside researches — the owner's approval): **TWO
+SEPARATE DESK RESEARCHES ON FABLE 5.2, IN PARALLEL: WAVE-ELSEWHERE (narrow)
+AND ONCHAIN-SCOUT (broad).**
+
+The owner: "you have approve for 2 agents on fable 5.2 … if my broader idea
+shows potential after investigation idea is to start new project, not
+inside this one."
+
+1. **WAVE-ELSEWHERE.** Can MARKET-1's wave be tested on another venue's
+   public data, perps exchanges on-chain or not, and how exactly?
+   - Which venues publish liquidations at all, with or without the
+     account, and how far back.
+   - How MARKET-1's definition maps onto each.
+   - How honest prices can be had there.
+   - A replication design, rules first.
+
+   For this project: a wave seen elsewhere makes MARKET-1's lead more
+   credible, and a long public history could answer faster than the forward
+   looks. It decides nothing for the frozen MARKET-1.
+2. **ONCHAIN-SCOUT.** Is there a promising, testable direction in public
+   on-chain data (Etherscan and similar explorers, indexers, many chains)
+   for the owner's purpose?
+   - It uses what this project learned: copying traders did not pay, while
+     forced flows (the wave) did on the old weeks.
+   - It maps the data sources (cost, keys, limits, terms, history) and the
+     patterns observable on-chain, each with an honest test design.
+   - It says what of this project's method and code is reusable, and
+     whether a new project should start, with its first steps.
+   - It leaves the wave's replication on other venues to WAVE-ELSEWHERE.
+3. **Both are reading only:**
+   - public documentation, specs, terms and studies;
+   - no API call to any venue or explorer;
+   - no account and no key;
+   - never the owner's details or the project's name in a search.
+
+   Each lists the exact small checks it would want to make next, with a
+   recommendation, for the owner to approve.
+4. **Iron Rule 1 is unchanged.** A free read-only key for a data source
+   (an explorer, for example) would amend it, and that decision is the
+   owner's. Any account is created by the owner. No trading key, ever.
+5. **Where it lands.** Each report goes to `docs/reviews/` here, as dated
+   evidence. If ONCHAIN-SCOUT shows potential, a **new project** is founded
+   in its own repository, with its own supervisor and founding decisions,
+   not inside polymarket-follow. The report is copied there as founding
+   evidence, and the two projects share no runtime code, as with
+   polymarket-lab.
+
 2026-11-13 (the owner's rulings after MARKET-1's deploy, on the supervisor's
 overview): **A SECOND MARKET-1 ARM WILL BE ADDED; WAVES SHOWN LIVE IN V1 AS
 INFORMATION; THE RECORDINGS' SECOND COPY BY THE OWNER WITHIN ONE TO TWO
