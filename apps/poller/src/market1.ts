@@ -31,7 +31,9 @@ try {
   config = loadMarket1Config();
   command = Command.parse(process.argv.slice(2));
 } catch (err) {
-  process.stderr.write(`market1: refused: ${String(err)}\n`);
+  process.stderr.write(
+    `market1: refused: ${err instanceof z.ZodError ? err.issues.map((i) => `${i.path.join(".") || "the command"}: ${i.message}`).join("; ") : String(err)}\n`,
+  );
   process.exit(2);
 }
 
