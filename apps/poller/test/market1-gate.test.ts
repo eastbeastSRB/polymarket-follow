@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { parseEnv } from "node:util";
 import { pino } from "pino";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -29,6 +30,7 @@ import {
   PAPER_LOCK,
   PAPER_WAIT_MS,
   paperRunLive,
+  parseMarket1Config,
   waitForPaper,
   writeWhole,
 } from "../src/market1/run.js";
@@ -230,6 +232,59 @@ describe("the paper experiment's run, waited for (M2, F2)", () => {
     utimesSync(path.join(dir, PAPER_LOCK.heartbeat), new Date(t), new Date(t));
     expect(await waitForPaper(dir, log, ending)).toBe(true);
     expect(slept).toEqual([PAPER_CHECK_EVERY_MS, PAPER_CHECK_EVERY_MS]);
+  });
+});
+
+describe("MARKET-1's settings (M0, M15)", () => {
+  const settings = parseEnv(
+    readFileSync(new URL("../../../tools/poller.env", import.meta.url), "utf8"),
+  );
+
+  it("takes the run's own settings (tools/poller.env)", () => {
+    expect(parseMarket1Config(settings)).toEqual({
+      STATE_DIR: "E:\\polymarket-follow-run\\var",
+      MARKET1_ROOT: "F:\\polymarket-follow\\market1",
+      MARKET1_BACKUP: "E:\\backups\\polymarket-follow\\market1",
+      PAPER_ROOT: "F:\\polymarket-follow\\paper",
+      RECORDINGS_ROOT: "F:\\polymarket-follow\\recordings",
+      MONGO_URI: "mongodb://127.0.0.1:27017",
+      MONGO_DB: "polymarket_follow",
+    });
+  });
+
+  it("refuses MARKET1_ROOT or MARKET1_BACKUP equal to or inside PAPER_ROOT or RECORDINGS_ROOT", () => {
+    const issues = (over: Record<string, string>) => {
+      try {
+        parseMarket1Config({ ...settings, ...over });
+        return [];
+      } catch (err) {
+        return (err as { issues: { path: string[]; message: string }[] })
+          .issues;
+      }
+    };
+    const refused = (name: string) => [
+      {
+        path: [name],
+        message: "must lie outside PAPER_ROOT and RECORDINGS_ROOT",
+      },
+    ];
+    for (const [name, value] of [
+      ["MARKET1_ROOT", "F:\\polymarket-follow\\paper"],
+      ["MARKET1_ROOT", "F:\\polymarket-follow\\paper\\market1"],
+      ["MARKET1_ROOT", "F:\\Polymarket-Follow\\Recordings\\m1"],
+      ["MARKET1_BACKUP", "F:\\polymarket-follow\\recordings"],
+      ["MARKET1_BACKUP", "F:\\polymarket-follow\\paper\\a\\b"],
+    ] as const)
+      expect(issues({ [name]: value }), `${name} ${value}`).toMatchObject(
+        refused(name),
+      );
+    // Beside the stores, a name that only begins like one: allowed.
+    expect(
+      issues({
+        MARKET1_ROOT: "F:\\polymarket-follow\\paper-market1",
+        MARKET1_BACKUP: "F:\\polymarket-follow\\..recordings",
+      }),
+    ).toEqual([]);
   });
 });
 

@@ -48,18 +48,43 @@ const absolutePath = z
   .trim()
   .refine((p) => path.isAbsolute(p), "must be an absolute path");
 
-/** No defaults: a run without its folders stops instead of reading or writing somewhere unintended. */
-const Market1Config = z.object({
-  STATE_DIR: absolutePath,
-  MARKET1_ROOT: absolutePath,
-  MARKET1_BACKUP: absolutePath,
-  PAPER_ROOT: absolutePath,
-  RECORDINGS_ROOT: absolutePath,
-  MONGO_URI: z.string().trim().startsWith("mongodb://"),
-  MONGO_DB: z
-    .literal("polymarket_follow")
-    .or(z.literal("polymarket_follow_test")),
-});
+/** `own` is neither one of the sealed stores nor a folder inside one (on Windows, `path.relative` ignores case). */
+const outsideSealed = (
+  own: string,
+  c: { PAPER_ROOT: string; RECORDINGS_ROOT: string },
+): boolean =>
+  [c.PAPER_ROOT, c.RECORDINGS_ROOT].every((sealed) => {
+    const rel = path.relative(sealed, own);
+    return (
+      rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)
+    );
+  });
+const OUTSIDE = "must lie outside PAPER_ROOT and RECORDINGS_ROOT";
+
+/**
+ * No defaults: a run without its folders stops instead of reading or writing
+ * somewhere unintended; its own folders never lie in the sealed stores.
+ */
+const Market1Config = z
+  .object({
+    STATE_DIR: absolutePath,
+    MARKET1_ROOT: absolutePath,
+    MARKET1_BACKUP: absolutePath,
+    PAPER_ROOT: absolutePath,
+    RECORDINGS_ROOT: absolutePath,
+    MONGO_URI: z.string().trim().startsWith("mongodb://"),
+    MONGO_DB: z
+      .literal("polymarket_follow")
+      .or(z.literal("polymarket_follow_test")),
+  })
+  .refine((c) => outsideSealed(c.MARKET1_ROOT, c), {
+    path: ["MARKET1_ROOT"],
+    message: OUTSIDE,
+  })
+  .refine((c) => outsideSealed(c.MARKET1_BACKUP, c), {
+    path: ["MARKET1_BACKUP"],
+    message: OUTSIDE,
+  });
 export type Market1Config = z.infer<typeof Market1Config>;
 
 export function parseMarket1Config(env: NodeJS.ProcessEnv): Market1Config {
