@@ -84,6 +84,17 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   never in the working tree. A harness that rewrites the real source is one
   crash away from leaving a break behind, and from a frozen list that hashes
   it (MARKET-CODE-REVIEW L11, 2026-11-13).
+- **Make the break list's run honest:** dry-run each list first (every find
+  text matches exactly once); re-aim a break whose text a fix moved, and list
+  which, never dropping one silently; give heavy tests their own time limit
+  and record each kill's failure message. A kill by timeout alone is
+  unproven (MARKET-FIX, 2026-11-13).
+- **A test gives the same answer before and after a freeze list is
+  committed:** test an exit code that depends on the list through the
+  functions, not the built program (MARKET-FIX, 2026-11-13).
+- **A test that pins an order makes the early read fail loudly** (a folder
+  where a file is read): a reader that returns empty for a missing path
+  leaves no trace when moved too early (MARKET-FIX-CHECK N2, 2026-11-13).
 - **No soft fallback for a parse of our own file:** when a file we write
   (a freeze list, a manifest) fails to parse, raise an error. Never show
   "unknown". MARKET-1's page would have printed "frozen on unknown" for good
@@ -127,6 +138,9 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   **Read a regex back from the file after writing it:** MARKET-1's
   `/^# written (\S+)/` lost its backslash and matched only the letter S, and
   no test noticed (2026-11-13).
+- **Never run pnpm in a scratch copy whose `node_modules` are junctions to
+  the repository's:** its install writes through them. On 2026-11-13 two of
+  the repository's links pointed into a scratch for 86 s (MARKET-FIX-CHECK).
 - **`node --test <directory>` fails in Node 24** (MODULE_NOT_FOUND): pass a
   glob.
 - **A Task Scheduler time literal is local:** `-At 'HH:MM'` is read as local

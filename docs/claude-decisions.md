@@ -1,5 +1,82 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (MARKET-FIX-CHECK — the supervisor's last calls before MARKET-1's
+freeze, inside the owner's approval of the fix batch): **"READY TO FREEZE
+AFTER M0's WORDING"; ONE LAST SMALL BATCH (THE RULE TEXT MADE EXACT, FOUR
+TESTS), THEN `--final`.**
+
+**MARKET-FIX** (16 commits `20ec89c` … `4ea4b41`; its entry below) made
+calls 1–12. The supervisor verified it on its own path:
+- `pnpm verify` green (376 tests passed, 3 skipped);
+- the paper experiment's freeze still verifies (61 files);
+- the draft list matches the supervisor's build (64 files, `3073e097…ed27`);
+- both regex fixes read back from source and build;
+- no sealed path touched.
+
+**MARKET-FIX-CHECK** (`docs/reviews/market-fix-check-2026-11-13.md`,
+`2e62446` and `20b85c0`; Sonnet, fresh):
+- **The findings:** of 23 distinct findings, 17 are fixed, 4 accepted and
+  sound, 1 answered without code and 1 a process item done; none is open.
+- **The breaks:** all 259 re-run. Exactly MARKET-FIX's claim: 240 killed, 6
+  equivalent, 3 on deleted code; none killed by a time limit alone.
+- **`lookVerdict`** equals the old assembly and an independent M10/M11 on
+  33,000 made-up looks.
+- **The draft list** equals a fresh build.
+
+**Its new findings and the calls:**
+
+1. **N1, the rule text.** M0's "every reader … takes the gate" is no longer
+   true of the look's two readiness reads (`look.ts:103` `readState()`,
+   `:113` `marketDays()`). They are safe by order: the freeze check is the
+   first read of `daily` and `look`, and a failed check returns 4 before any
+   sealed read. **M0's sealed-data bullet takes MARKET-FIX-CHECK's exact
+   wording** (its report, "M0's replacement wording"). A frozen rule says
+   exactly what the code does; the code does not change.
+2. **N5, the rule text (pre-existing).** M0's first bullet said a bad kit
+   fingerprint or lib-exits hash ends in exit 4, but `loadResearch` would
+   throw (exit 1). It **takes the report's exact wording** too, in the same
+   commit.
+3. **N2 and N3, tests outside the list.** Four breaks of the order and the
+   exit survive every test today:
+   - an early `readState()` before the freeze check, or before the paper
+     wait (k01, k02);
+   - `process.exit(0)` (k11);
+   - `run.close()` removed (k12).
+
+   They survive because a missing path reads as an empty state, so an early
+   read leaves no trace. The fix-check's two sketch tests kill all four.
+   Three small cases are unpinned too:
+   - C's window end (k06);
+   - S's zero (k07);
+   - the parent of a store allowed (k09).
+
+   All seven get tests now.
+4. **N4.** `gate.ts`'s header comment says "every reader". It stays: the
+   rule is the authority, and changing the comment changes a frozen file's
+   hash for nothing.
+5. **MARKET-FIX's Q1.** The rehearsal hook stays: production never passes
+   it, and it is how the old-weeks rehearsal re-runs after a defect fix.
+6. **MARKET-FIX-CHECK's slip, checked by the supervisor.** It ran
+   `pnpm verify` in a scratch copy whose `node_modules` were junctions to the
+   repository's, and the install re-pointed two development-only links,
+   `node_modules\@eslint\js` and `apps\poller\node_modules\@types\node`, to
+   the scratch (13:31:03Z). It restored them at 13:32:29Z. The supervisor
+   found:
+   - both now equal the lockfile (10.0.1 and 24.19.2);
+   - no entry of the repository's `.pnpm` store changed since 12:00Z;
+   - the live copies' packages are plain folders with hard-linked files, and
+     none of their 521 hard links is missing;
+   - no live program starts in that window.
+
+   No effect. The lesson goes to code-rules.
+7. **Then:**
+   - a fresh small worker (MARKET-FIX-2) applies 1–3 and writes a new draft
+     list;
+   - the supervisor checks the rule diff word for word against the report
+     and the seven breaks killed;
+   - `market1-freeze.cjs --final` on a clean tree, with the list's hash and
+     the tag `market1-freeze-1` recorded here.
+
 2026-11-13 (MARKET-FIX's technical calls — MARKET-1's fix batch, inside the
 owner's ruling of the same day; commits `20ec89c` … `ab19562`): **THE
 RULING'S CALLS 1–12 ARE MADE; THE NEW DRAFT LIST IS
