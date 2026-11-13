@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (MARKET-1's plan approved — the owner, "everything clear and
+approved. you can start with work", on the supervisor's recommendation):
+**MARKET-PLAN IS APPROVED WITH EVERY FIX OF MARKET-PLAN-REVIEW; MARKET-BUILD
+BUILDS IT.** Plan `docs/reviews/market-plan-2026-11-13.md` (`86ef4da`);
+review `docs/reviews/market-plan-review-2026-11-13.md` (`a281775`: may be
+approved after the fixes named; it rebuilt WAVE's 153 entries from the
+plan's words, equal). **The rulings:** δ = **+50 bps** a position (the
+owner); **KEEP needs both** the money's lower bound above zero **and** the
+mean of the positions' gross on marks minus their matched baseline above
+zero (F1: a market's drift cannot pass as the effect; not a
+basket-adjusted reading); DROP on the money alone; **a verdict needs at
+least 20 UTC days and 10 markets with a priced position** (F5); depth-short
+legs counted with the mark-priced toward WITHHELD above 10% (F6); MARKET-1
+reads the paper experiment's files only when its run is over (its lock and
+heartbeat checked, short reads; F2), and nobody runs a paper command during
+MARKET-1's run; every leg waits until the day after its own is closed and
+reads both days' coverage (F3); the page's headline on complete weeks only,
+the current week apart (F4); a bridge rehearsal through the forward
+readers before the freeze (F7); MARKET-1's freeze lists the 11 paper files
+it imports or reads with (F8); the low findings as the review recommends;
+the beside lines in tiers — T, R, B8 and B9 may join later as their own
+arm, then J, X, B7, B10, S and C if the build runs long — and never delay
+the freeze; the plan's twelve questions as recommended, except Q4 (F1) and
+Q12: **the burst stays 30 for all callers** until a reader needs more (not
+MARKET-1, which reads nothing from the API). The gates as for the paper
+experiment: no MARKET-1 data is read until its rules are frozen and its
+hash is recorded here after a fresh rules review; nothing is deployed or
+registered without the owner.
+
 2026-11-13 (MARKET-1 to be planned — the owner, after MARKET-FIND: "ok,
 everything clear now, approve, continue with market-1 plan", and on where
 they would act: "i can start on polymarket if that easiest for me to know
