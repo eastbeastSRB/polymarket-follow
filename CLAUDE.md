@@ -11,8 +11,16 @@ database and supervisor.
 
 ## Iron rules (never violate)
 1. **Watch only.** No order placement, no trading keys, no automatic copying:
-   no code that can move money exists in this codebase. Only Polymarket's
-   public, unauthenticated endpoints are called.
+   no code that can move money exists in this codebase. Only public,
+   read-only data is read:
+   - Polymarket's public, unauthenticated endpoints;
+   - for research the owner approves in decisions, other venues' public
+     read-only data endpoints and published data files (decisions
+     2026-11-13, the two outside researches — the owner's ruling).
+
+   Never an endpoint that places orders, moves funds or needs a signature.
+   Any account, key or payment is the owner's decision, and the owner
+   makes it.
 2. **Never touch polymarket-lab.** No writes to its repository, its database
    or its supervisor folder, and no code shared at runtime. Its repository may
    be read as a template.

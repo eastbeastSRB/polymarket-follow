@@ -1,5 +1,75 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (the two outside researches — the owner's ruling): **WAVE-H
+FIRST, IN THIS PROJECT; IRON RULE 1 WIDENED FOR READ-ONLY RESEARCH DATA;
+THE FIRST KEYLESS CHECKS APPROVED; THE ON-CHAIN PROJECT AFTER WAVE-H'S
+FIRST ANSWER.** The owner: "am approving everything and agree with your
+recommendation … you have approvement to change that Iron rule".
+
+**The reports:** WAVE-ELSEWHERE (`docs/reviews/wave-elsewhere-2026-11-13.md`)
+and ONCHAIN-SCOUT (`docs/reviews/onchain-scout-2026-11-13.md`).
+- Both researchers' conduct was clean. The supervisor's scans found no
+  name in any search, only documentation pages fetched, and no network
+  command.
+- The supervisor confirmed their load-bearing facts at the primary
+  sources:
+  - Hyperliquid's WebSocket types: a fill's `liquidation` is
+    `{liquidatedUser?, markPx, method}`, and a trade's `users` are
+    `[buyer, seller]`;
+  - Hyperliquid's archive is requester-pays, and its fills are in the API
+    format;
+  - AWS's public-blockchain registry lists Hyperliquid and Lighter, with
+    "No AWS account required";
+  - Lighter publishes free daily trade files from 2025-01-17, columns not
+    documented;
+  - BIS WP 1062's 42,324 liquidations, its one-hour rule and its 1,028
+    waves;
+  - Etherscan's free plan and terms, and Binance's dataset terms.
+
+**The calls:**
+
+1. **WAVE-H first, in this project.** It tests MARKET-1's own finding, the
+   liquidation wave, on Hyperliquid:
+   - by MARKET-1's definition (M3–M6);
+   - on days before Polymarket Perps existed (WAVE-ELSEWHERE's design,
+     section 4: test months 2025-08-01 → 2026-05-28), so that the sample
+     is new;
+   - by MARKET-1's road: plan, fresh review, build, fresh reviews, freeze,
+     one look.
+
+   The test months' prices stay unread until the freeze. Lighter (WAVE-L)
+   comes later at most, as the same evidence seen twice, not a second
+   sample. WAVE-H decides nothing for the frozen MARKET-1.
+2. **Iron Rule 1, widened.**
+   - **Why it exists:** the founding decision's point 2 (2026-11-06) made
+     the app safe by construction: no order code, no trading keys,
+     nothing that can move money, no secret that can leak.
+   - **The new text keeps all of that** and widens only what may be read:
+     besides Polymarket's endpoints, other venues' public, read-only data
+     endpoints and published data files, for research approved in
+     decisions.
+   - **Never** an endpoint that places orders, moves funds or needs a
+     signature.
+   - Any account, key or payment is the owner's decision, and the owner
+     makes it.
+   - A generic User-Agent, with no name of the project or the owner.
+3. **The first checks, approved.** A small worker, WAVE-CHECKS, runs them:
+   - **K0:** the AWS public-blockchain listing under `v1.1/hyperliquid/`.
+   - **L1:** one Lighter day file of trades. It is read for its columns
+     only, from a day in the sizing months, not the test months.
+   - **K1, K2:** about seven keyless reads of Hyperliquid's public info
+     endpoint (its read requests are POSTs to `/info`; never `/exchange`).
+   - **K8:** the venues' and the bucket's terms.
+
+   No price is analysed and nothing is counted. Any paid route (the
+   requester-pays archive, about $20–60, through the owner's own AWS
+   account) comes back to the owner first.
+4. **The on-chain project** (ONCHAIN-SCOUT's) is founded after WAVE-H's
+   first answer, in its own repository with its own supervisor. Its key
+   and terms decisions are made at its founding.
+5. **MARKET-1's second arm** stays at about 2026-11-20, as ruled the same
+   day.
+
 2026-11-13 (two outside researches — the owner's approval): **TWO
 SEPARATE DESK RESEARCHES ON FABLE 5.2, IN PARALLEL: WAVE-ELSEWHERE (narrow)
 AND ONCHAIN-SCOUT (broad).**
