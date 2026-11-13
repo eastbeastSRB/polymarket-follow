@@ -55,6 +55,23 @@ the freeze).*
     data gave; decisions 2026-11-13): frozen and deployed 2026-11-13; it runs daily
     at 10:30Z.
 
+**What runs now** (each program a Windows task; the tests decide only at
+their looks):
+
+```mermaid
+flowchart TD
+  API["Polymarket Perps public API<br/>keyless reads · 250 tokens a minute, all callers"] --> C["The collector<br/>around the clock · 50 a minute"]
+  API --> PE["The paper experiment<br/>daily 04:00Z · 120 a minute"]
+  C --> REC[("Recordings on F:<br/>every market's books and trades")]
+  PE --> SF[("Stored fills on F:<br/>1,602 pool accounts' trades")]
+  PE --> PP["Paper page<br/>copying slow traders"]
+  REC --> M1["MARKET-1<br/>daily 10:30Z · no API reads"]
+  SF --> M1
+  M1 --> MP["MARKET-1 page<br/>the liquidation wave"]
+  PP --> L{"The three looks<br/>2026-12-19 · 2027-02-06 · 2027-05-08"}
+  MP --> L
+```
+
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
 - **The collector records** since 2026-11-10 20:59:54Z (books and trades of
@@ -284,6 +301,20 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Later — the backlog
 
+- ⏳ **MARKET-1's second arm**: the variants parked for a later arm, as their
+  own frozen arm with their own START. Zero API reads; MARKET-1's road
+  (decisions 2026-11-13, the owner's rulings after MARKET-1's deploy (1)).
+  Trigger: MARKET-1 stable for a week (about 2026-11-20); the supervisor
+  proposes it.
+- ⏳ **Waves live in v1, as information** (labelled "under test", never
+  advice). Open: how to see liquidations soon enough inside the budget
+  (decisions 2026-11-13, the owner's rulings after MARKET-1's deploy (2)).
+  Trigger: the v1 plan.
+- ⏳ **The recordings' second copy**: the owner provides the space within
+  one to two months; the supervisor sets up the copy (same entry, (3)).
+- ⏳ **The backup task's trigger from UTC**: it takes effect when the
+  collector's tasks are next registered. Do it before summer time starts
+  on 2027-03-28.
 - ⏳ **A later batch, on new weeks** (decisions 2026-11-11, round 2's FIND
   results): the candidates "after a jump" (FIND-4), the counter-move before
   agreement (FIND-9) and the top accounts' long holds (FIND-2); the gate

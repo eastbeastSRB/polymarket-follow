@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (the owner's rulings after MARKET-1's deploy, on the supervisor's
+overview): **A SECOND MARKET-1 ARM WILL BE ADDED; WAVES SHOWN LIVE IN V1 AS
+INFORMATION; THE RECORDINGS' SECOND COPY BY THE OWNER WITHIN ONE TO TWO
+MONTHS.**
+
+1. **The second arm.** The owner: "I agree about a second MARKET-1 arm, we
+   should add it when you think is ideal. record that and we will do it."
+   - What it is: the variants parked in "MARKET-1's plan approved" for a
+     later arm, run as their own frozen arm with their own START, lines and
+     verdict.
+   - How: MARKET-1's road (plan, fresh review, build, fresh reviews,
+     freeze). The frozen first arm runs on untouched (rules.md M0).
+   - Cost: zero API reads.
+   - When: the supervisor proposes it after MARKET-1 has run a stable week
+     (about 2026-11-20) and before D1, so its clock starts early. The
+     owner's yes is needed for its plan, as for every task.
+2. **Waves live in v1, as information.** The owner: "yeah I agree with
+   this, we should add it."
+   - The v1 plan includes a live view of liquidation waves in the small
+     coins, labelled as under test and never as advice (Iron Rule 6).
+   - **Open question for that plan:** how to see liquidations soon enough
+     inside the budget. MARKET-1 sees a wave only once the paper experiment
+     has read the accounts involved: about a seventh a day, the rest at its
+     Monday sweep.
+3. **The recordings' second copy.** The owner will provide the space
+   within one to two months; the supervisor then sets up the copy. Until
+   then the recordings, which cannot be read again, exist on F: only (1.4
+   GB on 2026-11-13, about 0.5 GB a day).
+
 2026-11-13 (MARKET-1 — THE FREEZE): **MARKET-1 IS FROZEN.**
 - `apps/poller/market1/FROZEN.sha256`: 64 files, SHA-256
   `b9e17505d8d4dfc87101b35c4908929b4ed18c6dd401cf723dfbab0c15452f1d`.
