@@ -30,16 +30,21 @@ in brackets as exploring prints, deciding nothing.
   `market1-freeze-1` are recorded in decisions before the first run after
   the freeze.
 - **Every run starts by checking them** (`gate.ts`): the list exists, names
-  every file of what runs, and each has its hash; the kit's `checkKit()`
-  returns its fingerprint and lib-exits its hash. Otherwise the run writes one
+  every file of what runs, and each has its hash. Otherwise the run writes one
   line, "frozen files differ", and stops (exit 4): nothing sealed opened, no
-  page.
+  page. Loading the kit then checks its fingerprint (`checkKit()`) and
+  lib-exits' hash, before anything sealed is opened; a difference there,
+  which a verified list rules out, is a crash (exit 1).
 - **The sealed-data gate:** no file of the collector's recordings, no
   document of its database (the rule book) and no file the paper experiment
   wrote after the cut (`state.json`, `fills\`, `panel\`) is opened for a
-  window that reaches the cut unless that check passed; every reader of them
-  takes the gate and refuses first (`checkSealed`). With the gate closed a
-  reader also refuses any datum at or after the cut.
+  window that reaches the cut unless that check passed: it is the first read
+  of `daily` and of `look`, and the gate is open only from it (`gateOf`).
+  Each function of `inputs.ts` and `recordings.ts` that opens such a file
+  takes the gate and refuses first (`checkSealed`); with the gate closed it
+  also refuses any datum at or after the cut. The look's two readiness reads
+  (`state.json` and the listing of each market's `panel\` folder) take no
+  gate: they come after that check and after the wait for the paper run (M2).
 - **Shared code** (the logger, the lock, the clock, the schedule) is not
   frozen; each day's log lists the hashes of the shared files the run used
   and Node's version (information, not a stop).
