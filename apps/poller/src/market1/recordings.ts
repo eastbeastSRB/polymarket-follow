@@ -347,7 +347,9 @@ export async function booksAt(
     }
     for await (const line of brotliLines(bytes)) {
       const split = splitLine(line);
-      const m = split === null ? null : /"ch":"book::(\d+)"/.exec(split.text);
+      // The collector keeps the server's text as sent: JSON whitespace may sit around the colon.
+      const m =
+        split === null ? null : /"ch"\s*:\s*"book::(\d+)"/.exec(split.text);
       if (split === null || m === null) continue;
       const xs = markets.get(Number(m[1]));
       if (xs === undefined) continue;

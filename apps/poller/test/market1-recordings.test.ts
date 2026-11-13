@@ -1,6 +1,14 @@
-import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  appendFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { brotliCompressSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bookSource, gapAt, gapsOf } from "../src/market1/book.js";
 import { CLOSED, SealedError } from "../src/market1/gate.js";
@@ -184,6 +192,7 @@ function world(): Item[] {
 let root: string;
 let days: Days;
 let checks: Map<string, DayCheck>;
+const handWritten: string[] = [];
 
 beforeAll(async () => {
   root = mkdtempSync(path.join(tmpdir(), "market1-recordings-"));
@@ -195,7 +204,59 @@ beforeAll(async () => {
   for (const d of [...days.closed].sort())
     checks.set(d, await checkDay(OPEN, root, d));
 }, 120_000);
-afterAll(() => rmSync(root, { recursive: true, force: true }));
+afterAll(() => {
+  for (const d of [root, ...handWritten])
+    rmSync(d, { recursive: true, force: true });
+});
+
+const sha256 = (b: Buffer | string) =>
+  createHash("sha256").update(b).digest("hex");
+
+/** An empty folder for days written by hand, removed after the file's tests. */
+function handRoot(): string {
+  const dir = mkdtempSync(path.join(tmpdir(), "market1-days-"));
+  handWritten.push(dir);
+  return dir;
+}
+
+/**
+ * A closed day written by hand in the collector's format: its book hour files
+ * (lines `<receive time>\t<text>`, Brotli; or bytes as given), its
+ * coverage, and a manifest naming each file with its SHA-256.
+ */
+function writeDay(
+  dir: string,
+  date: string,
+  hours: Record<string, string[] | Buffer>,
+  coverage = [`${t(date, "02:35:00")}\t{"event":"rest_pause","state":"start"}`],
+): void {
+  const day = path.join(dir, date);
+  mkdirSync(day, { recursive: true });
+  const files: { name: string; sha256: string; lines: number }[] = [];
+  for (const [hh, content] of Object.entries(hours)) {
+    const bytes = Buffer.isBuffer(content)
+      ? content
+      : brotliCompressSync(`${content.join("\n")}\n`);
+    const name = `book-${hh}.jsonl.br`;
+    writeFileSync(path.join(day, name), bytes);
+    files.push({
+      name,
+      sha256: sha256(bytes),
+      lines: Buffer.isBuffer(content) ? 0 : content.length,
+    });
+  }
+  const text = `${coverage.join("\n")}\n`;
+  writeFileSync(path.join(day, "coverage.jsonl"), text);
+  files.push({
+    name: "coverage.jsonl",
+    sha256: sha256(text),
+    lines: coverage.length,
+  });
+  writeFileSync(
+    path.join(day, "manifest.json"),
+    JSON.stringify({ date, files }),
+  );
+}
 
 describe("the recordings as MARKET-1 reads them (M7), written by the collector's own Recorder and BookSampler", () => {
   it("lists the closed days; a leg waits for the day after its own (F3)", () => {
@@ -326,5 +387,39 @@ describe("the recordings as MARKET-1 reads them (M7), written by the collector's
     });
     expect(splitLine("x\t{}")).toBeNull();
     expect(splitLine("{}")).toBeNull();
+  });
+});
+
+describe("days written by hand (M7)", () => {
+  const END = t("2026-12-01", "00:00:00");
+
+  it("finds a book line whose text has JSON whitespace around the colon, as the server may send it", async () => {
+    const dir = handRoot();
+    const x = t(D1, "10:30:00");
+    const spaced = `{"ch" : "book::8", "ts" : ${x - 5_000}, "data" : {"b" : [["99", "5"]], "a" : [["101", "5"]]}}`;
+    writeDay(dir, D1, { "10": [`${x - 4_900}\t${spaced}`] });
+    writeDay(dir, D2, {});
+    const closed = recordingDays(OPEN, dir, END);
+    const check = await checkDay(OPEN, dir, D1);
+    expect(check.hours.find((h) => h.hour === "10")).toEqual({
+      hour: "10",
+      state: "ok",
+      lines: 1,
+      failed: 0,
+    });
+    const { found, changed } = await booksAt(
+      OPEN,
+      dir,
+      closed,
+      new Map([[D1, check]]),
+      [{ iid: 8, x }],
+    );
+    expect(changed).toEqual([]);
+    expect(found.get(`8|${x}`)).toEqual({
+      book: { ts: x - 5_000, bids: [[99, 5]], asks: [[101, 5]] },
+      recv: x - 4_900,
+      file: `${D1}/book-10.jsonl.br`,
+      text: spaced,
+    });
   });
 });
