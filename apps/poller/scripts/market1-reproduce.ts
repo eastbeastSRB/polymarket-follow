@@ -207,6 +207,9 @@ export async function reproduce(paths: Paths) {
   }));
   const tail = tailOf(waveAdd);
   return {
+    /** The positions on marks, for the bridge rehearsal's comparison. */
+    positions,
+    markets,
     countedFills: all.small.length,
     episodes: positions.filter((p) => p.line === "B1").length,
     largeEpisodes: positions.filter((p) => p.line === "B10").length,

@@ -80,8 +80,8 @@ describe.runIf(config !== undefined)(
         panelDir: c.panelDir,
         labels: c.labels,
       });
-      const { fills, ...figures } = report;
-      void fills;
+      const { fills, positions, markets, ...figures } = report;
+      void [fills, positions, markets];
       writeFileSync(c.out, `${JSON.stringify(figures, null, 2)}\n`);
     }, 600_000);
 

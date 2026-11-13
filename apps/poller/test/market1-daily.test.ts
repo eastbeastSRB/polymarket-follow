@@ -355,15 +355,18 @@ describe("MARKET-1's daily run and look, end to end", () => {
     ]);
     // The record: the legs decided once, kept with their lines; the manifest; the backup.
     const books = readdirSync(path.join(config.MARKET1_ROOT, "books")).sort();
-    expect(books).toEqual(["2026-11-21.jsonl.gz", "2026-11-22.jsonl.gz"]);
+    expect(books).toEqual([
+      "2026-11-21-103000.jsonl.gz",
+      "2026-11-22-103000.jsonl.gz",
+    ]);
     const manifest = readFileSync(
       path.join(config.MARKET1_ROOT, "manifest", "2026-11-22.sha256"),
       "utf8",
     );
-    expect(manifest).toContain("*books/2026-11-22.jsonl.gz");
+    expect(manifest).toContain("*books/2026-11-22-103000.jsonl.gz");
     expect(manifest).toContain("*log/2026-11-22-positions.jsonl.gz");
     for (const rel of [
-      "books/2026-11-22.jsonl.gz",
+      "books/2026-11-22-103000.jsonl.gz",
       "days/2026-11-17.json",
       "log/2026-11-22.jsonl",
       "page/index.html",

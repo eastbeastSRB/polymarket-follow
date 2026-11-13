@@ -267,11 +267,16 @@ export async function daily(
     LOOK_Z[nextLook < 0 ? 2 : nextLook]!,
   );
   data.verdict = verdictBox(done);
+  if (io.rehearsal)
+    data.alarms.unshift(
+      "Rehearsal on weeks already studied: not a result of this test.",
+    );
   data.alarms.push(...feeAlarm(a, kd, kit));
   // The day's record first: the legs decided, every position, the log line, the manifest, the backup; the page last.
   if (a.decided.length > 0)
     record.write(
-      `books/${runDate}.jsonl.gz`,
+      // Named by the run's time: a second run the same day never replaces the first's decisions.
+      `books/${runDate}-${new Date(now).toISOString().slice(11, 19).replace(/:/g, "")}.jsonl.gz`,
       gzipSync(a.decided.map((l) => JSON.stringify(l)).join("\n")),
     );
   record.write(
