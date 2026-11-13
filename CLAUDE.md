@@ -32,11 +32,13 @@ Planned, the same as polymarket-lab's, copied by the skeleton build and never
 shared: Turborepo + pnpm · React 19 + Vite + TS (web) · Express + TS (api) · a
 node-cron poller · a shared package for Zod schemas and constants · MongoDB,
 its own database (native driver, Zod is the schema) · pino · vitest. **Built so far
-(2026-11-12): the collector and the paper experiment's program, both in
-`apps/poller` in a pnpm workspace (TypeScript, Zod, pino, the MongoDB driver,
-vitest; the experiment a second entry point, `dist/paper.js`, frozen and
-deployed 2026-11-12; no Turborepo, web, api or shared package yet — decisions
-2026-11-11, COLLECTOR-BUILD's technical calls; 2026-11-12, PAPER-BUILD's;
+(2026-11-13): the collector, the paper experiment's program and MARKET-1's,
+all in `apps/poller` in a pnpm workspace (TypeScript, Zod, pino, the MongoDB
+driver, vitest; the experiment a second entry point, `dist/paper.js`, frozen
+and deployed 2026-11-12; MARKET-1 a third, `dist/market1.js`, built to
+"rules ready" 2026-11-13, not frozen or deployed; no Turborepo, web, api or
+shared package yet — decisions 2026-11-11, COLLECTOR-BUILD's technical calls;
+2026-11-12, PAPER-BUILD's; 2026-11-13, MARKET-BUILD's;
 docs/claude-architecture.md):** check package.json before trusting
 this line. Ports are set by the v1 plan, clear of the lab's 3000 and 4000.
 

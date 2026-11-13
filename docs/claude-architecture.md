@@ -181,3 +181,81 @@ refused while its task runs; `tools\register-tasks.ps1` adds the task
 04:00Z (computed from UTC), S4U, IgnoreNew, 36 h at most, priority 7, start
 when available; `-PaperOnly` registers that task alone, the collector's three
 untouched. Neither is done before the freeze and the owner's word.
+
+## MARKET-1 (built to "rules ready" 2026-11-13 by MARKET-BUILD; not frozen, deployed or registered)
+
+**What it is.** A third entry point of the same package, `dist/market1.js`
+(`src/market1.ts`, `src/market1/`), the forward paper test of the liquidation
+wave by its rules, `apps/poller/market1/rules.md` (the plan:
+`docs/reviews/market-plan-2026-11-13.md` with its review's fixes; decisions
+2026-11-13, "MARKET-1's plan approved", and MARKET-BUILD's technical calls).
+One deciding line, WAVE (two or more pool accounts liquidated the same way
+in small coins within an hour: $1,000 against the forced side, 2 minutes
+later, held a day, priced at the recorded book as a taker); the lines beside
+deciding nothing (B1–B7, B10, B11, OWN, P, C, S, BASE; J, T, X, R, B8, B9 are
+left for a later arm). It never trades and makes no API call: it has no
+client. Commands: `daily` (the task's), `look <1|2|3>` (once each); exit codes
+0 done, 1 crash, 2 bad settings, 3 lock held, 4 frozen files differ, 5 a look
+not due, not ready or already run, or the paper experiment's run still live
+after 6 hours. Settings, no defaults: `STATE_DIR`, `MARKET1_ROOT`,
+`MARKET1_BACKUP`, `PAPER_ROOT`, `RECORDINGS_ROOT`, `MONGO_URI`, `MONGO_DB`
+(`tools\poller.env`).
+
+**Its gates** (`gate.ts`). The freeze: `market1/FROZEN.sha256` must list every
+file of what runs — `dist/market1.js`, `dist/market1/`, the eleven paper files
+it imports or reads with (`dist/paper/` `instants`, `store`, `routes`,
+`rulebook`, `market`, `research`, `seed`, `stats`, `loop`, `reader`,
+`reparse`), `research/` and `market1/` — each with its hash; else one log line
+and exit 4. The sealed data: every reader of the recordings, the rule book
+and the paper experiment's files takes the gate and refuses first, before
+opening anything, a read reaching the cut while it is closed.
+`tools/market1-freeze.cjs` writes the list (`--final` on a clean tree;
+the draft `market1/FROZEN.draft.sha256`, 64 files, `cc5cd6bd…6076`) and
+refuses when one of the eleven paper files differs from the paper
+experiment's freeze. A paper fix to one of the eleven stops MARKET-1 until a
+re-freeze; to any other paper file it changes nothing here.
+
+**What it reads, read only, after the gate** (`inputs.ts`, `recordings.ts`;
+contracts — a change there is checked here):
+- the paper experiment's store (`PAPER_ROOT`): only when its run is over (its
+  `paper.lock` and `paper-heartbeat.json` by the shared lock's rule, a check a
+  minute, 6 hours at most; `run.ts`), `state.json` first, then each pool
+  account's `fills\<addr>.json.gz` (rows from the cut below its P), the
+  pre-cut panel and the market-days (`panel\`), all by the paper's own
+  frozen readers and schemas;
+- the collector's recordings (`RECORDINGS_ROOT`): closed days (with
+  `manifest.json`); each closed day checked once — every book hour file
+  against its manifest, every line through MARKET-1's own frame schema (a day
+  with more than 1% and at least 10 failing lines is a gap), the coverage
+  events kept; the book lines of the hour before, the hour and the hour after
+  each leg's instant; the gaps from every closed day's `coverage.jsonl`;
+- the collector's rule book (`rulebook` in `MONGO_DB`) through the paper's
+  `readRuleBook`/`parseRuleBook`: tradable, fees, competitions.
+
+**Its files** (`MARKET1_ROOT`, `F:\polymarket-follow\market1\`):
+`books\<run date>-<HHMMSS>.jsonl.gz` (each leg's decision, kept once with the
+book line it used: later runs and the looks reprice from it), `days\<UTC
+date>.json` (each closed recording day's check), `seen.json` (each position's
+first-seen run date), `log\<run date>.jsonl` (the format counts first) and
+`<run date>-positions.jsonl.gz`, `manifest\<run date>.sha256`,
+`looks\L<k>\result.json`, `page\index.html` and `positions.html` (static, no
+script, a link to the paper experiment's page; WAVE's headline on complete
+weeks only). After each run its own list (`books`, `days`, `log`,
+`manifest`, `looks`, `page`, `seen.json`) is copied to `MARKET1_BACKUP`
+(`E:\backups\polymarket-follow\market1\`). Its lock, heartbeat and log:
+`STATE_DIR\market1.lock`, `market1-heartbeat.json`,
+`logs\market1-<UTC date>.log`; its whole-file writes retry a refused rename.
+
+**How it is to run** (prepared, tested on a scratch run root only):
+`tools\deploy.ps1 -Program market1` writes `E:\polymarket-follow-run\market1\`
+(the build plus `research\` and `market1\`; smoke: exit 2 without settings,
+the kit's fingerprint, and the copy's own gate once a list is in it), refused
+while its task runs; `tools\register-tasks.ps1 -Market1Only` adds the task
+"polymarket-follow market1" alone: node.exe runs `dist\market1.js daily` there
+daily at 10:30Z (computed from UTC), S4U, IgnoreNew, 12 h at most, priority 7,
+start when available. Neither is done before the freeze and the owner's word.
+
+**The old weeks** (outside `dist`): `scripts/market1-reproduce.ts` with
+`test/market1-reproduce.test.ts`, and `test/market1-rehearsal.test.ts` (the
+forward run over the old weeks in a FIND-SLOTS slot), both pre-cut data only,
+run when `MARKET1_PRECUT` names the paths.
