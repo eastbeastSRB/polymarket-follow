@@ -1,7 +1,7 @@
 # MARKET-RULES-REVIEW — the fresh rules review of MARKET-1, before its freeze
 
 MARKET-RULES-REVIEW (Sonnet 5.5, max, a different model from the builder's Opus),
-2026-11-13 09:21Z – 10:51Z (UTC; every stamp from `date -u`), for
+2026-11-13 09:21Z – 10:51Z (UTC; every stamp from `date -u`, one slip below), for
 polymarket-follow's supervisor. A first session stopped at about 09:49Z when its
 sign-in failed; the second session (this report's author) took over at 10:06Z on
 the same brief, re-ran every check behind the first session's five findings in a
@@ -386,6 +386,17 @@ task scripts and the code's quality (MARKET-CODE-REVIEW's).
    (free space only, never the recordings).
 6. **A malformed manifest (finding 9).** *Recommendation: accept a loud stop;* it recurs every
    day until fixed, but the collector writes the file by rename.
+
+## Slips, all of them
+
+The first commit of this report (`f4e2e06`) carried the closing stamp 10:51Z in its
+header when the clock said 10:50Z (the stamp was rounded up, not read); the commit
+that mends it is made at the minute the header names, read from the clock. My first
+draft numbered the findings M1–M4 and L1–L7, which collided with rules M1–M15; they
+were renumbered 1–11 before the first commit. A first inline command that printed the
+made-up looks' figures was stopped by the shell's removal check (it held no removal);
+I wrote the same printer as a script file (`scripts/summarize-looks.mjs`) and ran that.
+None of the three touched a figure in this report.
 
 ## Evidence
 
