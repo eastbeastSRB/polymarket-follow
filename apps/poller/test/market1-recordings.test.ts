@@ -11,7 +11,7 @@ import path from "node:path";
 import { brotliCompressSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bookSource, gapAt, gapsOf } from "../src/market1/book.js";
-import { CLOSED, SealedError } from "../src/market1/gate.js";
+import { SealedError } from "../src/market1/gate.js";
 import {
   booksAt,
   checkDay,
@@ -27,6 +27,7 @@ import { CUT } from "../src/paper/instants.js";
 import { at, record, type Item } from "./market1-world.js";
 
 const OPEN = { open: true };
+const CLOSED = { open: false } as const;
 const D1 = "2026-11-20";
 const D2 = "2026-11-21";
 const D4 = "2026-11-23";

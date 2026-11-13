@@ -6,16 +6,10 @@
  */
 import { mondayOf } from "../paper/instants.js";
 import type { Research } from "../paper/research.js";
+import { dayOf } from "../paper/stats.js";
 import { atBook } from "./price.js";
 import type { Position } from "./lines.js";
-import {
-  byDay,
-  dayOf,
-  normalUpper,
-  twoWay,
-  type Item,
-  type TwoWay,
-} from "./stats.js";
+import { byDay, normalUpper, twoWay, type Item, type TwoWay } from "./stats.js";
 
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 
@@ -98,8 +92,6 @@ export function tailOf(ps: readonly Position[]): Tail {
     worstFivePct: meanOf(nets.slice(0, Math.ceil(nets.length * 0.05))),
   };
 }
-
-export type LineSummary = ReturnType<typeof summarize>;
 
 /** M13's prints for one line's set; z the look's (or the next look's) limit. */
 export function summarize(kit: Research, ps: readonly Position[], z: number) {

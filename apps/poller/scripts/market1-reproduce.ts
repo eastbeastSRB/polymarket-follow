@@ -23,7 +23,7 @@ import {
 import { kitData } from "../src/market1/inputs.js";
 import type { Position } from "../src/market1/lines.js";
 import { statOf, tailOf } from "../src/market1/summary.js";
-import { dayOf, type Item, type TwoWay } from "../src/market1/stats.js";
+import type { Item, TwoWay } from "../src/market1/stats.js";
 import { waveEntries } from "../src/market1/waves.js";
 import { CUT, mondayOf } from "../src/paper/instants.js";
 import { loadPrecut, marketThrough } from "../src/paper/market.js";
@@ -33,6 +33,7 @@ import {
   type Research,
 } from "../src/paper/research.js";
 import { loadSeed, readManifest } from "../src/paper/seed.js";
+import { dayOf } from "../src/paper/stats.js";
 import type { StoredRow } from "../src/paper/store.js";
 
 /** The launch week's Monday: MARKET-FIND's old weeks start here. */

@@ -14,7 +14,6 @@ import { parseEnv } from "node:util";
 import { pino } from "pino";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  CLOSED,
   FROZEN_FILE,
   PACKAGE_ROOT,
   PAPER_FILES,
@@ -38,6 +37,7 @@ import { CUT } from "../src/paper/instants.js";
 import { verifyFreeze as verifyPaperFreeze } from "../src/paper/gate.js";
 
 const log = pino({ level: "silent" });
+const CLOSED = { open: false } as const;
 const sha256 = (b: Buffer | string) =>
   createHash("sha256").update(b).digest("hex");
 const scratch: string[] = [];
@@ -98,6 +98,13 @@ describe("MARKET-1's freeze (M0)", () => {
       ok: false,
       problems: [`no ${FROZEN_FILE}`],
     });
+    // A list that names no file: every file of what runs is refused.
+    writeFileSync(path.join(pkg, FROZEN_FILE), "# written 2026-11-20\n");
+    expect(verifyFreeze(pkg)).toEqual({
+      ok: false,
+      problems: frozenFiles(pkg).map((f) => `not in the freeze: ${f}`),
+    });
+    expect(frozenFiles(pkg)).toHaveLength(15);
     const hash = freeze(pkg);
     expect(verifyFreeze(pkg)).toEqual({ ok: true, sha256: hash, files: 15 });
     expect(gateOf(verifyFreeze(pkg))).toEqual({ open: true });

@@ -11,7 +11,7 @@ import {
   isForced,
   type Liq,
 } from "../src/market1/fills.js";
-import { CLOSED, PACKAGE_ROOT, SealedError } from "../src/market1/gate.js";
+import { PACKAGE_ROOT, SealedError } from "../src/market1/gate.js";
 import {
   kitData,
   marketsThrough,
@@ -35,6 +35,7 @@ import {
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 
 const OPEN = { open: true };
+const CLOSED = { open: false } as const;
 let kit: Research;
 const scratch: string[] = [];
 beforeAll(async () => {

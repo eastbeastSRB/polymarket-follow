@@ -5,9 +5,8 @@
  * of the mean clustered by the UTC day of t, by the market and by the
  * (day, market) pair. The looks' limits are the paper experiment's.
  */
-import { DAY_MS } from "../schedule.js";
 import type { Research } from "../paper/research.js";
-import { Z_POWER } from "../paper/stats.js";
+import { Z_POWER, dayOf } from "../paper/stats.js";
 
 /** δ, the owner's drop line (decisions 2026-11-13). */
 export const DROP_BPS = 50;
@@ -16,8 +15,6 @@ export const NOT_AT_BOOK_LIMIT = 0.1;
 /** A verdict needs at least so many UTC days and markets with a priced position (F5). */
 export const MIN_DAYS = 20;
 export const MIN_MARKETS = 10;
-
-export const dayOf = (t: number): number => Math.floor(t / DAY_MS) * DAY_MS;
 
 export type Item = { t: number; iid: number; x: number };
 

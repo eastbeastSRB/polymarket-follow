@@ -24,11 +24,11 @@ import type { Logger } from "../log.js";
 import { DAY_MS, utcDate } from "../schedule.js";
 import { CUT, LOOK_ENDS, mondayOf, runEnd } from "../paper/instants.js";
 import { loadResearch, type Research } from "../paper/research.js";
-import { LOOK_Z } from "../paper/stats.js";
+import { LOOK_Z, dayOf } from "../paper/stats.js";
 import { START, assemble, coinsLeftOut, type Assembled } from "./assemble.js";
 import { namedSets } from "./compute.js";
 import { LARGE, SMALL_COINS } from "./fills.js";
-import { FROZEN_FILE, PACKAGE_ROOT, verifyFreeze } from "./gate.js";
+import { FROZEN_FILE, PACKAGE_ROOT, gateOf, verifyFreeze } from "./gate.js";
 import { kitData, standing, type KitData } from "./inputs.js";
 import type { Position } from "./lines.js";
 import {
@@ -39,7 +39,6 @@ import {
 } from "./page.js";
 import { pricePosition } from "./price.js";
 import { statOf, tailOf } from "./summary.js";
-import { dayOf } from "./stats.js";
 import { waitForPaper, writeWhole, type Market1Config } from "./run.js";
 
 /** The old weeks' rehearsal alone passes these (its END must not pass the cut). */
@@ -63,7 +62,7 @@ const sha256 = (b: Buffer | string) =>
   createHash("sha256").update(b).digest("hex");
 
 /** The record, in its own words: each run's files and their hashes. */
-class RunRecord {
+export class RunRecord {
   private readonly written: string[] = [];
   constructor(readonly root: string) {}
   write(rel: string, bytes: Buffer | string): void {
@@ -223,7 +222,7 @@ export async function daily(
     return 4;
   }
   const frozenOn = freezeDate(packageRoot);
-  const gate = { open: true };
+  const gate = gateOf(freeze);
   const kit = await loadResearch(path.join(packageRoot, "research"));
   const kd = io.kd ?? kitData(packageRoot);
   stage("waiting for the paper experiment's run");
@@ -403,7 +402,7 @@ export function pageData(
         state,
         net,
         flags,
-        firstSeen: seen[keyOf(p)] ?? runDate,
+        firstSeen: seen[keyOf(p)]!,
       };
     });
   const alarms = [

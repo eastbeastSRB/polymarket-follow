@@ -14,7 +14,7 @@ import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { createBrotliDecompress } from "node:zlib";
 import { z } from "zod";
-import { HOUR_MS, utcDate, utcHour } from "../schedule.js";
+import { DAY_MS, HOUR_MS, utcDate, utcHour } from "../schedule.js";
 import {
   hourGap,
   toBook,
@@ -25,7 +25,6 @@ import {
 import { checkDatum, checkSealed, type Gate } from "./gate.js";
 
 const DAY_DIR = /^\d{4}-\d{2}-\d{2}$/;
-const DAY_MS = 24 * HOUR_MS;
 
 /** A decimal string, as the kit's `isNumStr`. */
 const numText = z
@@ -77,21 +76,7 @@ export function legFinal(days: Days, x: number): boolean {
   return days.closed.has(next) || missingDay(days, next);
 }
 
-export type HourState = "ok" | "missing" | "differs" | "unreadable";
-
 /** A closed day's check, kept once in MARKET-1's record (`days\<date>.json`). */
-export type DayCheck = {
-  date: string;
-  hours: { hour: string; state: HourState; lines: number; failed: number }[];
-  coverage: "ok" | "missing" | "differs";
-  coverageFailed: number;
-  events: CoverageEvent[];
-  lines: number;
-  failed: number;
-  /** More than 1% of the day's book lines, and at least 10, fail the schema (M7, F18). */
-  alarm: boolean;
-};
-
 export const DayCheckSchema = z.object({
   date: z.string(),
   hours: z.array(
@@ -109,8 +94,10 @@ export const DayCheckSchema = z.object({
   ),
   lines: z.number().int(),
   failed: z.number().int(),
+  /** More than 1% of the day's book lines, and at least 10, fail the schema (M7, F18). */
   alarm: z.boolean(),
 });
+export type DayCheck = z.infer<typeof DayCheckSchema>;
 
 const sha256 = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 
@@ -355,7 +342,7 @@ export async function booksAt(
       if (xs === undefined) continue;
       const iid = Number(m[1]);
       const frame = parseBookText(split.text);
-      if (frame === null || frame.ch !== `book::${iid}`) continue;
+      if (frame === null) continue;
       for (const x of xs) {
         if (frame.ts > x) continue;
         const k = `${iid}|${x}`;

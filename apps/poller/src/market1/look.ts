@@ -8,8 +8,7 @@
  * flagged). WAVE alone carries a verdict; every other line prints the same
  * figures with none.
  */
-import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 import type { Logger } from "../log.js";
@@ -21,10 +20,10 @@ import { PaperStore } from "../paper/store.js";
 import { START, assemble, coinsLeftOut } from "./assemble.js";
 import { namedSets } from "./compute.js";
 import { LARGE, SMALL_COINS } from "./fills.js";
-import { PACKAGE_ROOT, checkSealed, verifyFreeze } from "./gate.js";
+import { PACKAGE_ROOT, gateOf, verifyFreeze } from "./gate.js";
 import { kitData, standing } from "./inputs.js";
 import { legFinal, recordingDays } from "./recordings.js";
-import { looksDone, type DailyIo } from "./daily.js";
+import { RunRecord, looksDone, type DailyIo } from "./daily.js";
 import { smallestEdge, verdict, sentence } from "./stats.js";
 import { summarize, tailOf } from "./summary.js";
 import { waitForPaper, writeWhole, type Market1Config } from "./run.js";
@@ -35,12 +34,6 @@ export const lookMonday = (k: 1 | 2 | 3): number =>
 /** A look waits for its reads at most 7 days past its Monday (M15). */
 export const LOOK_WAIT_MS = 7 * DAY_MS;
 
-const logLine = (root: string, runDate: string, record: object) => {
-  const file = path.join(root, "log", `${runDate}.jsonl`);
-  mkdirSync(path.dirname(file), { recursive: true });
-  appendFileSync(file, `${JSON.stringify(record)}\n`);
-};
-
 export async function look(
   config: Market1Config,
   log: Logger,
@@ -50,9 +43,10 @@ export async function look(
 ): Promise<number> {
   const packageRoot = io.packageRoot ?? PACKAGE_ROOT;
   const runDate = utcDate(now);
+  const record = new RunRecord(config.MARKET1_ROOT);
   const freeze = verifyFreeze(packageRoot);
   if (!freeze.ok) {
-    logLine(config.MARKET1_ROOT, runDate, {
+    record.logLine(runDate, {
       at: new Date().toISOString(),
       line: "frozen files differ",
       problems: freeze.problems,
@@ -67,7 +61,7 @@ export async function look(
     "result.json",
   );
   const refuse = (why: string) => {
-    logLine(config.MARKET1_ROOT, runDate, {
+    record.logLine(runDate, {
       at: new Date().toISOString(),
       look: k,
       line: why,
@@ -79,18 +73,18 @@ export async function look(
   if (existsSync(resultFile)) return refuse("the look has run already");
   if (!(await waitForPaper(config.STATE_DIR, log, io.paperClock)))
     return refuse("the paper experiment's run is still live after 6 hours");
-  const gate = { open: true };
+  const gate = gateOf(freeze);
   const kit = await loadResearch(path.join(packageRoot, "research"));
   const kd = io.kd ?? kitData(packageRoot);
   // Readiness (M15, F11).
-  checkSealed(gate, end, "the look's reads");
   const state = new PaperStore(config.PAPER_ROOT).readState();
   const behind = kd.pool.filter((addr) => {
     const a = state.accounts[addr];
     return a === undefined || (a.P < end && !standing(a));
   });
   const days = recordingDays(gate, config.RECORDINGS_ROOT, end + 2 * DAY_MS);
-  const recordingsFinal = legFinal(days, end) && legFinal(days, end - 1);
+  // END_k's own day is then closed or missing as well (a later day is closed).
+  const recordingsFinal = legFinal(days, end);
   const store = new PaperStore(config.PAPER_ROOT);
   const marketDaysMissing = [...SMALL_COINS, ...LARGE].flatMap((iid) => {
     const present = store.marketDays(iid);
@@ -192,22 +186,14 @@ export async function look(
     format: a.format,
   };
   if (a.decided.length > 0) {
-    const bytes = gzipSync(a.decided.map((l) => JSON.stringify(l)).join("\n"));
-    const rel = `books/${runDate}-L${k}.jsonl.gz`;
-    writeWhole(path.join(config.MARKET1_ROOT, rel), bytes);
-    const file = path.join(
-      config.MARKET1_ROOT,
-      "manifest",
-      `${runDate}.sha256`,
+    record.write(
+      `books/${runDate}-L${k}.jsonl.gz`,
+      gzipSync(a.decided.map((l) => JSON.stringify(l)).join("\n")),
     );
-    mkdirSync(path.dirname(file), { recursive: true });
-    appendFileSync(
-      file,
-      `${createHash("sha256").update(bytes).digest("hex")} *${rel}\n`,
-    );
+    record.flushManifest(runDate);
   }
   writeWhole(resultFile, `${JSON.stringify(result, null, 2)}\n`);
-  logLine(config.MARKET1_ROOT, runDate, {
+  record.logLine(runDate, {
     at: new Date().toISOString(),
     look: k,
     verdict: v,

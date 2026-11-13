@@ -221,9 +221,6 @@ export async function assemble(a: {
     docs,
     market,
     fee,
-    days,
-    checks,
-    checkedNow,
     decided,
     positions,
     format: {

@@ -89,7 +89,6 @@ export function verifyFreeze(root: string): Freeze {
     if (got !== hash)
       problems.push(`${got === null ? "missing" : "changed"}: ${file}`);
   }
-  if (want.size === 0) problems.push(`${FROZEN_FILE} lists no file`);
   return problems.length > 0
     ? { ok: false, problems }
     : { ok: true, sha256: sha256(list), files: want.size };
@@ -99,7 +98,6 @@ export class SealedError extends Error {}
 
 /** Open only when MARKET-1's own freeze verified. */
 export type Gate = { readonly open: boolean };
-export const CLOSED: Gate = { open: false };
 
 export const gateOf = (freeze: Freeze): Gate => ({ open: freeze.ok });
 
