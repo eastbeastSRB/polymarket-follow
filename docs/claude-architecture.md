@@ -182,7 +182,7 @@ refused while its task runs; `tools\register-tasks.ps1` adds the task
 when available; `-PaperOnly` registers that task alone, the collector's three
 untouched. Neither is done before the freeze and the owner's word.
 
-## MARKET-1 (built to "rules ready" 2026-11-13 by MARKET-BUILD, its two reviews' fixes by MARKET-FIX the same day; not frozen, deployed or registered)
+## MARKET-1 (built 2026-11-13 by MARKET-BUILD, its reviews' fixes by MARKET-FIX and MARKET-FIX-2, frozen the same day, tag `market1-freeze-1`; not yet deployed or registered)
 
 **What it is.** A third entry point of the same package, `dist/market1.js`
 (`src/market1.ts`, `src/market1/`), the forward paper test of the liquidation
@@ -217,8 +217,10 @@ pinned by `test/market1-order.test.ts`). The kit's fingerprint and
 lib-exits' hash are checked when the kit loads, after the freeze check (a
 difference is a crash, exit 1). The page's freeze date is read from the
 list's head line (a list without it stops the run).
-`tools/market1-freeze.cjs` writes the list (`--final` on a clean tree;
-the draft `market1/FROZEN.draft.sha256`, 64 files, `94828ff9…6460`) and
+`tools/market1-freeze.cjs` writes the list (`--final` on a clean tree:
+`market1/FROZEN.sha256`, the freeze, 64 files, `b9e17505…2f1d`, written
+2026-11-13T14:29:11Z, tag `market1-freeze-1`; the gate opens only on it;
+the last draft `market1/FROZEN.draft.sha256` has the same 64 hashes) and
 refuses when one of the eleven paper files differs from the paper
 experiment's freeze. A paper fix to one of the eleven stops MARKET-1 until a
 re-freeze; to any other paper file it changes nothing here.

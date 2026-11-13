@@ -44,8 +44,16 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-12, through decisions 2026-11-12 (APPROACH-REVIEW
-accepted).*
+*Brought in step on 2026-11-13, through decisions 2026-11-13 (MARKET-1 —
+the freeze).*
+
+- **Two forward paper tests are frozen, judged at the same three looks
+  (2026-12-19, 2027-02-06, 2027-05-08):**
+  - **the paper experiment** (copying slow traders): frozen and running daily
+    since 2026-11-12;
+  - **MARKET-1** (the liquidation wave in small coins, the one lead round 2's
+    data gave; decisions 2026-11-13): frozen 2026-11-13. It waits for the
+    owner's deploy.
 
 - Founded: its own repository, database and supervisor; watch-only; perps
   first (decisions 2026-11-06).
@@ -85,6 +93,7 @@ accepted).*
 | 🔵 | since 2026-11-10 14:42Z; RECORDING since 20:59:54Z | **Phase 1 — the collector (C1):** parts 0–7 built, verified and live (part 4, the database and the nightly passes, since 2026-11-11 15:47Z after the owner's switch to a task that runs node itself; parts 5–6, health, status and backups, since 16:25Z); the backup task registered by the owner (2026-11-11); the whole collector's Final review done (COLLECTOR-REVIEW, 15 findings, 14 fixed and live since 20:22Z; decisions 2026-11-11); the poller task runs node itself at normal priority; the plan approved (`docs/reviews/collector-plan-2026-11-10.md`; decisions 2026-11-10, round 2's rules and the collector approved); the build in eight parts, recording from part 3 | a build subagent |
 | ✅ | 2026-11-11 | **Phase 2 — research round 2, FIND: NOTHING PASSES.** The kit and the first measurements accepted; seven studies (entries 1, 2, 3, 4, 5, 7, 9, 10), rules frozen and reviewed before one look each, three fresh Final reviews: every result stands; no entry registered; the gate (entry 1) fails (decisions 2026-11-11, round 2's FIND results); entry 6 then ran once with the owner's filter on the owner's lift and fails too (decisions 2026-11-12, FIND-6's result); copying the traders' exits as well, an exploring check, leaves every group losing (decisions 2026-11-12, FIND-6-EXITS's result) | research subagents |
 | 🔵 | since 2026-11-12 | **The way forward: a forward paper experiment** (decisions 2026-11-12, the way forward). Its design is accepted (decisions 2026-11-12, APPROACH-REVIEW accepted): slow traders (usual hold 6 h or more, at least 3 closed cycles) from the frozen pool by a rule, not a ranking; two readings of every copy (the money with the exits copied; the judgement at 24 h against random trades); data from 2026-11-07; looks 2026-12-19, 2027-02-06, 2027-05-08; keep / drop at +10 bps / too few to tell; every directional trader and the owner's favourites beside; a script once a day with a simple page showing its log (decisions 2026-11-12, the paper experiment runs daily and gets a page). Its plan is approved with its review's fixes (decisions 2026-11-12, the paper experiment's plan approved); built, reviewed three times and **frozen 2026-11-12 20:19:52Z** (decisions 2026-11-12, the freeze; tag `paper-freeze-1`); deployed by the owner 2026-11-12 20:25Z with its daily task (04:00Z); the first run, catching up from 2026-11-07, started 20:26:43Z. The exams of 11-30 and 12-19 are closed (12-19 is the first look); D1 and D2 run after the freeze | the owner deploys and registers the task |
+| 🔵 | since 2026-11-13 | **MARKET-1 — a forward paper test of the liquidation wave** (decisions 2026-11-13, from "the market lead" to "MARKET-1 — the freeze").<br>• **The line:** when two or more pool accounts are liquidated on one side of one of 38 small coins within 60 minutes, $1,000 against the forced side 2 minutes later, at the recorded book as a taker, held 24 h. From 2026-11-11, zero API reads.<br>• **The verdict:** keep, or drop at +50 bps, or too few to tell, at the paper experiment's three looks.<br>• **Done:** planned and reviewed; built; two fresh reviews; the fixes and a fresh fix-check; **frozen 2026-11-13 14:29:11Z** (`market1/FROZEN.sha256`, `b9e17505…2f1d`, tag `market1-freeze-1`).<br>• **Next:** the owner's deploy, its task (10:30Z) and the first run by hand | the owner deploys and registers the task |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
@@ -306,6 +315,21 @@ review, the supervisor re-computing on its own path what decides.
   leaderboard snapshots.
 
 ## Done lately
+
+- ✅ 11-13 **MARKET-1 built, reviewed and frozen:**
+  - planned (MARKET-PLAN) and the plan reviewed;
+  - built to its rules; the old weeks reproduced (153 entries, +309.7 ±
+    67.7 bps a day on marks) and the bridge rehearsal through the forward
+    readers equal;
+  - a fresh rules review and a fresh code review (both "after these
+    fixes"), the owner's ruling, the fixes, a fresh fix-check, M0's wording;
+  - frozen at 64 files, with 240 of 249 deliberate breaks caught (decisions
+    2026-11-13, MARKET-1 — the freeze).
+- ✅ 11-13 **MARKET-FIND — the market lead:** liquidation waves in small coins
+  (two or more pool accounts forced out on one side within 60 minutes) were
+  followed by about +300 bps in 24 h on the old weeks; nothing outside a
+  wave; confirmed by the supervisor's own code (decisions 2026-11-13, the
+  market lead).
 
 - ✅ 11-12 **APPROACH-REVIEW — the paper experiment's design:** the outside
   evidence (copying has paid only with slow information and small costs);

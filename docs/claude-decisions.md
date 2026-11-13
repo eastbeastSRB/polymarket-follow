@@ -1,5 +1,55 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (MARKET-1 — THE FREEZE): **MARKET-1 IS FROZEN.**
+- `apps/poller/market1/FROZEN.sha256`: 64 files, SHA-256
+  `b9e17505d8d4dfc87101b35c4908929b4ed18c6dd401cf723dfbab0c15452f1d`.
+- Written by `tools/market1-freeze.cjs --final` at 2026-11-13T14:29:11Z,
+  from the clean tree at `62341b4`.
+- Committed as `4832a6a`, annotated tag `market1-freeze-1` (local; the
+  owner pushes it).
+- Its 64 hash lines equal the reviewed draft's (`94828ff9…6460`, from
+  `43efd04`).
+
+**How it got here:** MARKET-BUILD → MARKET-RULES-REVIEW and
+MARKET-CODE-REVIEW → the owner's ruling → MARKET-FIX → MARKET-FIX-CHECK
+("ready to freeze after M0's wording") → MARKET-FIX-2 (`afb2e5c` …
+`62341b4`).
+
+**The supervisor's checks before `--final`:**
+- M0's two bullets are byte-equal to MARKET-FIX-CHECK's text
+  (`verify/MARKET-FIX/m0-text.out.txt` in the supervisor's folder: 749 and
+  432 bytes); a single hunk; no file under `src/` changed since the check.
+- `pnpm verify` green: 46 files plus 1 skipped, 380 tests plus 3 skipped.
+- The paper experiment's freeze verifies (61 files, `d04d3cd8…f31c`); no
+  paper file changed since `paper-freeze-1`.
+- The draft verifies against a fresh build. Its list differs from the
+  previous draft only in its head line and `rules.md`'s hash.
+- MARKET-FIX-2's access is clean.
+
+**After `--final`:** the final list verifies against the build. `pnpm
+verify` gives the same 380 tests with the list present, so the gate's
+opening changes no test.
+
+**MARKET-FIX-2's notes:**
+1. The paper experiment's frozen `experiment/rules.md` (lines 27–30) has
+   the same inexact kit wording as MARKET-1's old N5: the kit is checked in
+   `research.ts` when it loads, not in the gate. It is listed, not edited
+   (frozen); nothing depends on that wording.
+2. The previous entry's headline says "four tests"; its call 3 names seven
+   breaks, and all seven are pinned (`43efd04`).
+
+**Next:**
+- The owner deploys MARKET-1:
+  1. `tools\deploy.ps1 -Program market1`;
+  2. from an elevated PowerShell, `tools\register-tasks.ps1 -Market1Only`
+     (its daily task at 10:30Z);
+  3. the first run by hand, its backlog from START 2026-11-11.
+- No paper command by hand while a MARKET-1 run is live (rules.md M2).
+- The first real run's `format` line is read before the run is trusted
+  (F7 (c)).
+- A defect found later is fixed only by M0's road: a decisions entry, a
+  failing test, the positions changed, and `market1-freeze-2`.
+
 2026-11-13 (MARKET-FIX-CHECK — the supervisor's last calls before MARKET-1's
 freeze, inside the owner's approval of the fix batch): **"READY TO FREEZE
 AFTER M0's WORDING"; ONE LAST SMALL BATCH (THE RULE TEXT MADE EXACT, FOUR
