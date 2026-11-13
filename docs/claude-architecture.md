@@ -182,7 +182,7 @@ refused while its task runs; `tools\register-tasks.ps1` adds the task
 when available; `-PaperOnly` registers that task alone, the collector's three
 untouched. Neither is done before the freeze and the owner's word.
 
-## MARKET-1 (built 2026-11-13 by MARKET-BUILD, its reviews' fixes by MARKET-FIX and MARKET-FIX-2, frozen the same day, tag `market1-freeze-1`; not yet deployed or registered)
+## MARKET-1 (built 2026-11-13 by MARKET-BUILD, its reviews' fixes by MARKET-FIX and MARKET-FIX-2, frozen the same day, tag `market1-freeze-1`; deployed by the owner 2026-11-13 14:33:39Z, its task daily at 10:30Z)
 
 **What it is.** A third entry point of the same package, `dist/market1.js`
 (`src/market1.ts`, `src/market1/`), the forward paper test of the liquidation

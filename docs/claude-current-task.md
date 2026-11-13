@@ -4,8 +4,8 @@ polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) records around the
 clock; the forward paper experiment is FROZEN (2026-11-12, tag
 `paper-freeze-1`) and runs daily; MARKET-1, the forward paper test of the
-liquidation wave, is FROZEN (2026-11-13 14:29:11Z, tag `market1-freeze-1`)
-and waits for the owner's deploy.** The plan is the plan page
+liquidation wave, is FROZEN (2026-11-13 14:29:11Z, tag `market1-freeze-1`),
+deployed (14:33:39Z) and runs daily at 10:30Z.** The plan is the plan page
 (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -47,21 +47,22 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The owner deploys MARKET-1:**
-   1. `tools\deploy.ps1 -Program market1`;
-   2. from an elevated PowerShell, `tools\register-tasks.ps1 -Market1Only`
-      (the task at 10:30Z);
-   3. the first run by hand, catching up from START.
-   - Its first run's `format` counts are read before it is trusted
-     (F7 (c)), and a book level's unit is confirmed (decisions 2026-11-13,
-     call 11).
+1. **MARKET-1's second run (2026-11-14 10:30Z), the first with decided
+   legs.**
+   - The first run (2026-11-13 14:33:59–14:39:02Z, exit 0) passed its format
+     check (F7 (c)): 3 days closed and checked; 52 hour files, the 20 missing
+     being 11-10 before recording began; 12,095,293 lines, 0 failed; no
+     alarm day, no unreadable coverage, no changed file.
+   - Every non-P position entered on 11-12, so its legs wait for 11-13 to
+     close (F3).
+   - The book level's unit (decisions 2026-11-13, call 11) is confirmed from
+     the first decided legs: depth-short legs must be rare.
    - No paper command by hand while a MARKET-1 run is live (rules.md M2).
-2. **The overview for the owner:** where we are, what runs, what we wait
-   for, what is next.
-3. **The daily runs:** the supervisor checks each program's log, budget and
-   page.
-4. **D1 and D2,** each with its own share of the remaining 80 a minute (and
-   a burst share: decisions 2026-11-13, Q12).
+2. **The daily runs:** the supervisor checks each program's log, budget and
+   page; no running number is read as evidence before a look.
+3. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
+   (R8's B2 confirmation, after 2026-11-30), each with its own share of the
+   remaining 80 a minute (and a burst share: decisions 2026-11-13, Q12).
 5. **Small collector follow-ups, when convenient:**
    - drop the boards' `consistent` flag;
    - a coverage mark for books that arrive late;

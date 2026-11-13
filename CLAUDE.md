@@ -36,7 +36,7 @@ its own database (native driver, Zod is the schema) · pino · vitest. **Built s
 all in `apps/poller` in a pnpm workspace (TypeScript, Zod, pino, the MongoDB
 driver, vitest; the experiment a second entry point, `dist/paper.js`, frozen
 and deployed 2026-11-12; MARKET-1 a third, `dist/market1.js`, frozen
-2026-11-13 (tag `market1-freeze-1`), not yet deployed; no Turborepo, web, api or
+and deployed 2026-11-13 (tag `market1-freeze-1`); no Turborepo, web, api or
 shared package yet — decisions 2026-11-11, COLLECTOR-BUILD's technical calls;
 2026-11-12, PAPER-BUILD's; 2026-11-13, MARKET-BUILD's;
 docs/claude-architecture.md):** check package.json before trusting
