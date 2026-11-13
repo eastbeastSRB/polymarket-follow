@@ -322,6 +322,13 @@ describe("MARKET-1's settings (M0, M15)", () => {
         MARKET1_BACKUP: "F:\\polymarket-follow\\..recordings",
       }),
     ).toEqual([]);
+    // The parent of both stores: allowed (only equal to or inside one is refused).
+    expect(
+      issues({
+        MARKET1_ROOT: "F:\\polymarket-follow",
+        MARKET1_BACKUP: "F:\\polymarket-follow\\",
+      }),
+    ).toEqual([]);
   });
 });
 

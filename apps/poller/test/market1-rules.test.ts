@@ -651,6 +651,27 @@ describe("the prints (M13) and the tail (B11)", () => {
     expect(ids("S BASKET ROSE, FORCED BUYS")).toEqual([2]);
   });
 
+  it("takes a competition's window as [start, end), and a basket of exactly 0 or none as unknown (M12 C, S)", () => {
+    const D = Date.parse("2026-11-20T00:00:00Z");
+    const ps = [
+      pos(D, 8, priced(1), { basket: 0 }),
+      pos(D + HOUR_MS, 10, priced(2), { side: 1, dir: -1 }),
+    ];
+    const sets = namedSets(ps, D + 3 * DAY_MS, [
+      // Ends at the first position's t: it is outside; the second's t is its start: inside.
+      { start: D - HOUR_MS, end: D, boosted: new Set([8]) },
+      { start: D + HOUR_MS, end: D + 2 * HOUR_MS, boosted: new Set([10]) },
+    ]);
+    const ids = (name: string) =>
+      (sets.get(name) ?? []).map((p) => p.priced!.net);
+    expect(ids("C WITHOUT COMPETITIONS")).toEqual([1]);
+    expect(ids("C WITHOUT BOOSTED MARKETS")).toEqual([1]);
+    expect([...sets.keys()].filter((n) => n.startsWith("S BASKET"))).toEqual([
+      "S BASKET UNKNOWN",
+    ]);
+    expect(ids("S BASKET UNKNOWN")).toEqual([1, 2]);
+  });
+
   it("prices every position once, pending while a quote is pending or the market object ends before x_out", () => {
     const from = Date.parse("2026-11-19T00:00:00Z");
     const mk8 = market(8, from, 3, () => 100);

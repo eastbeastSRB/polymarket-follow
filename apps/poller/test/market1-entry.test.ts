@@ -90,6 +90,46 @@ describe("MARKET-1's entry point (exit codes)", () => {
     }
   }, 60_000);
 
+  it("passes the run's exit code to the process and releases its lock: look 3, already run, stops with 4 without a valid freeze of this package, else 5", () => {
+    const own = {
+      ...settings,
+      STATE_DIR: path.join(dir, "var-exit"),
+      MARKET1_ROOT: path.join(dir, "market1-exit"),
+    };
+    // A result already there: with a valid freeze the look is refused at any date (not due, or run already).
+    const result = path.join(own.MARKET1_ROOT, "looks", "L3", "result.json");
+    mkdirSync(path.dirname(result), { recursive: true });
+    writeFileSync(result, "{}\n");
+    const r = run(["look", "3"], own);
+    expect([4, 5], `exit ${r.status}: ${r.stderr}`).toContain(r.status);
+    expect(r.stderr).toBe("");
+    expect(readdirSync(own.STATE_DIR).sort()).toEqual([
+      "logs",
+      "market1-heartbeat.json",
+    ]);
+    const logs = path.join(own.STATE_DIR, "logs");
+    const ended = readdirSync(logs)
+      .flatMap((f) =>
+        readFileSync(path.join(logs, f), "utf8").trim().split("\n"),
+      )
+      .map((l) => JSON.parse(l) as { msg: string; exit?: number })
+      .filter((l) => l.msg === "market1 run ended");
+    expect(ended.map((l) => l.exit)).toEqual([r.status]);
+    const lines = readdirSync(path.join(own.MARKET1_ROOT, "log")).flatMap((f) =>
+      readFileSync(path.join(own.MARKET1_ROOT, "log", f), "utf8")
+        .trim()
+        .split("\n")
+        .map((l) => (JSON.parse(l) as { line: string }).line),
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(
+      r.status === 4
+        ? /^frozen files differ$/
+        : /^the look (is not due|has run already)$/,
+    );
+    expect(readFileSync(result, "utf8")).toBe("{}\n");
+  }, 60_000);
+
   it("exits 1 on a crash, with the error in its log (its own folder is a file here)", () => {
     const file = path.join(dir, "not-a-folder");
     writeFileSync(file, "x\n");
