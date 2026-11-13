@@ -14,7 +14,7 @@ import { gzipSync } from "node:zlib";
 import type { Logger } from "../log.js";
 import { DAY_MS, utcDate } from "../schedule.js";
 import { CUT, LOOK_ENDS, mondayOf } from "../paper/instants.js";
-import { loadResearch } from "../paper/research.js";
+import { loadResearch, type Research } from "../paper/research.js";
 import { LOOK_Z } from "../paper/stats.js";
 import { PaperStore } from "../paper/store.js";
 import { START, assemble, coinsLeftOut } from "./assemble.js";
@@ -22,6 +22,7 @@ import { namedSets } from "./compute.js";
 import { LARGE, SMALL_COINS } from "./fills.js";
 import { PACKAGE_ROOT, gateOf, verifyFreeze } from "./gate.js";
 import { kitData, standing } from "./inputs.js";
+import type { Position } from "./lines.js";
 import { legFinal, recordingDays } from "./recordings.js";
 import { RunRecord, looksDone, type DailyIo } from "./daily.js";
 import { smallestEdge, verdict, sentence } from "./stats.js";
@@ -33,6 +34,28 @@ export const lookMonday = (k: 1 | 2 | 3): number =>
   mondayOf(LOOK_ENDS[k - 1]!) + 7 * DAY_MS;
 /** A look waits for its reads at most 7 days past its Monday (M15). */
 export const LOOK_WAIT_MS = 7 * DAY_MS;
+
+/** Look k's verdict on WAVE's set (M10, M11, M13): its prints at the look's z, the verdict they give, M11's sentence. */
+export function lookVerdict(
+  kit: Research,
+  wave: readonly Position[],
+  k: 1 | 2 | 3,
+) {
+  const z = LOOK_Z[k - 1]!;
+  const summary = summarize(kit, wave, z);
+  const mean = summary.money?.mean ?? 0;
+  const se = summary.money?.se ?? null;
+  const v = verdict({
+    mean,
+    se,
+    z,
+    meanExcess: summary.excess?.mean ?? null,
+    notAtBookShare: summary.notAtBookShare,
+    days: summary.money?.days ?? 0,
+    markets: summary.money?.markets ?? 0,
+  });
+  return { z, summary, verdict: v, sentence: sentence(k, v, mean, se, z) };
+}
 
 export async function look(
   config: Market1Config,
@@ -119,19 +142,14 @@ export async function look(
     ruleBook: io.ruleBook,
     forceLegs: forced,
   });
-  const z = LOOK_Z[k - 1]!;
   const sets = namedSets(a.positions, end, a.book.competitions);
   const wave = sets.get("WAVE")!;
-  const w = summarize(kit, wave, z);
-  const v = verdict({
-    mean: w.money?.mean ?? 0,
-    se: w.money?.se ?? null,
+  const {
     z,
-    meanExcess: w.excess?.mean ?? null,
-    notAtBookShare: w.notAtBookShare,
-    days: w.money?.days ?? 0,
-    markets: w.money?.markets ?? 0,
-  });
+    summary: w,
+    verdict: v,
+    sentence: said,
+  } = lookVerdict(kit, wave, k);
   const earlier = looksDone(config.MARKET1_ROOT)
     .slice(0, k - 1)
     .some((d) => d !== null && (d.verdict === "KEEP" || d.verdict === "DROP"));
@@ -149,7 +167,7 @@ export async function look(
     look: k,
     end: new Date(end).toISOString(),
     verdict: v,
-    sentence: sentence(k, v, w.money?.mean ?? 0, w.money?.se ?? null, z),
+    sentence: said,
     afterTheVerdict: earlier,
     frozen: freeze.sha256,
     forced,
