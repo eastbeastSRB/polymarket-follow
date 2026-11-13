@@ -289,6 +289,16 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(r3.sentence).toBe(
       `No mean result as large as ${(s.money!.mean + 2.17 * s.money!.se!).toFixed(1)} bps a position was seen.`,
     );
+    // Every print with a limit takes the look's own z.
+    for (const [x, z] of [
+      [r, 2.81],
+      [r2, 2.43],
+      [r3, 2.17],
+    ] as const) {
+      const p = x.summary;
+      expect(p.grossLow).toBeCloseTo(p.gross!.mean - z * p.gross!.se!, 9);
+      expect(p.excessLow).toBeCloseTo(p.excess!.mean - z * p.excess!.se!, 9);
+    }
   }, 30_000);
 
   it("KEEP with a forced leg: one exit leg at the mark (recording not final at the look), 1 of 24 not at the book", () => {

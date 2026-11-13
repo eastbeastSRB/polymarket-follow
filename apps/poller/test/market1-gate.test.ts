@@ -309,6 +309,8 @@ describe("MARKET-1's settings (M0, M15)", () => {
       ["MARKET1_ROOT", "F:\\Polymarket-Follow\\Recordings\\m1"],
       ["MARKET1_BACKUP", "F:\\polymarket-follow\\recordings"],
       ["MARKET1_BACKUP", "F:\\polymarket-follow\\paper\\a\\b"],
+      // Inside, though its name begins with "..".
+      ["MARKET1_BACKUP", "F:\\polymarket-follow\\paper\\..m1"],
     ] as const)
       expect(issues({ [name]: value }), `${name} ${value}`).toMatchObject(
         refused(name),
