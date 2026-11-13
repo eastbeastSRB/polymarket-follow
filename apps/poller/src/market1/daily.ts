@@ -28,7 +28,7 @@ import { LOOK_Z } from "../paper/stats.js";
 import { START, assemble, coinsLeftOut, type Assembled } from "./assemble.js";
 import { namedSets } from "./compute.js";
 import { LARGE, SMALL_COINS } from "./fills.js";
-import { PACKAGE_ROOT, verifyFreeze } from "./gate.js";
+import { FROZEN_FILE, PACKAGE_ROOT, verifyFreeze } from "./gate.js";
 import { kitData, standing, type KitData } from "./inputs.js";
 import type { Position } from "./lines.js";
 import {
@@ -222,6 +222,7 @@ export async function daily(
     );
     return 4;
   }
+  const frozenOn = freezeDate(packageRoot);
   const gate = { open: true };
   const kit = await loadResearch(path.join(packageRoot, "research"));
   const kd = io.kd ?? kitData(packageRoot);
@@ -263,7 +264,7 @@ export async function daily(
     runDate,
     seen,
     sets,
-    { sha256: freeze.sha256, at: freezeDate(packageRoot) },
+    { sha256: freeze.sha256, at: frozenOn },
     LOOK_Z[nextLook < 0 ? 2 : nextLook]!,
   );
   data.verdict = verdictBox(done);
@@ -483,11 +484,11 @@ export function pageData(
   };
 }
 
-/** The freeze's instant, from the list's head line (`# written <ISO> …`). */
+/** The freeze's date, from the list's head line (`# written <ISO> …`); a list without it is an error. */
 export function freezeDate(packageRoot: string): string {
-  const head = readFileSync(
-    path.join(packageRoot, "market1", "FROZEN.sha256"),
-    "utf8",
-  );
-  return /^# written (S+)/m.exec(head)?.[1]?.slice(0, 10) ?? "unknown";
+  const head = readFileSync(path.join(packageRoot, FROZEN_FILE), "utf8");
+  const written = /^# written (\S+)/m.exec(head);
+  if (written === null)
+    throw new Error(`${FROZEN_FILE} has no "# written" head line`);
+  return written[1]!.slice(0, 10);
 }

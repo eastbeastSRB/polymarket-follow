@@ -22,7 +22,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { daily, verdictBox, type DailyIo } from "../src/market1/daily.js";
+import {
+  daily,
+  freezeDate,
+  verdictBox,
+  type DailyIo,
+} from "../src/market1/daily.js";
 import { PAPER_FILES, frozenFiles } from "../src/market1/gate.js";
 import { kitData } from "../src/market1/inputs.js";
 import { look, lookMonday } from "../src/market1/look.js";
@@ -290,6 +295,28 @@ describe("the verdict box (M14)", () => {
   });
 });
 
+describe("the freeze's date (M14)", () => {
+  it("is the date of the list's head line; a list without it is an error", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "market1-frozen-on-"));
+    try {
+      mkdirSync(path.join(dir, "market1"));
+      const list = path.join(dir, "market1", "FROZEN.sha256");
+      const line = `${"0".repeat(64)} *market1/rules.md\n`;
+      writeFileSync(
+        list,
+        `# FROZEN: a test's\n# written 2026-11-20T09:16:38.806Z from commit test\n${line}`,
+      );
+      expect(freezeDate(dir)).toBe("2026-11-20");
+      writeFileSync(list, line);
+      expect(() => freezeDate(dir)).toThrow(
+        'market1/FROZEN.sha256 has no "# written" head line',
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("MARKET-1's daily run and look, end to end", () => {
   it("refuses without a valid freeze with nothing sealed opened, then runs a day, a Monday's sweep, a look and the page", async () => {
     // 1. No freeze: exit 4, one log line, nothing else written; the paper store untouched.
@@ -415,6 +442,12 @@ describe("MARKET-1's daily run and look, end to end", () => {
       "utf8",
     );
     expect(bannedWords(page)).toEqual([]);
+    const listHash = sha256(
+      readFileSync(path.join(pkg, "market1", "FROZEN.sha256")),
+    );
+    expect(page).toContain(
+      `Frozen ${listHash}, 2026-11-20. The rules were frozen on 2026-11-20 before any MARKET-1 result existed; whatever this page shows, they do not change.`,
+    );
     expect(page).toContain("Too early to judge — next look 2026-12-19.");
     expect(page).toContain("Partial: the rest of the pool is read on Monday");
     expect(page).toContain("../../paper/page/index.html");
@@ -543,5 +576,26 @@ describe("MARKET-1's daily run and look, end to end", () => {
         rehearsal: { from: CUT - 7 * DAY_MS, start: CUT - 7 * DAY_MS },
       }),
     ).rejects.toThrow(/only on weeks before the cut/);
+
+    // 11. A list without its head line verifies, and the run stops at once: nothing more read or written.
+    const list = path.join(pkg, "market1", "FROZEN.sha256");
+    const headed = readFileSync(list, "utf8");
+    writeFileSync(
+      list,
+      headed
+        .split("\n")
+        .filter((l) => !l.startsWith("#"))
+        .join("\n"),
+    );
+    const logBefore = logOf("2026-11-22").length;
+    const booksBefore = readdirSync(path.join(config.MARKET1_ROOT, "books"));
+    await expect(
+      daily(config, log, noStage, at("2026-11-22T13:30:00Z"), io),
+    ).rejects.toThrow('market1/FROZEN.sha256 has no "# written" head line');
+    expect(logOf("2026-11-22")).toHaveLength(logBefore);
+    expect(readdirSync(path.join(config.MARKET1_ROOT, "books"))).toEqual(
+      booksBefore,
+    );
+    writeFileSync(list, headed);
   }, 180_000);
 });
