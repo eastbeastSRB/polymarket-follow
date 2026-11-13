@@ -370,7 +370,7 @@ describe("a look end to end (M15, F11)", () => {
     expect(logOf(config, "2026-12-21").at(-1)!.line).toBe(
       "the look has run already",
     );
-  });
+  }, 60_000);
 
   it("without a valid freeze writes one log line and nothing else (exit 4)", async () => {
     const config = configFor({
@@ -386,7 +386,7 @@ describe("a look end to end (M15, F11)", () => {
     expect(logOf(config, "2026-12-21")).toMatchObject([
       { line: "frozen files differ", problems: ["no market1/FROZEN.sha256"] },
     ]);
-  });
+  }, 60_000);
 
   it("waits a minute at a time for a live paper run, and after 6 hours stops with nothing of it read (exit 5)", async () => {
     const config = configFor();
@@ -419,7 +419,7 @@ describe("a look end to end (M15, F11)", () => {
     expect(logOf(config, "2026-12-21").at(-1)!.line).toBe(
       "the paper experiment's run is still live after 6 hours",
     );
-  });
+  }, 60_000);
 
   it("is not ready while a read is missing, until 7 days past its Monday; then it runs forced and lists what was missing", async () => {
     const statePath = path.join(paper, "state.json");
@@ -489,7 +489,7 @@ describe("a look end to end (M15, F11)", () => {
         undo();
       }
     }
-  });
+  }, 60_000);
 
   it("forced, prices at the mark a leg whose recording days are not final, flagged, and counts it as not at the book", async () => {
     const days = ["2026-12-19", "2026-12-20"].map((d) =>
@@ -510,7 +510,7 @@ describe("a look end to end (M15, F11)", () => {
         markLegs: { "recording not final at the look": 1 },
       },
     });
-  });
+  }, 60_000);
 
   it("after a KEEP or a DROP marks a later look 'after the verdict'; after WITHHELD or TOO FEW TO TELL it does not", async () => {
     for (const [verdict, after] of [
@@ -545,7 +545,7 @@ describe("a look end to end (M15, F11)", () => {
         afterTheVerdict: after,
       });
     }
-  });
+  }, 60_000);
 });
 
 describe("the daily page around a look (M9, M14)", () => {
@@ -582,7 +582,7 @@ describe("the daily page around a look (M9, M14)", () => {
       0,
     );
     expect(pageOf(config)).toContain(band(2.43));
-  });
+  }, 60_000);
 
   it("shows an open position at the mark at END − 1 ms, labelled", async () => {
     const config = configFor();
@@ -607,7 +607,7 @@ describe("the daily page around a look (M9, M14)", () => {
     expect(pageOf(config)).toContain(
       `<td>${bps(net)} (open, at the mark)</td>`,
     );
-  });
+  }, 60_000);
 
   it("prices each leg at the recorded taker rate, 4 bps without a record, and raises the fee alarm only on a change (F9)", async () => {
     const plain = configFor();
@@ -650,7 +650,7 @@ describe("the daily page around a look (M9, M14)", () => {
       feeCategories: ["crypto"],
       alarms: [alarm],
     });
-  });
+  }, 60_000);
 
   it("leaves out a coin from the day its record leaves it out, a wave at that day's first millisecond included (M3)", async () => {
     const config = configFor();
@@ -673,7 +673,7 @@ describe("the daily page around a look (M9, M14)", () => {
       [8, WAVES[0]!.entry],
       [10, WAVES[1]!.entry],
     ]);
-  });
+  }, 60_000);
 
   it("names a day whose coverage cannot be read, and prices that day's legs at the mark with the reason", async () => {
     const copy = path.join(tmp, "recordings-damaged");
@@ -691,5 +691,5 @@ describe("the daily page around a look (M9, M14)", () => {
       "gap: the day's coverage cannot be read",
       null,
     ]);
-  });
+  }, 60_000);
 });

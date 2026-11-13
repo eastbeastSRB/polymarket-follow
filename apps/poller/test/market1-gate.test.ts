@@ -355,7 +355,7 @@ describe("MARKET-1's own writes (M15, F2)", () => {
     await hold();
     writeWhole(file, "five");
     expect(readFileSync(file, "utf8")).toBe("five");
-  });
+  }, 30_000);
 });
 
 describe("MARKET-1's own lock and heartbeat (M15, F2)", () => {

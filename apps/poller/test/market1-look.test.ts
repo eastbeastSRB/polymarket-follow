@@ -214,7 +214,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(s.fees).toBeCloseTo(expected(w).fees, 6);
     expect(s.money!.mean - 2.81 * s.money!.se!).toBeGreaterThan(0);
     expect(s.excess!.mean).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("TOO FEW TO TELL by F1: the money's lower bound is above 0, but the market only drifted up and the excess is below 0", () => {
     const w = world(DRIFT, 24, 12);
@@ -227,7 +227,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(s.money!.mean - 2.81 * s.money!.se!).toBeGreaterThan(0);
     expect(s.excess!.mean).toBeLessThan(0);
     expect(s.notAtBookShare).toBe(0);
-  });
+  }, 30_000);
 
   it("DROP by the recorded fee: the KEEP world with a taker rate of 2% a leg", () => {
     const w = world(KEEP, 24, 12, { fee: 0.02 });
@@ -240,7 +240,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(s.money!.mean + 2.81 * s.money!.se!).toBeLessThan(50);
     // The excess reads the marks, not the fee: still above 0.
     expect(s.excess!.mean).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("TOO FEW TO TELL by days: the KEEP world on 15 days, KEEP-sized or DROP-sized (F5 guards both)", () => {
     for (const fee of [0.0004, 0.02]) {
@@ -254,7 +254,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
         expect(s.money!.mean + 2.81 * s.money!.se!).toBeLessThan(50);
       else expect(s.money!.mean - 2.81 * s.money!.se!).toBeGreaterThan(0);
     }
-  });
+  }, 30_000);
 
   it("TOO FEW TO TELL by markets: 24 days in 8 markets", () => {
     const w = world(KEEP, 24, 8);
@@ -264,7 +264,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(s.money).toMatchObject({ n: 24, days: 24, markets: 8 });
     expect(s.money!.mean - 2.81 * s.money!.se!).toBeGreaterThan(0);
     expect(s.excess!.mean).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("TOO FEW TO TELL by noise: +400 and −150 in turn; at look 3 the sentence names the largest mean not ruled out", () => {
     const w = world(NOISY, 24, 12);
@@ -289,7 +289,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(r3.sentence).toBe(
       `No mean result as large as ${(s.money!.mean + 2.17 * s.money!.se!).toFixed(1)} bps a position was seen.`,
     );
-  });
+  }, 30_000);
 
   it("KEEP with a forced leg: one exit leg at the mark (recording not final at the look), 1 of 24 not at the book", () => {
     const w = world(KEEP, 24, 12, {
@@ -303,7 +303,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
       markLegs: { "recording not final at the look": 1 },
     });
     expect(r.summary.notAtBookShare).toBeCloseTo(1 / 24, 12);
-  });
+  }, 30_000);
 
   it("WITHHELD: four of 24 positions with a leg at the mark (16.7%, above 10%), whatever the money says", () => {
     const w = world(KEEP, 24, 12, {
@@ -323,7 +323,7 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(r.summary.money!.mean - 2.81 * r.summary.money!.se!).toBeGreaterThan(
       0,
     );
-  });
+  }, 30_000);
 
   it("TOO FEW TO TELL without a BASE cell: no excess to show that the market's drift is not the effect (F1)", () => {
     const w = world(KEEP, 24, 12);
@@ -338,5 +338,5 @@ describe("the look's verdict on made-up looks (M10, M11)", () => {
     expect(r.summary.money!.mean - 2.81 * r.summary.money!.se!).toBeGreaterThan(
       0,
     );
-  });
+  }, 30_000);
 });

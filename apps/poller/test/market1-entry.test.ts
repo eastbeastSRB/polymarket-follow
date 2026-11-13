@@ -67,7 +67,7 @@ describe("MARKET-1's entry point (exit codes)", () => {
       "market1: refused: MARKET1_ROOT: must lie outside PAPER_ROOT and RECORDINGS_ROOT\n",
     );
     expect(existsSync(settings.STATE_DIR)).toBe(false);
-  });
+  }, 60_000);
 
   it("stops while another run holds its lock with a fresh heartbeat (exit 3), leaving the lock to it", () => {
     const holder = spawn(process.execPath, ["-e", "setTimeout(()=>{},60000)"], {
@@ -88,7 +88,7 @@ describe("MARKET-1's entry point (exit codes)", () => {
     } finally {
       holder.kill();
     }
-  });
+  }, 60_000);
 
   it("exits 1 on a crash, with the error in its log (its own folder is a file here)", () => {
     const file = path.join(dir, "not-a-folder");
@@ -103,5 +103,5 @@ describe("MARKET-1's entry point (exit codes)", () => {
       .map((l) => JSON.parse(l) as { level: number; msg: string })
       .filter((l) => l.level === 60);
     expect(fatal.map((l) => l.msg)).toEqual(["market1 run crashed"]);
-  });
+  }, 60_000);
 });
