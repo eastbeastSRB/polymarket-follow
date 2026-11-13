@@ -1,6 +1,6 @@
 # WAVE-ELSEWHERE — can the liquidation wave be tested on another venue's public data?
 
-WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:02Z (UTC; every
+WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:03Z (UTC; every
 stamp from `date -u`), for polymarket-follow's supervisor: the desk research
 that decisions 2026-11-13 ("two outside researches") approved. Evidence: the
 source list in section 9 and the supervisor folder's
@@ -9,7 +9,7 @@ proposes data, tests and designs, never trades.
 
 **What was and was not done.** Reading only: the brief, the repository files
 it lists (CLAUDE.md, current-task, external-apis, `market1/rules.md`,
-MARKET-FIND's report, three decisions entries) and the web — 38 searches in
+MARKET-FIND's report, three decisions entries) and the web — 39 searches in
 generic words (never the project's or the owner's name) and about 87 pages:
 documentation, API specifications, terms, GitHub, vendors' product pages, two
 news pages, one preprint's abstract. **No API call to any venue, exchange,
@@ -574,7 +574,10 @@ re-read today).
 - **What differs from Hyperliquid:** a younger and smaller venue, private
   until 2025-10-02, whose flow swelled and fell with a points programme
   [T 64]; liquidation orders at a set "zero price" with a fee of up to 1%;
-  no fee for an ordinary account.
+  no fee for an ordinary account. It was down for about four and a half
+  hours in the night after the 2025-10-10 crash [T 73]: a leg that falls in
+  such a hole finds no trade and is unpriced (H8), and WITHHELD guards the
+  verdict.
 
 **Exactly, in principle, on dYdX v4, GMX and Drift:** from chain data (the
 liquidated subaccount or account is on-chain); each needs an indexer and is
@@ -936,8 +939,11 @@ it is about five to seven hours of transfer.
 list and a count of its rows by `type`.
 *Proves:* that the public file carries `type` (trade, liquidation,
 deleverage), both account numbers and the taker's side; how a takeover by
-the insurance fund is recorded; the size of a day. Without the type and the
-accounts Lighter falls back behind Binance. *Recommendation: yes.*
+the insurance fund is recorded; the size of a day. If the file lacks the
+type or the accounts, the REST route of 1.2 (`GET /api/v1/trades` with
+`type=liquidation`, 100 rows a call) is the second way to the same rows,
+its reach without a key to be checked the same day; without either, Lighter
+falls back behind Binance. *Recommendation: yes.*
 
 **L2 — Lighter's liquidations month by month. Keyless; counts, no price.**
 The daily files from 2025-01-17 to 2026-05-27, read for the type, the
@@ -1070,7 +1076,7 @@ and a miss there would say little about the wave.
   data source, its facts belong in external-apis after the checks verify
   them by call; today's are desk facts.
 
-## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:01Z; the clock was read before and after, not at each page)
+## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:03Z; the clock was read before and after, not at each page)
 
 **Hyperliquid's own pages**
 1. https://hyperliquid.gitbook.io/hyperliquid-docs/historical-data — the two
@@ -1200,3 +1206,6 @@ and a miss there would say little about the wave.
     pays, daily, from August 2025.
 72. https://docs.hydromancer.xyz/reservoir/schema-reference/fills — its
     fills schema and paths, the liquidations sub-dataset.
+73. A search summary of news pages (among them
+    https://www.cryptotimes.io/2025/10/13/lighter-ethereum-l2-goes-offline-for-5-hours-amid-volatile-trading/):
+    Lighter's outage of 2025-10-10/11.
