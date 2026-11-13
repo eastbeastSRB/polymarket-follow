@@ -386,9 +386,12 @@ average drift, not a regime inside it (S beside).
   "The rules were frozen on <date> before any MARKET-1 result existed;
   whatever this page shows, they do not change."
 - **The verdict box:** "Too early to judge — next look <date>." until look 1
-  has run; then exactly "Look k (<END_k's date>): WAVE V." (V its verdict),
-  M11's sentence, and "Next look <date>." unless V is KEEP or DROP or no look
-  is left; nothing else.
+  has run; then exactly "Look k (<END_k's date>): WAVE V." (k the latest look
+  run, V its verdict), M11's sentence, and "Next look <date>." unless no look
+  is left. Once a look has said KEEP or DROP (the test's verdict, M11), that
+  look's two lines stay on show, no next look is named, and each later look
+  adds one line, "After the verdict: Look j (<END_j's date>): WAVE V."
+  (V its verdict); nothing else.
 - **WAVE's headline, on complete weeks only** (F4): the positions with t
   before the latest Monday M at which every pool account's P had reached M
   (or it has a standing hole): positions, days, markets; the running mean net

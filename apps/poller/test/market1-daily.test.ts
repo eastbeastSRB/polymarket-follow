@@ -271,33 +271,59 @@ const positionsOf = (date: string) =>
     );
 
 describe("the verdict box (M14)", () => {
-  it("names the next look until a KEEP or a DROP, or until no look is left", () => {
-    const r = (verdict: "KEEP" | "DROP" | "WITHHELD", k: number) => ({
-      look: k,
-      end: `${["2026-12-19", "2027-02-06", "2027-05-08"][k - 1]}T00:00:00.000Z`,
-      verdict,
-      sentence: "S.",
-    });
+  const r = (
+    verdict: "KEEP" | "DROP" | "TOO FEW TO TELL" | "WITHHELD",
+    k: number,
+  ) => ({
+    look: k,
+    end: `${["2026-12-19", "2027-02-06", "2027-05-08"][k - 1]}T00:00:00.000Z`,
+    verdict,
+    sentence: `Sentence ${k}.`,
+  });
+
+  it("names the latest look and the next, until no look is left", () => {
     expect(verdictBox([null, null, null])).toEqual([
       "Too early to judge — next look 2026-12-19.",
     ]);
     expect(verdictBox([r("WITHHELD", 1), null, null])).toEqual([
       "Look 1 (2026-12-19): WAVE WITHHELD.",
-      "S.",
+      "Sentence 1.",
       "Next look 2027-02-06.",
     ]);
-    expect(verdictBox([r("KEEP", 1), null, null])).toEqual([
-      "Look 1 (2026-12-19): WAVE KEEP.",
-      "S.",
-    ]);
-    expect(verdictBox([r("DROP", 1), r("WITHHELD", 2), null])).toEqual([
-      "Look 2 (2027-02-06): WAVE WITHHELD.",
-      "S.",
+    expect(
+      verdictBox([r("WITHHELD", 1), r("TOO FEW TO TELL", 2), null]),
+    ).toEqual([
+      "Look 2 (2027-02-06): WAVE TOO FEW TO TELL.",
+      "Sentence 2.",
       "Next look 2027-05-08.",
     ]);
     expect(
       verdictBox([r("WITHHELD", 1), r("WITHHELD", 2), r("WITHHELD", 3)]),
-    ).toEqual(["Look 3 (2027-05-08): WAVE WITHHELD.", "S."]);
+    ).toEqual(["Look 3 (2027-05-08): WAVE WITHHELD.", "Sentence 3."]);
+  });
+
+  it("keeps the first KEEP or DROP on show, names no next look, and labels each later look after the verdict (M11)", () => {
+    expect(verdictBox([r("KEEP", 1), null, null])).toEqual([
+      "Look 1 (2026-12-19): WAVE KEEP.",
+      "Sentence 1.",
+    ]);
+    expect(verdictBox([r("DROP", 1), r("WITHHELD", 2), null])).toEqual([
+      "Look 1 (2026-12-19): WAVE DROP.",
+      "Sentence 1.",
+      "After the verdict: Look 2 (2027-02-06): WAVE WITHHELD.",
+    ]);
+    expect(
+      verdictBox([r("KEEP", 1), r("TOO FEW TO TELL", 2), r("DROP", 3)]),
+    ).toEqual([
+      "Look 1 (2026-12-19): WAVE KEEP.",
+      "Sentence 1.",
+      "After the verdict: Look 2 (2027-02-06): WAVE TOO FEW TO TELL.",
+      "After the verdict: Look 3 (2027-05-08): WAVE DROP.",
+    ]);
+    expect(verdictBox([r("WITHHELD", 1), r("DROP", 2), null])).toEqual([
+      "Look 2 (2027-02-06): WAVE DROP.",
+      "Sentence 2.",
+    ]);
   });
 });
 

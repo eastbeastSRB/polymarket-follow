@@ -155,7 +155,11 @@ export function looksDone(root: string): (z.infer<typeof LookResult> | null)[] {
   });
 }
 
-/** M14's verdict box. */
+/**
+ * M14's verdict box: the latest look and the next one; once a look has said
+ * KEEP or DROP (the test's verdict, M11), that look stays and each later look
+ * is labelled "after the verdict".
+ */
 export function verdictBox(
   done: readonly (z.infer<typeof LookResult> | null)[],
 ): string[] {
@@ -163,16 +167,24 @@ export function verdictBox(
     const i = done.findIndex((d, j) => j >= k && d === null);
     return i < 0 ? null : utcDate(LOOK_ENDS[i]!);
   };
+  const line = (k: number, r: z.infer<typeof LookResult>) =>
+    `Look ${k + 1} (${r.end.slice(0, 10)}): WAVE ${r.verdict}.`;
+  const first = done.findIndex(
+    (d) => d?.verdict === "KEEP" || d?.verdict === "DROP",
+  );
+  if (first >= 0)
+    return [
+      line(first, done[first]!),
+      done[first]!.sentence,
+      ...done.flatMap((d, k) =>
+        k > first && d !== null ? [`After the verdict: ${line(k, d)}`] : [],
+      ),
+    ];
   const last = done.reduce<number>((l, d, i) => (d === null ? l : i), -1);
   if (last < 0) return [`Too early to judge — next look ${next(0)}.`];
-  const r = done[last]!;
-  const lines = [
-    `Look ${last + 1} (${r.end.slice(0, 10)}): WAVE ${r.verdict}.`,
-    r.sentence,
-  ];
+  const lines = [line(last, done[last]!), done[last]!.sentence];
   const n = next(last + 1);
-  if (r.verdict !== "KEEP" && r.verdict !== "DROP" && n !== null)
-    lines.push(`Next look ${n}.`);
+  if (n !== null) lines.push(`Next look ${n}.`);
   return lines;
 }
 
