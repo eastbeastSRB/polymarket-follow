@@ -1,5 +1,35 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (MARKET-1 to be planned — the owner, after MARKET-FIND: "ok,
+everything clear now, approve, continue with market-1 plan", and on where
+they would act: "i can start on polymarket if that easiest for me to know
+exact numbers, later i can move on binance or similar"): **MARKET-1, A SECOND
+FORWARD PAPER EXPERIMENT ON THE MARKET ITSELF, IS PLANNED WITH ONE DECIDING
+LINE, WAVE; MARKET-PLAN WRITES IT.** The evidence: MARKET-FIND
+(`docs/reviews/market-find-2026-11-13.md`; exploring, on the 68 days before
+the cut): when at least two different pool accounts were liquidated on the
+same side in small coins within 60 minutes, the coin came back +309.7 ±
+67.7 bps over 24 h (153 entries on 47 days; net +297.1; September +255,
+October +321; outside a wave nothing); the supervisor's own code gives 174
+entries with the beta months, +285.1 ± 58.8 (`verify/MARKET-FIND/wave.mjs`
+in the supervisor folder). **Ruled, as MARKET-FIND recommended (its
+section 6):** (1) one deciding line, WAVE, in place of three — JUMP and TAPE
+printed beside, with every liquidation outside a wave, the late entries and
+the market's own moves; (2) the wave counted by accounts (two or more); (3)
+held one day; (4) the prints beside as its section 3 names them, XREV among
+them; (5) **Polymarket Perps first** — every position priced at
+Polymarket's own recorded book as a taker; BTC and ETH at the wave's
+moments stay prints. **MARKET-PLAN's frame:** MARKET-FIND's exact rule W
+(section 3) as the starting point; the data from the collector's
+recordings (books and trades since 2026-11-10 20:59:54Z) and the pool's
+fills, read after the freeze only; the same three looks as the paper
+experiment (2026-12-19, 2027-02-06, 2027-05-08) and the whole 5% over
+them; keep, drop or too few, as verdicts on the test; the recordings, the
+collector's database and the paper experiment's new data stay sealed until
+MARKET-1's rules are frozen; then a fresh review, the owner's approval, the
+build and the freeze, like the paper experiment's. No new API reads unless
+the plan shows a need and its cost.
+
 2026-11-13 (the market lead — the owner, on STRATEGY-REVIEW's MARKET-1:
 "agree with all your recommendation", then "if you think additional research
 narrowed research on this topic would help, then we can do it before plan
