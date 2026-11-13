@@ -1,6 +1,6 @@
 # WAVE-ELSEWHERE — can the liquidation wave be tested on another venue's public data?
 
-WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:03Z (UTC; every
+WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:04Z (UTC; every
 stamp from `date -u`), for polymarket-follow's supervisor: the desk research
 that decisions 2026-11-13 ("two outside researches") approved. Evidence: the
 source list in section 9 and the supervisor folder's
@@ -9,8 +9,8 @@ proposes data, tests and designs, never trades.
 
 **What was and was not done.** Reading only: the brief, the repository files
 it lists (CLAUDE.md, current-task, external-apis, `market1/rules.md`,
-MARKET-FIND's report, three decisions entries) and the web — 39 searches in
-generic words (never the project's or the owner's name) and about 87 pages:
+MARKET-FIND's report, three decisions entries) and the web — 41 searches in
+generic words (never the project's or the owner's name) and about 88 pages:
 documentation, API specifications, terms, GitHub, vendors' product pages, two
 news pages, one preprint's abstract. **No API call to any venue, exchange,
 explorer or data vendor; no account; no key; no file or dataset downloaded.**
@@ -116,6 +116,7 @@ the first four lines need no account, no key and no money).
    reading the terms** in a browser before any download. *Later; yes.*
 
 **My three steps.**
+
 1. **The keyless checks** (K0, L1, L2, K1, K2): they show which route is
    open and how much history each venue gives.
 2. **You choose the route.** I recommend **the free one that passes its
@@ -382,7 +383,17 @@ it matters.**
   for them [T 46: a copy of GMX's docs; `docs.gmx.io` came back empty];
   Allium lists GMX liquidation tables [T 48]. Positions trade against a pool
   at an oracle price, not an order book. Key, limits, history, terms: not
-  stated on the page read.
+  stated on the page read. AWS's free bucket lists Arbitrum among its
+  datasets [P 57], so GMX's events may be readable there without an account
+  (not looked into).
+- **Orderly.** A public REST list of fully liquidated positions,
+  `GET /v1/public/liquidated_positions` (`symbol`, `start_t`, `end_t`,
+  paging; 10 requests a second per IP; no authentication): each row a
+  `liquidation_id`, a time and the positions with a `transfer_price` and a
+  `liquidator_fee`; **no account** [P 74]. A liquidation number is one
+  event, not one account, and the positions are handed over at a transfer
+  price rather than sold into the book: a proxy on a small venue. Depth of
+  history: not stated.
 - **Drift → Velocity.** `docs.drift.trade` now redirects to
   `docs.velocity.exchange`, which describes a keyless data API with dated
   archive paths "starting at 2022" and `format=csv` [P 47]; liquidation
@@ -393,7 +404,9 @@ it matters.**
   through a search summary]; Tardis holds it from 2026-08-23 [P 27]. No
   account. Aster's own documentation: not read.
 - **Not examined:** Jupiter Perps, Paradex, edgeX, Aevo, Pacifica, Ostium,
-  Synthetix, Gains and others.
+  Synthetix, Gains and others. Lighter's free dataset was found only on a
+  second, deeper read of its own guide; one of these may hold a like
+  surprise.
 
 ### 1.3 The large centralised exchanges
 
@@ -592,6 +605,7 @@ the row (symbol, time, price, size), M sized as in 2.1. The wave: two rows
 of one slice, the same side, small coins, 60 minutes.
 
 **What that changes.**
+
 1. **"Two different accounts" becomes "two different rows."** One account
    liquidated in tranches or across coins gives several rows; MARKET-FIND
    found one account across coins is no wave (+3.6 ± 104.5, 35 cases [R]).
@@ -736,6 +750,7 @@ old weeks the clustered error was a tenth to a third too narrow [R], and
 2.58 ÷ 1.3 is still 1.98).
 
 **H12. The verdict — the first that holds.**
+
 1. **WITHHELD** when more than 10% of the positions are unpriced or depth
    short.
 2. **TOO FEW TO TELL** when the priced positions span fewer than 40 UTC days
@@ -799,6 +814,7 @@ February, 136 in May. K4 replaces this arithmetic with a count before the
 freeze. On Lighter the number is unknown until L2.
 
 **What could still fool us.**
+
 1. **A sibling, not the same thing.** The sensor is another venue's
    liquidated accounts; the positions are at that venue's prices.
 2. **The sizing rule is a choice.** That is why M halved and doubled, the
@@ -1076,9 +1092,10 @@ and a miss there would say little about the wave.
   data source, its facts belong in external-apis after the checks verify
   them by call; today's are desk facts.
 
-## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:03Z; the clock was read before and after, not at each page)
+## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:04Z; the clock was read before and after, not at each page)
 
 **Hyperliquid's own pages**
+
 1. https://hyperliquid.gitbook.io/hyperliquid-docs/historical-data — the two
    S3 buckets, requester pays, monthly uploads, "may be missing", the fill
    prefixes; no dates.
@@ -1102,9 +1119,11 @@ and a miss there would say little about the wave.
     fetch; not read.
 
 **AWS**
+
 12. https://docs.aws.amazon.com/AmazonS3/latest/userguide/RequesterPaysBuckets.html
 
 **Third parties on Hyperliquid**
+
 13. https://www.dwellir.com/docs/hyperliquid/data-catalog.md — prefix dates
     and sizes (its own copy).
 14. https://www.dwellir.com/docs/hyperliquid/data-catalog/node-feeds/fills.md
@@ -1128,6 +1147,7 @@ and a miss there would say little about the wave.
 26. https://www.theblock.co/news/markets/2025-10-21-hyperliquid-traders-double-down-after-historic-wipeout-keep-getting-liquidated-375347
 
 **Tardis.dev**
+
 27. https://docs.tardis.dev/faq/data — the liquidations table by exchange.
 28. https://docs.tardis.dev/historical-data-details/hyperliquid
 29. https://docs.tardis.dev/historical-data-details/binance-futures
@@ -1138,6 +1158,7 @@ and a miss there would say little about the wave.
     columns and the address pattern.
 
 **Binance**
+
 34. https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/All-Market-Liquidation-Order-Streams
 35. https://github.com/binance/binance-public-data — the README.
 36. https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md
@@ -1148,12 +1169,14 @@ and a miss there would say little about the wave.
     (fees), https://www.binance.com/en/support/faq/360033525031 (funding).
 
 **Other centralised exchanges**
+
 39. https://bybit-exchange.github.io/docs/v5/websocket/public/all-liquidation
 40. https://www.okx.com/docs-v5/en/ — the liquidation section not reached.
 41. https://docs.deribit.com/api-reference/market-data/public-get_last_trades_by_instrument_and_time
 42. https://docs.bitfinex.com/reference/rest-public-liquidations
 
 **Other on-chain venues**
+
 43. https://raw.githubusercontent.com/dydxprotocol/v4-chain/main/indexer/services/comlink/public/api-documentation.md
 44. https://docs.dydx.xyz/indexer-client/http, and search summaries of
     https://docs.dydx.xyz/interaction/endpoints (the mainnet address), of a
@@ -1165,6 +1188,7 @@ and a miss there would say little about the wave.
 48. https://docs.allium.so/historical-data/perpetuals/liquidations.md
 
 **Other vendors and studies**
+
 49. https://docs.coinglass.com/reference/liquidation-order; the plan prices
     from a search summary of https://coinglass.com/pricing.
 50. https://api.coinalyze.net/v1/doc — a search summary only.
@@ -1178,6 +1202,7 @@ and a miss there would say little about the wave.
     flags, "the API fills format", the machine it needs.
 
 **Read after the first commit**
+
 56. https://docs.lighter.xyz/developers/integration-guides/historical-data.md
     — Lighter's public dataset: the bucket, the paths, "without an AWS
     account, credentials or payment", the start date.
@@ -1209,3 +1234,4 @@ and a miss there would say little about the wave.
 73. A search summary of news pages (among them
     https://www.cryptotimes.io/2025/10/13/lighter-ethereum-l2-goes-offline-for-5-hours-amid-volatile-trading/):
     Lighter's outage of 2025-10-10/11.
+74. https://orderly.network/docs/build-on-omnichain/restful-api/public/get-liquidated-positions-info.md
