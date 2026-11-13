@@ -1,7 +1,6 @@
 # MARKET-1's rules (rules.md)
 
-DRAFT — not frozen. Frozen by hash before any MARKET-1 result after the cut
-exists (M0). The plan: `docs/reviews/market-plan-2026-11-13.md`, section 1;
+Frozen by hash before any MARKET-1 result after the cut exists (M0). The plan: `docs/reviews/market-plan-2026-11-13.md`, section 1;
 its review's fixes F1–F19 (`docs/reviews/market-plan-review-2026-11-13.md`)
 and the rulings of decisions 2026-11-13, "MARKET-1's plan approved", are
 folded in. Where a rule names code, the code in `apps/poller/src/market1/`
@@ -288,7 +287,8 @@ forced sells and 39 forced buys; +309.7 ± 67.7 bps gross on marks, net
 ## M12. The lines beside — deciding nothing, no verdict word
 
 Each is priced as M6–M9 (the book, else the mark) unless said, from its own
-instants with t ≥ START (but P), and printed in three readings: the net at
+instants with t ≥ START (but P), each position needing its market tradable
+at t (M3), and printed in three readings: the net at
 the book; the gross on marks; and the excess (the gross on marks minus dir ×
 BASE). Its statistic: M10's two-way SE when it spans several markets, the
 CR1 SE by day for a single market. Each look's set: its positions with
@@ -414,14 +414,18 @@ average drift, not a regime inside it (S beside).
   reads the rule book, the market objects and the recordings; recomputes
   every entry from CUT; prices each leg not yet in its record and keeps the
   decision with the book line it used in its own record
-  (`MARKET1_ROOT\books\<run date>.jsonl.gz`), so later runs and the looks
-  reprice from the record and get the same number; keeps each closed day's
-  check once (`days\<UTC date>.json`: files, lines, failures, the alarm);
-  writes the day's log (the format counts first: hour files found and
-  missing, lines parsed and failed, days closed; then every position's state,
-  with the run date it was first seen), the manifest, the backup to
-  `MARKET1_BACKUP` (its own list: `books\`, `days\`, `log\`, `manifest\`,
-  `looks\`, `page\`; F16), and the page last.
+  (`MARKET1_ROOT\books\<run date>-<HHMMSS>.jsonl.gz`, named by the run's
+  time so that a second run the same day keeps the first's), so later runs
+  and the looks reprice from the record and get the same number; keeps each
+  closed day's check once (`days\<UTC date>.json`: files, lines, failures,
+  the alarm, the coverage events); keeps the run date each position was first
+  seen (`seen.json`); writes the day's log (the format counts first: days
+  closed and checked, hour files found and not, lines parsed and failed, the
+  days with the alarm; then every position's state, with the run date it was
+  first seen), the manifest, the backup to `MARKET1_BACKUP` (its own list:
+  `books\`, `days\`, `log\`, `manifest\`, `looks\`, `page\`, `seen.json`; a
+  file is copied when its copy is missing or differs, nothing deleted there;
+  F16), and the page last.
 - **An entry can move or vanish** when a later read of the paper experiment
   brings an earlier liquidation in the same market (the block of M5) or a
   second account (a new wave): each day's log keeps what that day computed;
@@ -432,8 +436,11 @@ average drift, not a regime inside it (S beside).
   market-days of the 40 markets (M3's and the large) before END_k exist; it
   waits at most 7 days past that Monday, then runs, lists what was missing on
   its first page, prices at the mark a leg whose recording days are not
-  final (flagged) and leaves unpriced one without its market-days. A run
-  that crashes before its result exists is not a look.
+  final (flagged "recording not final at the look") and leaves pending, so
+  not priced at the book, one without its market-days. Its result is
+  `looks\L<k>\result.json`; the legs it decides are kept as a run's
+  (`books\<run date>-L<k>.jsonl.gz`). A run that crashes before its result
+  exists is not a look.
 - **MARKET-1's own writes** (its heartbeat, record and page) are written
   whole to a temporary name and renamed; a failed rename is retried once a
   second up to 10 times, and its heartbeat's failure is logged and never
