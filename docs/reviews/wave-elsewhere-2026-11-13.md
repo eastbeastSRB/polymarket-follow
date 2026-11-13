@@ -1,6 +1,6 @@
 # WAVE-ELSEWHERE — can the liquidation wave be tested on another venue's public data?
 
-WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:04Z (UTC; every
+WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:06Z (UTC; every
 stamp from `date -u`), for polymarket-follow's supervisor: the desk research
 that decisions 2026-11-13 ("two outside researches") approved. Evidence: the
 source list in section 9 and the supervisor folder's
@@ -9,7 +9,7 @@ proposes data, tests and designs, never trades.
 
 **What was and was not done.** Reading only: the brief, the repository files
 it lists (CLAUDE.md, current-task, external-apis, `market1/rules.md`,
-MARKET-FIND's report, three decisions entries) and the web — 41 searches in
+MARKET-FIND's report, three decisions entries) and the web — 44 searches in
 generic words (never the project's or the owner's name) and about 88 pages:
 documentation, API specifications, terms, GitHub, vendors' product pages, two
 news pages, one preprint's abstract. **No API call to any venue, exchange,
@@ -403,10 +403,14 @@ it matters.**
   liquidation per symbol in each 1000ms window" [T: Tardis's page on Aster,
   through a search summary]; Tardis holds it from 2026-08-23 [P 27]. No
   account. Aster's own documentation: not read.
-- **Not examined:** Jupiter Perps, Paradex, edgeX, Aevo, Pacifica, Ostium,
-  Synthetix, Gains and others. Lighter's free dataset was found only on a
-  second, deeper read of its own guide; one of these may hold a like
-  surprise.
+- **Seen through search summaries only** [T]: Pacifica's public trades
+  carry a `cause` (`market_liquidation`, `backstop_liquidation`), with
+  Hyperliquid's ladder (the backstop below two thirds of the maintenance
+  margin), and Paradex's a `trade_type` LIQUIDATION; no account was seen on
+  either. Marked tapes, like dYdX's.
+- **Not examined:** Jupiter Perps, edgeX, Aevo, Ostium, Synthetix, Gains
+  and others. Lighter's free dataset was found only on a second, deeper
+  read of its own guide; one of these may hold a like surprise.
 
 ### 1.3 The large centralised exchanges
 
@@ -1092,7 +1096,7 @@ and a miss there would say little about the wave.
   data source, its facts belong in external-apis after the checks verify
   them by call; today's are desk facts.
 
-## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:04Z; the clock was read before and after, not at each page)
+## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:06Z; the clock was read before and after, not at each page)
 
 **Hyperliquid's own pages**
 
