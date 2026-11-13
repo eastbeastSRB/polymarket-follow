@@ -1,7 +1,7 @@
 # MARKET-PLAN-REVIEW — the fresh review of MARKET-1's plan, before the owner approves it
 
 MARKET-PLAN-REVIEW (Sonnet 5.5, max, a different model from the plan's),
-2026-11-13 04:17Z – 05:02Z (UTC; every stamp from `date -u`), for
+2026-11-13 04:17Z – 05:01Z (UTC; every stamp from `date -u`), for
 polymarket-follow's supervisor. The plan under review is
 `docs/reviews/market-plan-2026-11-13.md` (`86ef4da`), written against decisions
 2026-11-13, "the market lead" and "MARKET-1 to be planned". Evidence: the
@@ -618,7 +618,9 @@ sorts after it (S1c: 152 under an incremental build). The brief's reading list
 names MARKET-PLAN's `brief.md`, `progress.md`, `scripts\` and `out\`; I also read
 three scripts and outputs under its `inputs\` (read only), as said above. File
 times in that folder are one hour ahead of UTC (local time); every stamp here is
-from `date -u`.
+from `date -u`. The report's first commit (`a281775`) carried an end time (05:02Z)
+written before the clock said it; the clock said 04:59Z, and the next commit
+corrects it to the time of that edit.
 
 ## Evidence
 
