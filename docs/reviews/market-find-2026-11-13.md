@@ -1,6 +1,6 @@
 # MARKET-FIND — the small-coin lead made exact, and a search for two more market patterns
 
-MARKET-FIND (Fable 5.2, max), 2026-11-13 01:47Z – 02:45Z (UTC; every stamp
+MARKET-FIND (Fable 5.2, max), 2026-11-13 01:47Z – 02:48Z (UTC; every stamp
 from `date -u`), for polymarket-follow's supervisor: the investigation that
 decisions 2026-11-13 ("the market lead") asked for before MARKET-1 is planned.
 Part A makes STRATEGY-REVIEW's small-coin lead exact; part B searches, with a
@@ -29,7 +29,7 @@ FIND-SLOTS slot (each took under ten seconds and far under 1 GB).
 
 **Explorations on the old weeks, each written in `progress.md` before it ran,
 all labelled exploring:** six scripts of shapes, counts and the period's
-description (S0–S5, no outcome); seventeen for part A (A1–A14 with A9b, A9c
+description (S0–S5, no outcome); eighteen for part A (A1–A15 with A9b, A9c
 and A12c); eleven tries for part B (B1–B11 of the twelve allowed). Section 7
 lists them with every print that was not in the plan written first.
 
@@ -127,7 +127,9 @@ confirms it only if it holds in full; May would confirm a little under half
 of it. If the move has gone, the line says so by February or May.
 
 **5. What could still fool us**
-1. **One autumn:** 68 days, 47 wave days, perhaps twenty separate waves.
+1. **One autumn:** 68 days, 47 wave days, perhaps twenty separate waves. The
+   summer months before hold only 22 wave entries: +130 ± 214, which says
+   nothing either way.
 2. **The wave was found on these same weeks** (after "a liquidation alone
    shows nothing" was seen). Its neighbours agree — 30 to 240 minutes, two or
    three accounts: +253 to +477 — so I trust the shape more than the size;
@@ -338,6 +340,16 @@ the matched baseline, the rest raw — the two differ by a few bps):
   rule on the price alone that I tried stands in for the liquidations: not
   the coin's jump (1.6), not the basket's jump (B11), not a new low or high
   (B6), not the market's four-hour move.
+- **The months before the launch week say nothing either way** (A15: the
+  rule of section 3, unchanged, on the beta months — weeks no exploration of
+  this lead had used; written down before the look). Few small coins traded
+  then (SOL from June, HYPE from July, five more from 08-03, fifteen from
+  08-26) and 62 tracked accounts were liquidated in them: 116 episodes, **22
+  wave entries on 14 days, +129.8 ± 213.7** (error by day; 14 above zero);
+  the episodes with one account +18.5 ± 58.3 (105). Forced sells (15) +234.0
+  ± 83.6; forced buys (7) −93.4 ± 574.3 — three entries against one squeeze
+  in HYPE on 2026-08-19 lost 2,025, 684 and 322 bps. Too few and too wide to
+  confirm or to contradict; it does show the tail.
 - **Why it might be real.** A wave means many leveraged accounts on one side
   were closed at once; when the forced orders are done, nobody is left to
   push. The move back is in the coins' prices everywhere (the mark follows
@@ -635,7 +647,9 @@ errors than this table.
 ## 5. What could still fool us
 
 1. **One period.** 68 days, 47 days with a wave entry, about twenty separate
-   waves (22 by A6's count), one busy autumn with a rise and a fall.
+   waves (22 by A6's count), one busy autumn with a rise and a fall. The only
+   other weeks there are, the beta months, hold 22 entries and say nothing
+   either way (+129.8 ± 213.7; 1.3).
 2. **The cell was chosen here.** STRATEGY-REVIEW found the liquidation print
    among hundreds of cells; I found the wave inside it by splitting (coins,
    then accounts). The neighbours, both halves, both sides, both halves of
@@ -703,6 +717,7 @@ before it ran. Scripts and outputs: `workers/MARKET-FIND/explore/`.
 | A12, A12c | the account-count wave (U1, U2) with every check; U2 again by a second script | — |
 | A13 | JUMP by the wave state; BTC, ETH, basket at entries; U2 under the cap | — |
 | A14 | the market's own 4-hour move with and without a wave | — |
+| A15 | the rule of section 3 on the beta months before the launch week (run after the first commit) | — |
 | B1–B11 | part B's tries (section 2) | B1: months, weeks, the two legs, the daily series' autocorrelation; B2: price and funding apart, highs and lows apart; B3: BTC and ETH; B4: raw, sells and buys apart, the list of waves; B5: 24 h; B6: halves, raw; B8: gaps of 300 bps; B10: each weekend; B11: sides, every window, the overlap with waves |
 
 Hundreds of cells were printed. A few beyond three errors are expected by
@@ -774,7 +789,8 @@ abaf0646…86bd4146; `a9b-wave-profile.out.txt` 7d14ca50…3d21da0b;
 e2eae688…3d266d6a; `a11-accounts.out.txt` 409a9e21…ad25f62a;
 `a12-wave-accounts.out.txt` 8e764bde…10f1540c; `a12c-wave-check.out.txt`
 fec9c51f…206c9853; `a13-beside.out.txt` 05802368…ac097b84;
-`a14-basket-path.out.txt` e6af49f3…12f05b70; `b-set1.out.txt`
+`a14-basket-path.out.txt` e6af49f3…12f05b70; `a15-beta-months.out.txt`
+9b8c88fd…342482ed; `b-set1.out.txt`
 64841898…f458687b; `b-set2.out.txt` 19990c7d…3d1d7ba7; `s0-shape.out.txt`
 43e9a0ab…20f0efb9; `s1-shape.out.txt`
 6b843e7e…19df88c3; `s2-tapeliq.out.txt` 46ae6359…29bd8201;
