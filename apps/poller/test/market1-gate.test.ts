@@ -1,9 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   utimesSync,
   writeFileSync,
@@ -12,7 +14,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import { pino } from "pino";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { HEARTBEAT_FILE, LOCK_FILE } from "../src/lock.js";
 import {
   FROZEN_FILE,
   PACKAGE_ROOT,
@@ -25,9 +28,11 @@ import {
   verifyFreeze,
 } from "../src/market1/gate.js";
 import {
+  MARKET1_LOCK,
   PAPER_CHECK_EVERY_MS,
   PAPER_LOCK,
   PAPER_WAIT_MS,
+  openRun,
   paperRunLive,
   parseMarket1Config,
   waitForPaper,
@@ -35,6 +40,7 @@ import {
 } from "../src/market1/run.js";
 import { CUT } from "../src/paper/instants.js";
 import { verifyFreeze as verifyPaperFreeze } from "../src/paper/gate.js";
+import { PAPER_LOCK as PAPER_RUN_LOCK } from "../src/paper/run.js";
 
 const log = pino({ level: "silent" });
 const CLOSED = { open: false } as const;
@@ -200,6 +206,26 @@ describe("the paper experiment's run, waited for (M2, F2)", () => {
     expect(paperRunLive(dir, Date.now())).toBe(false);
   });
 
+  // A process this one may not signal (Windows' System, or init): what a hand run meets in the paper task's S4U process.
+  const guarded = process.platform === "win32" ? 4 : 1;
+  const signalRefused = (() => {
+    try {
+      process.kill(guarded, 0);
+      return false;
+    } catch (err) {
+      return (err as NodeJS.ErrnoException).code === "EPERM";
+    }
+  })();
+  it.runIf(signalRefused)(
+    "reads a holder it may not signal (EPERM) as alive",
+    () => {
+      const dir = tmp("state");
+      writeFileSync(path.join(dir, PAPER_LOCK.lock), `${guarded}\n`);
+      writeFileSync(path.join(dir, PAPER_LOCK.heartbeat), "{}\n");
+      expect(paperRunLive(dir, Date.now())).toBe(true);
+    },
+  );
+
   it("waits a minute at a time while it is live, and gives up after 6 hours", async () => {
     const dir = tmp("state");
     const holder = sleeper();
@@ -221,8 +247,10 @@ describe("the paper experiment's run, waited for (M2, F2)", () => {
     writeFileSync(path.join(dir, PAPER_LOCK.heartbeat), "{}\n");
     utimesSync(path.join(dir, PAPER_LOCK.heartbeat), new Date(t), new Date(t));
     expect(await waitForPaper(dir, log, clock)).toBe(false);
-    expect(slept).toHaveLength(PAPER_WAIT_MS / PAPER_CHECK_EVERY_MS);
-    expect(new Set(slept)).toEqual(new Set([PAPER_CHECK_EVERY_MS]));
+    // 6 hours, a check a minute (M2).
+    expect([PAPER_WAIT_MS, PAPER_CHECK_EVERY_MS]).toEqual([21_600_000, 60_000]);
+    expect(slept).toHaveLength(360);
+    expect(new Set(slept)).toEqual(new Set([60_000]));
 
     slept.length = 0;
     let checks = 0;
@@ -305,20 +333,104 @@ describe("MARKET-1's own writes (M15, F2)", () => {
     expect(readFileSync(file, "utf8")).toBe("two");
     if (process.platform !== "win32") return;
     // Another process holds the file open for 1.5 s (Windows refuses a rename over it).
-    const holder = spawn(
-      process.execPath,
-      [
-        "-e",
-        `const fs=require("fs");const fd=fs.openSync(${JSON.stringify(file)},"r");process.stdout.write("held\\n");setTimeout(()=>fs.closeSync(fd),1500);`,
-      ],
-      { stdio: ["ignore", "pipe", "ignore"] },
-    );
-    children.push(holder);
-    await new Promise<void>((resolve) =>
-      holder.stdout.once("data", () => resolve()),
-    );
+    const hold = async () => {
+      const holder = spawn(
+        process.execPath,
+        [
+          "-e",
+          `const fs=require("fs");const fd=fs.openSync(${JSON.stringify(file)},"r");process.stdout.write("held\\n");setTimeout(()=>fs.closeSync(fd),1500);`,
+        ],
+        { stdio: ["ignore", "pipe", "ignore"] },
+      );
+      children.push(holder);
+      await new Promise<void>((resolve) =>
+        holder.stdout.once("data", () => resolve()),
+      );
+    };
+    await hold();
     expect(() => writeWhole(file, "three", 1)).toThrow(/EPERM|EACCES|EBUSY/);
     writeWhole(file, "four", 10, 500);
     expect(readFileSync(file, "utf8")).toBe("four");
+    // By default: tried again once a second, 10 times in all.
+    await hold();
+    writeWhole(file, "five");
+    expect(readFileSync(file, "utf8")).toBe("five");
+  });
+});
+
+describe("MARKET-1's own lock and heartbeat (M15, F2)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("are its own: neither the collector's nor the paper experiment's, whose pair it reads under the paper's own names", () => {
+    expect(PAPER_LOCK).toEqual(PAPER_RUN_LOCK);
+    expect(MARKET1_LOCK).toEqual({
+      lock: "market1.lock",
+      heartbeat: "market1-heartbeat.json",
+    });
+    const others = [
+      LOCK_FILE,
+      HEARTBEAT_FILE,
+      PAPER_LOCK.lock,
+      PAPER_LOCK.heartbeat,
+    ];
+    expect(others).not.toContain(MARKET1_LOCK.lock);
+    expect(others).not.toContain(MARKET1_LOCK.heartbeat);
+  });
+
+  it("takes its lock, beats at once and every 10 s with its stage, and releases the lock at the end", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    vi.setSystemTime(Date.parse("2026-11-20T10:30:00Z"));
+    const dir = tmp("run");
+    const beat = () =>
+      JSON.parse(
+        readFileSync(path.join(dir, MARKET1_LOCK.heartbeat), "utf8"),
+      ) as { pid: number; time: string; stage: string };
+    const run = openRun(dir);
+    expect(run.taken).toBe(true);
+    if (!run.taken) return;
+    expect(readFileSync(path.join(dir, MARKET1_LOCK.lock), "utf8")).toBe(
+      `${process.pid}\n`,
+    );
+    expect(beat()).toEqual({
+      pid: process.pid,
+      time: "2026-11-20T10:30:00.000Z",
+      stage: "starting",
+    });
+    vi.advanceTimersByTime(9_999);
+    expect(beat().time).toBe("2026-11-20T10:30:00.000Z");
+    vi.advanceTimersByTime(1);
+    expect(beat().time).toBe("2026-11-20T10:30:10.000Z");
+    run.stage("reading");
+    expect(beat()).toMatchObject({
+      time: "2026-11-20T10:30:10.000Z",
+      stage: "reading",
+    });
+    run.close();
+    expect(existsSync(path.join(dir, MARKET1_LOCK.lock))).toBe(false);
+    vi.advanceTimersByTime(30_000);
+    expect(beat().time).toBe("2026-11-20T10:30:10.000Z");
+  });
+
+  it("logs a heartbeat it cannot write and goes on (F2)", () => {
+    const dir = tmp("run");
+    // A folder in the heartbeat's place: every rename over it fails.
+    mkdirSync(path.join(dir, MARKET1_LOCK.heartbeat));
+    const run = openRun(dir);
+    expect(run.taken).toBe(true);
+    if (!run.taken) return;
+    run.stage("reading");
+    run.close();
+    const [file] = readdirSync(path.join(dir, "logs"));
+    const warned = readFileSync(path.join(dir, "logs", file!), "utf8")
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l) as { level: number; msg: string })
+      .filter(
+        (l) => l.msg === "heartbeat not written; the next beat tries again",
+      );
+    expect(warned).toHaveLength(2);
+    expect(warned[0]!.level).toBe(40);
   });
 });

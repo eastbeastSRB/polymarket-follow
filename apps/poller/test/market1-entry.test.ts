@@ -4,8 +4,16 @@
  * folder with made-up settings and nothing else from the environment.
  * Nothing real is read or written.
  */
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,5 +67,41 @@ describe("MARKET-1's entry point (exit codes)", () => {
       "market1: refused: MARKET1_ROOT: must lie outside PAPER_ROOT and RECORDINGS_ROOT\n",
     );
     expect(existsSync(settings.STATE_DIR)).toBe(false);
+  });
+
+  it("stops while another run holds its lock with a fresh heartbeat (exit 3), leaving the lock to it", () => {
+    const holder = spawn(process.execPath, ["-e", "setTimeout(()=>{},60000)"], {
+      stdio: "ignore",
+    });
+    try {
+      mkdirSync(settings.STATE_DIR, { recursive: true });
+      const lock = path.join(settings.STATE_DIR, "market1.lock");
+      writeFileSync(lock, `${holder.pid}\n`);
+      writeFileSync(
+        path.join(settings.STATE_DIR, "market1-heartbeat.json"),
+        "{}\n",
+      );
+      expect(run(["daily"], settings).status).toBe(3);
+      expect(readFileSync(lock, "utf8")).toBe(`${holder.pid}\n`);
+      expect(existsSync(settings.MARKET1_ROOT)).toBe(false);
+      rmSync(lock);
+    } finally {
+      holder.kill();
+    }
+  });
+
+  it("exits 1 on a crash, with the error in its log (its own folder is a file here)", () => {
+    const file = path.join(dir, "not-a-folder");
+    writeFileSync(file, "x\n");
+    const crashed = run(["look", "3"], { ...settings, MARKET1_ROOT: file });
+    expect(crashed.status).toBe(1);
+    const logs = path.join(settings.STATE_DIR, "logs");
+    const fatal = readdirSync(logs)
+      .flatMap((f) =>
+        readFileSync(path.join(logs, f), "utf8").trim().split("\n"),
+      )
+      .map((l) => JSON.parse(l) as { level: number; msg: string })
+      .filter((l) => l.level === 60);
+    expect(fatal.map((l) => l.msg)).toEqual(["market1 run crashed"]);
   });
 });
