@@ -6,8 +6,9 @@ Opus), 2026-11-13, for polymarket-follow's supervisor (UTC; every stamp from
 stopped at about 09:49Z when the session's sign-in failed; I took over at
 10:06Z on the same brief and re-confirmed each of its findings before it went
 in (its F-A and F-B are M1 and M2 below). Under review: MARKET-BUILD's commits
-`79b3984` … `137dfc7` as they stand at `137dfc7` (HEAD did not move; the tree
-was clean throughout): `apps/poller/src/market1.ts` and `src/market1/` (17
+`79b3984` … `137dfc7` as they stand at `137dfc7` (the code did not move: the
+only commits after it are the two reviews' reports, and the tree was clean
+while I read and ran it): `apps/poller/src/market1.ts` and `src/market1/` (17
 files, 3,358 lines), `tools/market1-freeze.cjs`, the MARKET-1 parts of
 `tools/deploy.ps1` and `tools/register-tasks.ps1`, `tools/poller.env`,
 `scripts/market1-reproduce.ts`, and the tests `test/market1-*.ts` (9 files,
@@ -101,9 +102,13 @@ guard what you asked me to look at.
 
 **What I could not check.** The real frame text (spacing: M2) and a real day's
 events, since the recordings are sealed; the collector's real fee schedule and
-how many documents its `rulebook` holds (question Q4); Task Scheduler's real
-behaviour for the new task; the first real run; anything at the full six-month
-size beyond the timings above.
+how many documents its `rulebook` holds (question Q4); the unit of a book
+level's size — every walk reads it as base units (`book.ts:57`, `size * price`
+is the level's dollars), as the collector's own plan did when it measured
+"$1,000 covered", and the rules say so, but no reply of ours is in the
+repository to prove it (MARKET-RULES-REVIEW's finding 10: one read of the
+spec); Task Scheduler's real behaviour for the new task; the first real run;
+anything at the full six-month size beyond the timings above.
 
 ## Findings
 
@@ -112,6 +117,19 @@ Severity as the brief fixes it. Line numbers are at `137dfc7`. "Break" ids:
 `checks/`. Tests lie outside the freeze (`gate.ts` `FROZEN_SCOPE`), so a test
 added after it changes nothing; a change to anything under `src/market1/` is a
 new list.
+
+*Where this meets MARKET-RULES-REVIEW* (`market-rules-review-2026-11-13.md`,
+which I read only after this report was written): its finding 1 is my M1 (it
+also has a red test for it); its finding 2 is my M3 and M4 (its breaks of
+what `look()` feeds the verdict, the look's freeze check and its wait among
+them, and its made-up looks, which give KEEP, DROP, TOO FEW and WITHHELD as the
+rules say); its finding 4 is my L7; its finding 8 is my note on the files
+outside the list; it re-ran all 75 of the builder's breaks (75 of 75 killed),
+where I re-ran 17. In this report alone: the pre-filter's spacing (M2), the
+integrity branches (M5), the lock names and the heartbeat's catch (L1), the
+dead and doubled code (L5, L6), the cost, the entry point, the tools. In its
+report alone: M11's order of WITHHELD and TOO FEW, its wording findings and the
+book level's unit (below, under "What I could not check").
 
 ### High
 
