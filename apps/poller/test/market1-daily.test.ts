@@ -23,6 +23,7 @@ import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  backupMarket1,
   daily,
   freezeDate,
   verdictBox,
@@ -31,7 +32,12 @@ import {
 import { PAPER_FILES, frozenFiles } from "../src/market1/gate.js";
 import { kitData } from "../src/market1/inputs.js";
 import { look, lookMonday } from "../src/market1/look.js";
-import { bannedWords } from "../src/market1/page.js";
+import {
+  bannedWords,
+  renderPage,
+  renderPositions,
+  type PageData,
+} from "../src/market1/page.js";
 import { PAPER_LOCK, type Market1Config } from "../src/market1/run.js";
 import { CUT } from "../src/paper/instants.js";
 import { RESEARCH_ROOT, type PanelFile } from "../src/paper/research.js";
@@ -295,6 +301,95 @@ describe("the verdict box (M14)", () => {
   });
 });
 
+describe("the page's rows (M14)", () => {
+  it("shows the newest 500 positions; positions.html shows every one", () => {
+    const data: PageData = {
+      runDate: "2026-11-22",
+      dataThrough: "2026-11-21",
+      readThrough: null,
+      frozen: { sha256: "0", at: "2026-11-20" },
+      verdict: [],
+      headline: {
+        completeBefore: null,
+        positions: 0,
+        days: 0,
+        markets: 0,
+        mean: null,
+        se: null,
+        band: null,
+        tail: null,
+        markPriced: 0,
+        depthShort: 0,
+        pending: 0,
+        unpriced: 0,
+      },
+      partial: { positions: 501, from: null },
+      beside: [],
+      weeks: [],
+      alarms: [],
+      coinsLeftOut: [],
+      rows: Array.from({ length: 501 }, (_, k) => ({
+        symbol: "SOL-USD",
+        side: "forced sell",
+        t: k,
+        accounts: 2,
+        xIn: k,
+        pIn: 100,
+        inAt: "book",
+        xOut: k,
+        state: "closed",
+        net: 500 - k,
+        flags: [],
+        firstSeen: "2026-11-22",
+      })),
+    };
+    const rows = (html: string) => (html.match(/<tr><td>/g) ?? []).length;
+    const page = renderPage(data);
+    const all = renderPositions(data);
+    expect([rows(page), rows(all)]).toEqual([500, 501]);
+    expect(page).toContain("<td>+1.0</td>");
+    expect(page).not.toContain("<td>+0.0</td>");
+    expect(all).toContain("<td>+0.0</td>");
+  });
+});
+
+describe("MARKET-1's backup (F16)", () => {
+  it("copies its seven folders' files when the copy is missing or differs, even at the same size, and deletes nothing there", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "market1-backup-"));
+    try {
+      const root = path.join(dir, "market1");
+      const dest = path.join(dir, "backup");
+      const files = [
+        "books/2026-11-22-103000.jsonl.gz",
+        "days/2026-11-20.json",
+        "log/2026-11-22.jsonl",
+        "manifest/2026-11-22.sha256",
+        "looks/L1/result.json",
+        "page/index.html",
+        "seen.json",
+      ];
+      for (const f of [...files, "other/not-listed.txt"]) {
+        mkdirSync(path.dirname(path.join(root, f)), { recursive: true });
+        writeFileSync(path.join(root, f), `${f} one\n`);
+      }
+      expect(backupMarket1(root, dest)).toBe(7);
+      for (const f of files)
+        expect(readFileSync(path.join(dest, f), "utf8")).toBe(`${f} one\n`);
+      expect(existsSync(path.join(dest, "other"))).toBe(false);
+      expect(backupMarket1(root, dest)).toBe(0);
+      writeFileSync(path.join(root, "seen.json"), "seen.json two\n");
+      writeFileSync(path.join(dest, "kept.txt"), "kept\n");
+      expect(backupMarket1(root, dest)).toBe(1);
+      expect(readFileSync(path.join(dest, "seen.json"), "utf8")).toBe(
+        "seen.json two\n",
+      );
+      expect(readFileSync(path.join(dest, "kept.txt"), "utf8")).toBe("kept\n");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("the freeze's date (M14)", () => {
   it("is the date of the list's head line; a list without it is an error", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "market1-frozen-on-"));
@@ -523,6 +618,11 @@ describe("MARKET-1's daily run and look, end to end", () => {
     expect(after).toContain("Look 1 (2026-12-19): WAVE WITHHELD.");
     expect(after).toContain("Next look 2027-02-06.");
     expect(bannedWords(after)).toEqual([]);
+    // The backup holds the look's result and the day's manifest too.
+    for (const rel of ["looks/L1/result.json", "manifest/2026-12-30.sha256"])
+      expect(readFileSync(path.join(config.MARKET1_BACKUP, rel)), rel).toEqual(
+        readFileSync(path.join(config.MARKET1_ROOT, rel)),
+      );
 
     // 8. Look 2 at its own limit.
     expect(await look(config, log, 2, lookMonday(2) + 8 * DAY_MS, io)).toBe(0);

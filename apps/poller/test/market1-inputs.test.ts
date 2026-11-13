@@ -11,6 +11,7 @@ import {
   isForced,
   type Liq,
 } from "../src/market1/fills.js";
+import { coinsLeftOut } from "../src/market1/assemble.js";
 import { PACKAGE_ROOT, SealedError } from "../src/market1/gate.js";
 import {
   kitData,
@@ -21,6 +22,7 @@ import {
 } from "../src/market1/inputs.js";
 import { marketsThrough as paperMarketsThrough } from "../src/paper/daily.js";
 import { CUT, mondayOf } from "../src/paper/instants.js";
+import { parseRuleBook } from "../src/paper/rulebook.js";
 import {
   loadResearch,
   type PanelFile,
@@ -91,6 +93,37 @@ describe("the coins (M3)", () => {
     const pool = kitData(PACKAGE_ROOT).pool;
     expect(pool).toHaveLength(1602);
     expect(pool.every((a) => /^0x[0-9a-f]{40}$/.test(a))).toBe(true);
+  });
+
+  it("names each coin left out with its day and that day's records of it (F15)", () => {
+    const docs = [
+      {
+        kind: "instrument",
+        key: "10",
+        at: Date.parse("2026-11-17T09:00:00Z"),
+        value: { instrument_id: 10, symbol: "HYPE-USD" },
+      },
+      {
+        kind: "instrument",
+        key: "10",
+        at: Date.parse("2026-11-18T01:00:00Z"),
+        value: { instrument_id: 10, symbol: "HYPE-USD", close_only: true },
+      },
+      {
+        kind: "instrument",
+        key: "31",
+        at: Date.parse("2026-11-18T02:00:00Z"),
+        value: { instrument_id: 31, symbol: "PUMP-USD" },
+      },
+    ];
+    const markets = [...kitData(PACKAGE_ROOT).markets.keys()];
+    expect(coinsLeftOut(parseRuleBook(docs, markets), docs)).toEqual([
+      {
+        iid: 10,
+        from: "2026-11-18",
+        records: ["instrument/10 at 2026-11-18T01:00:00.000Z"],
+      },
+    ]);
   });
 });
 

@@ -3,11 +3,14 @@
  * for M4–M12, every output asserted, the edges pinned.
  */
 import { beforeAll, describe, expect, it } from "vitest";
+import { START } from "../src/market1/assemble.js";
 import { namedSets, computeAll } from "../src/market1/compute.js";
 import type { Liq } from "../src/market1/fills.js";
 import {
   baseOf,
+  basketWeek,
   blockOf,
+  othersMove,
   spotsOf,
   type Position,
 } from "../src/market1/lines.js";
@@ -154,6 +157,31 @@ describe("the positions of every line (M6, M12)", () => {
     expect(by("B10")).toEqual([[6, T0 + HOUR_MS, -1, 120_000, DAY_MS]]);
     const wave = spots.find((s) => s.line === "WAVE" && s.iid === 10)!;
     expect(wave).toMatchObject({ accounts: ["a", "b"], coins: 2, side: -1 });
+  });
+
+  it("counts WAVE from START, the first whole UTC day of the books; a wave before it is P (M1, M12)", () => {
+    const before = Date.parse("2026-11-10T23:59:59.999Z");
+    const first = Date.parse("2026-11-11T00:00:00.000Z");
+    const spots = spotsOf(
+      [
+        liq(before, "a"),
+        liq(before, "b"),
+        liq(first, "c", -1, 10),
+        liq(first, "d", -1, 10),
+      ],
+      [],
+      { cut: Date.parse("2026-11-07T00:00:00Z"), start: START },
+      Infinity,
+      () => true,
+    );
+    expect(
+      spots
+        .filter((s) => s.line === "P" || s.line === "WAVE")
+        .map((s) => [s.line, s.iid, s.t]),
+    ).toEqual([
+      ["P", 8, before],
+      ["WAVE", 10, first],
+    ]);
   });
 
   it("needs its market tradable at t, and lists what opens before END", () => {
@@ -405,6 +433,32 @@ describe("BASE (M12, F10)", () => {
     const empty = baseOf(mk, from, from + DAY_MS);
     expect(empty.every((v) => Number.isNaN(v))).toBe(true);
   });
+
+  it("stops at the window's end and at the market object's last minute (M12)", () => {
+    const from = Date.parse("2026-11-19T00:00:00Z");
+    const mark = (i: number) => 100 * (1 + i / 1e5 + ((i * 7) % 13) / 1e4);
+    const mk = market(8, from, 3, mark);
+    // j from `lo` (included) to `hi` (excluded), by block.
+    const own = (lo: number, hi: number) =>
+      Array.from({ length: 6 }, (_, b) => {
+        let s = 0;
+        let n = 0;
+        for (let j = lo; j < hi; j++) {
+          if (Math.floor((j % 1_440) / 240) !== b) continue;
+          s += (mark(j + 1_440) / mark(j) - 1) * 1e4;
+          n += 1;
+        }
+        return s / n;
+      });
+    // END − 24 h inside the marks: the minutes of the first day only.
+    baseOf(mk, from, from + 2 * DAY_MS).forEach((v, b) =>
+      expect(v).toBeCloseTo(own(0, 1_440)[b]!, 9),
+    );
+    // END past the market object's end: the last minute j with marks[j + 1,440] is 2,879.
+    baseOf(mk, from, from + 4 * DAY_MS).forEach((v, b) =>
+      expect(v).toBeCloseTo(own(0, 2_880)[b]!, 9),
+    );
+  });
 });
 
 describe("the statistic and the verdict (M10, M11)", () => {
@@ -448,6 +502,13 @@ describe("the statistic and the verdict (M10, M11)", () => {
     expect(v({ se: null })).toBe("TOO FEW TO TELL");
     expect(v({ days: MIN_DAYS - 1 })).toBe("TOO FEW TO TELL");
     expect(v({ markets: MIN_MARKETS - 1 })).toBe("TOO FEW TO TELL");
+    // F5 guards DROP as well as KEEP.
+    expect(v({ mean: -100, days: MIN_DAYS - 1 })).toBe("TOO FEW TO TELL");
+    expect(v({ mean: -100, markets: MIN_MARKETS - 1 })).toBe("TOO FEW TO TELL");
+    // M11's order: WITHHELD first, then TOO FEW TO TELL.
+    expect(
+      v({ notAtBookShare: 0.2, se: null, days: 1, markets: 1, mean: -100 }),
+    ).toBe("WITHHELD");
   });
   it("KEEP needs m − z·SE above 0 and the mean excess above 0 (F1); DROP below +50 and it wins", () => {
     expect(v({ mean: 28.0 })).toBe("TOO FEW TO TELL");
@@ -640,5 +701,169 @@ describe("the prints (M13) and the tail (B11)", () => {
     // The other small coins have no market: OWN is unknown; S's basket too.
     expect(w.own).toBeNull();
     expect(w.basket).toBeNull();
+  });
+});
+
+describe("the prints' numbers (M12, M13)", () => {
+  it("the band with Student's t on day clusters: df = days − 1 at the look's two-sided limit", () => {
+    const D = Date.parse("2026-11-20T00:00:00Z");
+    const nets = [100, -50, 30, 80, -20, 60, 10, 40, -10, 70];
+    const ps = nets.map((n, d) => pos(D + d * DAY_MS, 8, priced(n)));
+    // t of 9 degrees at the upper tail of the normal's z (computed apart by
+    // Simpson's rule and bisection): z 2.81 → 3.695608, z 2.43 → 2.994155.
+    for (const [z, t] of [
+      [2.81, 3.695608],
+      [2.43, 2.994155],
+    ] as const) {
+      const s = summarize(kit, ps, z);
+      expect(s.money!.days).toBe(10);
+      expect((s.band!.high - s.money!.mean) / s.money!.seDay!).toBeCloseTo(
+        t,
+        4,
+      );
+      expect((s.money!.mean - s.band!.low) / s.money!.seDay!).toBeCloseTo(t, 4);
+    }
+  });
+
+  it("the win share, the median and quartiles, the costliest third, the five busiest days, the worst 5%", () => {
+    const D = Date.parse("2026-11-20T00:00:00Z");
+    const nets = [
+      -120, 45, 0, 300, -15, 80, 60, -60, 12, 7, 150, -200, 33, 90, -5, 18, 250,
+      -45, 5, 70, 120,
+    ];
+    // 21 positions on 7 days, 6, 5, 4, 2, 2, 1 and 1 of them; entry costs rising with k.
+    const dayOf = [
+      0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 6,
+    ];
+    const ps = nets.map((n, k) =>
+      pos(
+        D + dayOf[k]! * DAY_MS + k * MIN,
+        8 + (k % 2) * 2,
+        priced(n, {
+          entryCost: k,
+        }),
+      ),
+    );
+    const s = summarize(kit, ps, 2.81);
+    // Sorted: −200 −120 −60 −45 −15 −5 0 5 7 12 18 33 45 60 70 80 90 120 150 250 300.
+    expect(s.winShare).toBe(14 / 21);
+    expect([s.median, s.q1, s.q3]).toEqual([18, -5, 80]);
+    expect(s.entryCost).toEqual({ median: 10, p90: 18 });
+    // The 7 dearest entries (k 14 to 20).
+    expect(s.costliestThird).toBeCloseTo(
+      (-5 + 18 + 250 - 45 + 5 + 70 + 120) / 7,
+      12,
+    );
+    expect(s.fiveBusiestShare).toBe(19 / 21);
+    // ⌈5% of 21⌉ = 2: the mean of −200 and −120.
+    expect(tailOf(ps).worstFivePct).toBe(-160);
+  });
+
+  it("OWN and S's basket need at least 5 coins with both marks; S's basket reads the 7 days before t", () => {
+    const from = Date.parse("2026-11-10T00:00:00Z");
+    const slope: Record<number, number> = {
+      8: 3,
+      10: 1,
+      31: 2,
+      32: -1,
+      33: 4,
+      34: 0.5,
+    };
+    const mark = (iid: number, i: number) =>
+      100 * (1 + (slope[iid]! * i) / 1e5);
+    const markets = new Map(
+      Object.keys(slope).map((k) => [
+        Number(k),
+        market(Number(k), from, 10, (i) => mark(Number(k), i)),
+      ]),
+    );
+    const of = (without: number | null) => (iid: number) =>
+      iid === without ? null : (markets.get(iid) ?? null);
+    const move = (iid: number, a: number, b: number) =>
+      (mark(iid, (b - from) / MIN) / mark(iid, (a - from) / MIN) - 1) * 1e4;
+    const a = Date.parse("2026-11-18T10:02:00Z");
+    const b = a + DAY_MS;
+    const others = [10, 31, 32, 33, 34];
+    expect(othersMove(kit, of(null), 8, a, b)).toBeCloseTo(
+      others.reduce((s, iid) => s + move(iid, a, b), 0) / 5,
+      9,
+    );
+    expect(othersMove(kit, of(34), 8, a, b)).toBeNull();
+    const t = Date.parse("2026-11-18T12:00:00Z");
+    // The small coins with both marks: 8, 10, 31, 32, 33, 34.
+    const basket = (ids: number[]) =>
+      ids.reduce((s, iid) => s + move(iid, t - 7 * DAY_MS, t - MIN), 0) /
+      ids.length;
+    expect(basketWeek(kit, of(null), t)).toBeCloseTo(
+      basket([8, 10, 31, 32, 33, 34]),
+      9,
+    );
+    const five = (iid: number) =>
+      [8, 10, 31, 32, 33].includes(iid) ? (markets.get(iid) ?? null) : null;
+    expect(basketWeek(kit, five, t)).toBeCloseTo(
+      basket([8, 10, 31, 32, 33]),
+      9,
+    );
+    const four = (iid: number) =>
+      [8, 10, 31, 32].includes(iid) ? (markets.get(iid) ?? null) : null;
+    expect(basketWeek(kit, four, t)).toBeNull();
+  });
+
+  it("OWN is WAVE's gross on marks minus dir × the other small coins' mean move, for a forced sell and a forced buy", () => {
+    const from = Date.parse("2026-11-19T00:00:00Z");
+    const slope: Record<number, number> = {
+      8: 3,
+      10: 1,
+      31: 2,
+      32: -1,
+      33: 4,
+      34: 0.5,
+    };
+    const mark = (iid: number, i: number) =>
+      100 * (1 + (slope[iid]! * i) / 1e5);
+    const markets = new Map(
+      Object.keys(slope).map((k) => [
+        Number(k),
+        market(Number(k), from, 3, (i) => mark(Number(k), i)),
+      ]),
+    );
+    const all = computeAll({
+      kit,
+      small: [
+        liq(T0, "a"),
+        liq(T0, "b"),
+        liq(T0 + 2 * HOUR_MS, "c", 1),
+        liq(T0 + 2 * HOUR_MS, "d", 1),
+      ],
+      large: [],
+      at: { cut: T0 - DAY_MS, start: T0 },
+      end: from + 3 * DAY_MS,
+      tradable: () => true,
+      market: (iid) => markets.get(iid) ?? null,
+      quote: () => ({ source: "mark", why: "gap" }),
+      fee: () => 0.0004,
+    });
+    const move = (iid: number, x0: number, x1: number) =>
+      (mark(iid, Math.floor((x1 - from) / MIN)) /
+        mark(iid, Math.floor((x0 - from) / MIN)) -
+        1) *
+      1e4;
+    const wave = all.filter((p) => p.line === "WAVE");
+    expect(wave.map((p) => p.dir)).toEqual([1, -1]);
+    for (const p of wave) {
+      const others =
+        [10, 31, 32, 33, 34].reduce(
+          (s, iid) => s + move(iid, p.xIn, p.xOut),
+          0,
+        ) / 5;
+      expect(p.priced!.grossOnMarks).toBeCloseTo(
+        p.dir * move(8, p.xIn, p.xOut),
+        9,
+      );
+      expect(p.own).toBeCloseTo(
+        p.dir * move(8, p.xIn, p.xOut) - p.dir * others,
+        9,
+      );
+    }
   });
 });
