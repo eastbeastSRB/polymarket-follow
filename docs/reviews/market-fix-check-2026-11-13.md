@@ -1,7 +1,7 @@
 # MARKET-FIX-CHECK — the fresh check of MARKET-1's fix batch, before its freeze
 
 MARKET-FIX-CHECK (Sonnet 5.5, max, fresh; the fixer, MARKET-FIX, was Opus), 2026-11-13
-13:27Z – 14:11Z (UTC; every stamp from `date -u`), for polymarket-follow's supervisor.
+13:27Z – 14:10Z (UTC; every stamp from `date -u`, one slip below), for polymarket-follow's supervisor.
 Under check: the diff `3821416..4ea4b41` (16 commits, `20ec89c` … `4ea4b41`), the ruling's
 calls 1–12 (decisions 2026-11-13, "MARKET-1's two fresh reviews — the owner's ruling on the
 fixes"), MARKET-FIX's own calls and its two questions, both reports
@@ -120,7 +120,7 @@ Applying either edit changes the hash of `market1/rules.md`, so the draft list's
 (`3073e097…ed27`) is stale at once (the file count stays 64, the eleven paper files do not
 move); `--final` writes the list afresh, and the sweep must update the draft hash where
 current-task and architecture quote it. **Is the order safe? Yes.** I traced both functions
-statement by statement (table above); the freeze check is the first read of each; nothing
+statement by statement (the line numbers above); the freeze check is the first read of each; nothing
 sealed is opened before it; the paper run's wait comes before the first read of the paper
 store in both. **Is it tested? Partly:** the exit 4 and exit 5 paths are tested (nothing but
 the log is written), but the repository's tests cannot see the *order* (N2).
@@ -258,7 +258,7 @@ fails it is skipped here and counted at the day check.
 | Rule | Touched by | Text against code |
 |---|---|---|
 | M0 | none (the gap) | the sealed-data sentence: N1; the kit bullet: N5; the rest as before (list, scope, eleven files, `gateOf`) |
-| M1 | call 9 | exact (item 1 of RR5 above) |
+| M1 | call 9 | exact (RR5 above) |
 | M7 | call 9 (M1's cross-reference) | unchanged; the text of M1 points at it correctly |
 | M11 | calls 3, 9 | the order is `stats.ts:90–98`; "priced positions that have one" is `summary.ts:116–119`; "no BASE cell or no marks" is `noBase`; the sentence is `sentence()` |
 | M12 | call 9 | OWN `dir ×` = `compute.ts:52`; the ± note = the builder's list; C "[start, end)" = `compute.ts:78` (unpinned); S "exactly 0 or fewer than 5 coins is unknown" = `compute.ts:106` and `lines.ts:179` (the 0 unpinned) |
@@ -350,7 +350,10 @@ heredoc halved a `\n` in my own break list (a syntax error, found at once and me
 Edit tool; no break ran on a broken list). (3) My first recomputation script held an assertion
 with a precedence slip that tested nothing; I fixed it, re-ran all three seeds and quote the
 re-run's counts. (4) The tool refused a first draft file named like a report in my own folder; I
-did not work around it by shell, and wrote the report once, at the path the brief names.
+did not work around it by shell, and wrote the report once, at the path the brief names. (5) The
+first commit of this report (`2e62446`) carried the closing stamp 14:11Z in its header when the
+clock said 14:10Z (written one minute ahead of the clock, not read); the second commit corrects
+it at the minute the clock names.
 
 ## Evidence
 
