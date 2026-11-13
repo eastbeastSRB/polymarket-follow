@@ -1,6 +1,6 @@
 # WAVE-ELSEWHERE — can the liquidation wave be tested on another venue's public data?
 
-WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 22:47Z (UTC; every
+WAVE-ELSEWHERE (Fable 5.2, max), 2026-11-13 22:02Z – 23:02Z (UTC; every
 stamp from `date -u`), for polymarket-follow's supervisor: the desk research
 that decisions 2026-11-13 ("two outside researches") approved. Evidence: the
 source list in section 9 and the supervisor folder's
@@ -9,8 +9,8 @@ proposes data, tests and designs, never trades.
 
 **What was and was not done.** Reading only: the brief, the repository files
 it lists (CLAUDE.md, current-task, external-apis, `market1/rules.md`,
-MARKET-FIND's report, three decisions entries) and the web — 31 searches in
-generic words (never the project's or the owner's name) and about 65 pages:
+MARKET-FIND's report, three decisions entries) and the web — 38 searches in
+generic words (never the project's or the owner's name) and about 87 pages:
 documentation, API specifications, terms, GitHub, vendors' product pages, two
 news pages, one preprint's abstract. **No API call to any venue, exchange,
 explorer or data vendor; no account; no key; no file or dataset downloaded.**
@@ -37,105 +37,115 @@ least two different tracked accounts liquidated the same way in small coins
 within an hour; the 1,602 tracked accounts; every crypto perp but BTC and
 ETH. A **slice** is a fixed part of all of a venue's accounts, chosen by the
 digits of the address, so nobody picks who is in it. **Exact** means
-MARKET-1's rule word for word; a **proxy** is the nearest thing a venue's
-data allows. A **bp** is 0.01%.
+MARKET-1's rule word for word on a fixed set of real, different accounts; a
+**proxy** is the nearest thing a venue's data allows without them. A **bp**
+is 0.01%.
 
-**The answer, in two sentences.** Yes, on Hyperliquid: it publishes every
-trade with both accounts and marks each liquidation with the liquidated
-account, back to mid-2025, and Polymarket Perps is built to the same design,
-so MARKET-1's rule maps onto it field for field and can be tested on about
-ten months of days nobody here has looked at — for a one-off download cost I
-estimate at $20–60 and an AWS account, which is your decision. Nowhere else
-exactly: the large centralised exchanges publish liquidations without the
-account (Binance at most one a second per coin, its history sold by a
-vendor), so there the wave can only be approximated.
+**The answer, in two sentences.** Yes, exactly, on two venues that publish
+the account on every liquidation: **Hyperliquid**, to whose design
+Polymarket Perps is built, with official fill files back to mid-2025 (about
+$20–60 of AWS transfer and an AWS account, unless a free copy that AWS lists
+holds them), and **Lighter**, whose every trade since January 2025 sits in a
+free public bucket that needs no account and no key — if its files carry the
+liquidation mark and the account numbers that its API shows, which one small
+check settles. Nowhere else exactly: the large centralised exchanges publish
+liquidations without the account (Binance at most one a second per coin, its
+history sold by a vendor), so there the wave can only be approximated.
 
 **The venues, ranked for this purpose** (the full table: section 5).
 
 | # | Venue | What is public | The account on a liquidation? | History | Cost | For the wave |
 |---|---|---|---|---|---|---|
-| 1 | **Hyperliquid** | every fill; liquidations marked | **yes** | marked fills from 2025-07-27, probably from 2025-05-25; order books from 2023 | about $20–60 of AWS transfer, once; an AWS account | **exact** |
-| 2 | **Binance USD-M futures** | a liquidation-order feed, at most one a second per coin | no | none from Binance itself; a vendor holds it from 2020-01-07 | $700 for a month (Tardis), or its free first day of each month; Binance's own price files are free | a proxy; the venue you named for later |
-| 3 | **dYdX v4** | a public tape that marks liquidation trades | not on the tape (on the chain, with more work) | depth not stated; a vendor from 2024-08-23 | free, no key | a proxy at no cost; thin markets |
-| 4 | **Lighter** | a public tape with a liquidation mark **and both account numbers** | **yes** | its own history not found; a vendor from 2026-04-17 | live: free; history: paid | exact, but only on months the finding already used; a candidate live sensor |
+| 1 | **Hyperliquid** | every fill; liquidations marked | **yes** | marked fills from 2025-07-27, probably from 2025-05-25; order books from 2023 | about $20–60 of AWS transfer, once, with an AWS account — or nothing, if AWS's free copy holds the fills (one keyless listing tells) | **exact, and the best test bed:** Polymarket's own engine design, the largest flow, archived books |
+| 2 | **Lighter** | every trade, marked trade, liquidation or deleverage, with both account numbers | **yes** | a public file a day from 2025-01-17 (open to the public from 2025-10-02); no free order books | **free; no account, no key** | **exact, if its files carry what its API shows** (one check); priced at the tape; a younger, smaller venue |
+| 3 | **Binance USD-M futures** | a liquidation-order feed, at most one a second per coin | no | none from Binance itself; a vendor holds it from 2020-01-07 | $700 for a month (Tardis), or its free first day of each month; Binance's own price files are free | a proxy; the venue you named for later |
+| 4 | **dYdX v4** | a public tape that marks liquidation trades | not on the tape (on the chain, with more work) | depth not stated; a vendor from 2024-08-23 | free, no key | a proxy at no cost; thin markets |
 | 5 | Bybit, OKX, Bitfinex, Deribit, Kraken, HTX, BitMEX, Bitget, Aster | liquidation feeds | no (Bitfinex: a position number) | live feeds; history at vendors | — | proxies, behind Binance |
 | 6 | GMX, Drift/Velocity | on-chain liquidations | yes | — | free | no order book, or thin: not first |
 
-**The best design, in a few lines** (WAVE-H; the rules: section 4).
-- **Where and when.** Hyperliquid's own archive of fills. The rules are
-  frozen by hash first. A sizing step reads counts only, on 2025-05-25 to
-  2025-08-01. The test runs on **2025-08-01 to 2026-05-28: 300 days, all
-  before Polymarket Perps had any data**, so no day of it is a day the
-  finding was made on. Nothing at or after 2026-11-07 is read. Polymarket's
-  own months (2026-05-28 to 2026-11-07) are printed apart, as a second
-  reading that is not independent.
+**The best design, in a few lines** (the rules: section 4; the same on
+either venue).
+- **Where and when.** The venue's own files. The rules are frozen by hash
+  first. A sizing step reads counts only. The test runs **only on days
+  before 2026-05-28, when Polymarket Perps had no data yet**, so no day of
+  it is a day the finding was made on: on Hyperliquid 2025-08-01 to
+  2026-05-28, 300 days; on Lighter to the same end, from a start set by a
+  count. Nothing at or after 2026-11-07 is read. Polymarket's own months
+  (2026-05-28 to 2026-11-07) are printed apart, as a second reading that is
+  not independent.
 - **The definition.** MARKET-1's M3–M6 unchanged — a liquidation fill that is
   a taker's and reduces the position; two different accounts, the same side,
   small coins, 60 minutes; one entry a coin an hour; $1,000 against the
   forced side 2 minutes later, held 24 hours, no stop. **The pool becomes a
-  slice:** Hyperliquid shows every account, and "two accounts in an hour" is
+  slice:** these venues show every account, and "two accounts in an hour" is
   true there almost always, so the accounts are cut by address into M equal
-  slices, M chosen once so that a slice sees liquidations as often as
-  Polymarket's pool did (5.7 episodes a day). Every slice is used.
-- **Prices and costs.** A taker at Hyperliquid's archived order book, else
-  at the next real trade on our side; 4.5 bps a leg; hourly funding.
+  slices, M set each month from the two months before it so that a slice
+  sees liquidations as often as Polymarket's pool did (5.7 episodes a day).
+  Every slice is used.
+- **Prices and costs.** A taker at the archived order book where one exists
+  (Hyperliquid), else at the next real trade on our side; the venue's taker
+  fee; hourly funding.
 - **The baseline.** The same coin's average 24-hour move in the same 4-hour
   block; "holds" needs the result above it too.
 - **The verdict, in one look.** HOLDS when the mean net result minus 2.58
   errors is above zero and the excess over the baseline is above zero. DOES
   NOT HOLD when the mean plus 2.58 errors is below +50 bps (your line).
   Otherwise NOT SETTLED, with the largest size the data do not rule out.
-- **What it could show** [A]: if waves come as often as on Polymarket's old
-  weeks, about 675 entries a slice on about 205 days and an error near 33
-  bps: a true +110 bps would be confirmed four times in five. MARKET-1
-  reaches 136 only in May 2027. How many waves there really are is unknown
-  until a count (K4).
+- **What it could show** [A]: on Hyperliquid, if waves come as often as on
+  Polymarket's old weeks, about 675 entries a slice on about 205 days and an
+  error near 33 bps: a true +110 bps would be confirmed four times in five.
+  MARKET-1 reaches 136 only in May 2027. How many waves either venue really
+  holds is unknown until a count (K4, L2).
 
-**The checks I would make next** (exact calls: section 6; you approve each).
-1. **K1, two keyless calls:** Hyperliquid's list of markets — which of
-   MARKET-1's 38 coins trade there. *Yes.*
-2. **K2, about five keyless calls:** a liquidated account's own fill, seen on
-   real data — the mark, the taker flag, the position before. *Yes.*
-3. **K3, your AWS account, a few cents:** list the archive's dates and
-   sizes; fetch one hour of fills from the sizing months and one hour of
-   books. *Yes — it is the gate to everything else.*
-4. **K4, the sizing months only (inside AWS's free 100 GB):** counts, no
-   price — how many liquidations a day, the slice size, how often a wave
-   state occurs. *Yes, as the plan's first step.*
-5. **K5–K7, only if a venue without accounts is wanted later:** one free
-   Tardis file of Binance liquidations; two keyless calls to dYdX's tape; a
-   count on Polymarket's old weeks of how often two liquidation orders are
-   two accounts. *Later.*
-6. **K8, reading:** Hyperliquid's and Tardis's terms in a browser (a fetch
-   could not read Hyperliquid's). *Yes, before any download.*
+**The checks I would make next** (exact calls: section 6; you approve each;
+the first four lines need no account, no key and no money).
+1. **K0, one listing of AWS's free public bucket:** does its Hyperliquid
+   folder hold the fills? *Yes, first of all.*
+2. **L1, one file from Lighter's public bucket:** are the liquidation mark
+   and both account numbers in it? *Yes.*
+3. **L2, Lighter's liquidations counted month by month, no price:** how many
+   days with waves its history can give. *Yes.*
+4. **K1 and K2, about seven calls to Hyperliquid's public API:** which of
+   MARKET-1's 38 coins trade there; a liquidated account's own fill on real
+   data. *Yes.*
+5. **K3 and K4, only if Hyperliquid's files must come from its paying
+   bucket:** your AWS account, a few cents — the archive's dates and sizes,
+   one hour of fills and of books; then counts on the sizing months, inside
+   AWS's free 100 GB. *Yes, if that route is taken.*
+6. **K5–K7, only if a venue without accounts is wanted later;** and **K8,
+   reading the terms** in a browser before any download. *Later; yes.*
 
 **My three steps.**
-1. **You decide two gates:** an AWS account for a one-off download (you run
-   the commands, so no key enters the project), and where this work lives —
-   I recommend research files outside the poller, with the rule "nothing at
-   or after the cut is read".
-2. **K1–K4, then the project's own road:** a plan written rules-first from
-   section 4, a fresh review, the build, the freeze by hash.
-3. **Run it once on the 300 days.** Only if it holds: the same positions
-   priced on Binance's free files, and a proxy without accounts tested on
-   Hyperliquid before any money goes to a vendor.
+1. **The keyless checks** (K0, L1, L2, K1, K2): they show which route is
+   open and how much history each venue gives.
+2. **You choose the route.** I recommend **the free one that passes its
+   check: Hyperliquid if K0 finds its fills in the free bucket, otherwise
+   Lighter.** Hyperliquid through an AWS account (you run the commands, so
+   no key enters the project) is the stronger test: take it second, if the
+   first verdict is NOT SETTLED or to confirm a HOLDS — or first, if you do
+   not mind the account.
+3. **The project's own road on that venue:** a plan written rules-first from
+   section 4, a fresh review, the build, the freeze by hash, one run. Only
+   after a HOLDS: the same positions priced on Binance's free files, and a
+   proxy without accounts measured against the exact wave before any money
+   goes to a vendor.
 
-**Is it worth doing? Yes, on Hyperliquid first.** It is the only way I found
-to learn within weeks, from days the finding never touched, whether the
-wave is more than one autumn on one venue; MARKET-1 alone needs until
-February to May 2027 for sizes under +200 bps. Its honest limits:
-- it tests a sibling — Hyperliquid's liquidated accounts as the sensor, not
-  Polymarket's pool;
-- the 300 days hold 2025-10-10, the largest liquidation crash on record (a
-  preprint's words), and the rule has no stop;
+**Is it worth doing? Yes.** It is the only way I found to learn within
+weeks, from days the finding never touched, whether the wave is more than
+one autumn on one venue; MARKET-1 alone needs until February to May 2027 for
+sizes under +200 bps. Its honest limits:
+- it tests a sibling — another venue's liquidated accounts as the sensor,
+  not Polymarket's pool;
+- the test months hold 2025-10-10, the largest liquidation crash on record
+  (a preprint's words), and the rule has no stop;
+- Hyperliquid and Lighter lived the same market days, so two HOLDS on the
+  same months are one piece of evidence seen twice;
 - a "holds" there still leaves the price at Polymarket's own book to
   MARKET-1, which this work does not touch.
 
-**If you would rather not open an AWS account:** the free routes are proxies
-only — dYdX's public tape (K6), or Tardis's free first day of each month for
-Binance (about 82 days) — and the paid one is Tardis at $700 for a month. I
-would not pay for a proxy before the exact test exists; I would rather wait
-for MARKET-1's February look.
+**What I would not do:** pay a vendor, or start with a centralised exchange.
+Without accounts the test is of a different rule, and a miss there would
+say little about the wave.
 
 ---
 
@@ -224,6 +234,14 @@ for MARKET-1's February look.
   months) at $0.114 a GB, less the 100 GB a month that are free, plus a few
   dollars for the book hours of the positions. K3's listing gives the exact
   sizes.
+- **A free copy may exist.** AWS's open-data registry lists, in its public
+  bucket `aws-public-blockchain` (us-east-2; "AWS CLI Access (No AWS account
+  required)"), a dataset "Hyperliquid", maintained by Hyperliquid, at
+  `s3://aws-public-blockchain/v1.1/hyperliquid/` [P 57]. **What it holds is
+  not stated:** the registry's documentation covers Bitcoin and Ethereum
+  only [P 58], Hyperliquid's own pages name only its paying buckets
+  [P 1, 70], and one of those holds raw HyperEVM blocks [P 70] — so the free
+  copy may be chain blocks, not fills. One keyless listing tells (K0).
 - **The API is keyless:** `POST https://api.hyperliquid.xyz/info`, the only
   header listed is `Content-Type: application/json` [P 2, 10]. Limits per IP
   [P 4]: "REST requests share an aggregated weight limit of 1200 per
@@ -235,6 +253,18 @@ for MARKET-1's February look.
   1,000 subscriptions, and **"maximum of 10 unique users across
   user-specific websocket subscriptions"** — so its public feed cannot
   follow a pool of accounts live.
+- **A free processed copy, by a third party.** Hydromancer's "Reservoir"
+  ("Granular Hyperliquid historical data. Free, forever", "No API key
+  required", updated daily, "The data cutoff is August 2025") is a
+  requester-pays bucket, `s3://hydromancer-reservoir`, of Parquet files by
+  day: every fill, and **the liquidation fills alone** under
+  `by_dex/hyperliquid/fills/perp/liquidations/date=YYYY-MM-DD/fills.parquet`,
+  with `address`, `direction`, `crossed`, `start_position`,
+  `is_liquidation`, `liquidation_mark_px`, `liquidation_method`; also
+  1-second candles and 20-level book snapshots a minute [T 71, 72]. It needs
+  an AWS account like the official files, but the liquidation fills are a
+  small file a day: a quick way to the counts (K4) and a cross-check — not
+  the source for a frozen test, being a third party's processing.
 - **Paid or gated copies** (none needed if the archive is used): Dune's
   Hyperliquid tables are "private and available to enterprise customers and
   trial accounts" [T 18]; Hydromancer's API starts at "$300 per month"
@@ -303,17 +333,50 @@ it matters.**
   seconds" [T 44]. **History depth and retention: not stated anywhere I
   read.** Tardis holds its liquidation trades from 2024-08-23 [P 27]. Fee
   tier 1: 5.0 bps taker, 1.0 maker [T 44]. Terms: not read.
-- **Lighter.** Its WebSocket reference gives the public `trade/{MARKET_INDEX}`
-  channel a message with `"liquidation_trades": [Trade]` and `"trades":
-  [Trade]`, and a Trade JSON with `"type": "trade" | "liquidation" |
-  "deleverage" | "market-settlement"`, `ask_account_id`, `bid_account_id`,
-  `is_maker_ask`, `price`, `size`, `timestamp` [P 45]; the subscribe example
-  shows no `auth` field, and `account_all_trades/{ACCOUNT_ID}` is listed
-  without one too [P 45]. **So the account numbers are public on every
-  trade, live.** Its own historical archive: not found (the old docs
-  address redirects to an overview). Tardis has Lighter from 2026-04-17
-  [P 30]; 0xArchive's Lighter liquidations from 2026-06-10 [T 21]. Rate
-  limits, fees, terms: not read.
+- **Lighter** (ranked fourth in this file's first commit; its public
+  dataset, read after it, moves it to second — section 8).
+  - **The tape carries the mark and both accounts.** The public WebSocket
+    channel `trade/{MARKET_INDEX}` sends `"liquidation_trades": [Trade]` and
+    `"trades": [Trade]`; a Trade has `"type": "trade" | "liquidation" |
+    "deleverage" | "market-settlement"`, `ask_account_id`, `bid_account_id`,
+    `is_maker_ask`, `price`, `size`, `timestamp`; the subscribe example
+    shows no `auth` field [P 45]. The REST `recentTrades` returns the same
+    Trade [P 60].
+  - **History, free and keyless.** Lighter's guide: "The public dataset
+    contains global trade events", one Parquet file per UTC day at
+    `s3://aws-public-blockchain/v1.1/lighter/core/mainnet/trades/date=YYYY-MM-DD/trades.parquet`,
+    which "can be downloaded without an AWS account, credentials or
+    payment" (`--no-sign-request`); "Data starts at mainnet genesis (January
+    17, 2025)"; hourly open interest beside it [P 56]. AWS's registry lists
+    the bucket (us-east-2, "No AWS account required") and Lighter among its
+    datasets [P 57]. **Neither page lists the trade file's columns:**
+    whether `type` and the account numbers are in it is check L1. The venue
+    opened to the public on 2025-10-02 after about eight months of private
+    beta, and its volume fell sharply after its points programme ended
+    [T 64].
+  - **By REST too:** `GET /api/v1/trades` takes `market_id`, a `type` filter
+    (`liquidation` among its values), `sort_by`, a cursor and at most 100
+    rows a call; its authorization header is not marked required ("`auth` is
+    required for master accounts and sub accounts") [P 59]. A standard
+    account has "60 requests per rolling minute" [P 61]. The `liquidations`
+    route is per account and needs authorization [P 62]; an older export
+    route asks for a one-time transfer of 100 LIT [P 69] and is not needed.
+  - **The mechanics** [P 63]: below the maintenance requirement the engine
+    "sends IoC limit orders on behalf of the margin called user" at a "zero
+    price", position after position, and "takes up to 1% liquidation fee"
+    for its insurance fund (LLP); below the close-out requirement "the LLP
+    closes all of the user's positions by taking them over"; then
+    auto-deleveraging. So in a liquidation trade the liquidated account is
+    the taker.
+  - **Fees and funding:** a standard account pays "0 maker / 0 taker" with a
+    300 ms taker delay, a premium account 0.028% as a taker [P 65]. Funding
+    is paid "at each hour mark", capped at 0.5% an hour, longs paying when
+    it is positive [P 66]; its history by `GET /api/v1/fundings` (750 rows a
+    call) and 1-minute candles by `GET /api/v1/candles` (500 a call),
+    neither page stating an authorization requirement [P 67, 68].
+  - **No free order books:** Tardis has Lighter's from 2026-04-17 [P 30],
+    0xArchive from 2026-01-29 [T 21]. WebSocket limits: 255 connections and
+    5,000 accounts an IP [P 61]. Terms: not read.
 - **GMX v2.** Liquidations are on-chain events with the account; a GraphQL
   index (Arbitrum, Avalanche, MegaETH endpoints) holds `TradeAction` rows
   for them [T 46: a copy of GMX's docs; `docs.gmx.io` came back empty];
@@ -404,16 +467,19 @@ it matters.**
 | CoinGlass | order-level liquidations of "the past 7 days" (Standard plan and up); longer history only aggregated by interval; no account | Hobbyist $29, Startup $79, Standard $299, Professional $699 a month [T] | [P 49; T] |
 | Coinalyze | liquidation history aggregated by symbol and interval | "The API is free", with a key from signing up; limits not found | [T 50] |
 | Coin Metrics | liquidations from nine futures exchanges, one row an order or trade; "Most venues are real-time only with no liquidation history to re-query" | not stated | [P 51] |
-| Hydromancer | every Hyperliquid liquidation fill with the user, from 2025-07-28 | from $300 a month | [T 19, 20] |
+| Hydromancer | every Hyperliquid liquidation fill with the user, from 2025-07-28, by API; the same as daily Parquet files in its "Reservoir" bucket from August 2025 | API from $300 a month; Reservoir free, requester pays (an AWS account) | [T 19, 20, 71, 72] |
 | Dune | Hyperliquid fills with liquidation columns from 2025-07-27 | enterprise or trial only | [T 16, 18] |
 | Allium, Flipside, Amberdata, Kaiko, CryptoQuant, Glassnode | liquidation tables or series (Flipside's Hyperliquid trades table has a liquidation flag, per a search summary; its pages returned nothing to the fetch) | not read | [T 48] |
 | Pinax | Hyperliquid liquidation events and daily counts by market | a free tier is advertised; not read further | [T 22] |
 
-**Free public datasets.** None found: no open archive of liquidations with
-history turned up on GitHub, Kaggle or Hugging Face (two searches), and
-Binance's own files are gone (1.3). The only free history is a venue's own:
-Hyperliquid's archive (for the transfer cost), dYdX's tape and Bitfinex's
-REST history (depth unverified), and Tardis's first day of each month.
+**Free public datasets.** One: AWS's open-data bucket
+`aws-public-blockchain`, which holds Lighter's trades since 2025-01-17 and a
+Hyperliquid dataset of unstated contents, both without an account [P 56,
+57]. No open archive of centralised exchanges' liquidations turned up on
+GitHub, Kaggle or Hugging Face (two searches), and Binance's own files are
+gone (1.3). Otherwise the free history is a venue's own: Hyperliquid's
+paying buckets (for the transfer cost), dYdX's tape and Bitfinex's REST
+history (depth unverified), and Tardis's first day of each month.
 
 **Published studies.** None found that measures a move back over a day after
 liquidations in small coins (two searches, summaries only; MARKET-FIND found
@@ -458,8 +524,8 @@ agent, names no venue and gives no figures [T 53].
   a day.**
 - **How a slice is made:** by the address, read as a number, modulo M.
   Addresses are hash values, so a slice is a random sample nobody chose; it
-  is fixed before any price is read, as the pool was; and there are M of
-  them, each a pool of its own. Using all M averages out the luck of which
+  is fixed before any price of its month is read (H5), as the pool was; and
+  there are M of them, each a pool of its own. Using all M averages out the luck of which
   accounts sit in one pool (MARKET-FIND's two half-pools gave +299 and +379
   [R]).
 - **What changes against Polymarket.** A slice is random; the pool was
@@ -489,16 +555,30 @@ MARKET-FIND saw nothing) and never spot. K1 gives the list. Polymarket's
 KPEPE and KSHIB look like Hyperliquid's own naming (my recollection, not
 re-read today).
 
-### 2.2 Exactly, elsewhere
+### 2.2 Exactly, on Lighter (if check L1 passes)
 
-- **Lighter:** the same mapping with `type` "liquidation" and the account
-  numbers; the slice is the account number modulo M. Which of the two
-  accounts is the liquidated one must be read from the data (a later
-  check). Its history starts inside Polymarket's own months, so today it
-  can only repeat the finding's dates.
-- **dYdX v4, GMX, Drift:** exact in principle from chain data (the
-  liquidated subaccount or account is on-chain); each needs an indexer and
-  is thin in small coins. Not first.
+| MARKET-1 [R: rules.md] | Lighter's trades |
+|---|---|
+| M4: a liquidation fill of the liquidated account, a taker's | a trade of `type` "liquidation" in a small-coin perp market; the liquidated account is the taker — the buyer (`bid_account_id`) when `is_maker_ask` is true, else the seller (`ask_account_id`) — because the engine sends the orders "on behalf of the margin called user" [P 63] |
+| M4: reducing | a liquidation order closes a position, so it reduces by construction; if the file carries the position before the trade, the test is made as M4 makes it |
+| M4: the forced side | the taker sells: a forced sell (a long closed); the taker buys: a forced buy |
+| ADL and settlement fills, not counted | `deleverage` and `market-settlement` trades, not counted |
+| M5: the pool | a slice: a hash of the account number, modulo M (the numbers are given out in order, so the hash makes the slice random, not the number) |
+| M7: the price at the recorded book | the tape only — no free books (section 3) |
+| M9: the fee | 2.8 bps a leg, the premium account's taker rate: the cautious choice (a standard account pays nothing and waits 300 ms) |
+
+- **Not known until L1:** the file's columns; how a takeover by the
+  insurance fund is recorded (as a liquidation trade with the fund on the
+  other side, or otherwise); whether an owner's sub-accounts have their own
+  numbers.
+- **What differs from Hyperliquid:** a younger and smaller venue, private
+  until 2025-10-02, whose flow swelled and fell with a points programme
+  [T 64]; liquidation orders at a set "zero price" with a fee of up to 1%;
+  no fee for an ordinary account.
+
+**Exactly, in principle, on dYdX v4, GMX and Drift:** from chain data (the
+liquidated subaccount or account is on-chain); each needs an indexer and is
+thin in small coins. Not first.
 
 ### 2.3 As a proxy, where no account is published
 
@@ -548,7 +628,7 @@ recollection of Binance's naming); beside, every USDT perp but BTC and ETH.
 | **Hyperliquid** | the official L2 archive, requester pays, monthly, "may be missing" [P 1]; from 2023-09, about 550 ms [T 15]; Tardis from 2024-10-29, 20 levels about every 5.4 s, paid [P 28] | every fill in the fill files (the same download as the liquidations) [P 1, 8] | asset contexts in the archive [P 1]; the API's candles only the last 5,000 [P 2]; funding history by API, keyless [P 9] | 0.045%; hourly, on the oracle price [P 6, 7] |
 | **Binance USD-M** | Tardis (depth from 2019-11-17), paid [P 29] | `aggTrades` and `trades` files, free [P 35] | `klines` files, free [P 35] | 0.05%; 8 hours by default [T 38] |
 | **dYdX v4** | now only [P 43]; Tardis, paid | the public tape [P 43]; depth not stated | candles 1MIN–1DAY, funding [P 43] | 5.0 bps tier 1 [T 44]; funding not read |
-| **Lighter** | Tardis from 2026-04-17, paid [P 30] | Tardis; own archive not found | mark-price candles on the WebSocket [P 45] | not read |
+| **Lighter** | none free; Tardis from 2026-04-17 [P 30] and 0xArchive from 2026-01-29 [T 21], paid | **every trade in the free public files, from 2025-01-17** [P 56] | 1-minute candles by REST, 500 a call [P 68]; mark-price candles on the WebSocket [P 45]; funding by REST [P 67] | 0 for a standard account, 0.028% premium [P 65]; hourly, capped at 0.5% an hour [P 66] |
 | **Bybit, OKX** | Tardis, paid | not read | not read | not read |
 
 - **Hyperliquid can be priced the way MARKET-1 is:** the archived book at
@@ -556,6 +636,10 @@ recollection of Binance's naming); beside, every USDT perp but BTC and ETH.
   archive has no snapshot, the fill files give the next best thing — the
   price the next real taker on our side paid — because every trade with its
   aggressor is in them.
+- **Lighter can be priced at the tape only:** its free files hold every
+  trade, not the book. The next real taker's price on our side is an honest
+  price for $1,000 in a busy coin and a rough one in a quiet coin; each leg
+  records the trade that priced it.
 - **Binance's free files answer your own question** ("later I can move on
   Binance" [R: decisions 2026-11-13]): the same positions priced at
   Binance's trades cost nothing more, and its terms allow "historical
@@ -581,7 +665,8 @@ record is parsed against a schema; one that fails is dropped and counted; a
 missing or unreadable hour is a gap.
 
 **H2. Periods (UTC).**
-- **SIZING** = [2025-05-25, 2025-08-01): 68 days, counts only.
+- **SIZING** = [2025-05-25, 2025-08-01): the 68 days before TEST, counts
+  only (H5 moves this window forward month by month).
 - **TEST** = [2025-08-01, 2026-05-28): 300 days; every entry instant lies in
   it. Polymarket Perps' first mark is 2026-05-28T01:26Z [R: external-apis],
   so no day of TEST is a day any exploration here used.
@@ -602,12 +687,18 @@ forced side; its instant is `time`. Both methods count, as M4 names none;
 they are printed apart. (How a backstop fill looks — whether it is `crossed`
 — is settled by K3 before the freeze, without a price.)
 
-**H5. Slices.** slice(user) = the address as an integer, modulo M. For M = 1
-upward, r(M) = the mean over slices of the slice's 60-minute episodes in
-SIZING, divided by 68; the scan stops when r(M) is below half of 5.68;
-**M is the value whose r(M) is nearest 5.68**; a tie takes the larger. (An
-episode: a counted fill of the slice whose market's previous counted fill
-of that slice is more than 60 minutes before, or none — MARKET-1's B1.)
+**H5. Slices.** slice(user) = the address as an integer, modulo M. **M is
+set for each calendar month of TEST from the 68 days before that month**,
+by counts alone: for M = 1 upward, r(M) = the mean over slices of the
+slice's 60-minute episodes in those 68 days, divided by 68; the scan stops
+when r(M) is below half of 5.68; M is the value whose r(M) is nearest 5.68;
+a tie takes the larger. So a slice goes on seeing liquidations at about the
+pool's rate while the venue grows or shrinks, and no month's slices use
+anything from that month or later. Each month is computed on its own; its
+60-minute windows reach back into the last hour of the month before, with
+the new month's slices. (An episode: a counted fill of the slice whose
+market's previous counted fill of that slice is more than 60 minutes
+before, or none — MARKET-1's B1.)
 
 **H6. The wave and an entry.** M5 word for word, inside each slice: at least
 two different addresses of the slice with a counted fill of the side, in any
@@ -662,7 +753,9 @@ trade.*
 - **ALONE:** the episodes outside a wave (Polymarket: +22 ± 35, nothing
   [R]), and WAVE minus ALONE — the finding's second half.
 - **One slice alone** (slice 0): what one pool like Polymarket's would have
-  seen. **The plain form** (K accounts, 2.1). **M halved and doubled.**
+  seen. **The plain form** (K accounts, 2.1). **M halved and doubled; one M
+  for the whole of TEST, from SIZING; one M sized on TEST's own counts** (the
+  finding's own construction: the pool was read at the cut).
 - THREE (three accounts), SIDES, LATE (1 h, 3 h), OWN (minus the other small
   coins), BTC and ETH at the entries, each method apart, the 38 against
   every small coin.
@@ -700,20 +793,20 @@ R]. The error would then be near 68 × √(47 ÷ 205) ≈ 33 bps for one slice
 about +85; a true +110 would be confirmed four times in five [A: (2.58 +
 0.84) × 33]. MARKET-FIND's table for MARKET-1 [R]: 297 in December, 195 in
 February, 136 in May. K4 replaces this arithmetic with a count before the
-freeze.
+freeze. On Lighter the number is unknown until L2.
 
 **What could still fool us.**
-1. **A sibling, not the same thing.** The sensor is Hyperliquid's liquidated
-   accounts; the positions are at Hyperliquid's book.
-2. **The sizing rule is a choice.** That is why M halved and doubled, one
-   slice alone and the plain form are printed.
+1. **A sibling, not the same thing.** The sensor is another venue's
+   liquidated accounts; the positions are at that venue's prices.
+2. **The sizing rule is a choice.** That is why M halved and doubled, the
+   other two ways of setting it, one slice alone and the plain form are
+   printed.
 3. **2025-10-10.** The largest liquidation crash on record, in a preprint's
    words [T 24], is inside TEST: about $641M was force-sold on Hyperliquid
-   in its worst minute [T 25], and
-   open interest on Hyperliquid fell by a third or more [T 26]. The rule has
-   no stop, and the first entries of such a day are early. One day is one
-   cluster among about 200, but it can move the mean; the verdict is on all
-   days and the figure without it is printed.
+   in its worst minute [T 25], and open interest there fell by a third or
+   more [T 26]. The rule has no stop, and the first entries of such a day
+   are early. One day is one cluster among about 200, but it can move the
+   mean; the verdict is on all days and the figure without it is printed.
 4. **The errors.** Day clusters treat neighbouring days as separate; hence
    2.58.
 5. **The archive "may be missing"** by Hyperliquid's own words: gaps are
@@ -721,6 +814,28 @@ freeze.
 6. **Another regime.** August 2025 to May 2026 is not September to November
    2026. That is the point of a second sample, and a reason a result there
    need not equal Polymarket's.
+7. **Two venues, one market.** Hyperliquid's and Lighter's test months are
+   the same calendar days: a HOLDS on both is one piece of evidence seen
+   through two sensors.
+
+**The same rules on Lighter: WAVE-L** (if L1 passes). H0, H6, H7 and H10–H13
+stand as written, with "trade" for "fill"; H5 too, the slice being a hash of
+the account number, modulo M (2.2). What changes:
+- **H1:** Lighter's public trade files (`aws-public-blockchain`, one Parquet
+  a day); funding from `GET /api/v1/fundings`.
+- **H2:** TEST ends at 2026-05-28 as well. It starts with the first calendar
+  month for which H5 gives M of at least 2 — the first month in which the
+  venue's flow is about twice the pool's — found by L2's counts; no price is
+  read to set it.
+- **H3:** M3's coins among Lighter's perp markets that trade in the first
+  seven days of the first sizing window.
+- **H4:** as section 2.2: a `liquidation` trade, the taker its liquidated
+  account.
+- **H8:** the tape only: every leg is priced at the first trade at or after
+  its instant, within 60 s, whose taker was on our side; else unpriced.
+- **H9:** 2.8 bps a leg; the venue's hourly funding.
+
+How many waves it would give is unknown until L2.
 
 **If accounts are wanted on no venue (a sketch, not for now): WAVE-B.** The
 proxy of 2.3 on Binance's feed from Tardis (2020-01-07 on), Binance's free
@@ -735,8 +850,8 @@ finding, no more.
 
 | Venue | Liquidations in public data | With the account? | History | Access | Honest prices | Taker fee; funding | Terms for personal research |
 |---|---|---|---|---|---|---|---|
-| **Hyperliquid** | every fill marked `liquidation {liquidatedUser, markPx, method}` [P 3]; official fill files [P 1] | **yes**: each record `[user, fill]` [P 8]; both legs marked [T 14, 16] | marked fills from 2025-07-27 [T 13, 16, 19], probably 2025-05-25 [P 1 + T 25]; both users on trades from 2025-03-22 [T 13] | S3 requester pays: an AWS account, about $0.09–0.114 a GB [P 1, 12; T 15]; API keyless, 1,200 weight a minute, but only an account's last 10,000 fills [P 2, 4] | archived L2 books from 2023-09 [P 1; T 15]; every trade in the fill files | 0.045%; hourly [P 6, 7] | none stated in the docs read; the app's terms not read |
-| **Lighter** | public trade channel: `type` liquidation, `liquidation_trades` [P 45] | **yes**: `ask_account_id`, `bid_account_id` [P 45] | own archive not found; Tardis from 2026-04-17 [P 30] | WebSocket without auth in the docs [P 45]; limits not stated | Tardis, paid | not read | not read |
+| **Hyperliquid** | every fill marked `liquidation {liquidatedUser, markPx, method}` [P 3]; official fill files [P 1] | **yes**: each record `[user, fill]` [P 8]; both legs marked [T 14, 16] | marked fills from 2025-07-27 [T 13, 16, 19], probably 2025-05-25 [P 1 + T 25]; both users on trades from 2025-03-22 [T 13] | S3 requester pays: an AWS account, about $0.09–0.114 a GB [P 1, 12; T 15] — or free, if AWS's open-data copy holds the fills (K0) [P 57]; API keyless, 1,200 weight a minute, but only an account's last 10,000 fills [P 2, 4] | archived L2 books from 2023-09 [P 1; T 15]; every trade in the fill files | 0.045%; hourly [P 6, 7] | none stated in the docs read; the app's terms not read |
+| **Lighter** | every trade with `type` trade / liquidation / deleverage [P 45, 59, 60]; a public file of all trades a day [P 56] | **yes**: `ask_account_id`, `bid_account_id` [P 45, 59]; in the public file: to check (L1) | from 2025-01-17 [P 56]; public launch 2025-10-02 [T 64] | **free and keyless:** AWS's open-data bucket, no account [P 56, 57]; REST 60 requests a minute for a standard account [P 61] | every trade in the free files; no free books (Tardis from 2026-04-17, paid) [P 30, 56] | 0 standard, 0.028% premium [P 65]; hourly [P 66] | not read; the bucket's page links only a code licence [P 57] |
 | **dYdX v4** | public tape `type` LIQUIDATED; an account's fills LIQUIDATED / LIQUIDATION [P 43] | tape: no; fills: only for a known address; on-chain: yes [T] | depth not stated; Tardis from 2024-08-23 [P 27] | keyless REST [T 44]; 100 requests per 10 s [T] | candles and funding public [P 43]; no past books | 5.0 bps tier 1 [T]; not read | not read |
 | GMX v2 | on-chain events; GraphQL `TradeAction` [T 46] | yes, on-chain [T 48] | not read | public GraphQL; key not stated | oracle price, no book | not read | not read |
 | Drift → Velocity | liquidation records by user and market [T]; a keyless data API from 2022 [P 47] | yes [T] | "starting at 2022" [P 47] | keyless [P 47] | not read | not read | not read |
@@ -749,7 +864,18 @@ finding, no more.
 
 ## 6. The next small checks (question 5)
 
-None was made. Each is for the owner to approve.
+None was made. Each is for the owner to approve. K0, L1, L2, K1 and K2 need
+no account, no key and no money.
+
+**K0 — is Hyperliquid's free copy the fills? Keyless, one listing.**
+`aws s3 ls --no-sign-request s3://aws-public-blockchain/v1.1/hyperliquid/`
+(the registry's own form of command [P 57]: the AWS command-line tool, no
+AWS account), and one level further down if folders appear; or the
+registry's "Browse Bucket" page in a browser.
+*Proves:* what the free dataset "Hyperliquid, maintained by Hyperliquid"
+holds. If it is the node fills, K3's AWS account is not needed and the
+download costs nothing; if it is chain blocks, nothing changes.
+*Recommendation: yes, first of all.*
 
 **K1 — Hyperliquid's markets. Keyless, two calls.**
 `POST https://api.hyperliquid.xyz/info`, header `Content-Type:
@@ -793,7 +919,36 @@ commands, a budget alarm set, the key never given to an agent.*
 Counted fills, liquidated accounts and 60-minute episodes a day in S; M by
 H5; the share of quarter-hours in a wave state, beside Polymarket's 3.7%.
 *Proves:* that the mapping yields a usable number of waves, before anything
-is frozen or priced. *Recommendation: yes, as the plan's first step.*
+is frozen or priced. *Recommendation: yes, as the plan's first step.* The
+same counts come faster from Reservoir's liquidation files (1.1; a third
+party's copy, a few megabytes a day by my guess): worth doing first, and
+checking against the official files on a few days.
+
+*Practical, for K3 and K4* [A]: the downloads need AWS's command-line tool
+and an lz4 decompressor; the fills are about 220–320 GB compressed, so
+either that much disk or — better — each hour read, reduced to the counted
+fills and minute prices (a few GB) and deleted; at 100 Mbit/s the whole of
+it is about five to seven hours of transfer.
+
+**L1 — Lighter's public file. Keyless, one download.**
+`aws s3 cp s3://aws-public-blockchain/v1.1/lighter/core/mainnet/trades/date=2025-07-01/trades.parquet . --no-sign-request`
+(the guide's own command with another date [P 56]), then the file's column
+list and a count of its rows by `type`.
+*Proves:* that the public file carries `type` (trade, liquidation,
+deleverage), both account numbers and the taker's side; how a takeover by
+the insurance fund is recorded; the size of a day. Without the type and the
+accounts Lighter falls back behind Binance. *Recommendation: yes.*
+
+**L2 — Lighter's liquidations month by month. Keyless; counts, no price.**
+The daily files from 2025-01-17 to 2026-05-27, read for the type, the
+market, the two accounts, the taker's side and the time only (a tool that
+reads Parquet by column over HTTP fetches just those — my recollection of
+such tools, not verified today).
+*Proves:* the liquidated accounts and 60-minute episodes a day in the small
+coins, month by month; M by H5; the first month with M of at least 2; the
+share of time in a wave state — how many days with waves Lighter's history
+can give, before anything is frozen or priced. *Recommendation: yes, before
+the route is chosen.*
 
 **K5 — Tardis's free day. A keyless download of one small file.**
 `https://datasets.tardis.dev/v1/binance-futures/liquidations/2025/06/01/SOLUSDT.csv.gz`
@@ -807,8 +962,8 @@ Binance arm is considered.*
 `GET https://indexer.dydx.trade/v4/trades/perpetualMarket/SOL-USD?limit=100`
 and the same with `&createdBeforeOrAt=2024-01-01T00:00:00.000Z`.
 *Proves:* that the public tape reaches back that far and how often `type`
-is LIQUIDATED. *Recommendation: later; it is the free fallback if AWS is
-refused.*
+is LIQUIDATED. *Recommendation: later; it is a proxy without accounts, at
+no cost.*
 
 **K7 — Polymarket's old weeks, counts only. No call (the supervisor's
 stored seed before the cut).** Of the hours with two liquidation order
@@ -816,38 +971,50 @@ events, how many hold two accounts. *Proves:* what a venue without accounts
 loses. *Recommendation: when a proxy venue is considered.*
 
 **K8 — the terms. Reading in a browser.** Hyperliquid's app terms (a fetch
-gets an empty page) and, if Tardis is ever used, its terms of service.
-*Recommendation: yes, before any download.*
+gets an empty page), Lighter's terms, the licence of AWS's public bucket
+(its page links only a code licence), and, if Tardis is ever used, its
+terms of service. *Recommendation: yes, before any download.*
 
 ## 7. My three next steps, and my view (question 6)
 
-1. **The owner's two gates.** (a) An AWS account for one-off downloads: it
-   is a paid cloud account with a key, which Iron Rule 1 does not foresee
-   ("only Polymarket's public, unauthenticated endpoints are called") and
-   decisions 2026-11-13 leaves to you. I recommend yes, with you running
-   K3's commands yourself, so that no key is ever in the project. (b)
-   Where the work lives: research files that read downloaded archives
-   offline, outside the poller's runtime and its frozen programs; one rule
-   carried over — nothing at or after the cut is read. Without an AWS
-   account only proxies remain (K5, K6): I would then wait for MARKET-1's
-   February look rather than pay a vendor for a different rule.
-2. **K1–K4, then the road MARKET-1 took:** a plan from section 4, a fresh
-   review of the rules, the build with a test for every rule, a fresh code
-   review, the freeze by hash, and only then TEST's files.
-3. **One run, one report.** If it HOLDS: the Binance-priced line is already
-   in it, and the proxy's fidelity on Hyperliquid tells whether a Binance
-   history (six years) is worth $700. If it DOES NOT HOLD or is NOT
-   SETTLED: nothing is bought, and MARKET-1's looks decide.
+1. **The keyless checks — K0, L1, L2, K1, K2.** No account, no key, no
+   money. Each reads a new public source once, so each is the owner's to
+   approve. They show which route is open and what each venue's history can
+   give.
+2. **The owner chooses the route.** *My recommendation: the free one that
+   passes its check* — Hyperliquid if K0 finds its fills in the free bucket;
+   otherwise Lighter, if L1 and L2 pass. Hyperliquid through an AWS account
+   is the stronger test and costs $20–60: it is a paid cloud account with a
+   key, which Iron Rule 1 does not foresee ("only Polymarket's public,
+   unauthenticated endpoints are called") and decisions 2026-11-13 leaves
+   to you; you would run K3's commands yourself, so that no key is ever in
+   the project. Take it second — if the first verdict is NOT SETTLED, or to
+   confirm a HOLDS — or first, if you do not mind the account. Where the
+   work lives: research files that read downloaded archives offline, outside
+   the poller's runtime and its frozen programs; one rule carried over —
+   nothing at or after the cut is read.
+3. **The road MARKET-1 took, on that venue:** the counts (K4 or L2), a plan
+   from section 4, a fresh review of the rules, the build with a test for
+   every rule, a fresh code review, the freeze by hash, one run, one report.
+   Only after a HOLDS: the Binance-priced line (it is already in the
+   design), and a proxy without accounts measured against the exact wave —
+   which tells whether a Binance history of six years is worth $700. After a
+   DOES NOT HOLD, or a NOT SETTLED on both venues: nothing is bought, and
+   MARKET-1's looks decide.
 
-**My honest view.** Worth doing, and Hyperliquid first. The finding rests on
-one autumn (68 days, about twenty separate waves) and was shaped on those
-same days; its own author expects the true size to be smaller [R]. MARKET-1
-answers that forward, slowly: 297 bps in December, 136 in May. Hyperliquid's
-archive answers it backward, on 300 other days, in the time it takes to
-plan, build and freeze — and for tens of dollars, where every other route to
-history costs hundreds a month and loses the account. What I would not do:
-start with a centralised exchange. Without accounts the test is of a
-different rule, and a miss there would say little about the wave.
+**My honest view.** Worth doing. The finding rests on one autumn (68 days,
+about twenty separate waves) and was shaped on those same days; its own
+author expects the true size to be smaller [R]. MARKET-1 answers that
+forward, slowly: 297 bps in December, 136 in May. The two venues' own files
+answer it backward, on days before Polymarket Perps existed, in the time it
+takes to plan, build and freeze — for nothing or for tens of dollars, where
+every other route to history costs hundreds a month and loses the account.
+Hyperliquid is the better test bed (the same engine design, the larger
+flow, archived books); Lighter is the one that needs no account. They are
+not two samples: both lived the same market days, so the second venue
+confirms the first, it does not double it. What I would not do: start with
+a centralised exchange. Without accounts the test is of a different rule,
+and a miss there would say little about the wave.
 
 ## 8. Notes, slips and what was not read
 
@@ -870,27 +1037,40 @@ different rule, and a miss there would say little about the wave.
 - **Not read or not reachable:** Hyperliquid's app terms (JavaScript page);
   OKX's REST section (page too long for the fetch); `docs.gmx.io` (empty);
   dYdX's rate-limit page (404); two Dwellir pages (decompression failed);
-  one CryptoSlate address and newhedge's changelog (403); Tardis's and the
-  other vendors' terms of service; every venue's own fee page but
-  Hyperliquid's.
+  one CryptoSlate address, newhedge's changelog and Flipside's pages (403
+  or empty); Kraken's page (404); Tardis's, Lighter's and the other
+  vendors' terms of service; the licence of AWS's public bucket beyond a
+  link to a code licence; every venue's own fee page but Hyperliquid's and
+  Lighter's.
 - **A sample that runs past the cut.** Pinax's product page [22] shows
   Hyperliquid's BTC and ETH liquidation counts a day through 2026-11-12:
   another venue, BTC and ETH only, no small coin and no price. I used it
   for one order of magnitude (2.1) and nothing else.
-- **Text addressed to an agent.** Two vendors' documentation pages (Tardis,
-  Lighter) carry "agent instructions" asking the reader to call an address;
-  the fetch tool reported them and nothing was done with them.
+- **Text addressed to an agent.** Several documentation pages (Tardis's,
+  Lighter's, SQD's) carry "agent instructions" asking the reader to call an
+  address or use a question interface; the fetch tool reported them and
+  nothing was done with them.
+- **After the first commit.** This file was first committed at 22:47Z
+  (`6a9c435`) with Lighter ranked fourth, for a short history. Reading
+  Lighter's own guide afterwards showed its free public dataset from
+  2025-01-17, and AWS's registry showed a free Hyperliquid dataset of
+  unstated contents. Rewritten for it: page one, Lighter in 1.2, 2.2, the
+  price and venue tables, H5 (M set month by month), WAVE-L, the checks K0,
+  L1 and L2, and section 7; added: Hydromancer's Reservoir (1.1). The
+  Hyperliquid design is otherwise as first committed.
 - **Slips.** Three stamps in `progress.md` were first written from an
   estimate (4 to 12 minutes ahead of the clock) and corrected from `date
   -u`; later stamps are written by the clock inside the command. The brief
   named MARKET-FIND's sections 1, 3 and 4; the file came whole and I read
-  all of it.
+  all of it. Two shell commands failed and changed nothing (a Python call
+  on a machine without Python; one over-long command); their work was
+  redone with Node scripts in my scratchpad and the Write tool.
 - **For the supervisor.** The reviews' README has no line for this file
-  (the brief allows me this file only). If Hyperliquid becomes a data
-  source, its facts belong in external-apis after K1–K3 verify them by
-  call; today's are desk facts.
+  (the brief allows me this file only). If Hyperliquid or Lighter becomes a
+  data source, its facts belong in external-apis after the checks verify
+  them by call; today's are desk facts.
 
-## 9. Sources (all read 2026-11-13, between about 22:04Z and 22:46Z; the clock was read before and after, not at each page)
+## 9. Sources (all read 2026-11-13, between about 22:04Z and 23:01Z; the clock was read before and after, not at each page)
 
 **Hyperliquid's own pages**
 1. https://hyperliquid.gitbook.io/hyperliquid-docs/historical-data — the two
@@ -990,3 +1170,33 @@ different rule, and a miss there would say little about the wave.
     description of OKX's liquidation channels.
 55. https://github.com/hyperliquid-dex/node — the node's README: the write
     flags, "the API fills format", the machine it needs.
+
+**Read after the first commit**
+56. https://docs.lighter.xyz/developers/integration-guides/historical-data.md
+    — Lighter's public dataset: the bucket, the paths, "without an AWS
+    account, credentials or payment", the start date.
+57. https://registry.opendata.aws/aws-public-blockchain/ — AWS Public
+    Blockchain Data: the bucket, us-east-2, no account, its fourteen
+    datasets (Hyperliquid, Lighter Core and Lighter on Robinhood Chain
+    among them).
+58. https://github.com/aws-samples/digital-assets-examples/tree/main/analytics
+    and its `schema.md` — the registry's documentation: Bitcoin and
+    Ethereum only.
+59. https://docs.lighter.xyz/api/orders/trades.md
+60. https://docs.lighter.xyz/api/orders/recenttrades.md
+61. https://docs.lighter.xyz/developers/reference/rate-limits.md
+62. https://docs.lighter.xyz/api/account/liquidations.md
+63. https://docs.lighter.xyz/trading/liquidations-and-llp-insurance-fund.md
+64. A search summary of https://blockworks.co/news/lighter-opens-public-mainnet
+    and other news pages: the public launch, the points programme, the fall
+    in volume after it.
+65. https://docs.lighter.xyz/trading/trading-fees.md
+66. https://docs.lighter.xyz/trading/funding.md
+67. https://docs.lighter.xyz/api/funding/fundings.md
+68. https://docs.lighter.xyz/api/candlesticks/candles.md
+69. https://docs.lighter.xyz/api/orders/export_historicaltrades.md
+70. https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/hyperevm/raw-hyperevm-block-data
+71. https://docs.hydromancer.xyz/reservoir — Reservoir: free, requester
+    pays, daily, from August 2025.
+72. https://docs.hydromancer.xyz/reservoir/schema-reference/fills — its
+    fills schema and paths, the liquidations sub-dataset.
