@@ -114,6 +114,10 @@ export const DayCheckSchema = z.object({
 
 const sha256 = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 
+/** M7's day alarm (F18): more than 1% of the day's book lines, and at least 10, fail the schema. */
+export const dayAlarm = (lines: number, failed: number): boolean =>
+  failed >= 10 && failed > 0.01 * lines;
+
 /** A recording line: the receive time, a tab, the text (a JSON string when the text held a line break). */
 export function splitLine(line: string): { recv: number; text: string } | null {
   const tab = line.indexOf("\t");
@@ -234,7 +238,7 @@ export async function checkDay(
     events,
     lines,
     failed,
-    alarm: failed >= 10 && failed > 0.01 * lines,
+    alarm: dayAlarm(lines, failed),
   };
 }
 

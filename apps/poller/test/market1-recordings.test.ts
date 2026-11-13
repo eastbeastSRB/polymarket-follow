@@ -7,6 +7,7 @@ import { CLOSED, SealedError } from "../src/market1/gate.js";
 import {
   booksAt,
   checkDay,
+  dayAlarm,
   dayGaps,
   legFinal,
   recordingDays,
@@ -239,6 +240,11 @@ describe("the recordings as MARKET-1 reads them (M7), written by the collector's
       "disk",
       "disk",
       "cut_line_dropped",
+    ]);
+    expect([dayAlarm(999, 10), dayAlarm(1_000, 10), dayAlarm(900, 9)]).toEqual([
+      true,
+      false,
+      false,
     ]);
     const d4 = checks.get(D4)!;
     expect(d4.failed).toBe(20);
