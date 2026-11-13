@@ -1,5 +1,37 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (the market lead — the owner, on STRATEGY-REVIEW's MARKET-1:
+"agree with all your recommendation", then "if you think additional research
+narrowed research on this topic would help, then we can do it before plan
+Market-1. you can use again Fable5.2 … once we have new info … we will
+decide about Market-1. then we build market-1 and finally we are doing
+overview"): **BEFORE MARKET-1 IS PLANNED, ONE INVESTIGATION ON THE OLD WEEKS,
+MARKET-FIND (Fable 5.2), SHARPENS THE SMALL-COIN LEAD AND SEARCHES FOR AT
+MOST TWO MORE MARKET PATTERNS; THE RECORDINGS STAY SEALED UNTIL MARKET-1 IS
+FROZEN.** The lead (STRATEGY-REVIEW, `docs/reviews/strategy-review-2026-11-12.md`,
+M1, M2, 3.1; exploring, on weeks already studied): in small coins (every
+crypto market but BTC and ETH) the price came back after a tracked
+account's liquidation (+147.6 ± 36.4 bps over a day, nine of ten weeks)
+and after very large 15-minute jumps (+70.9 ± 23.6), and moved the takers'
+way where trading was heavy (+36.3 ± 9.1); nothing in BTC, ETH, gold, oil,
+indices or stocks; one falling stretch produced every hint. **Agreed for
+MARKET-1 when it is planned** (the supervisor's four recommendations): its
+three lines (LIQ first, JUMP, TAPE), each a $1,000 paper position priced at
+the recorded book and held a day; small coins decide, the large markets
+printed beside; the owner says where they would act; the cheap additions
+beside the running experiment (its copies priced again at the recorded book,
+the "past follower result" list, the opposite side's result) in the same
+plan, as new arms with their own start. **MARKET-FIND's frame:** part A
+makes the lead's rules exact (what counts as an event, its size, the delay,
+the hold, the cells, what a live tool could see, what a real order could
+capture, a matched baseline of random minutes in the same coin and hour,
+the falling stretch and the bunched days); part B searches for at most two
+more candidate lines with a fixed cap on tries, each written down before it
+runs; everything is exploring and decides nothing; only data before
+2026-11-07 is read (books do not exist before 2026-11-10, so book patterns
+wait). Then the owner decides MARKET-1, it is planned, reviewed, built and
+frozen like the paper experiment, and the supervisor gives the overview.
+
 2026-11-12 (THE FREEZE of the paper experiment — rules.md R0; the supervisor
 records it after verifying it on its own path, inside the owner's approval
 of the plan): **THE PAPER EXPERIMENT IS FROZEN: `apps/poller/experiment/FROZEN.sha256`,
