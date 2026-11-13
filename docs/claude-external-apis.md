@@ -231,7 +231,14 @@ Earlier probe: `verify/SEED-PERPS-1106/` (13:59Z, 14:35Z).
   timestamp, hash}; 100 a page, `start_timestamp`, `end_timestamp`, `sort`,
   `cursor` (base64 `{ts,id}`; a bad cursor → 400 "invalid cursor"); history from
   the first trade (BTC: 2026-05-29T10:36:01Z); a 100-trade page spans 50–140
-  minutes on major instruments now.
+  minutes on major instruments now. **Liquidations on the tape** (MARKET-FIND,
+  2026-11-13, from R8-PRETEST's captured tape of 119,899 trades before
+  2026-11-07): a tape row can carry `liquidation_details {mark, method}`, seen
+  only with method "backstop" (19 trades, all ETH, 2026-10-07); an ordinary
+  liquidation is not marked on the tape — the `liquidation` flag sits on the
+  liquidated account's own fill only (0 of 634 counterparty legs flagged); 114
+  flagged fills carry a one-digit order id. A tool sees a liquidation live only
+  in the fills of an account it reads.
 - **Klines `/v1/info/klines`**: `interval` 1s 1m 5m 15m 30m 1h 4h 6h 12h 1d 1w;
   rows `[open_time_ms, open, high, low, close, volume, trades]` (prices as
   strings); only populated candles; 1,000 a page with `more`; history from the
