@@ -1,5 +1,5 @@
 # DRAFT, not a freeze: MARKET-1's files of what runs (market1/rules.md M0)
-# written 2026-11-13T12:56:59.182Z from commit 79312a878a8dd167c1bcfbccd591e2be9a7db14c
+# written 2026-11-13T14:25:28.177Z from commit 43efd0472c76dd38a137498d45377152adc657b8
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; mongodb 7.7.0; pino 10.4.0
 # pnpm-lock.yaml sha256 266a37979261ee129d516e0c91a9ec5bf980158676b6e45ece4267289bd4a3cc
 b7b90ec6b07e28fe964492e8beb89849f18c7dbc73222bf400a3a435c85bbcea *dist/market1.js
@@ -65,4 +65,4 @@ d9049045c989d34ddaf62b3406437a1cf847dfce67b038c076bed69e7e0c4bdf *research/kit/t
 cf09d2734b32dfd22c2ad5b2087de46b8aaa73bd112da766549e947df5fc5e31 *research/kit/test/panel.test.mjs
 feb047a7bbf13a3bb4317181fcd2092d176eaf51fecea98a3474e8c06dec05d9 *research/kit/test/runs.test.mjs
 27ca2f4a703d21fd3486b3187b9796c10c86ebe75e615006c411cbf20c3df7c2 *research/kit/test/stats.test.mjs
-a81564e47605d86f8e9f24684aa7297fb7827ca63176b9d70959ddb7bcad49f8 *market1/rules.md
+fa912068316dd426edcd6d3cb1921412460a26761a52e4bb7c9ed97b82705b6f *market1/rules.md
