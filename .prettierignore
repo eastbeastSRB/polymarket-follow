@@ -12,3 +12,5 @@ README.md
 
 # The experiment's frozen files (rules, favourites, the seed's manifest): hashed at the freeze.
 apps/poller/experiment
+# MARKET-1's frozen files (its rules): hashed at its freeze.
+apps/poller/market1
