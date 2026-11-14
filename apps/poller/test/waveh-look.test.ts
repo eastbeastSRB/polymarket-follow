@@ -21,7 +21,7 @@ import { loadResearch } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { bookKey } from "../src/waveh/books.js";
 import { loadCoins } from "../src/waveh/coins.js";
-import { DATA_END } from "../src/waveh/instants.js";
+import { DATA_END, TEST_START } from "../src/waveh/instants.js";
 import {
   AlreadyRun,
   FrozenDiffer,
@@ -108,6 +108,15 @@ function world() {
         taker("DOGE", "B", W + 1_000, "0.2", "1000", 14),
       ]),
     ].join("\n"),
+  );
+  // TEST's first file holding two fills stamped before TEST's start (a wave, were
+  // they used): in neither part (H1).
+  files.set(
+    fillKey(TEST_START, "node_fills_by_block"),
+    block(4, [
+      ...liquidation(10, "XRP", "A", TEST_START - 200, 16),
+      ...liquidation(12, "XRP", "A", TEST_START - 100, 17),
+    ]),
   );
   // Marks at 100 on the days the legs and their funding read; every day file present.
   const marked: [string, number[]][] = [
@@ -240,7 +249,7 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       sizingLate: 2,
       booksNeeded: 6,
       dataSha256: "d",
-      counts: { counted: 8, late: 2, sizingCoins: ["SOL", "kPEPE"] },
+      counts: { counted: 8, late: 2, early: 2, sizingCoins: ["SOL", "kPEPE"] },
     });
     expect(existsSync(path.join(dir(), "result.json"))).toBe(false);
   });
@@ -341,7 +350,8 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       dataSha256: "d",
     });
     expect(result.stat.mean).toBeCloseTo(gross - fees + funding, 9);
-    expect(result.meanExcess).toBeCloseTo(0, 9);
+    // BASE 0 on flat marks: the excess exists for the one position (toBeCloseTo reads null as 0).
+    expect(result).toMatchObject({ meanExcess: 0, withoutExcess: 0 });
     const lines = gunzipSync(
       readFileSync(path.join(dir(), "positions.jsonl.gz")),
     )

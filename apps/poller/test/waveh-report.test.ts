@@ -305,6 +305,8 @@ describe("the lines beside (H13): which positions each takes", () => {
     });
     // M = 2: even accounts in slice 0, odd in slice 1.
     const counted = [
+      // Before TEST (H4's order holds): in no TEST line, nor in TEST's counts by method.
+      fill(14, "SOL", -1, Date.parse("2025-07-01T00:00:00Z")),
       fill(2, "SOL", -1, S),
       fill(4, "SOL", -1, S + 5 * MINUTE_MS),
       fill(12, "kPEPE", -1, S + 10 * MINUTE_MS, "backstop"),

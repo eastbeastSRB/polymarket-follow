@@ -41,6 +41,14 @@ export const LZ4JS_FILES = ["lz4.js", "util.js", "xxh32.js"].map(
   (f) => `node_modules/lz4js/${f}`,
 );
 
+/** `waveh/`'s files the look reads (H0): required in the list even when the folder lacks them. */
+export const WAVEH_FILES = [
+  "waveh/rules.md",
+  "waveh/coins.json",
+  "waveh/sizing.json",
+  "waveh/data.sha256",
+];
+
 /** What runs: every file under these, relative to the package root, must be listed. */
 export const FROZEN_SCOPE: readonly string[] = [
   "dist/waveh.js",
@@ -86,11 +94,12 @@ export function verifyFreeze(root: string): Freeze {
     if (m) want.set(m[2]!, m[1]!);
   }
   const problems: string[] = [];
-  // The closure's files and lz4js's are required even when a folder lacks them.
+  // The closure's, lz4js's and the look's own files are required even when a folder lacks them.
   for (const file of new Set([
     ...frozenFiles(root),
     ...CLOSURE,
     ...LZ4JS_FILES,
+    ...WAVEH_FILES,
   ])) {
     if (!want.has(file)) problems.push(`not in the freeze: ${file}`);
   }

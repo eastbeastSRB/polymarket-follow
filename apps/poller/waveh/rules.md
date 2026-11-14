@@ -31,7 +31,8 @@ trade.*
   market object and its CR1 errors); the decoder's three files
   (`node_modules/lz4js/lz4.js`, `util.js`, `xxh32.js`, lz4js 0.2.0), whose
   hashes the program also checks before it loads them; every file of `waveh/`:
-  this file, `coins.json` (H3), `sizing.json` (H5) and `data.sha256` (H2).
+  this file, `coins.json` (H3), `sizing.json` (H5) and `data.sha256` (H2),
+  each of these four required in the list by name.
 - **Shared code** the program imports (the schedule's constants) is not
   frozen: each run's log lists the hashes of the shared files it used and
   Node's version (information, not a stop), as MARKET-1's M0.
@@ -61,7 +62,14 @@ trade.*
   rehearsal and at the look alike (R5); a record of such a file stamped
   later is dropped and counted. Counts only (H5). Its positions are priced in
   the rehearsal and kept unread until the look; one whose x_out is at or
-  after 2025-08-01 is left for the look (its marks are sealed).
+  after 2025-08-01 is left for the look (its marks are sealed), and so is
+  one whose leg found no live book and whose tape would read a file of TEST.
+  The look prices again every SIZING position whose x_out is at or after
+  2025-07-31T23:00Z (all the rehearsal can have left) and takes, for each
+  position, the rehearsal's outcome where it has one, else the look's. A
+  counted fill of a file dated 2025-08-01 or later stamped before that is in
+  neither part: dropped and counted, so the look's SIZING is the rehearsal's
+  fill for fill.
 - **TEST** = [2025-08-01T00:00:00Z, 2026-05-28T00:00:00Z), 300 days: every
   deciding position's fill instant lies in it. Polymarket Perps' first mark
   is 2026-05-28T01:26Z (external-apis).
@@ -298,76 +306,99 @@ trade.*
 
 ## H13. The lines beside — deciding nothing, no verdict word
 
-On marks only — the gross on marks and the excess, with M10's two-way error —
-unless said; their positions need no book.
+On marks only — the gross on marks and the excess, with M10's two-way error
+(by the day alone for a set in one coin, as MARKET-1's lines) — unless said;
+their positions need no book. A position without both marks, or without a
+BASE cell for its excess, is left out of that mean and counted.
 - **ALONE** — B1's episodes of every slice, and those at whose first fill
   the wave state of their slice does not hold for its side (B2) [old weeks
   +131.9 ± 35.1; +22.0 ± 34.9].
 - **LATE** — WAVE-H's positions entered 1 h and 3 h later (B3).
 - **SIDES** — WAVE-H's forced sells and forced buys apart (B6).
 - **EVERY SLICE** — the same rule in each of the M slices: each slice's
-  mean, the share of slices above zero, and all slices' positions together
-  with M10's error (the pooled reading), so slice 0's luck is seen.
+  mean gross on marks, the share of slices whose mean is above zero, and all
+  slices' positions together with M10's error (the pooled reading), so slice
+  0's luck is seen.
 - **M HALVED, M DOUBLED, M BY MONTH** — the same rule in slice 0 with ⌈M ÷ 2⌉,
-  2M, and M set for each calendar month of TEST from the 68 days before it by
-  H5's procedure.
-- **METHOD** — the positions whose entry fill is a backstop's, and the
+  2M, and, for each calendar month of TEST, its own M by H5's procedure on
+  the counted fills whose t lies in the 68 days before the month's first day
+  — from SIZING's start at the earliest, r(M) divided by that window's
+  length in days, so August's window is SIZING's — each month's positions
+  taken from slice 0 of its own M.
+- **METHOD** — the positions whose entry fill is a backstop's, and TEST's
   counted fills by method, by month.
-- **THE LATE COINS** — the positions in the coins with no fill in SIZING,
+- **THE LATE COINS** — the positions in the coins with no record in SIZING,
   apart.
-- **BY MONTH** — WAVE-H by UTC month of t, with each month's episodes a
-  slice a day and the share of quarter-hours in a wave state (old weeks
-  3.9%).
-- **THE BOOK AND THE TAPE** — the book-priced and the tape-priced positions
-  apart, at the book's net; the mean with the tape-priced left out.
-- **THE TAIL** (B11) — the worst UTC day, the largest fall from a peak, the
-  most positions open at once, the worst position, the worst 5%'s average,
-  on the net.
+- **BY MONTH** — WAVE-H by UTC month of t, with each month's entries and
+  episodes a slice a day, the share of quarter-hours in a wave state (old
+  weeks 3.9%), liquidated accounts a slice a day and counted fills an
+  episode (R9's counts, at M, inside the month).
+- **THE BOOK AND THE TAPE** — the positions with both legs at the book and
+  those with a leg at the tape, apart, on the net (H14's prints each): the
+  first is the mean with the tape-priced left out.
+- **THE TAIL** (B11, MARKET-1's) — the worst UTC day, the largest fall from
+  a peak, the most positions open at once, the worst position, the worst
+  5%'s average, on the net.
 - **THE DAY WITH THE MOST POSITIONS** (2025-10-10, the largest liquidation
-  crash on record, is inside TEST and the rule has no stop): that day named
-  with its count and its share; m and SE without it; m and SE with each UTC
-  day weighted alike (the mean of the day means, its error by day); the share
-  of positions on the five busiest days. On the net, printed right under the
-  verdict; they never change it.
+  crash on record, is inside TEST and the rule has no stop): that day (the
+  earlier on a tie) named with its count and its share; m and SE without it;
+  m and SE with each UTC day weighted alike (the mean of the day means, its
+  error by day); the share of positions on the five busiest days. On the
+  net, printed right under the verdict; they never change it.
 - **SIZING** — the same line on SIZING, on the net, printed after the
   verdict, labelled "SIZING: days counted before the freeze, outcomes first
-  read at the look".
+  read at the look": the rehearsal's sealed outcomes, their SHA-256 held to
+  `sizing.json`'s and their positions to SIZING's recomputed ones, with the
+  positions the rehearsal left priced at the look (H1).
 
 ## H14. Prints at the look — M13
 
-For WAVE-H and each line beside: positions, days, coins, slices; unpriced by
-reason; tape-priced legs by reason; depth-short legs; the share not at the
-book; the money mean with its two-way SE and the one-way SEs by day and by
-coin; Student's band on day clusters; the gross before costs; fees; funding;
-the win share; the median and quartiles of the net; the entry's cost at the
-book (median, p90); the gross on marks; the excess with its SE and lower
-bound and the priced positions without one; the mean without the two days
-that add most; each coin left out; the counted fills by method and coin and
-the left-out legs by reason (H4); the archive's book holes by day and the legs
-they touched; the base-tier check (the highest taker rate a `crossed` fill
-without a builder fee paid, by month: a month above 4.5 bps is printed as an
-alarm, the verdict never withheld for it); the store's files read and their
-list's hash.
+For WAVE-H and each set on the net (MARKET-1's M13 prints, its `summarize`,
+with z): positions, days, coins, slices; unpriced by reason; tape-priced legs
+by reason; depth-short legs; the share not at the book; the money mean with
+its two-way SE and the one-way SEs by day and by coin; Student's band on day
+clusters; the gross before costs; fees; funding; the win share; the median
+and quartiles of the net; the entry's cost at the book (median, p90); the
+gross on marks; the excess with its SE and lower bound and the priced
+positions without one; the mean without the two days that add most; each
+coin left out. For each line on marks: positions, days, coins, slices; the
+gross on marks and the excess with their errors, the excess's lower bound,
+the positions without marks and without BASE. Once: the counted fills by
+method and coin and the left-out legs by reason (H4); the archive's book
+holes by day and WAVE-H's legs they touched; the base-tier check (the
+highest taker rate a `crossed` fill in the 38 coins without a builder fee
+paid, by month: a month above 4.5 bps is printed as an alarm, the verdict
+never withheld for it); the store's files read and their lists' hashes.
 
 ## H15. The one look
 
-- **Step 1** (`waveh look`): the gate; every store file verified; the counted
-  fills, the slices, the entries, the positions and their legs. Before any
-  book is fetched and before any price exists, it prints (R3): the records
-  failing by day; the counted fills and the own legs by month and method; the
-  slice's episodes a day by month; and, where the block numbers of
-  `node_fills_by_block` run consecutively, the missing blocks by day. It
-  writes the list of the book files WAVE-H's legs need with the positions'
-  SHA-256, then stops (exit 5, "books needed"). A data defect seen here is
-  fixed by H0's route before step 2.
+- **Step 1** (`waveh look`): the gate; every fill file verified against
+  `data.sha256` and read once; M recomputed from SIZING and held to
+  `sizing.json`'s (else exit 5); the counted fills, the slices, the entries,
+  WAVE-H's positions and the SIZING positions to price again (H1), and their
+  legs. Before any book is fetched and before any price exists, it writes
+  (R3) to `look/step1.json`: the records failing by day; the counted fills
+  and the own legs by month and method; slice 0's episodes a day by month;
+  where the block numbers of `node_fills_by_block` run consecutively, the
+  missing blocks by day; the coins with a record in SIZING; and the
+  positions' SHA-256. It writes the book files their legs need to
+  `look/books-needed.txt`, then stops (exit 5, "books needed"). A data defect
+  seen here is fixed by H0's route before step 2; then `look/step1.json` is
+  removed by hand, in the same decisions entry, and step 1 runs again.
 - **Between:** the downloader fetches those book files under the same caps
   and watch as the main download, into the store's book list.
-- **Step 2** (`waveh look` again): recomputes step 1 and stops if its
-  positions' hash differs; prices every leg; the statistic, the verdict and
-  every print. Nothing about an outcome is printed or logged before
-  `look/result.json` exists (R7); the report's tables come after it. A second
-  step 2 refuses (exit 5, "already run"). A run that crashes before its
-  result exists is not a look.
+- **Step 2** (`waveh look` again): recomputes step 1 and stops (exit 5) if its
+  positions' SHA-256 differs from `step1.json`'s, if a needed book file is
+  neither in the book list nor listed missing, or if the sealed SIZING
+  outcomes (`rehearsal/sizing-outcomes.jsonl.gz` under `WAVEH_ROOT`) differ
+  from `sizing.json`'s SHA-256 or hold other positions than SIZING's; then
+  prices every leg; the statistic and the verdict, written to
+  `look/result.json`; then `look/positions.jsonl.gz` (every position with
+  its legs' book file and snapshot time or the tape's `tid`s, H9) and
+  `look/report.json` (H13, H14). Nothing about an outcome is printed or
+  logged before `look/result.json` exists (R7). A second step 2 refuses
+  (exit 5, "already run"). A run that crashes before its result exists is
+  not a look.
 - **Then:** the report `docs/reviews/wave-h-look-<date>.md` and a Final review
   that recomputes WAVE-H with independent code, position by position. **A
   code defect it finds** is fixed by M0's route (a decisions entry, a test
@@ -376,7 +407,11 @@ list's hash.
 - **After the look** no number, line, coin, threshold, instant or rule of
   this file changes.
 - **Runs:** from the repository's build only (no run copy, no task, no page),
-  by hand, one at a time. Settings, no defaults: `WAVEH_STORE` (the
-  download's store, read only) and `WAVEH_ROOT` (the program's own files).
-  Exit codes: 0 done, 1 crash, 2 bad settings, 4 frozen files differ, 5 not
-  ready (books needed, a store file missing or failing) or already run.
+  by hand, one at a time, at idle priority, starting no file in 02:30–06:00Z
+  or 10:25–11:15Z: `waveh rehearse` (the gate closed whatever the freeze, the
+  download's manifest as the list) and `waveh look`. Settings, no defaults:
+  `WAVEH_STORE` (the download's store, read only) and `WAVEH_ROOT` (the
+  program's own files; the look's must hold the rehearsal's folder). Exit
+  codes: 0 done, 1 crash, 2 bad settings, 4 frozen files differ, 5 not ready
+  (books needed, a store file missing or failing, a hold above) or already
+  run.

@@ -148,11 +148,19 @@ export async function lookStep1(
   if (M !== frozenM)
     throw new StoreError(`M is ${M} on SIZING, sizing.json's ${frozenM}`);
   const sizingCoins = new Set(pass.coins);
+  const fromSizing = pass.counted.length;
   await readAll(
     keys.filter((k) => !sizingFile(k)),
     DATA_END,
   );
-  const counted = pass.counted.sort(byM4);
+  // H1: a TEST file's counted fill stamped before TEST's start is in neither
+  // part, so the look's SIZING is the rehearsal's, record for record.
+  const fromTest = pass.counted.splice(fromSizing);
+  const counted = [
+    ...pass.counted,
+    ...fromTest.filter((f) => f.t >= TEST_START),
+  ].sort(byM4);
+  const early = fromTest.length - (counted.length - fromSizing);
   const slice0 = bySlice(counted, M)[0]!;
   const spots = waveSpots(0, slice0, TEST_START, TEST_END).filter(
     (s) => s.xOut < DATA_END,
@@ -175,6 +183,7 @@ export async function lookStep1(
       files: keys.length,
       days: Object.fromEntries(pass.days),
       late: pass.late,
+      early,
       legs: Object.fromEntries([...pass.legs].sort()),
       blocks: {
         missing: Object.fromEntries(pass.blocks.missing),

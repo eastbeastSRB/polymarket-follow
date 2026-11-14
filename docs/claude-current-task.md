@@ -4,12 +4,12 @@ polymarket-follow: a watch-only tracker of Polymarket Perps traders
 (CLAUDE.md). Founded 2026-11-06. **The collector (C1) records around the
 clock; the forward paper experiment is FROZEN (2026-11-12, tag
 `paper-freeze-1`) and runs daily; MARKET-1, the forward paper test of the
-liquidation wave, is FROZEN (2026-11-13 14:29:11Z, tag `market1-freeze-1`),
-deployed (14:33:39Z) and runs daily at 10:30Z. WAVE-H, MARKET-1's wave tested
-once on Hyperliquid's history, is planned and reviewed; its download tool is
-built, passed its smoke test and waits for the supervisor's start; its rules
-wait for the owner.** The plan is the plan page (docs/claude-master-plan.md); what
-exists is architecture.
+liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
+daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
+history, is being built (WAVE-H-BUILD, 2026-11-14): the reproduction holds,
+the rehearsal and the look are code and tested; the rehearsal waits for the
+sizing download; nothing is frozen or run on TEST.** The plan is the plan
+page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -33,17 +33,17 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
     commit `4832a6a`, tag `market1-freeze-1`;
   - START 2026-11-11; looks at the paper experiment's dates;
   - its daily task at 10:30Z.
-- **WAVE-H** (decisions 2026-11-13, the owner's ruling, and 2026-11-14,
-  "WAVE-H's download spec"):
-  - the plan, `docs/reviews/wave-h-plan-2026-11-13.md`, and its fresh
-    review, `docs/reviews/wave-h-plan-review-2026-11-14.md` (download: safe
-    after D1–D8; plan: approvable after R1–R10);
-  - the download tool `tools/waveh-fetch.cjs` and its start script
-    `tools/waveh-fetch-start.ps1` (architecture, "WAVE-H's data download";
-    decisions 2026-11-14, WAVE-H-FETCH's technical calls): built, tested
-    with no network, its smoke test passed (3 requests); not yet run on the
-    store;
-  - the rules (H0–H15) and R1–R10 wait for the owner.
+- **WAVE-H** (architecture, "WAVE-H" and "WAVE-H's data download";
+  decisions 2026-11-14, "WAVE-H's plan approved" and both WAVE-H-BUILD
+  entries):
+  - the rules `apps/poller/waveh/rules.md` (H0–H15 with R1–R10; M and
+    SIZING's counts not yet written); `dist/waveh.js` with `rehearse` and
+    `look`; the reproduction through WAVE-H's own mapping: 727 = 695 + 32
+    counted fills, 153 entries;
+  - the download runs (`tools/waveh-fetch.cjs`, the sizing months first,
+    then the supervisor starts the test months, stored unopened);
+  - not yet: the rehearsal on SIZING, its book fetch, M, `data.sha256`, the
+    draft freeze list.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
   - the collector's share is 50 and 15;
@@ -55,48 +55,44 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **WAVE-H's download, the first session** (decisions 2026-11-14, the
-   spec's point 8):
-   - WAVE-H-FETCH's smoke test passed (2026-11-14 06:02Z: one listing,
-     one sizing file whose MD5 equals its ETag, one `fundingHistory` read,
-     all HTTP 200; external-apis, "Other venues");
-   - the supervisor reads the tool against D1–D8, then starts it:
-     `tools\waveh-fetch-start.ps1 -SizingOnly` (about 35 GB, the sizing
-     months), with one mid-file kill and restart;
-   - then the supervisor's check of the collector's day (its price audits
-     and warnings) and the tool's log, before the test months
-     (`tools\waveh-fetch-start.ps1`, the full run);
-   - each morning: `-Check`, `fetch\problems.jsonl`, the collector's log.
-2. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
+1. **WAVE-H's rehearsal** (a fresh or the same WAVE-H-BUILD; its
+   `progress.md`, "Left, in order"):
+   - once every SIZING file has its manifest line: `pnpm build`, then
+     `node --max-old-space-size=4096 dist/waveh.js rehearse` with
+     `WAVEH_STORE` and `WAVEH_ROOT` (a FIND-SLOTS slot) → exit 5 with
+     `rehearsal\books-needed.txt`;
+   - the supervisor's go for the book fetch (`--books … --sizing-only`;
+     the main download stopped for it, restarted after);
+   - the rehearsal again → `sizing.json`; M and SIZING's counts into the
+     rules; the draft freeze list.
+2. **WAVE-H's test months** downloaded (the supervisor), then
+   `waveh-freeze.cjs --data` (`data.sha256`, R3 (i)'s short files).
+3. **WAVE-H's fresh rules and code reviews**, the fixes, a fix-check, the
+   freeze (the supervisor), then the one look (H15's two steps).
+4. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
    book level's unit (decisions 2026-11-13, call 11); no paper command by
    hand while a MARKET-1 run is live (rules.md M2).
-3. **The daily runs:** the supervisor checks each program's log, budget and
+5. **The daily runs:** the supervisor checks each program's log, budget and
    page; no running number is read as evidence before a look.
-4. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
+6. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
    (R8's B2 confirmation, after 2026-11-30), each with its own share of the
    remaining 80 a minute (and a burst share: decisions 2026-11-13, Q12).
-5. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
+7. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
    owner's rulings after the deploy).
-6. **Small collector follow-ups, when convenient:**
-   - drop the boards' `consistent` flag;
-   - a coverage mark for books that arrive late;
-   - the backup task's trigger from UTC takes effect when the tasks are next
-     registered;
-   - the page's fee-category alarm (a naming mismatch in the collector's
-     fees document).
-7. **The v1 plan** (the plan page), early December.
+8. **Small collector follow-ups, when convenient:** drop the boards'
+   `consistent` flag; a coverage mark for books that arrive late; the
+   backup task's trigger from UTC takes effect when the tasks are next
+   registered; the page's fee-category alarm.
+9. **The v1 plan** (the plan page), early December.
 
 ## Last session (2026-11-14)
 
-WAVE-H-PLAN planned WAVE-H, and a fresh review agreed the download "safe
-after D1–D8". The supervisor wrote the download's spec into decisions.
-WAVE-H-FETCH built the tool to it:
-- the plan's keys only, hashed as they come, never read back;
-- one request at a time at 2 MB/s, the pause windows, the error ladder;
-- the watch on the collector's heartbeat, failing closed;
-- the F: floor, the cap, a lock, a stop file, `--plan`, `--sizing-only`;
-- a detached start through WMI at idle priority.
-
-Its 37 tests run with a fake clock and a fake bucket. The deliberate breaks
-ran in a scratch copy (decisions, WAVE-H-FETCH's entry). `pnpm verify` is
-green, and both freezes still verify.
+WAVE-H-BUILD built WAVE-H in two sessions (the first stopped at its context
+limit). The reproduction holds through WAVE-H's own mapping. The gate seals
+every store file dated from 2025-08-01 until WAVE-H's freeze verifies; every
+reader takes it, and each refusal is tested. The rehearsal (`rehearse`) and
+the one look (`look`, H15's two steps, its lines beside and prints through
+MARKET-1's own code) are built and tested in synthetic stores, with
+deliberate breaks in scratch copies. `pnpm verify` is green, and both
+freezes still verify (61 and 64 files). The rehearsal waits for the sizing
+download.

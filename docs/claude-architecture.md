@@ -310,11 +310,12 @@ history by its rules, `apps/poller/waveh/rules.md` (a draft: M not yet
 written; the plan `docs/reviews/wave-h-plan-2026-11-13.md` with its review's
 R1–R10). Run by hand from the repository's build only (no run copy, no task,
 no page), at idle priority, one run at a time; it makes no network request.
-Its command today: `rehearse` (the look's command is not built yet).
-Settings, no defaults: `WAVEH_STORE` (the download's store, read only) and
-`WAVEH_ROOT` (its own files), neither inside the other. Exit codes: 0 done, 1
-a crash, 2 bad settings, 5 not ready (book files needed, a store file missing
-or failing). No file is started in 02:30–06:00Z or 10:25–11:15Z.
+Its commands: `rehearse` and `look`. Settings, no defaults: `WAVEH_STORE`
+(the download's store, read only) and `WAVEH_ROOT` (its own files), neither
+inside the other. Exit codes: 0 done, 1 a crash, 2 bad settings, 4 frozen
+files differ (the look), 5 not ready (book files needed, a store file missing
+or failing, a hold of the look) or already run. No file is started in
+02:30–06:00Z or 10:25–11:15Z.
 
 **Its modules.** `instants.ts` (SIZING's start 2025-05-25 14h, TEST
 2025-08-01 → 2026-05-28, DATA END 2026-05-29 01h); `coins.ts`
@@ -325,22 +326,27 @@ scan); `positions.ts` (M6 on each entry of a slice, B1's episodes);
 `price.ts` (the book at x, the tape, the net at 4.5 bps a leg); `verdict.ts`
 (MARKET-1's two-way error, z = 2.58, H12's order); `pass.ts` (one pass over
 fill files: the counted fills and the counts printed before any price);
-`rehearse.ts`; `run.ts` (settings, the windows, the shared files' hashes);
+`rehearse.ts` (the readers of tapes, marks and books, which take the gate;
+a position's legs priced); `look.ts`; `report.ts` (H13's lines beside, H14's
+prints); `run.ts` (settings, the windows, the shared files' hashes);
 the store's readers: `gate.ts`, `store.ts`, `lz4.ts`, `ctxs.ts`, `funding.ts`,
 `books.ts`, `market.ts`. Imported from MARKET-1, never copied: `waves`,
-`fills`, `book`, `price` (and through them the paper's `instants`, and its
-`research` for the kit).
+`fills`, `book`, `price`, `stats` (`twoWay`, `byDay`), `lines` (`baseOf`,
+`blockOf`), `summary` (`summarize`, `tailOf`, `statOf`: M13's prints); the
+paper's `instants`, `stats` and `research` (the kit).
 
 **Its gates** (`gate.ts`). The freeze: `waveh/FROZEN.sha256` must list every
 file of what runs — `dist/waveh.js`, `dist/waveh/`, the closure of MARKET-1's
 and the paper's compiled files its imports reach (`CLOSURE`, exactly: a test
-walks the imports), `research/`, lz4js's three files and `waveh/`. The seal:
+walks the imports), `research/`, lz4js's three files and `waveh/` (its `rules.md`, `coins.json`,
+`sizing.json` and `data.sha256` required by name). The seal:
 every store read takes the gate and refuses first, before anything is
 opened, a key dated at or after 2025-08-01 while the gate is closed, and any
 key whose date does not parse. The rehearsal runs with the gate closed
 whatever the freeze. `dist/log.js` and `dist/schedule.js` are shared,
 unfrozen, their hashes logged at each start. `tools/waveh-freeze.cjs` writes
-the list (`--final` on a clean tree) and refuses a closure file that is in
+the list (`--final` on a clean tree, with `sizing.json` and `data.sha256`
+present) and refuses a closure file that is in
 neither MARKET-1's nor the paper experiment's freeze or differs from one;
 `test/waveh-freeze.test.ts` checks a WAVE-H list's lines against both freezes.
 No list is written yet.
@@ -361,6 +367,21 @@ stopping (exit 5) until the store's `books.jsonl` answers each; then the
 tapes, the marks and funding, the legs priced, the outcomes sealed in
 `rehearsal\sizing-outcomes.jsonl.gz` with their hash; `counts.json`,
 `report.json` and `sizing.json` (counts and mechanics only).
+
+**The look** (`look`, H15; only once the freeze verifies, else exit 4;
+`waveh/data.sha256` as the list). Step 1: every fill file through one pass,
+M recomputed from SIZING and held to `waveh/sizing.json`'s; WAVE-H's
+positions (slice 0's TEST entries) and the SIZING positions whose exit
+reaches 2025-07-31 23h (the rehearsal may have left them); R3's counts and
+the positions' SHA-256 to `WAVEH_ROOT\look\step1.json`, their book files to
+`look\books-needed.txt`; exit 5. Step 2 (the same command): step 1 again,
+held to `step1.json`'s hash; every needed book file answered by
+`books.jsonl`; the sealed SIZING outcomes (`WAVEH_ROOT\rehearsal\`) held to
+`sizing.json`'s hash and to SIZING's positions; every leg priced (BASE from
+TEST's marks); `look\result.json` written first (the verdict), then
+`positions.jsonl.gz` (each leg's book file or tape `tid`s) and `report.json`
+(the lines beside on marks, the sets on the net through MARKET-1's
+`summarize`, the SIZING line). A third run refuses (already run).
 
 **The old weeks** (outside `dist`): `scripts/waveh-reproduce.ts` with
 `test/waveh-reproduce.test.ts`, the pre-cut seed converted to Hyperliquid's

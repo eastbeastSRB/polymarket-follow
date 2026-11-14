@@ -20,6 +20,7 @@ import {
   CLOSURE,
   FROZEN_FILE,
   LZ4JS_FILES,
+  WAVEH_FILES,
   SealedError,
   checkSealed,
   frozenFiles,
@@ -78,7 +79,7 @@ describe("WAVE-H's freeze (H0)", () => {
       "research/kit/check.mjs",
       ...LZ4JS_FILES,
       "node_modules/lz4js/README.md",
-      "waveh/rules.md",
+      ...WAVEH_FILES,
     ])
       put(pkg, f, `${f}\n`);
     return pkg;
@@ -100,11 +101,14 @@ describe("WAVE-H's freeze (H0)", () => {
       ...CLOSURE,
       "research/kit/check.mjs",
       ...LZ4JS_FILES,
+      "waveh/coins.json",
+      "waveh/data.sha256",
       "waveh/rules.md",
+      "waveh/sizing.json",
     ]);
   });
 
-  it("refuses without a list, with a changed, missing or unlisted file, and without a closure or lz4js file", () => {
+  it("refuses without a list, with a changed, missing or unlisted file, and without a closure, lz4js or look file", () => {
     const pkg = makePackage();
     expect(verifyFreeze(pkg)).toEqual({
       ok: false,
@@ -124,7 +128,7 @@ describe("WAVE-H's freeze (H0)", () => {
     put(pkg, "dist/waveh/extra.js", "x\n");
     expect(verifyFreeze(pkg).ok).toBe(false);
     rmSync(path.join(pkg, "dist/waveh/extra.js"));
-    for (const f of [CLOSURE[0]!, LZ4JS_FILES[2]!]) {
+    for (const f of [CLOSURE[0]!, LZ4JS_FILES[2]!, WAVEH_FILES[2]!]) {
       rmSync(path.join(pkg, f));
       expect(verifyFreeze(pkg)).toEqual({
         ok: false,
