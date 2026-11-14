@@ -95,5 +95,6 @@ reader takes it, and each refusal is tested. The rehearsal (`rehearse`) and
 the one look (`look`, H15's two steps, its lines beside and prints through
 MARKET-1's own code) are built and tested in synthetic stores, with
 deliberate breaks in scratch copies. `pnpm verify` is green, and both
-freezes still verify (61 and 64 files). The rehearsal waits for the sizing
-download.
+freezes still verify (61 and 64 files). A second successor fetched the
+rehearsal's books and ran the rehearsal (passed, M = 147); the supervisor
+verified it and ruled on Q5 and Q6.
