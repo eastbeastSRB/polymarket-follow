@@ -32,19 +32,24 @@ import {
   type DataList,
 } from "./waveh/store.js";
 
-let settings: Settings;
-let command: "rehearse" | "look";
-try {
-  settings = Settings.parse(process.env);
-  [command] = z
-    .tuple([z.enum(["rehearse", "look"])])
-    .parse(process.argv.slice(2));
-} catch (err) {
-  process.stderr.write(
-    `waveh: refused: ${err instanceof z.ZodError ? err.issues.map((i) => `${i.path.join(".") || "the command"}: ${i.message}`).join("; ") : String(err)}\n`,
-  );
+function refuse(why: string): never {
+  process.stderr.write(`waveh: refused: ${why}\n`);
   process.exit(2);
 }
+const parsed = Settings.safeParse(process.env);
+if (!parsed.success)
+  refuse(
+    parsed.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; "),
+  );
+const settings: Settings = parsed.data;
+const args = z
+  .tuple([z.enum(["rehearse", "look"])])
+  .safeParse(process.argv.slice(2));
+if (!args.success)
+  refuse(`the command: ${args.error.issues.map((i) => i.message).join("; ")}`);
+const [command] = args.data;
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
 const { log, close } = createLog(settings.WAVEH_ROOT, "waveh");

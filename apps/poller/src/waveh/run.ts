@@ -28,7 +28,10 @@ export const Settings = z
         !inside(s.WAVEH_STORE, s.WAVEH_ROOT)
       );
     },
-    { message: "WAVEH_ROOT and WAVEH_STORE: one is inside the other" },
+    {
+      message: "must lie outside WAVEH_STORE, and WAVEH_STORE outside it",
+      path: ["WAVEH_ROOT"],
+    },
   );
 export type Settings = z.infer<typeof Settings>;
 
