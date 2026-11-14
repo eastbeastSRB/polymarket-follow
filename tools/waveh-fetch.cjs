@@ -145,8 +145,8 @@ function keyTime(part, name) {
   const [y, mo, d, h] = [m[1], m[2], m[3], m[4] ?? "0"].map(Number);
   const t = Date.UTC(y, mo - 1, d, h);
   const back = new Date(t);
-  return h <= 23 &&
-    back.getUTCFullYear() === y &&
+  // An hour past 23 or a day past the month's end rolls the date, so the round trip refuses both.
+  return back.getUTCFullYear() === y &&
     back.getUTCMonth() === mo - 1 &&
     back.getUTCDate() === d
     ? t
@@ -957,6 +957,8 @@ class Fetcher {
       if (err instanceof Abort) throw err;
       sink?.discard();
       const reason = ac.signal.aborted ? ac.signal.reason : null;
+      // A local fault (a write, a folder) leaves the reply unread: ending it frees the connection.
+      if (reason === null) ac.abort("ended");
       if (reason === "stop") this.throwIfStopping();
       if (reason === "pause" || reason === "window")
         return { kind: "interrupted" };
@@ -1355,6 +1357,10 @@ async function main() {
     statfs: (dir) => fs.statfsSync(dir),
     out: (text) => fs.writeSync(1, text),
   });
+  if (code !== 0) {
+    const logDir = storeFiles(opts.store).logDir;
+    process.stderr.write(`waveh-fetch: exit ${code}; why: ${logDir}\n`);
+  }
   process.exit(code);
 }
 
@@ -1366,23 +1372,25 @@ module.exports = {
   FLOOR,
   FUNDING_MAX,
   INFO,
-  LADDER_MS,
   MAX_RATE,
   PARTS,
   ROOT,
   SEAL,
-  WATCH,
   Bucket,
+  Fetcher,
+  Manifest,
   Watch,
   admitted,
   checkRequest,
   fundingBody,
   fundingWindows,
   judge,
-  keyTime,
+  makeLog,
   parseArgs,
   parseListing,
+  realClock,
   run,
+  storeFiles,
   windowEnd,
 };
 

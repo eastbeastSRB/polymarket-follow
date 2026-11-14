@@ -1205,6 +1205,42 @@ describe("the error ladder", () => {
     expect(partsIn(w.store)).toEqual([]);
   }, 60_000);
 
+  it("counts a local fault in a file (a write refused) on the ladder, and ends that request", async () => {
+    const w = setup();
+    sizingWorld(w.server);
+    const key = SIZING_KEYS[1] ?? "";
+    const part = `${storePath(w.store, key)}.part`;
+    const fds = new Set<number>();
+    let refused = 0;
+    const realOpen = fs.openSync;
+    const realWrite = fs.writeSync;
+    vi.spyOn(fs, "openSync").mockImplementation((file, flags, mode) => {
+      const fd = realOpen(file, flags, mode);
+      if (file === part) fds.add(fd);
+      return fd;
+    });
+    vi.spyOn(fs, "writeSync").mockImplementation(
+      (fd: number, ...rest: unknown[]) => {
+        if (fds.has(fd) && refused === 0) {
+          refused += 1;
+          throw new Error("ENOSPC: the disk is full");
+        }
+        return (realWrite as (...args: unknown[]) => number)(fd, ...rest);
+      },
+    );
+    expect(await w.run()).toBe(0);
+    expect(refused).toBe(1);
+    expect(eventsOf(w.store, "error")).toMatchObject([
+      { inARow: 1, waitS: 30, why: `ENOSPC: the disk is full: ${urlOf(key)}` },
+    ]);
+    const gets = w.server.calledFor(urlOf(key));
+    expect(gets.length).toBe(2);
+    expect((gets[1]?.at ?? 0) - (gets[0]?.at ?? 0)).toBe(30 * SECOND);
+    expect(w.server.maxOpen).toBe(1);
+    expect(fileKeysOf(w.store)).toEqual(SIZING_KEYS);
+    expect(partsIn(w.store)).toEqual([]);
+  }, 60_000);
+
   it("records a key answered 403 or 404 as missing and goes on, the ladder untouched", async () => {
     const w = setup();
     sizingWorld(w.server);
