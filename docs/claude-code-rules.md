@@ -89,6 +89,19 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   which, never dropping one silently; give heavy tests their own time limit
   and record each kill's failure message. A kill by timeout alone is
   unproven (MARKET-FIX, 2026-11-13).
+- **`toBeCloseTo(0)` passes on `null`** (null coerces to 0): pin an expected
+  zero with `toBe` or `toMatchObject`, or assert it is not null first
+  (WAVE-H-BUILD, break k09, 2026-11-14).
+- **A `describe(..., { timeout })` does not cover its hooks:** a heavy
+  `beforeAll` needs its own limit (vitest's default is 10 s), and a
+  file-level `afterEach` cleanup deletes a store a `beforeAll` shares. Gate
+  every commit on `pnpm verify`'s exit code in the same command: `f77fa89`
+  went in red when a test timed out under load (WAVE-H-BUILD, 2026-11-14).
+- **Drive a whole run with a fake clock that moves only when the run waits,**
+  and bound it in fake time, so a run that never ends fails with a message
+  (WAVE-H-FETCH, 2026-11-14).
+- **A test of the compiled imports keeps a freeze list exact:** it fails when
+  the program reaches a file the list leaves out (WAVE-H-BUILD, 2026-11-14).
 - **A test gives the same answer before and after a freeze list is
   committed:** test an exit code that depends on the list through the
   functions, not the built program (MARKET-FIX, 2026-11-13).
@@ -137,10 +150,23 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   a `sed` with `\\r` wrote a CR byte into a source file (2026-11-12).
   **Read a regex back from the file after writing it:** MARKET-1's
   `/^# written (\S+)/` lost its backslash and matched only the letter S, and
-  no test noticed (2026-11-13).
+  no test noticed (2026-11-13). The rule bit again on 2026-11-14: a `node -e`
+  edit mangled four backslashed paths in architecture (WAVE-H-BUILD).
 - **Never run pnpm in a scratch copy whose `node_modules` are junctions to
   the repository's:** its install writes through them. On 2026-11-13 two of
   the repository's links pointed into a scratch for 86 s (MARKET-FIX-CHECK).
+  Make the scratch's `node_modules` a real folder of per-package junctions,
+  so vitest's caches stay in the scratch (WAVE-H-FETCH, 2026-11-14).
+- **A process that must outlive a chat session is started through WMI**
+  (`Win32_Process` Create), detached and at low priority, its pid written
+  down: `tools/waveh-fetch-start.ps1` (WAVE-H-FETCH, 2026-11-14).
+- **lz4js 0.2.0 decodes one frame and stops without a word, and misreads
+  block checksums:** check that the frame ends at the file's end, and refuse
+  frames with the block-checksum flag (WAVE-H-BUILD, 2026-11-14).
+- **Zod:** a `refine` at an object's root has an empty path, so give it a
+  `path` or its refusal names nothing; Zod 4's `.int()` already refuses
+  unsafe integers. **JavaScript's default `sort` puts upper case first**
+  (it compares code units) (WAVE-H-BUILD, 2026-11-14).
 - **`node --test <directory>` fails in Node 24** (MODULE_NOT_FOUND): pass a
   glob.
 - **A Task Scheduler time literal is local:** `-At 'HH:MM'` is read as local
