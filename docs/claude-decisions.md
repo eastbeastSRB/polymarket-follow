@@ -1,5 +1,35 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (WAVE-H's plan approved — the owner): **WAVE-H'S PLAN IS APPROVED
+WITH ITS REVIEW'S FIXES R1–R10; ALL ITS DATA STAYS ON F:, THE RAW FILES
+KEPT UNTIL THE ON-CHAIN PROJECT'S FOUNDING.** The owner: "yeah you have
+approvement for both things. so let's do fixes and we will keep all data
+on F:".
+
+1. **The plan.** `docs/reviews/wave-h-plan-2026-11-13.md`, with
+   WAVE-H-PLAN-REVIEW's R1–R10 (`docs/reviews/wave-h-plan-review-2026-11-14.md`)
+   folded into its rules. The plan's ten questions are answered as its
+   review recommended:
+   - 1–8 and 10: yes;
+   - 4: yes after R2;
+   - 9: as point 2 below.
+
+   The build goes MARKET-1's road:
+   - parts, with the reproduction on Polymarket's pre-cut weeks (727 = 695
+     + 32, 153 entries);
+   - the rehearsal on the sizing months, counts and mechanics only;
+   - the rules final, and a draft freeze list;
+   - then fresh rules and code reviews, the fixes, a fix-check, the
+     freeze;
+   - the one look.
+2. **The data** stays on F: (`F:\polymarket-follow-research\WAVE-H\`).
+   The raw files are kept after the look's Final review, until the
+   on-chain project's founding decides whether it uses them.
+3. **The download** runs on as specified (decisions 2026-11-14, WAVE-H's
+   download spec). The book files the rehearsal and the look need are
+   fetched under the same guards and the same 2 MB/s, never alongside the
+   main download beyond that rate.
+
 2026-11-14 (WAVE-H-FETCH's technical calls — WAVE-H's download tool built):
 **THE TOOL AND ITS START SCRIPT ARE BUILT TO THE SPEC (THE ENTRY BELOW) AND
 TESTED WITH NO NETWORK; THE SMOKE TEST WAITS FOR 06:00Z AND THE SUPERVISOR'S
