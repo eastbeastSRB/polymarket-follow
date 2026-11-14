@@ -8,8 +8,9 @@ liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
 history, is being built (WAVE-H-BUILD, 2026-11-14): the reproduction holds,
 the rehearsal and the look are code and tested; the rehearsal passed (M =
-147, `waveh/sizing.json`, a draft freeze list); one marks question is open
-(decisions 2026-11-14, Q6); nothing is frozen or run on TEST.** The plan is the plan
+147, `waveh/sizing.json`, a draft freeze list); H10's marks change is
+decided (decisions 2026-11-14, the supervisor's Q5 and Q6); nothing is
+frozen or run on TEST.** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -41,14 +42,16 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
     SIZING's R9 counts written in); `dist/waveh.js` with `rehearse` and
     `look`; the reproduction through WAVE-H's own mapping: 727 = 695 + 32
     counted fills, 153 entries;
-  - the download (`tools/waveh-fetch.cjs`): the sizing months complete
-    2026-11-14 12:14Z; the test months next (the supervisor), stored
-    unopened;
-  - the rehearsal's first run (2026-11-14 11:53–12:46Z): SIZING's 1,619
-    fill files, 0 records failing, 425,433 counted fills, M = 147, slice 0's
-    283 priceable positions, 560 book files needed;
-  - not yet: the book fetch, the second run and `sizing.json`, the draft
-    freeze list, `data.sha256`.
+  - the download (`tools/waveh-fetch.cjs`): the sizing months and their 560
+    book files complete; the test months downloading since 2026-11-14
+    14:28Z (pid in `store/fetch/waveh-fetch.pid`), stored unopened, done
+    about 2026-11-15 evening;
+  - the rehearsal passed (run 2, 2026-11-14 14:29–15:43Z, exit 0): SIZING's
+    425,433 counted fills, M = 147, 566 legs all priced at the book, 7 of
+    290 positions without a funding mark (Q6); `sizing.json` (`5ac401a`);
+    the draft list, 71 files, `4c08ef95…9056` (`c1fbeb8`);
+  - not yet: H10's change and the rehearsal's third run (they supersede run
+    2's `sizing.json` and draft), `data.sha256`.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
   - the collector's share is 50 and 15;
@@ -60,29 +63,28 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **WAVE-H's Q6** (WAVE-H-BUILD's `progress.md`, the state at 15:51Z):
-   off-minute `asset_ctxs` rows leave 7 SIZING positions without a funding
-   mark; if H10 changes, the rehearsal runs a third time, then
-   `sizing.json` and the draft list again. The look's heap: 8 GB (Q5).
-2. **WAVE-H's test months** downloaded (the supervisor), then
+1. **WAVE-H's test months** downloaded (the supervisor), then
    `waveh-freeze.cjs --data` (`data.sha256`, R3 (i)'s short files).
-3. **WAVE-H's fresh rules and code reviews**, the fixes, a fix-check, the
-   freeze (the supervisor), then the one look (H15's two steps).
-4. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
+2. **WAVE-H's fresh rules and code reviews** after the owner's usage reset
+   (2026-11-16), told that H10's change is decided; one fix round builds
+   H10's change with the findings and runs the rehearsal a third time (M
+   must stay 147); a fix-check; the freeze (the supervisor); then the one
+   look (H15's two steps, `--max-old-space-size=8192`).
+3. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
    book level's unit (decisions 2026-11-13, call 11); no paper command by
    hand while a MARKET-1 run is live (rules.md M2).
-5. **The daily runs:** the supervisor checks each program's log, budget and
+4. **The daily runs:** the supervisor checks each program's log, budget and
    page; no running number is read as evidence before a look.
-6. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
+5. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
    (R8's B2 confirmation, after 2026-11-30), each with its own share of the
    remaining 80 a minute (and a burst share: decisions 2026-11-13, Q12).
-7. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
+6. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
    owner's rulings after the deploy).
-8. **Small collector follow-ups, when convenient:** drop the boards'
+7. **Small collector follow-ups, when convenient:** drop the boards'
    `consistent` flag; a coverage mark for books that arrive late; the
    backup task's trigger from UTC takes effect when the tasks are next
    registered; the page's fee-category alarm.
-9. **The v1 plan** (the plan page), early December.
+8. **The v1 plan** (the plan page), early December.
 
 ## Last session (2026-11-14)
 
