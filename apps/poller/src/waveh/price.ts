@@ -133,7 +133,7 @@ export type Priced = {
   depthShort: boolean;
 };
 
-const levelsOf = (trades: readonly Trade[]) =>
+export const levelsOf = (trades: readonly Trade[]) =>
   trades.filter((t) => t.px > 0 && t.sz > 0).map((t) => [t.px, t.sz] as const);
 
 export function pricePosition(
