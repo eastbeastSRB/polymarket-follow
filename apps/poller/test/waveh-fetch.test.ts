@@ -22,6 +22,7 @@ type Opts = {
   sizingOnly: boolean;
   plan: boolean;
   rate: number | null;
+  books?: string | null;
 };
 type Clock = {
   now: () => number;
@@ -57,7 +58,10 @@ type Tool = {
     method: string,
     body: string | undefined,
     sizingOnly: boolean,
+    books?: Set<string> | null,
   ) => void;
+  bookTime: (key: string) => number | null;
+  readBooks: (file: string, sizingOnly: boolean) => Set<string>;
   fundingBody: (coin: string, w: Window) => string;
   fundingWindows: (sizingOnly: boolean) => Window[];
   judge: (beat: unknown) => { conditions: string[] } | null;
@@ -1935,7 +1939,12 @@ describe("the runner", () => {
       sizingOnly: false,
       plan: false,
       rate: null,
+      books: null,
     });
+    expect(
+      tool.parseArgs(["--store", "s", "--heartbeat", "h", "--books", "b"])
+        .books,
+    ).toBe(path.resolve("b"));
     expect(
       tool.parseArgs([
         "--sizing-only",
@@ -1953,6 +1962,7 @@ describe("the runner", () => {
       sizingOnly: true,
       plan: true,
       rate: 500_000,
+      books: null,
     });
     for (const argv of [
       [],
@@ -1961,8 +1971,139 @@ describe("the runner", () => {
       ["--store", "s", "--heartbeat", "h", "--rate", "0"],
       ["--store", "s", "--heartbeat", "h", "--rate", "1.5"],
       ["--store", "s", "--heartbeat", "h", "--fast"],
+      ["--store", "s", "--heartbeat", "h", "--books"],
     ]) {
       expect(() => tool.parseArgs(argv), argv.join(" ")).toThrow();
     }
+  });
+});
+
+describe("the book files (--books)", () => {
+  const SOL = "market_data/20250715/3/l2Book/SOL.lz4";
+  const KPEPE = "market_data/20250715/3/l2Book/kPEPE.lz4";
+  const KSHIB = "market_data/20250715/3/l2Book/kSHIB.lz4";
+  const BTC = "market_data/20250715/3/l2Book/BTC.lz4";
+  const OTHER = "market_data/20250716/0/l2Book/SOL.lz4";
+  const listFile = (root: string, keys: string[]) => {
+    const file = path.join(root, "books-needed.txt");
+    fs.writeFileSync(file, `${keys.join("\n")}\n`);
+    return file;
+  };
+
+  it("reads only book files of the 38 coins and the plan's dates, before the seal with --sizing-only", () => {
+    const root = fs.mkdtempSync(path.join(tmpdir(), "waveh-books-"));
+    expect([...tool.readBooks(listFile(root, [SOL, KPEPE]), true)]).toEqual([
+      SOL,
+      KPEPE,
+    ]);
+    expect(tool.bookTime(SOL)).toBe(Date.parse("2025-07-15T03:00:00Z"));
+    const sealed = "market_data/20250801/0/l2Book/SOL.lz4";
+    expect([...tool.readBooks(listFile(root, [sealed]), false)]).toEqual([
+      sealed,
+    ]);
+    for (const bad of [
+      sealed,
+      BTC,
+      "market_data/20250524/3/l2Book/SOL.lz4",
+      "market_data/20250715/03/l2Book/SOL.lz4",
+      "market_data/20250715/3/l2Book/SOL.lz4.part",
+      "node_fills/hourly/20250715/3.lz4",
+    ])
+      expect(() => tool.readBooks(listFile(root, [bad]), true), bad).toThrow(
+        "--books",
+      );
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("lets through only a needed key's hour folder listing and the needed keys", () => {
+    const books = new Set([SOL, KPEPE]);
+    const ok =
+      (url: string, method = "GET", body?: string) =>
+      () =>
+        tool.checkRequest(url, method, body, true, books);
+    expect(ok(listingUrlOf("market_data/20250715/3/l2Book/"))).not.toThrow();
+    expect(ok(urlOf(SOL))).not.toThrow();
+    expect(ok(urlOf(KPEPE))).not.toThrow();
+    for (const refused of [
+      ok(urlOf(BTC)),
+      ok(urlOf(OTHER)),
+      ok(urlOf(SIZING_KEYS[0]!)),
+      ok(listingUrlOf("market_data/20250716/0/l2Book/")),
+      ok(listingUrlOf("node_fills/hourly/202506")),
+      ok(`${urlOf(SOL)}?x=1`),
+      ok(
+        tool.INFO,
+        "POST",
+        tool.fundingBody("SOL", tool.fundingWindows(true)[0]!),
+      ),
+    ])
+      expect(refused).toThrow("outside the guard");
+    // Without --books, no book file passes the main plan's guard.
+    expect(() => tool.checkRequest(urlOf(SOL), "GET", undefined, true)).toThrow(
+      "outside the guard",
+    );
+  });
+
+  it("fetches each listed needed key once, checked, and writes a key its folder lacks as missing", async () => {
+    const w = setup();
+    w.server.put(SOL, bytes(50_000, 21));
+    w.server.put(KPEPE, bytes(30_000, 22));
+    w.server.put(BTC, bytes(10_000, 23));
+    w.server.put(OTHER, bytes(10_000, 24));
+    const books = listFile(w.root, [SOL, KPEPE, KSHIB]);
+    expect(await w.run({ books })).toBe(0);
+    const lines = fs
+      .readFileSync(path.join(w.store, "books.jsonl"), "utf8")
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l) as Record<string, unknown>);
+    expect(lines.map((l) => [l.key, l.missing ?? null])).toEqual([
+      [KSHIB, true],
+      [SOL, null],
+      [KPEPE, null],
+    ]);
+    for (const [key, n] of [
+      [KPEPE, 30_000],
+      [SOL, 50_000],
+    ] as const) {
+      const body = fs.readFileSync(storePath(w.store, key));
+      const line = lines.find((l) => l.key === key)!;
+      expect(body.length).toBe(n);
+      expect(line).toMatchObject({
+        bytes: n,
+        md5: md5(body),
+        etag: md5(body),
+        sha256: sha256(body),
+      });
+    }
+    expect(w.server.calls.map((c) => c.url)).toEqual([
+      listingUrlOf("market_data/20250715/3/l2Book/"),
+      urlOf(SOL),
+      urlOf(KPEPE),
+    ]);
+    expect(fs.existsSync(path.join(w.store, "manifest.jsonl"))).toBe(false);
+    // A second run lists again and fetches nothing.
+    const before = fs.readFileSync(path.join(w.store, "books.jsonl"), "utf8");
+    expect(await w.run({ books })).toBe(0);
+    expect(fs.readFileSync(path.join(w.store, "books.jsonl"), "utf8")).toBe(
+      before,
+    );
+    expect(w.server.calls.slice(3).map((c) => c.url)).toEqual([
+      listingUrlOf("market_data/20250715/3/l2Book/"),
+    ]);
+  });
+
+  it("records a book whose bytes differ from its listing as bad, never in the list", async () => {
+    const w = setup();
+    w.server.put(SOL, bytes(20_000, 31), md5(bytes(20_000, 32)));
+    expect(await w.run({ books: listFile(w.root, [SOL]) })).toBe(0);
+    expect(fs.existsSync(path.join(w.store, "books.jsonl"))).toBe(false);
+    expect(w.server.calledFor(urlOf(SOL))).toHaveLength(2);
+    const problems = fs
+      .readFileSync(fetchFile(w.store, "problems.jsonl"), "utf8")
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l) as { key: string; problem: string });
+    expect(problems.map((p) => [p.key, p.problem])).toEqual([[SOL, "bad"]]);
   });
 });

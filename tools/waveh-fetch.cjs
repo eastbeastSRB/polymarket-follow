@@ -11,6 +11,7 @@
  *
  *   node tools/waveh-fetch.cjs --store <dir> --heartbeat <file>
  *     [--sizing-only] [--plan] [--rate <bytes a second, at most 2000000>]
+ *     [--books <file>]
  *
  * The dates: nothing before 2025-05-25T00:00Z; DATA END is
  * 2026-05-29T01:00:00.000Z, and the hourly file of its own hour (2026-05-29
@@ -19,6 +20,14 @@
  * --sizing-only keeps to files dated 2025-05-25 to 2025-07-31 and the
  * windows before 2025-08-01 (the first session); --plan lists and prints
  * what would come down; --rate may only lower the rate.
+ *
+ * --books <file> fetches only the book files a file names, a key a line
+ * (`market_data/<YYYYMMDD>/<h>/l2Book/<COIN>.lz4`, one of the 38 coins, of
+ * the plan's dates, before the seal with --sizing-only: the rehearsal's legs;
+ * the look's after the freeze), under the same gate: each hour folder listed,
+ * each key the listing holds fetched and checked as any file, into the
+ * store's `books.jsonl` (a manifest line each), and each key its folder's
+ * listing lacks written there as missing. Nothing else is requested.
  *
  * tools/waveh-fetch-start.ps1 starts it detached at idle priority; the stop
  * file stops it. In the store: the bucket's keys mirrored below ROOT,
@@ -185,6 +194,34 @@ const fundingBody = (coin, w) =>
     endTime: w.end - 1,
   });
 
+/** A book file's hour (plan H8, H15): `market_data/<YYYYMMDD>/<h>/l2Book/<COIN>.lz4` of one of the 38 coins, else null. */
+function bookTime(key) {
+  const m = /^market_data\/(\d{8})\/(0|[1-9]\d?)\/l2Book\/([^/]+)\.lz4$/.exec(
+    key,
+  );
+  if (m === null || !COINS.includes(m[3])) return null;
+  return keyTime({ hourly: true }, `${m[1]}/${m[2]}.lz4`);
+}
+
+const bookFolder = (key) => key.slice(0, key.lastIndexOf("/") + 1);
+
+/** The book files a --books file names, a key a line: each of the plan's dates, before the seal with --sizing-only. */
+function readBooks(file, sizingOnly) {
+  const keys = fs
+    .readFileSync(file, "utf8")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+  for (const key of keys) {
+    const t = bookTime(key);
+    if (t === null || t < FIRST || t > DATA_END || (sizingOnly && t >= SEAL))
+      throw new Settings(
+        `--books: "${key.slice(0, 120)}" is not a book file of the plan's dates`,
+      );
+  }
+  return new Set(keys);
+}
+
 function listingUrl(prefix, token) {
   const q = new URLSearchParams({
     "list-type": "2",
@@ -195,35 +232,53 @@ function listingUrl(prefix, token) {
   return `${BUCKET}/?${q}`;
 }
 
-function listingOk(q, sizingOnly) {
+function listingOk(q, sizingOnly, books) {
   const names = [...q.keys()].sort().join(",");
+  const prefix = q.get("prefix");
   return (
     (names === "list-type,max-keys,prefix" ||
       names === "continuation-token,list-type,max-keys,prefix") &&
     q.get("list-type") === "2" &&
     q.get("max-keys") === "1000" &&
-    PARTS.some((p) =>
-      p.months.some(
-        (m) =>
-          monthOk(m, sizingOnly) && q.get("prefix") === `${ROOT}${p.dir}${m}`,
-      ),
-    )
+    (books === null
+      ? PARTS.some((p) =>
+          p.months.some(
+            (m) => monthOk(m, sizingOnly) && prefix === `${ROOT}${p.dir}${m}`,
+          ),
+        )
+      : [...books].some((k) => prefix === `${ROOT}${bookFolder(k)}`))
   );
 }
 
 /**
  * The guard on every request: a listing of a planned month, a GET of an
- * admitted key, or a planned fundingHistory read. Anything else, /exchange
- * among it, ends the run.
+ * admitted key, or a planned fundingHistory read; with --books, only a
+ * listing of a needed key's hour folder and a GET of a needed key. Anything
+ * else, /exchange among it, ends the run.
  */
-function checkRequest(url, method, body, sizingOnly) {
+function checkRequest(url, method, body, sizingOnly, books = null) {
   let ok = false;
   if (method === "POST") {
     ok =
+      books === null &&
       url === INFO &&
       fundingWindows(sizingOnly).some((w) =>
         COINS.some((coin) => fundingBody(coin, w) === body),
       );
+  } else if (
+    books !== null &&
+    method === "GET" &&
+    body === undefined &&
+    url.startsWith(`${BUCKET}/`)
+  ) {
+    const u = new URL(url);
+    ok =
+      u.hash === "" &&
+      (u.pathname === "/"
+        ? listingOk(u.searchParams, sizingOnly, books)
+        : u.search === "" &&
+          u.pathname.startsWith(`/${ROOT}`) &&
+          books.has(u.pathname.slice(1 + ROOT.length)));
   } else if (
     method === "GET" &&
     body === undefined &&
@@ -233,7 +288,7 @@ function checkRequest(url, method, body, sizingOnly) {
     ok =
       u.hash === "" &&
       (u.pathname === "/"
-        ? listingOk(u.searchParams, sizingOnly)
+        ? listingOk(u.searchParams, sizingOnly, null)
         : u.search === "" &&
           PARTS.some(
             (p) =>
@@ -583,9 +638,11 @@ function disagreement(item, r) {
  * by a stop in its write, is cut off; any other line that is not ours throws.
  */
 class Manifest {
-  constructor(file, log) {
+  /** `missing`: the book list, whose lines may also name a key its folder's listing lacks. */
+  constructor(file, log, missing = false) {
     this.file = file;
     this.lines = new Map();
+    this.missing = new Set();
     this.bytes = 0;
     if (!fs.existsSync(file)) return;
     let text = fs.readFileSync(file, "utf8");
@@ -609,6 +666,16 @@ class Manifest {
         throw new Error(`${file}: line ${i + 1} is not JSON`);
       }
       if (
+        missing &&
+        line?.missing === true &&
+        typeof line.key === "string" &&
+        !this.lines.has(line.key) &&
+        !this.missing.has(line.key)
+      ) {
+        this.missing.add(line.key);
+        return;
+      }
+      if (
         typeof line?.key !== "string" ||
         !Number.isSafeInteger(line.bytes) ||
         line.bytes < 0 ||
@@ -616,7 +683,7 @@ class Manifest {
       ) {
         throw new Error(`${file}: line ${i + 1} is not a manifest line`);
       }
-      if (this.lines.has(line.key))
+      if (this.lines.has(line.key) || this.missing.has(line.key))
         throw new Error(`${file}: ${line.key} twice`);
       this.lines.set(line.key, line);
       this.bytes += line.bytes;
@@ -627,6 +694,14 @@ class Manifest {
     fs.appendFileSync(this.file, `${JSON.stringify(line)}\n`);
     this.lines.set(line.key, line);
     this.bytes += line.bytes;
+  }
+
+  addMissing(key, at) {
+    fs.appendFileSync(
+      this.file,
+      `${JSON.stringify({ key, missing: true, listedAt: iso(at) })}\n`,
+    );
+    this.missing.add(key);
   }
 }
 
@@ -639,6 +714,7 @@ function storeFiles(store) {
     rate: path.join(dir, "rate.txt"),
     problems: path.join(dir, "problems.jsonl"),
     manifest: path.join(store, "manifest.jsonl"),
+    books: path.join(store, "books.jsonl"),
   };
 }
 
@@ -741,6 +817,7 @@ class Fetcher {
     sizingOnly,
     rate,
     watch,
+    books = null,
   }) {
     this.clock = clock;
     this.fetch = fetch;
@@ -749,6 +826,7 @@ class Fetcher {
     this.files = files;
     this.store = store;
     this.sizingOnly = sizingOnly;
+    this.books = books;
     this.watch = watch;
     this.bucket = new Bucket(rate, clock.now());
     this.errors = 0;
@@ -892,7 +970,7 @@ class Fetcher {
 
   /** One HTTP exchange: "ok" (HTTP 200, its bytes counted and hashed), "missing", "long", "error" or "interrupted"; an abort throws. */
   async attempt(spec) {
-    checkRequest(spec.url, spec.method, spec.body, this.sizingOnly);
+    checkRequest(spec.url, spec.method, spec.body, this.sizingOnly, this.books);
     const ac = new AbortController();
     let unwatch = () => {};
     const watchIdle = () => {
@@ -1179,6 +1257,41 @@ async function makePlan(fetcher, sizingOnly, log) {
   return items;
 }
 
+/** The books' plan: each needed key's hour folder listed; a key it holds is an item, one it lacks is missing. */
+async function makeBooksPlan(fetcher, books) {
+  const items = [];
+  const missing = [];
+  for (const folder of [...new Set([...books].map(bookFolder))].sort()) {
+    const listed = new Map();
+    let token = null;
+    do {
+      const page = await fetcher.listing({ dir: "" }, folder, token);
+      for (const entry of page.dropped) fetcher.log("dropped", { entry });
+      for (const e of page.entries) listed.set(e.key, e);
+      token = page.next;
+    } while (token !== null);
+    for (const key of [...books]
+      .filter((k) => bookFolder(k) === folder)
+      .sort()) {
+      const e = listed.get(ROOT + key);
+      if (e === undefined) missing.push(key);
+      else
+        items.push({
+          kind: "file",
+          part: "books",
+          key,
+          time: bookTime(key),
+          size: e.size,
+          etag: e.etag,
+          lastModified: e.lastModified,
+          max: e.size,
+          request: { kind: "file", url: `${BUCKET}/${e.key}`, method: "GET" },
+        });
+    }
+  }
+  return { items, missing };
+}
+
 /** What --plan prints: each part's files and bytes, what is in the store, the days short of 24 hour files, the cap and the floor. */
 function planText(items, manifest, cap, disk, sizingOnly) {
   const lines = [
@@ -1237,7 +1350,14 @@ async function run(opts, deps) {
     if (fs.existsSync(files.stop))
       throw new Stop(0, "the stop file was there at the start");
     if (!opts.plan) removeParts(opts.store, log);
-    const manifest = new Manifest(files.manifest, log);
+    const books =
+      (opts.books ?? null) === null
+        ? null
+        : readBooks(opts.books, opts.sizingOnly);
+    const manifest =
+      books === null
+        ? new Manifest(files.manifest, log)
+        : new Manifest(files.books, log, true);
     fetcher = new Fetcher({
       clock: deps.clock,
       fetch: deps.fetch,
@@ -1248,8 +1368,11 @@ async function run(opts, deps) {
       sizingOnly: opts.sizingOnly,
       rate: Math.min(readRate(files.rate), opts.rate ?? MAX_RATE),
       watch: new Watch(opts.heartbeat, log),
+      books,
     });
     fetcher.start();
+    if (books !== null)
+      return await runBooks(fetcher, books, manifest, opts, deps, log);
     const items = await makePlan(fetcher, opts.sizingOnly, log);
     const cap = Math.ceil(items.reduce((s, i) => s + i.max, 0) * CAP);
     const text = planText(
@@ -1299,6 +1422,36 @@ async function run(opts, deps) {
   }
 }
 
+/** The --books run: the plan, then each missing key written, each listed key fetched once. */
+async function runBooks(fetcher, books, manifest, opts, deps, log) {
+  const { items, missing } = await makeBooksPlan(fetcher, books);
+  const cap = Math.ceil(items.reduce((s, i) => s + i.max, 0) * CAP);
+  const todo = items.filter((i) => !manifest.lines.has(i.key));
+  const text = `WAVE-H's book files: ${books.size} needed; listed ${items.length}, ${gb(items.reduce((s, i) => s + i.max, 0))}; in the store ${items.length - todo.length}; to fetch ${todo.length}, ${gb(todo.reduce((s, i) => s + i.max, 0))}; not in their hour folder's listing ${missing.length}\n`;
+  log("plan", { text });
+  if (opts.plan) {
+    deps.out(text);
+    return 0;
+  }
+  for (const key of missing)
+    if (!manifest.missing.has(key) && !manifest.lines.has(key))
+      manifest.addMissing(key, deps.clock.now());
+  for (const item of items) {
+    const done = manifest.lines.get(item.key);
+    if (manifest.missing.has(item.key))
+      fetcher.problem(item.key, "changed", "written as missing; listed now");
+    else if (done === undefined) await fetcher.fetchItem(item, manifest, cap);
+    else if (done.etag !== item.etag || done.bytes !== item.size)
+      fetcher.problem(
+        item.key,
+        "changed",
+        `stored ${done.bytes} B with the ETag ${done.etag}; listed now ${item.size} B with ${item.etag}`,
+      );
+  }
+  log("done", { books: manifest.lines.size, missing: manifest.missing.size });
+  return 0;
+}
+
 function parseArgs(argv) {
   const opts = {
     store: null,
@@ -1306,12 +1459,18 @@ function parseArgs(argv) {
     sizingOnly: false,
     plan: false,
     rate: null,
+    books: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--sizing-only") opts.sizingOnly = true;
     else if (arg === "--plan") opts.plan = true;
-    else if (arg === "--store" || arg === "--heartbeat" || arg === "--rate") {
+    else if (
+      arg === "--store" ||
+      arg === "--heartbeat" ||
+      arg === "--rate" ||
+      arg === "--books"
+    ) {
       const value = argv[++i];
       if (value === undefined) throw new Settings(`${arg} needs a value`);
       if (arg === "--rate") {
@@ -1381,6 +1540,7 @@ module.exports = {
   Manifest,
   Watch,
   admitted,
+  bookTime,
   checkRequest,
   fundingBody,
   fundingWindows,
@@ -1388,6 +1548,7 @@ module.exports = {
   makeLog,
   parseArgs,
   parseListing,
+  readBooks,
   realClock,
   run,
   storeFiles,
