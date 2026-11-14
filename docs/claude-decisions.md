@@ -1,5 +1,113 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (WAVE-H-BUILD's technical calls — WAVE-H's build, its first
+session, inside the plan approved the same day): **THE REPRODUCTION HOLDS
+THROUGH WAVE-H'S OWN MAPPING; THE GATE, THE READERS, THE RULES AS PURE
+FUNCTIONS AND THE REHEARSAL ARE BUILT AND TESTED; NOTHING IS FROZEN OR RUN ON
+TEST.**
+
+**What:** commits `83f892d` … `2e2e19e` and this entry's; architecture,
+"WAVE-H". The rules draft `apps/poller/waveh/rules.md` (H0–H15 with R1–R10; M
+blank); `waveh/coins.json`; `src/waveh.ts` and `src/waveh/` (the `rehearse`
+command; the look's first step as a tested function, `look.ts`, no command
+yet); `scripts/waveh-reproduce.ts`; `tools/waveh-freeze.cjs` (with `--data`,
+writing `waveh/data.sha256` and R3 (i)'s sizes-only list; not run);
+`tools/waveh-fetch.cjs --books` (not run: the running download keeps its
+loaded code, and the supervisor reviews the diff before a restart picks it
+up); tests `waveh-rules`, `-reproduce`, `-store`, `-price`, `-rehearse`,
+`-freeze`, and the fetch tool's (41).
+
+**The reproduction (R8), first:** the pre-cut seed's 927,921 lines in
+Hyperliquid's shape (each row its own leg; a liquidation also its
+counterparty's leg with the same object; `crossed` false and method
+"backstop" for order id "0"), read through WAVE-H's own parser, schema and
+H4: **727 counted fills = 695 market + 32 backstop, fill for fill equal to
+MARKET-1's `isForced`; 153 entries on 47 days in 30 coins, 114 forced sells
+and 39 forced buys, entry for entry equal to MARKET-1's `waveEntries`; 3 of
+them backstop legs (the review's 150 without them).** No line failed the
+schema.
+
+**The owner's supervisor's answers (09:1xZ):** lz4js 0.2.0 installed from the
+registry (`pnpm add -D --save-exact`, its metadata and tarball only); one
+keyless `meta` read (request 1, 09:11Z, 235 entries: every one of the 38 names
+once, not delisted, its index the planner's asset id), the price agreement
+cited from WAVE-H-PLAN's check in `coins.json`. **The frozen lists' comment
+naming `pnpm-lock.yaml`'s hash is information only:** the lockfile changed
+with lz4js; neither MARKET-1's nor the paper experiment's gate reads it, and
+both still verify (64 and 61 files).
+
+**WAVE-H-BUILD's calls:**
+1. **H3 and H6: "tradable at t" needs no test.** A counted fill is a fill of
+   its coin at its instant, so its coin exists then; a check that cannot fail
+   would be dead code. The rule says so.
+2. **H8, which book files:** x's hour's file; the hour before's only when x
+   lies within 10 s after its hour's start and x's file holds no snapshot at
+   or before x (a snapshot of an earlier hour is older than 10 s for any later
+   x). The plan's rule made exact; the same outcomes. When x's own file is not
+   in the archive, the reason is "no book file".
+3. **H8, the tape's files:** x's hour and the next (a fill can sit in its
+   writer's next hour). The tape's records are each fill once (account and
+   `tid`) in H4's order; a backstop's record never (R2).
+4. **H1 with R5:** SIZING is the records of the fill files dated before
+   2025-08-01 whose `time` is before it, in the rehearsal and at the look
+   alike; a later-stamped record of such a file is dropped and counted. A
+   SIZING position whose exit is at or after 2025-08-01, or one whose leg has
+   no book and needs a tape from a file of TEST, is left for the look.
+5. **H5:** SIZING's length is exactly 67 days 10 hours (the plan's "67.42").
+6. **A `tid` of any size:** a line whose `tid` has 16 digits or more is parsed
+   with a reviver keeping each `tid` as its digits; a shorter one is a safe
+   integer (Zod 4's `.int()` refuses an unsafe one by itself).
+7. **lz4js 0.2.0 reads a block checksum from the wrong place** (4 bytes before
+   a block's data, where the LZ4 format puts it after): such a frame is
+   refused, and so is a dictionary id; a file is decoded only when its one
+   frame ends at its end, and its decoded size is checked against its
+   header's. The archive's frames carry FLG 0x64 (a content checksum only):
+   nothing real is refused. lz4js's three files are checked at load.
+8. **The book list is `store\books.jsonl`** (the plan's `books.sha256`): a
+   fetched file's manifest line, or a key its hour folder's listing lacks
+   written as missing. The book fetch is the download tool's `--books` mode,
+   under the same gate and lock, so it never runs beside the main download.
+9. **Settings:** `WAVEH_STORE` (read only) and `WAVEH_ROOT`, neither inside
+   the other; the reproduction's own `WAVEH_PRECUT`, so MARKET-1's
+   `MARKET1_PRECUT` test is not triggered. No file is started in
+   02:30–06:00Z or 10:25–11:15Z: the program waits the windows out.
+10. **R8's counterparty legs:** a maker closing (`crossed` false, reducing) for
+    a market liquidation; the vault opening (`crossed` true, `startPosition`
+    0.0) for a backstop.
+11. **R4.** The closure is exactly what the compiled imports reach
+    (`CLOSURE`, walked by a test): today MARKET-1's `waves`, `fills`, `book`,
+    `price` and the paper's `instants`, `research`; the look's verdict and
+    BASE will add MARKET-1's `stats` and `lines` and the paper's `stats`.
+    `dist/schedule.js` and `dist/log.js` are shared and unfrozen, their
+    hashes logged at each start, as MARKET-1's M0. **What a fix to a frozen
+    program does to WAVE-H:** a fix to one of MARKET-1's files or the paper
+    experiment's in the closure stops WAVE-H (exit 4) until a re-freeze
+    (`waveh-freeze-2`) in the same decisions entry that re-runs the
+    reproduction; a fix to any other of their files changes nothing here;
+    `test/waveh-freeze.test.ts` fails in the session that makes such a fix
+    once a WAVE-H list exists (its lines carry their freezes' hashes).
+
+**Breaks, in scratch copies only** (`git archive`, a real `node_modules`
+folder of junctions, vitest run directly, never pnpm): parts 1–2, 50 breaks,
+49 killed, one equivalent (`.safe()` after Zod 4's `.int()`); part 3, 42, 39
+killed in round one and the three survivors in round two after their tests;
+part 4 and `--books`, 28, 18 in round one and the ten survivors in round two.
+None killed by a time limit alone. Lists and results: the supervisor folder,
+`workers/WAVE-H-BUILD/`.
+
+**A slip:** `f77fa89` was committed with `pnpm verify` red (a rehearsal test
+timed out at vitest's 5 s under the suite's load); `8dd0f2f` fixed it at once
+(the heavy tests carry their own time limits), and every commit since is
+gated on the verify's exit code.
+
+**Not done (WAVE-H-BUILD stopped at the context limit, 2026-11-14 10:19Z):**
+the rehearsal's run (the SIZING download held 1,432 of the rehearsal's 1,839
+files then); the book fetch (no go asked, no book file fetched); the look's
+second step, its command and its lines and prints (H13, H14); M and SIZING's
+counts in the rules; `data.sha256` and the draft list (they need the whole
+download); breaks of the look's first step. The order and the look's design
+are in `workers/WAVE-H-BUILD/progress.md` for a fresh WAVE-H-BUILD.
+
 2026-11-14 (WAVE-H's plan approved — the owner): **WAVE-H'S PLAN IS APPROVED
 WITH ITS REVIEW'S FIXES R1–R10; ALL ITS DATA STAYS ON F:, THE RAW FILES
 KEPT UNTIL THE ON-CHAIN PROJECT'S FOUNDING.** The owner: "yeah you have
