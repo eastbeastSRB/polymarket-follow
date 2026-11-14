@@ -1670,6 +1670,66 @@ describe("resuming", () => {
   }, 60_000);
 });
 
+describe("the store's writes", () => {
+  it("tries a refused rename again a second later, 10 times in all, then stops the run (exit 1)", async () => {
+    const w = setup();
+    sizingWorld(w.server);
+    const [k0, k1] = SIZING_KEYS as [string, string];
+    const refusals = new Map([
+      [`${storePath(w.store, k0)}.part`, 2],
+      [`${storePath(w.store, k1)}.part`, 10],
+    ]);
+    const tries: [string, number][] = [];
+    const real = fs.renameSync;
+    vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
+      const left = refusals.get(String(from));
+      if (left !== undefined) tries.push([String(from), w.clock.now()]);
+      if (left !== undefined && left > 0) {
+        refusals.set(String(from), left - 1);
+        throw Object.assign(new Error("EPERM: operation not permitted"), {
+          code: "EPERM",
+        });
+      }
+      real(from, to);
+    });
+    expect(await w.run()).toBe(1);
+    const at = (key: string) =>
+      tries
+        .filter(([file]) => file === `${storePath(w.store, key)}.part`)
+        .map(([, t]) => t);
+    const t0 = at(k0);
+    expect(t0.slice(1).map((t, i) => t - (t0[i] ?? 0))).toEqual([
+      SECOND,
+      SECOND,
+    ]);
+    expect(at(k1).length).toBe(10);
+    expect(fileKeysOf(w.store)).toEqual([k0]);
+    expect(eventsOf(w.store, "crash")[0]?.why).toContain(
+      "EPERM: operation not permitted",
+    );
+  }, 60_000);
+
+  it("lists a stored file whose listing changed since, and never fetches it again", async () => {
+    const w = setup();
+    sizingWorld(w.server);
+    expect(await w.run()).toBe(0);
+    const [k0] = SIZING_KEYS as [string];
+    const before = w.server.calledFor(urlOf(k0)).length;
+    w.server.put(k0, bytes(130_000, 9));
+    expect(await w.run()).toBe(0);
+    expect(w.server.calledFor(urlOf(k0)).length).toBe(before);
+    expect(problemsOf(w.store)).toEqual([
+      {
+        at: expect.any(String) as unknown,
+        key: k0,
+        problem: "changed",
+        detail: `stored 120000 B with the ETag ${md5(bytes(120_000, 1))}; listed now 130000 B with ${md5(bytes(130_000, 9))}`,
+      },
+    ]);
+    expect(fs.readFileSync(storePath(w.store, k0))).toEqual(bytes(120_000, 1));
+  }, 60_000);
+});
+
 describe("the checks", () => {
   it("keep a file only when its bytes agree with the listing: its MD5 the single-part ETag, its size where multipart; else once more, then bad", async () => {
     const w = setup();
