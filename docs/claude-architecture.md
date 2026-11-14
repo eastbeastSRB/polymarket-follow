@@ -349,7 +349,8 @@ the list (`--final` on a clean tree, with `sizing.json` and `data.sha256`
 present) and refuses a closure file that is in
 neither MARKET-1's nor the paper experiment's freeze or differs from one;
 `test/waveh-freeze.test.ts` checks a WAVE-H list's lines against both freezes.
-No list is written yet.
+A draft list, `waveh/FROZEN.draft.sha256`, is committed (without `data.sha256`,
+which the test months come first for); no final list.
 
 **Its reads** (`store.ts`): a file only when its SHA-256 equals its list's
 line — the download's `manifest.jsonl` in the rehearsal, `waveh/data.sha256`
