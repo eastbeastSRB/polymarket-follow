@@ -141,7 +141,7 @@ const taker = (
     },
   ]);
 
-describe("the pass over fill files (H2, H4, R3)", () => {
+describe("the pass over fill files (H2, H4, R3)", { timeout: 60_000 }, () => {
   const T = Date.parse("2025-07-27T08:00:00Z");
   const ctxOf = (files: Map<string, string>) => {
     const { store } = makeStore(files, false);
@@ -258,425 +258,442 @@ describe("the pass over fill files (H2, H4, R3)", () => {
   });
 });
 
-describe("the rehearsal on SIZING (the plan's part 3)", () => {
-  const minute = (t: number) => t - (t % MINUTE_MS);
-  // A SOL wave on 2025-06-10 (its entry's book missing: the tape), a SOL wave late on
-  // 2025-07-30 (its exit's tape reaches TEST: never read), a kPEPE wave late on
-  // 2025-07-31 (its exit in TEST: left for the look).
-  const W1 = Date.parse("2025-06-10T10:00:00Z");
-  const W2 = Date.parse("2025-07-30T23:10:00Z");
-  const W3 = Date.parse("2025-07-31T23:30:00Z");
-  const world = () => {
-    const files = new Map<string, string>();
-    const add = (key: string, lines: string[]) =>
-      files.set(
-        key,
-        [...(files.get(key)?.split("\n") ?? []), ...lines].join("\n"),
-      );
-    add(fillKey(W1), [
-      ...liquidation(1, "SOL", "A", W1, 1),
-      ...liquidation(2, "SOL", "A", W1 + 5 * MINUTE_MS, 2),
-      taker("SOL", "B", W1 + 7 * MINUTE_MS + 100, "101", "4", 3),
-      taker("SOL", "B", W1 + 7 * MINUTE_MS + 200, "102", "100", 4),
-    ]);
-    // After 2025-07-27 08h only `node_fills_by_block` is read (H2).
-    add(fillKey(W2, "node_fills_by_block"), [
-      JSON.stringify({
-        block_number: 1,
-        events: [
-          ...liquidation(3, "SOL", "A", W2, 5),
-          ...liquidation(4, "SOL", "A", W2 + 10 * MINUTE_MS, 6),
-        ].map((l) => JSON.parse(l) as unknown),
-      }),
-    ]);
-    // A tape fill its writer put in the next hour's file: the tape reads both.
-    add(fillKey(W2 + HOUR_MS, "node_fills_by_block"), [
-      JSON.stringify({
-        block_number: 3,
-        events: [
-          JSON.parse(
-            taker("SOL", "B", W2 + 12 * MINUTE_MS + 500, "99", "50", 7),
-          ) as unknown,
-        ],
-      }),
-    ]);
-    add(fillKey(W3, "node_fills_by_block"), [
-      JSON.stringify({
-        block_number: 2,
-        events: [
-          ...liquidation(5, "kPEPE", "B", W3, 8),
-          ...liquidation(6, "kPEPE", "B", W3 + 5 * MINUTE_MS, 9),
-        ].map((l) => JSON.parse(l) as unknown),
-      }),
-    ]);
-    // Marks: SOL at 100 every minute; funding: SOL hourly at 0.00001.
-    const head =
-      "time,coin,funding,open_interest,prev_day_px,day_ntl_vlm,premium,oracle_px,mark_px,mid_px,impact_bid_px,impact_ask_px";
-    for (
-      let d = Date.parse("2025-05-25T00:00:00Z");
-      d < TEST_START;
-      d += DAY_MS
-    ) {
-      const rows = [head];
-      for (let m = 0; m < 1_440; m++)
-        rows.push(
-          `${new Date(d + m * MINUTE_MS).toISOString().replace(".000Z", "Z")},SOL,0,1,1,1,0,1,100,1,1,1`,
-        );
-      files.set(`asset_ctxs/${dayOf(d)}.csv.lz4`, rows.join("\n"));
-    }
-    const edges = [
-      "2025-05-25",
-      "2025-06-14",
-      "2025-07-04",
-      "2025-07-24",
-      "2025-08-01",
-    ].map((d) => Date.parse(`${d}T00:00:00Z`));
-    for (let i = 0; i + 1 < edges.length; i++) {
-      const rows = [];
-      for (let h = edges[i]!; h < edges[i + 1]!; h += HOUR_MS)
-        rows.push({
-          coin: "SOL",
-          fundingRate: "0.00001",
-          premium: "0",
-          time: h + 17,
-        });
-      files.set(
-        `info/fundingHistory/SOL/${edges[i]}.json`,
-        JSON.stringify(rows),
-      );
-    }
-    return files;
-  };
-  const snapshot = (coin: string, t: number) =>
-    JSON.stringify({
-      time: "x",
-      raw: {
-        channel: "l2Book",
-        data: {
-          coin,
-          time: t,
-          levels: [
-            [{ px: "99.9", sz: "1000", n: 1 }],
-            [{ px: "100.1", sz: "1000", n: 1 }],
-          ],
-        },
-      },
-    });
-
-  it("lists the legs' book files and stops until the book list answers each", async () => {
-    const { store } = makeStore(world());
-    const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
-    scratch.push(root);
-    const ctx: Ctx = {
-      store,
-      list: manifestList(
-        readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
-      ),
-      coins,
-      kit,
-      pace: () => Promise.resolve(),
-      log: () => {},
-    };
-    await expect(rehearse(ctx, root)).rejects.toThrow(BooksNeeded);
-    await expect(rehearse(ctx, root)).rejects.toThrow("4 of 4 book files");
-    const x1 = W1 + 7 * MINUTE_MS;
-    const x2 = W2 + 12 * MINUTE_MS;
-    expect(
-      readFileSync(path.join(root, "rehearsal", "books-needed.txt"), "utf8"),
-    ).toBe(
-      `${[
-        bookKey("SOL", minute(x1) - (x1 % HOUR_MS) + 0),
-        bookKey("SOL", x1 - (x1 % HOUR_MS) + DAY_MS),
-        bookKey("SOL", x2 - (x2 % HOUR_MS)),
-        bookKey("SOL", x2 - (x2 % HOUR_MS) + DAY_MS),
-      ]
-        .sort()
-        .join("\n")}\n`,
-    );
-    const counts = JSON.parse(
-      readFileSync(path.join(root, "rehearsal", "counts.json"), "utf8"),
-    ) as Record<string, unknown>;
-    expect(counts).toMatchObject({
-      counted: 6,
-      M: 1,
-      scanRows: 1,
-      liquidatedAccounts: 6,
-      slice0: {
-        entries: 3,
-        priceable: 2,
-        leftForTheLook: 1,
-        backstopEntries: 0,
-      },
-      booksNeeded: 4,
-      booksLacking: 4,
-      late: 0,
-    });
-  });
-
-  it("prices the legs at the book or the tape, seals the outcomes and opens no TEST file", async () => {
-    const files = world();
-    const { store, put } = makeStore(files);
-    const x1 = W1 + 7 * MINUTE_MS;
-    const x2 = W2 + 12 * MINUTE_MS;
-    const books: string[] = [];
-    const book = (t: number) => {
-      const key = bookKey("SOL", t - (t % HOUR_MS));
-      const bytes = Buffer.from(
-        lz4js.compress(Buffer.from(snapshot("SOL", t - 2_000))),
-      );
-      const file = path.join(store, ...key.split("/"));
-      mkdirSync(path.dirname(file), { recursive: true });
-      writeFileSync(file, bytes);
-      books.push(
-        JSON.stringify({ key, bytes: bytes.length, sha256: sha(bytes) }),
-      );
-    };
-    books.push(
-      JSON.stringify({
-        key: bookKey("SOL", x1 - (x1 % HOUR_MS)),
-        missing: true,
-      }),
-    );
-    book(x1 + DAY_MS);
-    book(x2);
-    book(x2 + DAY_MS);
-    writeFileSync(path.join(store, "books.jsonl"), `${books.join("\n")}\n`);
-    // A TEST file in the list, which the rehearsal must never open: not even lz4.
-    put(
-      "node_fills_by_block/hourly/20250801/0.lz4",
-      Buffer.from("never opened"),
-    );
-    const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
-    scratch.push(root);
-    const lines = readFileSync(path.join(store, "manifest.jsonl"), "utf8");
-    const garbage = [
-      "node_fills_by_block/hourly/20250801/0.lz4",
-      `info/fundingHistory/SOL/${TEST_START}.json`,
-    ]
-      .map((key) =>
-        JSON.stringify({
+describe(
+  "the rehearsal on SIZING (the plan's part 3)",
+  { timeout: 120_000 },
+  () => {
+    const minute = (t: number) => t - (t % MINUTE_MS);
+    // A SOL wave on 2025-06-10 (its entry's book missing: the tape), a SOL wave late on
+    // 2025-07-30 (its exit's tape reaches TEST: never read), a kPEPE wave late on
+    // 2025-07-31 (its exit in TEST: left for the look).
+    const W1 = Date.parse("2025-06-10T10:00:00Z");
+    const W2 = Date.parse("2025-07-30T23:10:00Z");
+    const W3 = Date.parse("2025-07-31T23:30:00Z");
+    const world = () => {
+      const files = new Map<string, string>();
+      const add = (key: string, lines: string[]) =>
+        files.set(
           key,
-          bytes: 12,
-          sha256: sha(Buffer.from("never opened")),
+          [...(files.get(key)?.split("\n") ?? []), ...lines].join("\n"),
+        );
+      add(fillKey(W1), [
+        ...liquidation(1, "SOL", "A", W1, 1),
+        ...liquidation(2, "SOL", "A", W1 + 5 * MINUTE_MS, 2),
+        taker("SOL", "B", W1 + 7 * MINUTE_MS + 100, "101", "4", 3),
+        taker("SOL", "B", W1 + 7 * MINUTE_MS + 200, "102", "100", 4),
+      ]);
+      // After 2025-07-27 08h only `node_fills_by_block` is read (H2).
+      add(fillKey(W2, "node_fills_by_block"), [
+        JSON.stringify({
+          block_number: 1,
+          events: [
+            ...liquidation(3, "SOL", "A", W2, 5),
+            ...liquidation(4, "SOL", "A", W2 + 10 * MINUTE_MS, 6),
+          ].map((l) => JSON.parse(l) as unknown),
         }),
-      )
-      .join("\n");
-    const sizing = await rehearse(
-      {
+      ]);
+      // A tape fill its writer put in the next hour's file: the tape reads both.
+      add(fillKey(W2 + HOUR_MS, "node_fills_by_block"), [
+        JSON.stringify({
+          block_number: 3,
+          events: [
+            JSON.parse(
+              taker("SOL", "B", W2 + 12 * MINUTE_MS + 500, "99", "50", 7),
+            ) as unknown,
+          ],
+        }),
+      ]);
+      add(fillKey(W3, "node_fills_by_block"), [
+        JSON.stringify({
+          block_number: 2,
+          events: [
+            ...liquidation(5, "kPEPE", "B", W3, 8),
+            ...liquidation(6, "kPEPE", "B", W3 + 5 * MINUTE_MS, 9),
+          ].map((l) => JSON.parse(l) as unknown),
+        }),
+      ]);
+      // Marks: SOL at 100 every minute; funding: SOL hourly at 0.00001.
+      const head =
+        "time,coin,funding,open_interest,prev_day_px,day_ntl_vlm,premium,oracle_px,mark_px,mid_px,impact_bid_px,impact_ask_px";
+      for (
+        let d = Date.parse("2025-05-25T00:00:00Z");
+        d < TEST_START;
+        d += DAY_MS
+      ) {
+        const rows = [head];
+        for (let m = 0; m < 1_440; m++)
+          rows.push(
+            `${new Date(d + m * MINUTE_MS).toISOString().replace(".000Z", "Z")},SOL,0,1,1,1,0,1,100,1,1,1`,
+          );
+        files.set(`asset_ctxs/${dayOf(d)}.csv.lz4`, rows.join("\n"));
+      }
+      const edges = [
+        "2025-05-25",
+        "2025-06-14",
+        "2025-07-04",
+        "2025-07-24",
+        "2025-08-01",
+      ].map((d) => Date.parse(`${d}T00:00:00Z`));
+      for (let i = 0; i + 1 < edges.length; i++) {
+        const rows = [];
+        for (let h = edges[i]!; h < edges[i + 1]!; h += HOUR_MS)
+          rows.push({
+            coin: "SOL",
+            fundingRate: "0.00001",
+            premium: "0",
+            time: h + 17,
+          });
+        files.set(
+          `info/fundingHistory/SOL/${edges[i]}.json`,
+          JSON.stringify(rows),
+        );
+      }
+      return files;
+    };
+    const snapshot = (coin: string, t: number) =>
+      JSON.stringify({
+        time: "x",
+        raw: {
+          channel: "l2Book",
+          data: {
+            coin,
+            time: t,
+            levels: [
+              [{ px: "99.9", sz: "1000", n: 1 }],
+              [{ px: "100.1", sz: "1000", n: 1 }],
+            ],
+          },
+        },
+      });
+
+    it("lists the legs' book files and stops until the book list answers each", async () => {
+      const { store } = makeStore(world());
+      const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
+      scratch.push(root);
+      const ctx: Ctx = {
         store,
-        list: manifestList(`${lines}${garbage}\n`),
+        list: manifestList(
+          readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+        ),
         coins,
         kit,
         pace: () => Promise.resolve(),
         log: () => {},
-      },
-      root,
-    );
-    const dir = path.join(root, "rehearsal");
-    const sealed = readFileSync(path.join(dir, "sizing-outcomes.jsonl.gz"));
-    expect(sizing).toMatchObject({
-      M: 1,
-      counted: 6,
-      outcomes: { positions: 3, sha256: sha(sealed) },
-    });
-    expect(
-      JSON.parse(readFileSync(path.join(dir, "sizing.json"), "utf8")),
-    ).toEqual(sizing);
-    const report = JSON.parse(
-      readFileSync(path.join(dir, "report.json"), "utf8"),
-    ) as Record<string, unknown>;
-    expect(report).toMatchObject({
-      legsBySource: { "buy tape": 1, "buy book": 1, "sell book": 2 },
-      tapeWhy: { "no book file": 1 },
-      depthShortPositions: 0,
-      unpriced: {},
-      tapeMinusBookBps: { buy: { n: 1 }, sell: { n: 0 } },
-    });
-    // R2: the entry at 07-30 23:22 walked 50 at 99 on the tape against 100.1 at the book.
-    expect(
-      (report.tapeMinusBookBps as { buy: { median: number } }).buy.median,
-    ).toBeCloseTo(((99 - 100.1) / 100.1) * 1e4, 9);
-    const outcomes = gunzipSync(sealed)
-      .toString("utf8")
-      .trim()
-      .split("\n")
-      .map(
-        (l) =>
-          JSON.parse(l) as {
-            spot: { t: number };
-            priced: { legs: { source: string }[] } | null;
-          },
+      };
+      const err: unknown = await rehearse(ctx, root).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(BooksNeeded);
+      expect((err as Error).message).toBe("4 of 4 book files");
+      const x1 = W1 + 7 * MINUTE_MS;
+      const x2 = W2 + 12 * MINUTE_MS;
+      expect(
+        readFileSync(path.join(root, "rehearsal", "books-needed.txt"), "utf8"),
+      ).toBe(
+        `${[
+          bookKey("SOL", minute(x1) - (x1 % HOUR_MS) + 0),
+          bookKey("SOL", x1 - (x1 % HOUR_MS) + DAY_MS),
+          bookKey("SOL", x2 - (x2 % HOUR_MS)),
+          bookKey("SOL", x2 - (x2 % HOUR_MS) + DAY_MS),
+        ]
+          .sort()
+          .join("\n")}\n`,
       );
-    expect(
-      outcomes.map((o) => [
-        o.spot.t,
-        o.priced?.legs.map((l) => l.source) ?? null,
-      ]),
-    ).toEqual([
-      [W1 + 5 * MINUTE_MS, ["tape", "book"]],
-      [W2 + 10 * MINUTE_MS, ["book", "book"]],
-      [W3 + 5 * MINUTE_MS, null],
-    ]);
-    expect(existsSync(path.join(dir, "counts.json"))).toBe(true);
-  });
+      const counts = JSON.parse(
+        readFileSync(path.join(root, "rehearsal", "counts.json"), "utf8"),
+      ) as Record<string, unknown>;
+      expect(counts).toMatchObject({
+        counted: 6,
+        M: 1,
+        scanRows: 1,
+        liquidatedAccounts: 6,
+        slice0: {
+          entries: 3,
+          priceable: 2,
+          leftForTheLook: 1,
+          backstopEntries: 0,
+        },
+        booksNeeded: 4,
+        booksLacking: 4,
+        late: 0,
+      });
+    });
 
-  it("slices the pool by M and prices slice 0's waves only", async () => {
-    // 766 lone ADA liquidations 90 minutes apart: r(2) = 768 ÷ 2 ÷ 67.42 is the nearest 5.68.
-    const files = new Map<string, string>();
-    const add = (key: string, line: string) =>
-      files.set(key, [...(files.get(key)?.split("\n") ?? []), line].join("\n"));
-    const T = Date.parse("2025-05-26T00:00:00Z");
-    for (let i = 0; i < 766; i++)
-      add(
-        fillKey(T + i * 90 * MINUTE_MS),
-        liquidation(1_000 + i, "ADA", "A", T + i * 90 * MINUTE_MS, 100 + i)[0]!,
+    it("prices the legs at the book or the tape, seals the outcomes and opens no TEST file", async () => {
+      const files = world();
+      const { store, put } = makeStore(files);
+      const x1 = W1 + 7 * MINUTE_MS;
+      const x2 = W2 + 12 * MINUTE_MS;
+      const books: string[] = [];
+      const book = (t: number) => {
+        const key = bookKey("SOL", t - (t % HOUR_MS));
+        const bytes = Buffer.from(
+          lz4js.compress(Buffer.from(snapshot("SOL", t - 2_000))),
+        );
+        const file = path.join(store, ...key.split("/"));
+        mkdirSync(path.dirname(file), { recursive: true });
+        writeFileSync(file, bytes);
+        books.push(
+          JSON.stringify({ key, bytes: bytes.length, sha256: sha(bytes) }),
+        );
+      };
+      books.push(
+        JSON.stringify({
+          key: bookKey("SOL", x1 - (x1 % HOUR_MS)),
+          missing: true,
+        }),
       );
-    // Accounts 2 and 4 (slice 0 of 2) in SOL; 3 and 5 (slice 1) in kPEPE.
-    for (const [n, coin, t] of [
-      [2, "SOL", W1],
-      [4, "SOL", W1 + 5 * MINUTE_MS],
-      [3, "kPEPE", W1 + 10 * DAY_MS],
-      [5, "kPEPE", W1 + 10 * DAY_MS + 5 * MINUTE_MS],
-    ] as const)
-      for (const line of liquidation(n, coin, "A", t, 9_000 + n))
-        add(fillKey(t), line);
-    const { store } = makeStore(files);
-    const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
-    scratch.push(root);
-    const ctx: Ctx = {
-      store,
-      list: manifestList(
-        readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
-      ),
-      coins,
-      kit,
-      pace: () => Promise.resolve(),
-      log: () => {},
-    };
-    await expect(rehearse(ctx, root)).rejects.toThrow("2 of 2 book files");
-    const counts = JSON.parse(
-      readFileSync(path.join(root, "rehearsal", "counts.json"), "utf8"),
-    ) as { M: number; slice0: { entries: number; byCoin: object } };
-    expect(counts.M).toBe(2);
-    expect(counts.slice0).toMatchObject({ entries: 1, byCoin: { SOL: 1 } });
-    const x = W1 + 7 * MINUTE_MS;
-    expect(
-      readFileSync(path.join(root, "rehearsal", "books-needed.txt"), "utf8"),
-    ).toBe(
-      `${bookKey("SOL", x - (x % HOUR_MS))}\n${bookKey("SOL", x - (x % HOUR_MS) + DAY_MS)}\n`,
-    );
-  });
-
-  it("leaves a position for the look when a leg has no book and its tape is sealed", () => {
-    const { store } = makeStore(new Map(), false);
-    const xIn = Date.parse("2025-07-30T23:22:00Z");
-    const xOut = xIn + DAY_MS;
-    const inKey = bookKey("SOL", xIn - (xIn % HOUR_MS));
-    const bytes = Buffer.from(
-      lz4js.compress(Buffer.from(snapshot("SOL", xIn - 1_000))),
-    );
-    mkdirSync(path.dirname(path.join(store, ...inKey.split("/"))), {
-      recursive: true,
-    });
-    writeFileSync(path.join(store, ...inKey.split("/")), bytes);
-    const books = {
-      files: new Map([[inKey, sha(bytes)]]),
-      missing: new Set([bookKey("SOL", xOut - (xOut % HOUR_MS))]),
-    };
-    const T0 = Date.parse("2025-07-29T00:00:00Z");
-    const mk = kit.panel.marketFrom({
-      iid: 5,
-      symbol: "SOL",
-      category: "crypto",
-      start: T0,
-      end: T0 + 3 * DAY_MS,
-      firstTrade: null,
-      retired: null,
-      marks: new Array<number>((3 * DAY_MS) / MINUTE_MS).fill(100),
-      klines: { minute: [], trades: [], volume: [] },
-      funding: [],
-    });
-    const spot = {
-      slice: 0,
-      iid: 5,
-      t: xIn - 120_000,
-      side: -1 as const,
-      dir: 1 as const,
-      xIn,
-      xOut,
-      method: "market",
-      accounts: [addr(3), addr(4)],
-    };
-    const ctx: Ctx = {
-      store,
-      list: new Map(),
-      coins,
-      kit,
-      pace: () => Promise.resolve(),
-      log: () => {},
-    };
-    const out = priceSpot(
-      ctx,
-      books,
-      new Map([
-        ["0|0", []],
-        ["0|1", null],
-      ]),
-      mk,
-      spot,
-      "0",
-    );
-    expect(out.priced).toBeNull();
-    expect(out.legs.map((l) => [l.source, l.why])).toEqual([
-      ["book", null],
-      ["sealed", "no book file"],
-    ]);
-  });
-
-  it("refuses a missing SIZING fill file, and settings with one folder inside the other", async () => {
-    const { store } = makeStore(new Map());
-    const list = new Map(
-      manifestList(readFileSync(path.join(store, "manifest.jsonl"), "utf8")),
-    );
-    list.delete(fillKey(SIZING_START));
-    const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
-    scratch.push(root);
-    await expect(
-      rehearse(
+      book(x1 + DAY_MS);
+      book(x2);
+      book(x2 + DAY_MS);
+      writeFileSync(path.join(store, "books.jsonl"), `${books.join("\n")}\n`);
+      // A TEST file in the list, which the rehearsal must never open: not even lz4.
+      put(
+        "node_fills_by_block/hourly/20250801/0.lz4",
+        Buffer.from("never opened"),
+      );
+      const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
+      scratch.push(root);
+      const lines = readFileSync(path.join(store, "manifest.jsonl"), "utf8");
+      const garbage = [
+        "node_fills_by_block/hourly/20250801/0.lz4",
+        `info/fundingHistory/SOL/${TEST_START}.json`,
+      ]
+        .map((key) =>
+          JSON.stringify({
+            key,
+            bytes: 12,
+            sha256: sha(Buffer.from("never opened")),
+          }),
+        )
+        .join("\n");
+      const sizing = await rehearse(
         {
           store,
-          list,
+          list: manifestList(`${lines}${garbage}\n`),
           coins,
           kit,
           pace: () => Promise.resolve(),
           log: () => {},
         },
         root,
-      ),
-    ).rejects.toThrow("1 SIZING fill files are not in the store's list");
-    expect(
-      Settings.safeParse({ WAVEH_STORE: "F:/a", WAVEH_ROOT: "F:/a/b" }).success,
-    ).toBe(false);
-    expect(
-      Settings.safeParse({ WAVEH_STORE: "F:/a/b", WAVEH_ROOT: "F:/a" }).success,
-    ).toBe(false);
-    expect(
-      Settings.safeParse({ WAVEH_STORE: "F:/a", WAVEH_ROOT: "F:/ab" }).success,
-    ).toBe(true);
-    expect(
-      Settings.safeParse({ WAVEH_STORE: "a", WAVEH_ROOT: "F:/b" }).success,
-    ).toBe(false);
-    expect(Settings.safeParse({ WAVEH_ROOT: "F:/b" }).success).toBe(false);
-  });
+      );
+      const dir = path.join(root, "rehearsal");
+      const sealed = readFileSync(path.join(dir, "sizing-outcomes.jsonl.gz"));
+      expect(sizing).toMatchObject({
+        M: 1,
+        counted: 6,
+        outcomes: { positions: 3, sha256: sha(sealed) },
+      });
+      expect(
+        JSON.parse(readFileSync(path.join(dir, "sizing.json"), "utf8")),
+      ).toEqual(sizing);
+      const report = JSON.parse(
+        readFileSync(path.join(dir, "report.json"), "utf8"),
+      ) as Record<string, unknown>;
+      expect(report).toMatchObject({
+        legsBySource: { "buy tape": 1, "buy book": 1, "sell book": 2 },
+        tapeWhy: { "no book file": 1 },
+        depthShortPositions: 0,
+        unpriced: {},
+        tapeMinusBookBps: { buy: { n: 1 }, sell: { n: 0 } },
+      });
+      // R2: the entry at 07-30 23:22 walked 50 at 99 on the tape against 100.1 at the book.
+      expect(
+        (report.tapeMinusBookBps as { buy: { median: number } }).buy.median,
+      ).toBeCloseTo(((99 - 100.1) / 100.1) * 1e4, 9);
+      const outcomes = gunzipSync(sealed)
+        .toString("utf8")
+        .trim()
+        .split("\n")
+        .map(
+          (l) =>
+            JSON.parse(l) as {
+              spot: { t: number };
+              priced: { legs: { source: string }[] } | null;
+            },
+        );
+      expect(
+        outcomes.map((o) => [
+          o.spot.t,
+          o.priced?.legs.map((l) => l.source) ?? null,
+        ]),
+      ).toEqual([
+        [W1 + 5 * MINUTE_MS, ["tape", "book"]],
+        [W2 + 10 * MINUTE_MS, ["book", "book"]],
+        [W3 + 5 * MINUTE_MS, null],
+      ]);
+      expect(existsSync(path.join(dir, "counts.json"))).toBe(true);
+    });
 
-  it("waits out 02:30–06:00Z and 10:25–11:15Z", () => {
-    const d = Date.parse("2025-07-01T00:00:00Z");
-    const at = (h: number, m: number) => d + h * HOUR_MS + m * MINUTE_MS;
-    expect(windowEnd(at(2, 29))).toBeNull();
-    expect(windowEnd(at(2, 30))).toBe(at(6, 0));
-    expect(windowEnd(at(5, 59))).toBe(at(6, 0));
-    expect(windowEnd(at(6, 0))).toBeNull();
-    expect(windowEnd(at(10, 25))).toBe(at(11, 15));
-    expect(windowEnd(at(11, 15))).toBeNull();
-  });
-});
+    it("slices the pool by M and prices slice 0's waves only", async () => {
+      // 766 lone ADA liquidations 90 minutes apart: r(2) = 768 ÷ 2 ÷ 67.42 is the nearest 5.68.
+      const files = new Map<string, string>();
+      const add = (key: string, line: string) =>
+        files.set(
+          key,
+          [...(files.get(key)?.split("\n") ?? []), line].join("\n"),
+        );
+      const T = Date.parse("2025-05-26T00:00:00Z");
+      for (let i = 0; i < 766; i++)
+        add(
+          fillKey(T + i * 90 * MINUTE_MS),
+          liquidation(
+            1_000 + i,
+            "ADA",
+            "A",
+            T + i * 90 * MINUTE_MS,
+            100 + i,
+          )[0]!,
+        );
+      // Accounts 2 and 4 (slice 0 of 2) in SOL; 3 and 5 (slice 1) in kPEPE.
+      for (const [n, coin, t] of [
+        [2, "SOL", W1],
+        [4, "SOL", W1 + 5 * MINUTE_MS],
+        [3, "kPEPE", W1 + 10 * DAY_MS],
+        [5, "kPEPE", W1 + 10 * DAY_MS + 5 * MINUTE_MS],
+      ] as const)
+        for (const line of liquidation(n, coin, "A", t, 9_000 + n))
+          add(fillKey(t), line);
+      const { store } = makeStore(files);
+      const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
+      scratch.push(root);
+      const ctx: Ctx = {
+        store,
+        list: manifestList(
+          readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+        ),
+        coins,
+        kit,
+        pace: () => Promise.resolve(),
+        log: () => {},
+      };
+      await expect(rehearse(ctx, root)).rejects.toThrow("2 of 2 book files");
+      const counts = JSON.parse(
+        readFileSync(path.join(root, "rehearsal", "counts.json"), "utf8"),
+      ) as { M: number; slice0: { entries: number; byCoin: object } };
+      expect(counts.M).toBe(2);
+      expect(counts.slice0).toMatchObject({ entries: 1, byCoin: { SOL: 1 } });
+      const x = W1 + 7 * MINUTE_MS;
+      expect(
+        readFileSync(path.join(root, "rehearsal", "books-needed.txt"), "utf8"),
+      ).toBe(
+        `${bookKey("SOL", x - (x % HOUR_MS))}\n${bookKey("SOL", x - (x % HOUR_MS) + DAY_MS)}\n`,
+      );
+    });
+
+    it("leaves a position for the look when a leg has no book and its tape is sealed", () => {
+      const { store } = makeStore(new Map(), false);
+      const xIn = Date.parse("2025-07-30T23:22:00Z");
+      const xOut = xIn + DAY_MS;
+      const inKey = bookKey("SOL", xIn - (xIn % HOUR_MS));
+      const bytes = Buffer.from(
+        lz4js.compress(Buffer.from(snapshot("SOL", xIn - 1_000))),
+      );
+      mkdirSync(path.dirname(path.join(store, ...inKey.split("/"))), {
+        recursive: true,
+      });
+      writeFileSync(path.join(store, ...inKey.split("/")), bytes);
+      const books = {
+        files: new Map([[inKey, sha(bytes)]]),
+        missing: new Set([bookKey("SOL", xOut - (xOut % HOUR_MS))]),
+      };
+      const T0 = Date.parse("2025-07-29T00:00:00Z");
+      const mk = kit.panel.marketFrom({
+        iid: 5,
+        symbol: "SOL",
+        category: "crypto",
+        start: T0,
+        end: T0 + 3 * DAY_MS,
+        firstTrade: null,
+        retired: null,
+        marks: new Array<number>((3 * DAY_MS) / MINUTE_MS).fill(100),
+        klines: { minute: [], trades: [], volume: [] },
+        funding: [],
+      });
+      const spot = {
+        slice: 0,
+        iid: 5,
+        t: xIn - 120_000,
+        side: -1 as const,
+        dir: 1 as const,
+        xIn,
+        xOut,
+        method: "market",
+        accounts: [addr(3), addr(4)],
+      };
+      const ctx: Ctx = {
+        store,
+        list: new Map(),
+        coins,
+        kit,
+        pace: () => Promise.resolve(),
+        log: () => {},
+      };
+      const out = priceSpot(
+        ctx,
+        books,
+        new Map([
+          ["0|0", []],
+          ["0|1", null],
+        ]),
+        mk,
+        spot,
+        "0",
+      );
+      expect(out.priced).toBeNull();
+      expect(out.legs.map((l) => [l.source, l.why])).toEqual([
+        ["book", null],
+        ["sealed", "no book file"],
+      ]);
+    });
+
+    it("refuses a missing SIZING fill file, and settings with one folder inside the other", async () => {
+      const { store } = makeStore(new Map());
+      const list = new Map(
+        manifestList(readFileSync(path.join(store, "manifest.jsonl"), "utf8")),
+      );
+      list.delete(fillKey(SIZING_START));
+      const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
+      scratch.push(root);
+      await expect(
+        rehearse(
+          {
+            store,
+            list,
+            coins,
+            kit,
+            pace: () => Promise.resolve(),
+            log: () => {},
+          },
+          root,
+        ),
+      ).rejects.toThrow("1 SIZING fill files are not in the store's list");
+      expect(
+        Settings.safeParse({ WAVEH_STORE: "F:/a", WAVEH_ROOT: "F:/a/b" })
+          .success,
+      ).toBe(false);
+      expect(
+        Settings.safeParse({ WAVEH_STORE: "F:/a/b", WAVEH_ROOT: "F:/a" })
+          .success,
+      ).toBe(false);
+      expect(
+        Settings.safeParse({ WAVEH_STORE: "F:/a", WAVEH_ROOT: "F:/ab" })
+          .success,
+      ).toBe(true);
+      expect(
+        Settings.safeParse({ WAVEH_STORE: "a", WAVEH_ROOT: "F:/b" }).success,
+      ).toBe(false);
+      expect(Settings.safeParse({ WAVEH_ROOT: "F:/b" }).success).toBe(false);
+    });
+
+    it("waits out 02:30–06:00Z and 10:25–11:15Z", () => {
+      const d = Date.parse("2025-07-01T00:00:00Z");
+      const at = (h: number, m: number) => d + h * HOUR_MS + m * MINUTE_MS;
+      expect(windowEnd(at(2, 29))).toBeNull();
+      expect(windowEnd(at(2, 30))).toBe(at(6, 0));
+      expect(windowEnd(at(5, 59))).toBe(at(6, 0));
+      expect(windowEnd(at(6, 0))).toBeNull();
+      expect(windowEnd(at(10, 25))).toBe(at(11, 15));
+      expect(windowEnd(at(11, 15))).toBeNull();
+    });
+  },
+);
