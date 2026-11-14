@@ -7,8 +7,8 @@ clock; the forward paper experiment is FROZEN (2026-11-12, tag
 liquidation wave, is FROZEN (2026-11-13 14:29:11Z, tag `market1-freeze-1`),
 deployed (14:33:39Z) and runs daily at 10:30Z. WAVE-H, MARKET-1's wave tested
 once on Hyperliquid's history, is planned and reviewed; its download tool is
-built and waits for its smoke test and the supervisor's start; its rules wait
-for the owner.** The plan is the plan page (docs/claude-master-plan.md); what
+built, passed its smoke test and waits for the supervisor's start; its rules
+wait for the owner.** The plan is the plan page (docs/claude-master-plan.md); what
 exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -41,7 +41,8 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   - the download tool `tools/waveh-fetch.cjs` and its start script
     `tools/waveh-fetch-start.ps1` (architecture, "WAVE-H's data download";
     decisions 2026-11-14, WAVE-H-FETCH's technical calls): built, tested
-    with no network, not yet run against the bucket;
+    with no network, its smoke test passed (3 requests); not yet run on the
+    store;
   - the rules (H0–H15) and R1–R10 wait for the owner.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
@@ -56,9 +57,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 1. **WAVE-H's download, the first session** (decisions 2026-11-14, the
    spec's point 8):
-   - WAVE-H-FETCH's smoke test (at most 3 keyless requests: one listing,
-     one sizing file, one `fundingHistory` read), after 06:00Z on the
-     supervisor's go;
+   - WAVE-H-FETCH's smoke test passed (2026-11-14 06:02Z: one listing,
+     one sizing file whose MD5 equals its ETag, one `fundingHistory` read,
+     all HTTP 200; external-apis, "Other venues");
    - the supervisor reads the tool against D1–D8, then starts it:
      `tools\waveh-fetch-start.ps1 -SizingOnly` (about 35 GB, the sizing
      months), with one mid-file kill and restart;

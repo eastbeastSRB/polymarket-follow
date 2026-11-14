@@ -416,6 +416,18 @@ read from a venue's page is as that page read on the day.
   `l2Book` 2025-07-28 12h: 201 coin files, 101,180,205 B, 0.1–0.7 MB each.
   Files carry the `.lz4` frame format (decoded by `lz4js` 0.2.0): 25,096,071 B
   of 2025-07-28 12h became 120,851,547 B.
+- **A month's listing and a file, as WAVE-H's download tool reads them**
+  (2026-11-14 06:02Z, WAVE-H-FETCH's smoke test, through the tool's own
+  code; evidence in the supervisor folder, `workers/WAVE-H-FETCH/smoke/`):
+  - `?list-type=2&prefix=v1.1/hyperliquid/mainnet/node_fills/hourly/202506&max-keys=1000`
+    (the prefix URL-encoded, no delimiter): HTTP 200,
+    `Content-Type: application/xml`, no `Content-Length`. One page,
+    `IsTruncated` false: 720 keys (30 days × 24), 7,259,417 to
+    120,058,345 B each, 2 with a multipart ETag, LastModified 2026-11-03.
+  - `GET …/node_fills/hourly/20250628/3.lz4`: HTTP 200,
+    `Content-Type: binary/octet-stream`, `Content-Length` 7,259,417 (the
+    listing's Size), no `Content-Encoding`, the `ETag` header quoted and
+    equal to the listing's. The bytes' MD5 equals that single-part ETag.
 - **Fill file line (`node_fills_by_block`, read 2025-07-28 12h):**
   `{local_time, block_time, block_number, events: [[user, fill], …]}`; fill
   `{coin, px, sz, side "A"|"B", time (ms), startPosition, dir, closedPnl,
@@ -472,6 +484,11 @@ read from a venue's page is as that page read on the day.
 - `{"type":"userFillsByTime","user":…,"startTime":ms,"endTime":ms}` answered
   for a window of 2025-07-28 (reaching back more than a year, for one
   account) and one of 2026-08-22; the reply's record equals the file's.
+- `{"type":"fundingHistory","coin":"SOL","startTime":1748131200000,"endTime":1749859199999}`
+  (2025-05-25T00:00Z to 1 ms before 2025-06-14T00:00Z; 2026-11-14 06:02Z,
+  WAVE-H-FETCH's smoke test, `workers/WAVE-H-FETCH/smoke/`): HTTP 200,
+  `Content-Type: application/json`, `Content-Length` 42,730, no
+  `Content-Encoding`. Stored as received; the tool never parses a reply.
 - **A backstop liquidation (one example, 2026-08-22 05:13Z):** the liquidated
   account's own fill is `crossed` false, fee "0.0", `dir` "Liquidated Isolated
   Short", `side` "B"; the vault's is `crossed` true, `startPosition` "0.0",
