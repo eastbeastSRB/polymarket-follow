@@ -396,6 +396,55 @@ export async function look(
     ctx.kit,
     wave.map((o) => ({ t: o.spot.t, iid: o.spot.iid, priced: o.priced! })),
   );
+  const legs = wave.flatMap((o) => o.legs.map((l, n) => ({ o, l, n })));
+  const neededMissing = step.needed.filter((k) => books.missing.has(k));
+  // Computed before the result is written (a crash here is not a look), written after it.
+  const report = {
+    "WAVE-H": { ...decision, z: Z, prints: netLine(ctx.kit, wave) },
+    "THE DAY WITH THE MOST POSITIONS": dayMost(ctx.kit, wave),
+    SIZING: {
+      label:
+        "SIZING: days counted before the freeze, outcomes first read at the look",
+      ...netLine(ctx.kit, sizingSet),
+    },
+    ...linesBeside({
+      m,
+      coins: ctx.coins,
+      counted: step.counted,
+      M: step.M,
+      wave,
+      sizingCoins: step.sizingCoins,
+    }),
+    prints: {
+      counts: step.counts,
+      countedByCoinMethod: tally(
+        step.counted.filter((f) => f.t >= TEST_START && f.t < TEST_END),
+        (f) => `${coinName(ctx.coins, f.iid)}|${f.method}`,
+      ),
+      bookHoles: {
+        filesByDay: tally(neededMissing, (k) => iso(keyDate(k)!)),
+        legsByDay: tally(
+          legs.filter((x) => x.l.why === "no book file"),
+          (x) => iso(x.n === 0 ? x.o.spot.xIn : x.o.spot.xOut),
+        ),
+      },
+      baseTier: Object.entries(
+        step.counts.topTakerBps as Record<string, number>,
+      )
+        .filter(([, bps]) => bps > 4.5)
+        .map(([month, bps]) => `ALARM ${month}: a taker paid ${bps} bps`),
+      files: {
+        fill: step.counts.files,
+        assetCtxs: read.ctxs,
+        funding: read.funding,
+        books: step.needed.length - neededMissing.length,
+        booksMissing: neededMissing.length,
+      },
+      dataSha256,
+      booksSha256: existsSync(bookText) ? sha256(readFileSync(bookText)) : null,
+      minutes: Math.round((Date.now() - t0) / 60_000),
+    },
+  };
   // R7: the result exists before anything about an outcome is written or logged.
   writeWhole(
     path.join(dir, "result.json"),
@@ -420,59 +469,7 @@ export async function look(
         .join("\n")}\n`,
     ),
   );
-  const legs = wave.flatMap((o) => o.legs.map((l, n) => ({ o, l, n })));
-  const neededMissing = step.needed.filter((k) => books.missing.has(k));
-  writeWhole(
-    path.join(dir, "report.json"),
-    json({
-      "WAVE-H": { ...decision, z: Z, prints: netLine(ctx.kit, wave) },
-      "THE DAY WITH THE MOST POSITIONS": dayMost(ctx.kit, wave),
-      SIZING: {
-        label:
-          "SIZING: days counted before the freeze, outcomes first read at the look",
-        ...netLine(ctx.kit, sizingSet),
-      },
-      ...linesBeside({
-        m,
-        coins: ctx.coins,
-        counted: step.counted,
-        M: step.M,
-        wave,
-        sizingCoins: step.sizingCoins,
-      }),
-      prints: {
-        counts: step.counts,
-        countedByCoinMethod: tally(
-          step.counted.filter((f) => f.t >= TEST_START && f.t < TEST_END),
-          (f) => `${coinName(ctx.coins, f.iid)}|${f.method}`,
-        ),
-        bookHoles: {
-          filesByDay: tally(neededMissing, (k) => iso(keyDate(k)!)),
-          legsByDay: tally(
-            legs.filter((x) => x.l.why === "no book file"),
-            (x) => iso(x.n === 0 ? x.o.spot.xIn : x.o.spot.xOut),
-          ),
-        },
-        baseTier: Object.entries(
-          step.counts.topTakerBps as Record<string, number>,
-        )
-          .filter(([, bps]) => bps > 4.5)
-          .map(([month, bps]) => `ALARM ${month}: a taker paid ${bps} bps`),
-        files: {
-          fill: step.counts.files,
-          assetCtxs: read.ctxs,
-          funding: read.funding,
-          books: step.needed.length - neededMissing.length,
-          booksMissing: neededMissing.length,
-        },
-        dataSha256,
-        booksSha256: existsSync(bookText)
-          ? sha256(readFileSync(bookText))
-          : null,
-        minutes: Math.round((Date.now() - t0) / 60_000),
-      },
-    }),
-  );
+  writeWhole(path.join(dir, "report.json"), json(report));
   ctx.log("done", { verdict: decision.verdict });
   return { verdict: decision.verdict };
 }
