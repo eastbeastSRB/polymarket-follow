@@ -44,8 +44,8 @@ step with the record; only the supervisor sets a marker.
 
 ## Where it stands
 
-*Brought in step on 2026-11-13, through decisions 2026-11-13 (MARKET-1 —
-the freeze).*
+*Brought in step on 2026-11-14, through decisions 2026-11-14 (WAVE-H's
+plan approved, and WAVE-H-BUILD's entries).*
 
 - **Two forward paper tests are frozen, judged at the same three looks
   (2026-12-19, 2027-02-06, 2027-05-08):**
@@ -54,6 +54,11 @@ the freeze).*
   - **MARKET-1** (the liquidation wave in small coins, the one lead round 2's
     data gave; decisions 2026-11-13): frozen and deployed 2026-11-13; it runs daily
     at 10:30Z.
+- **WAVE-H tests MARKET-1's wave once on Hyperliquid's history**, a new
+  sample of 2025-08-01 → 2026-05-28 ("The plan — the next steps", its row): built,
+  and its reproduction equals MARKET-1 fill for fill; the test months are
+  downloading, stored unopened until its freeze; one look, its answer in
+  weeks.
 
 **What runs now** (each program a Windows task; the tests decide only at
 their looks):
@@ -111,7 +116,7 @@ flowchart TD
 | ✅ | 2026-11-11 | **Phase 2 — research round 2, FIND: NOTHING PASSES.** The kit and the first measurements accepted; seven studies (entries 1, 2, 3, 4, 5, 7, 9, 10), rules frozen and reviewed before one look each, three fresh Final reviews: every result stands; no entry registered; the gate (entry 1) fails (decisions 2026-11-11, round 2's FIND results); entry 6 then ran once with the owner's filter on the owner's lift and fails too (decisions 2026-11-12, FIND-6's result); copying the traders' exits as well, an exploring check, leaves every group losing (decisions 2026-11-12, FIND-6-EXITS's result) | research subagents |
 | 🔵 | since 2026-11-12 | **The way forward: a forward paper experiment** (decisions 2026-11-12, the way forward). Its design is accepted (decisions 2026-11-12, APPROACH-REVIEW accepted): slow traders (usual hold 6 h or more, at least 3 closed cycles) from the frozen pool by a rule, not a ranking; two readings of every copy (the money with the exits copied; the judgement at 24 h against random trades); data from 2026-11-07; looks 2026-12-19, 2027-02-06, 2027-05-08; keep / drop at +10 bps / too few to tell; every directional trader and the owner's favourites beside; a script once a day with a simple page showing its log (decisions 2026-11-12, the paper experiment runs daily and gets a page). Its plan is approved with its review's fixes (decisions 2026-11-12, the paper experiment's plan approved); built, reviewed three times and **frozen 2026-11-12 20:19:52Z** (decisions 2026-11-12, the freeze; tag `paper-freeze-1`); deployed by the owner 2026-11-12 20:25Z with its daily task (04:00Z); the first run, catching up from 2026-11-07, started 20:26:43Z. The exams of 11-30 and 12-19 are closed (12-19 is the first look); D1 and D2 run after the freeze | the owner deploys and registers the task |
 | 🔵 | since 2026-11-13 | **MARKET-1 — a forward paper test of the liquidation wave** (decisions 2026-11-13, from "the market lead" to "MARKET-1 — the freeze").<br>• **The line:** when two or more pool accounts are liquidated on one side of one of 38 small coins within 60 minutes, $1,000 against the forced side 2 minutes later, at the recorded book as a taker, held 24 h. From 2026-11-11, zero API reads.<br>• **The verdict:** keep, or drop at +50 bps, or too few to tell, at the paper experiment's three looks.<br>• **Done:** planned and reviewed; built; two fresh reviews; the fixes and a fresh fix-check; **frozen 2026-11-13 14:29:11Z** (`market1/FROZEN.sha256`, `b9e17505…2f1d`, tag `market1-freeze-1`).<br>• **Deployed** by the owner 2026-11-13 14:33:39Z; its daily task at 10:30Z; the first run 14:33:59–14:39:02Z ended 0 (12,095,293 recorded lines read, 0 failed; the page at `F:polymarket-followmarket1pageindex.html`) | the supervisor checks each run |
-| 🔵 | since 2026-11-13 | **WAVE-H — the liquidation wave on Hyperliquid's history** (decisions 2026-11-13, the two outside researches — the owner's ruling).<br>• **What:** MARKET-1's wave, by its own definition, on Hyperliquid (Polymarket Perps shares its design and names the account on every liquidation), on days before Polymarket Perps existed (2025-08-01 → 2026-05-28), so the sample is new.<br>• **Data:** free (AWS's public bucket: fills and books; WAVE-CHECKS).<br>• **The road:** plan, fresh review, the owner's approval, build, fresh reviews, freeze, one look.<br>• **Answer in weeks.** It decides nothing for the frozen MARKET-1 | the supervisor; plan and build subagents |
+| 🔵 | since 2026-11-13 | **WAVE-H — the liquidation wave on Hyperliquid's history** (decisions 2026-11-13, the two outside researches — the owner's ruling).<br>• **What:** MARKET-1's wave, by its own definition, on Hyperliquid (Polymarket Perps shares its design and names the account on every liquidation), on days before Polymarket Perps existed (2025-08-01 → 2026-05-28), so the sample is new.<br>• **Data:** free (AWS's public bucket: fills and books; WAVE-CHECKS).<br>• **Done:** the plan, its fresh review and the owner's approval (decisions 2026-11-14, WAVE-H's plan approved); the download tool (`tools/waveh-fetch.cjs`); the build (`dist/waveh.js`, `rehearse` and `look`), whose reproduction through WAVE-H's own mapping equals MARKET-1 fill for fill (727 = 695 + 32 counted fills, 153 entries); the sizing months and their books downloaded; the rehearsal's first run (M = 147).<br>• **Now:** the test months downloading, stored unopened (done about 2026-11-15); the rehearsal's second run → `sizing.json` and the draft freeze list.<br>• **Then:** fresh rules and code reviews, the fixes, a fix-check, the freeze (with `data.sha256`), one look.<br>• **Answer in weeks.** It decides nothing for the frozen MARKET-1 | the supervisor; plan and build subagents |
 | ⬜ | early December | The v1 plan: R7's pages, the owner's rulings, V1–V7 and what round 2 has earned; the final exams run beside it on more weeks, whatever passes later is added (decisions 2026-11-09, the fast track) | a plan subagent |
 | ⬜ | after the plan | The skeleton: Turborepo, the docs-size report and the decisions guard in the test run, CI | a build subagent |
 | ⬜ | after the skeleton | v1, in parts, each planned first and Final-reviewed | build subagents |
