@@ -337,7 +337,26 @@ describe("the lines beside (H13): which positions each takes", () => {
       priced: priced([10, -20, 30][i]!),
       legs: [leg("book"), leg(i === 1 ? "tape" : "book")],
     }));
-    const m: MarkAt = { kit, market: () => undefined, base: () => null };
+    // SOL's marks: 100, then 110, 121 and 133.1 from S + 1h30, 2h30 and 3h30 on; no other coin's.
+    const sol = kit.panel.marketFrom({
+      iid: iid("SOL"),
+      symbol: "SOL",
+      category: "crypto",
+      start: S,
+      end: O + 2 * DAY_MS,
+      firstTrade: null,
+      retired: null,
+      marks: Array.from({ length: (O + 2 * DAY_MS - S) / MINUTE_MS }, (_, i) =>
+        i < 90 ? 100 : i < 150 ? 110 : i < 210 ? 121 : 133.1,
+      ),
+      klines: { minute: [], trades: [], volume: [] },
+      funding: [],
+    });
+    const m: MarkAt = {
+      kit,
+      market: (k) => (k === iid("SOL") ? sol : undefined),
+      base: () => null,
+    };
     const out = linesBeside({
       m,
       coins,
@@ -351,6 +370,10 @@ describe("the lines beside (H13): which positions each takes", () => {
     expect(n(out.ALONE.B2)).toBe(3);
     expect(n(out.LATE["1 h"])).toBe(3);
     expect(n(out.LATE["3 h"])).toBe(3);
+    // In at S + 1h05 (100) and 3h05 (121), out at 133.1; October's SOL flat; kPEPE unmarked.
+    expect(out.LATE["1 h"]).toMatchObject({ withoutMarks: 1 });
+    expect(out.LATE["1 h"].onMarks?.mean).toBeCloseTo((3_310 + 0) / 2, 6);
+    expect(out.LATE["3 h"].onMarks?.mean).toBeCloseTo((1_000 + 0) / 2, 6);
     expect(n(out.SIDES["forced sells"])).toBe(2);
     expect(n(out.SIDES["forced buys"])).toBe(1);
     expect(
@@ -363,7 +386,8 @@ describe("the lines beside (H13): which positions each takes", () => {
       positions: 4,
       slices: 2,
     });
-    expect(out["EVERY SLICE"].aboveZero).toBeNull();
+    // Slice 0's SOL entries gain (+3,310 and 0); slice 1 has no marked position.
+    expect(out["EVERY SLICE"].aboveZero).toBe(1);
     expect(out["M HALVED"]).toMatchObject({ M: 1, positions: 4 });
     expect(out["M DOUBLED"]).toMatchObject({ M: 4, positions: 1 });
     expect(out["M BY MONTH"].months.slice(0, 3)).toEqual([
