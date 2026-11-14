@@ -18,12 +18,14 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { bookKey } from "../src/waveh/books.js";
 import { loadCoins } from "../src/waveh/coins.js";
-import { SIZING_START, TEST_START } from "../src/waveh/instants.js";
+import { DATA_END, SIZING_START, TEST_START } from "../src/waveh/instants.js";
+import { lookStep1 } from "../src/waveh/look.js";
+import { SealedError } from "../src/waveh/gate.js";
 import { newPass, passFile } from "../src/waveh/pass.js";
 import {
   BooksNeeded,
@@ -51,7 +53,10 @@ beforeAll(async () => {
 });
 
 /** A store: files by key, each lz4-compressed (or plain for funding), with the manifest. */
-function makeStore(files: Map<string, string>, everyFillFile = true) {
+function makeStore(
+  files: Map<string, string>,
+  everyFillFile: boolean | "to DATA END" = true,
+) {
   const store = mkdtempSync(path.join(tmpdir(), "waveh-store-"));
   scratch.push(store);
   const empty = Buffer.from(lz4js.compress(new Uint8Array(0)));
@@ -71,8 +76,11 @@ function makeStore(files: Map<string, string>, everyFillFile = true) {
         ? Buffer.from(text)
         : Buffer.from(lz4js.compress(Buffer.from(text))),
     );
-  if (everyFillFile)
-    for (const key of fillKeys(SIZING_START, TEST_START))
+  if (everyFillFile !== false)
+    for (const key of fillKeys(
+      SIZING_START,
+      everyFillFile === true ? TEST_START : DATA_END + HOUR_MS,
+    ))
       if (!files.has(key)) put(key, empty);
   writeFileSync(path.join(store, "manifest.jsonl"), `${lines.join("\n")}\n`);
   return { store, put };
@@ -697,3 +705,72 @@ describe(
     });
   },
 );
+
+describe("the look's first step (H15, R3)", { timeout: 120_000 }, () => {
+  // A SOL wave in TEST (2025-09-10), in `node_fills_by_block` files; SIZING holds none.
+  const W = Date.parse("2025-09-10T10:00:00Z");
+  let store: string;
+  let list: ReturnType<typeof manifestList>;
+  beforeAll(() => {
+    const block = (n: number, lines: string[]) =>
+      JSON.stringify({
+        block_number: n,
+        events: lines.map((l) => JSON.parse(l) as unknown),
+      });
+    const files = new Map([
+      [
+        fillKey(W, "node_fills_by_block"),
+        [
+          block(1, liquidation(1, "SOL", "A", W, 1)),
+          block(2, liquidation(2, "SOL", "A", W + 5 * MINUTE_MS, 2)),
+        ].join("\n"),
+      ],
+    ]);
+    ({ store } = makeStore(files, "to DATA END"));
+    scratch.splice(scratch.indexOf(store), 1);
+    list = manifestList(
+      readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+    );
+  });
+  afterAll(() => rmSync(store, { recursive: true, force: true }));
+  const ctx = (): Ctx => ({
+    store,
+    list,
+    coins,
+    kit,
+    pace: () => Promise.resolve(),
+    log: () => {},
+  });
+
+  it("reads every fill file with the gate open, holds M to sizing.json and lists slice 0's books", async () => {
+    const step = await lookStep1(ctx(), { open: true }, 1);
+    expect(step.M).toBe(1);
+    expect(step.spots.map((s) => [s.t, s.iid, s.dir])).toEqual([
+      [W + 5 * MINUTE_MS, 5, 1],
+    ]);
+    const x = W + 7 * MINUTE_MS;
+    expect(step.needed).toEqual([
+      bookKey("SOL", x - (x % HOUR_MS)),
+      bookKey("SOL", x - (x % HOUR_MS) + DAY_MS),
+    ]);
+    expect(step.sha256).toBe(sha(Buffer.from(JSON.stringify(step.spots))));
+    expect(step.counts).toMatchObject({
+      files: 8_845,
+      counted: 2,
+      M: 1,
+      slice0: {
+        positions: 1,
+        byMonth: { "2025-09": 1 },
+        backstopEntries: 0,
+        episodesByMonth: { "2025-09": 1 },
+      },
+    });
+  });
+
+  it("stops when M differs from sizing.json's, and never reads TEST with the gate closed", async () => {
+    await expect(lookStep1(ctx(), { open: true }, 2)).rejects.toThrow(
+      "M is 1 on SIZING, sizing.json's 2",
+    );
+    await expect(lookStep1(ctx(), CLOSED, 1)).rejects.toThrow(SealedError);
+  });
+});
