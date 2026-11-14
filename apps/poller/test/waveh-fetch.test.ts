@@ -2091,6 +2091,21 @@ describe("the book files (--books)", () => {
     expect(w.server.calls.slice(3).map((c) => c.url)).toEqual([
       listingUrlOf("market_data/20250715/3/l2Book/"),
     ]);
+    // A key written missing that a later listing holds is a problem, never fetched.
+    w.server.put(KSHIB, bytes(5_000, 25));
+    expect(await w.run({ books })).toBe(0);
+    expect(fs.readFileSync(path.join(w.store, "books.jsonl"), "utf8")).toBe(
+      before,
+    );
+    expect(w.server.calledFor(urlOf(KSHIB))).toHaveLength(0);
+    const problems = fs
+      .readFileSync(fetchFile(w.store, "problems.jsonl"), "utf8")
+      .trim()
+      .split("\n")
+      .map((l) => JSON.parse(l) as { key: string; problem: string });
+    expect(problems.map((p) => [p.key, p.problem])).toEqual([
+      [KSHIB, "changed"],
+    ]);
   });
 
   it("records a book whose bytes differ from its listing as bad, never in the list", async () => {

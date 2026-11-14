@@ -19,17 +19,19 @@ export const PACKAGE_ROOT = path.join(RESEARCH_ROOT, "..");
 
 export const FROZEN_FILE = "waveh/FROZEN.sha256";
 
-/** MARKET-1's and the paper experiment's compiled files the program's imports reach (R4: a test walks the closure). */
+/**
+ * MARKET-1's and the paper experiment's compiled files the program's imports
+ * reach, exactly (R4: test/waveh-freeze.test.ts walks the closure; the
+ * look's verdict and BASE will add MARKET-1's stats and lines and the
+ * paper's stats).
+ */
 export const CLOSURE = [
   "dist/market1/book.js",
   "dist/market1/fills.js",
-  "dist/market1/lines.js",
   "dist/market1/price.js",
-  "dist/market1/stats.js",
   "dist/market1/waves.js",
   "dist/paper/instants.js",
   "dist/paper/research.js",
-  "dist/paper/stats.js",
 ];
 
 /** lz4js 0.2.0's files (R4), also checked when they load (`lz4.ts`). */
