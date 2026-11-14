@@ -9,6 +9,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import { CLOSURE, PACKAGE_ROOT } from "../src/waveh/gate.js";
 
@@ -78,4 +79,78 @@ describe("WAVE-H's closure (R4)", () => {
             if (list.has(f)) expect(hash, `${f} in ${other}`).toBe(list.get(f));
       },
     );
+});
+
+type Line = { key: string; bytes: number; sha256: string };
+const freezeTool = createRequire(import.meta.url)(
+  "../../../tools/waveh-freeze.cjs",
+) as {
+  manifestLines: (text: string) => Line[];
+  dataList: (lines: Line[]) => string;
+  shortFiles: (
+    lines: Line[],
+  ) => { key: string; bytes: number; median: number }[];
+};
+
+describe("the store's list and R3 (i)'s short files (the freeze tool's --data)", () => {
+  const h = (n: number) => n.toString(16).padStart(64, "0");
+  const line = (key: string, bytes: number, n = 1) =>
+    JSON.stringify({
+      key,
+      bytes,
+      etag: "e",
+      md5: "m",
+      sha256: h(n),
+      fetchedAt: "t",
+    });
+
+  it("reads the manifest whole, refusing a torn or foreign line, and lists every file by key", () => {
+    const text = `${line("b/1.lz4", 5, 2)}\n${line("a/1.lz4", 7, 3)}\n`;
+    const lines = freezeTool.manifestLines(text);
+    expect(lines).toEqual([
+      { key: "b/1.lz4", bytes: 5, sha256: h(2) },
+      { key: "a/1.lz4", bytes: 7, sha256: h(3) },
+    ]);
+    expect(freezeTool.dataList(lines)).toBe(
+      `${h(3)} *a/1.lz4\n${h(2)} *b/1.lz4\n`,
+    );
+    expect(() =>
+      freezeTool.manifestLines(`${line("a", 1)}\n{"key":"b"`),
+    ).toThrow("torn");
+    expect(() => freezeTool.manifestLines('{"key":"b","bytes":1}\n')).toThrow(
+      "line 1",
+    );
+  });
+
+  it("names a fill file under 30% of its 24 nearest neighbours' median bytes, in each format", () => {
+    const lines: Line[] = [];
+    for (let i = 0; i < 30; i++) {
+      const day = i < 24 ? "20250601" : "20250602";
+      const key = `node_fills/hourly/${day}/${i % 24}.lz4`;
+      lines.push({
+        key,
+        bytes: i === 12 ? 29 : i === 27 ? 30 : 100,
+        sha256: h(i),
+      });
+    }
+    lines.push({
+      key: "node_fills_by_block/hourly/20250801/0.lz4",
+      bytes: 10,
+      sha256: h(99),
+    });
+    lines.push({
+      key: "node_fills_by_block/hourly/20250801/1.lz4",
+      bytes: 1_000,
+      sha256: h(98),
+    });
+    lines.push({ key: "asset_ctxs/20250801.csv.lz4", bytes: 1, sha256: h(97) });
+    expect(freezeTool.shortFiles(lines)).toEqual([
+      { key: "node_fills/hourly/20250601/12.lz4", bytes: 29, median: 100 },
+      {
+        key: "node_fills_by_block/hourly/20250801/0.lz4",
+        bytes: 10,
+        median: 1_000,
+      },
+    ]);
+  });
 });

@@ -13,7 +13,14 @@
  *
  *   node tools/waveh-freeze.cjs            the draft, waveh/FROZEN.draft.sha256
  *   node tools/waveh-freeze.cjs --final    the freeze, waveh/FROZEN.sha256
+ *   node tools/waveh-freeze.cjs --data <store>\manifest.jsonl
  *
+ * --data writes waveh/data.sha256 (rules.md H2: every file the main download
+ * stored, its key and SHA-256, as the download's manifest lists them; run
+ * once the download is complete, before the draft) and prints R3 (i)'s list:
+ * each fill file whose bytes are under 30% of the median of its 24 nearest
+ * neighbours' in its format (12 before, 12 after), from the manifest's sizes
+ * alone: no data file is opened.
  * The final list opens WAVE-H's gate; it is written only at the freeze
  * (after its fresh reviews), its SHA-256 recorded in decisions and its commit
  * tagged waveh-freeze-1. `--final` refuses a tree that is not clean, and both
@@ -39,7 +46,73 @@ function manifest(text) {
   return want;
 }
 
+/** The download's manifest lines (key, bytes, sha256); a line that is not one throws (our own file). */
+function manifestLines(text) {
+  const lines = text.split("\n");
+  if (lines.pop() !== "") throw new Error("the manifest's last line is torn");
+  return lines.map((line, i) => {
+    const l = JSON.parse(line);
+    if (
+      typeof l.key !== "string" ||
+      !Number.isSafeInteger(l.bytes) ||
+      !/^[0-9a-f]{64}$/.test(l.sha256 ?? "")
+    )
+      throw new Error(`the manifest's line ${i + 1} is not a file's`);
+    return { key: l.key, bytes: l.bytes, sha256: l.sha256 };
+  });
+}
+
+/** R3 (i): each fill file under 30% of the median of its 24 nearest neighbours' bytes in its format. */
+function shortFiles(lines) {
+  const out = [];
+  for (const format of ["node_fills/", "node_fills_by_block/"]) {
+    const hour = (key) => {
+      const m = /hourly\/(\d{8})\/(\d{1,2})\.lz4$/.exec(key);
+      return `${m[1]}${m[2].padStart(2, "0")}`;
+    };
+    const files = lines
+      .filter((l) => l.key.startsWith(format))
+      .sort((a, b) => (hour(a.key) < hour(b.key) ? -1 : 1));
+    files.forEach((l, i) => {
+      const near = [
+        ...files.slice(Math.max(0, i - 12), i),
+        ...files.slice(i + 1, i + 13),
+      ]
+        .map((n) => n.bytes)
+        .sort((a, b) => a - b);
+      if (near.length === 0) return;
+      const median =
+        near.length % 2 === 1
+          ? near[(near.length - 1) / 2]
+          : (near[near.length / 2 - 1] + near[near.length / 2]) / 2;
+      if (l.bytes < 0.3 * median)
+        out.push({ key: l.key, bytes: l.bytes, median });
+    });
+  }
+  return out;
+}
+
+/** waveh/data.sha256's text: every file of the manifest, by key. */
+const dataList = (lines) =>
+  `${[...lines]
+    .sort((a, b) => (a.key < b.key ? -1 : 1))
+    .map((l) => `${l.sha256} *${l.key}`)
+    .join("\n")}\n`;
+
 async function main() {
+  const at = process.argv.indexOf("--data");
+  if (at !== -1) {
+    const lines = manifestLines(fs.readFileSync(process.argv[at + 1], "utf8"));
+    fs.writeFileSync(path.join(PKG, "waveh", "data.sha256"), dataList(lines));
+    process.stdout.write(
+      `waveh/data.sha256: ${lines.length} files\nR3 (i), fill files under 30% of their 24 neighbours' median bytes:\n${shortFiles(
+        lines,
+      )
+        .map((s) => `  ${s.key} ${s.bytes} B, the median ${s.median} B\n`)
+        .join("")}`,
+    );
+    return;
+  }
   const final = process.argv.includes("--final");
   const git = (...args) =>
     execFileSync("git", args, { cwd: PKG, encoding: "utf8" }).trim();
@@ -107,9 +180,12 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  process.stderr.write(
-    `waveh-freeze: ${String(err && err.stack ? err.stack : err)}\n`,
-  );
-  process.exit(1);
-});
+module.exports = { dataList, manifestLines, shortFiles };
+
+if (require.main === module)
+  main().catch((err) => {
+    process.stderr.write(
+      `waveh-freeze: ${String(err && err.stack ? err.stack : err)}\n`,
+    );
+    process.exit(1);
+  });
