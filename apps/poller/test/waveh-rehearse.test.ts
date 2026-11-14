@@ -5,7 +5,6 @@
  * books the legs need, the tape, the sealed outcomes, and no TEST file ever
  * opened.
  */
-import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -14,7 +13,6 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
@@ -23,7 +21,7 @@ import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { bookKey } from "../src/waveh/books.js";
 import { loadCoins } from "../src/waveh/coins.js";
-import { DATA_END, SIZING_START, TEST_START } from "../src/waveh/instants.js";
+import { SIZING_START, TEST_START } from "../src/waveh/instants.js";
 import { lookStep1 } from "../src/waveh/look.js";
 import { SealedError } from "../src/waveh/gate.js";
 import { newPass, passFile } from "../src/waveh/pass.js";
@@ -35,119 +33,27 @@ import {
   type Ctx,
 } from "../src/waveh/rehearse.js";
 import { Settings, windowEnd } from "../src/waveh/run.js";
-import { StoreError, fillKeys, manifestList } from "../src/waveh/store.js";
+import { StoreError, manifestList } from "../src/waveh/store.js";
+import {
+  addr,
+  cleanScratch,
+  dayOf,
+  fillKey,
+  liquidation,
+  lz4js,
+  makeStore,
+  scratch,
+  sha,
+  snapshot,
+  taker,
+} from "./waveh-world.js";
 
-const lz4js = createRequire(import.meta.url)("lz4js") as {
-  compress: (src: Uint8Array) => Uint8Array;
-};
+afterEach(cleanScratch);
 const coins = loadCoins();
-const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
-const scratch: string[] = [];
-afterEach(() => {
-  for (const d of scratch.splice(0))
-    rmSync(d, { recursive: true, force: true });
-});
 let kit: Research;
 beforeAll(async () => {
   kit = await loadResearch();
 });
-
-/** A store: files by key, each lz4-compressed (or plain for funding), with the manifest. */
-function makeStore(
-  files: Map<string, string>,
-  everyFillFile: boolean | "to DATA END" = true,
-) {
-  const store = mkdtempSync(path.join(tmpdir(), "waveh-store-"));
-  scratch.push(store);
-  const empty = Buffer.from(lz4js.compress(new Uint8Array(0)));
-  const lines: string[] = [];
-  const put = (key: string, bytes: Buffer) => {
-    const file = path.join(store, ...key.split("/"));
-    mkdirSync(path.dirname(file), { recursive: true });
-    writeFileSync(file, bytes);
-    lines.push(
-      JSON.stringify({ key, bytes: bytes.length, sha256: sha(bytes) }),
-    );
-  };
-  for (const [key, text] of files)
-    put(
-      key,
-      key.endsWith(".json")
-        ? Buffer.from(text)
-        : Buffer.from(lz4js.compress(Buffer.from(text))),
-    );
-  if (everyFillFile !== false)
-    for (const key of fillKeys(
-      SIZING_START,
-      everyFillFile === true ? TEST_START : DATA_END + HOUR_MS,
-    ))
-      if (!files.has(key)) put(key, empty);
-  writeFileSync(path.join(store, "manifest.jsonl"), `${lines.join("\n")}\n`);
-  return { store, put };
-}
-
-const addr = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
-const dayOf = (t: number) =>
-  new Date(t).toISOString().slice(0, 10).replaceAll("-", "");
-const fillKey = (t: number, format = "node_fills") =>
-  `${format}/hourly/${dayOf(t)}/${new Date(t).getUTCHours()}.lz4`;
-/** A liquidated account's own taker leg and the maker's, as `node_fills` lines. */
-function liquidation(
-  user: number,
-  coin: string,
-  side: "A" | "B",
-  t: number,
-  tid: number,
-) {
-  const liq = { liquidatedUser: addr(user), markPx: "100", method: "market" };
-  const fill = (u: string, s: string, start: string, crossed: boolean) =>
-    JSON.stringify([
-      u,
-      {
-        coin,
-        px: "100",
-        sz: "1",
-        side: s,
-        time: t,
-        startPosition: start,
-        crossed,
-        fee: "0.045",
-        tid,
-        liquidation: liq,
-      },
-    ]);
-  return [
-    fill(addr(user), side, side === "A" ? "1.0" : "-1.0", true),
-    fill(
-      addr(999),
-      side === "A" ? "B" : "A",
-      side === "A" ? "-5.0" : "5.0",
-      false,
-    ),
-  ];
-}
-const taker = (
-  coin: string,
-  side: "A" | "B",
-  t: number,
-  px: string,
-  sz: string,
-  tid: number,
-) =>
-  JSON.stringify([
-    addr(500 + tid),
-    {
-      coin,
-      px,
-      sz,
-      side,
-      time: t,
-      startPosition: "0.0",
-      crossed: true,
-      fee: "0.01",
-      tid,
-    },
-  ]);
 
 describe("the pass over fill files (H2, H4, R3)", { timeout: 60_000 }, () => {
   const T = Date.parse("2025-07-27T08:00:00Z");
@@ -358,21 +264,6 @@ describe(
       }
       return files;
     };
-    const snapshot = (coin: string, t: number) =>
-      JSON.stringify({
-        time: "x",
-        raw: {
-          channel: "l2Book",
-          data: {
-            coin,
-            time: t,
-            levels: [
-              [{ px: "99.9", sz: "1000", n: 1 }],
-              [{ px: "100.1", sz: "1000", n: 1 }],
-            ],
-          },
-        },
-      });
 
     it("lists the legs' book files and stops until the book list answers each", async () => {
       const { store } = makeStore(world());
@@ -638,6 +529,7 @@ describe(
       };
       const out = priceSpot(
         ctx,
+        CLOSED,
         books,
         new Map([
           ["0|0", []],
@@ -646,11 +538,12 @@ describe(
         mk,
         spot,
         "0",
+        null,
       );
       expect(out.priced).toBeNull();
-      expect(out.legs.map((l) => [l.source, l.why])).toEqual([
-        ["book", null],
-        ["sealed", "no book file"],
+      expect(out.legs.map((l) => [l.source, l.why, l.file])).toEqual([
+        ["book", null, inKey],
+        ["sealed", "no book file", null],
       ]);
     });
 
@@ -753,16 +646,22 @@ describe("the look's first step (H15, R3)", { timeout: 120_000 }, () => {
       bookKey("SOL", x - (x % HOUR_MS)),
       bookKey("SOL", x - (x % HOUR_MS) + DAY_MS),
     ]);
-    expect(step.sha256).toBe(sha(Buffer.from(JSON.stringify(step.spots))));
+    expect(step.late).toEqual([]);
+    expect(step.sha256).toBe(
+      sha(Buffer.from(JSON.stringify({ spots: step.spots, late: [] }))),
+    );
     expect(step.counts).toMatchObject({
       files: 8_845,
       counted: 2,
       M: 1,
+      sizingCoins: [],
       slice0: {
         positions: 1,
         byMonth: { "2025-09": 1 },
         backstopEntries: 0,
-        episodesByMonth: { "2025-09": 1 },
+        episodesADayByMonth: { "2025-08": 0, "2025-09": 1 / 30, "2026-05": 0 },
+        sizingPositions: 0,
+        sizingLate: 0,
       },
     });
   });

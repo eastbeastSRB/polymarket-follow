@@ -23,7 +23,7 @@ import { addCtxs, newMarks } from "./ctxs.js";
 import type { Counted, Rec } from "./fills.js";
 import { fundingRows, joinFunding, type FundingRow } from "./funding.js";
 import type { Gate } from "./gate.js";
-import { SIZING_DAYS, SIZING_START, TEST_START } from "./instants.js";
+import { DATA_END, SIZING_DAYS, SIZING_START, TEST_START } from "./instants.js";
 import { marketOf } from "./market.js";
 import { newPass, passFile, type Pass } from "./pass.js";
 import { episodeSpots, waveSpots, type Spot } from "./positions.js";
@@ -52,7 +52,10 @@ import {
 /** The rehearsal's gate: closed whatever the freeze says (the plan's 3.6). */
 export const CLOSED: Gate = { open: false };
 /** The first `asset_ctxs` day: its rows give the marks from the minute before its 00:01 row. */
-const MARKS_START = Date.parse("2025-05-25T00:00:00Z");
+export const MARKS_START = Date.parse("2025-05-25T00:00:00Z");
+/** The records and marks a run uses end here: TEST's start while the gate is closed (the rehearsal), DATA END once it is open (the look). */
+export const boundOf = (gate: Gate): number =>
+  gate.open ? DATA_END : TEST_START;
 
 export type Ctx = {
   store: string;
@@ -66,7 +69,7 @@ export type Ctx = {
 
 export class BooksNeeded extends Error {}
 
-const coinName = (coins: Coins, iid: number) =>
+export const coinName = (coins: Coins, iid: number) =>
   coins.list.find((c) => c.assetId === iid)!.name;
 const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
 
@@ -103,7 +106,7 @@ export async function sizingPass(ctx: Ctx): Promise<Pass> {
   return pass;
 }
 
-/** R9: a slicing's entries and episodes a slice a day, its wave-state share of quarter-hours, liquidated accounts a slice a day, counted fills an episode. */
+/** R9 over [from, to): a slicing's entries and episodes a slice a day, its wave-state share of quarter-hours, liquidated accounts a slice a day, counted fills an episode. */
 export function burstiness(
   counted: readonly Counted[],
   M: number,
@@ -114,12 +117,15 @@ export function burstiness(
   let entries = 0;
   let episodes = 0;
   let accounts = 0;
+  let fillsIn = 0;
   let on = 0;
   let quarters = 0;
   for (const [k, fills] of bySlice(counted, M).entries()) {
     entries += waveSpots(k, fills, from, to).length;
     episodes += episodeSpots(k, fills, from, to).length;
-    accounts += new Set(fills.map((f) => f.addr)).size;
+    const inside = fills.filter((f) => f.t >= from && f.t < to);
+    accounts += new Set(inside.map((f) => f.addr)).size;
+    fillsIn += inside.length;
     for (let q = Math.ceil(from / 900_000) * 900_000; q < to; q += 900_000) {
       quarters += 1;
       if (
@@ -135,7 +141,7 @@ export function burstiness(
     episodesASliceADay: episodes / M / days,
     waveStateShare: on / quarters,
     accountsASliceADay: accounts / M / days,
-    fillsAnEpisode: counted.length / episodes,
+    fillsAnEpisode: fillsIn / episodes,
   };
 }
 
@@ -151,20 +157,32 @@ export function booksOf(spots: readonly Spot[], coins: Coins): string[] {
 
 type LegAsk = { id: string; coin: string; buy: boolean; x: number };
 
+/** Each position's two legs for `readTapes`, `<index>|0` the entry and `<index>|1` the exit. */
+export const legsOf = (spots: readonly Spot[], coins: Coins): LegAsk[] =>
+  spots.flatMap((s, i) =>
+    [s.xIn, s.xOut].map((x, n) => ({
+      id: `${i}|${n}`,
+      coin: coinName(coins, s.iid),
+      buy: n === 0 ? s.dir > 0 : s.dir < 0,
+      x,
+    })),
+  );
+
 /**
  * Each leg's tape (H8) from the fill files of x's hour and the next, each
- * file read once; a leg whose hours reach TEST's start has none (null), for
- * the rehearsal opens no sealed file.
+ * file read once; while the gate is closed, a leg whose hours reach TEST's
+ * start has none (null), for the rehearsal opens no sealed file.
  */
 export async function readTapes(
   ctx: Ctx,
+  gate: Gate,
   legs: readonly LegAsk[],
 ): Promise<Map<string, Trade[] | null>> {
   const out = new Map<string, Trade[] | null>();
   const byFile = new Map<string, LegAsk[]>();
   for (const leg of legs) {
     const h = Math.floor(leg.x / HOUR_MS) * HOUR_MS;
-    if (h + HOUR_MS >= TEST_START) {
+    if (!gate.open && h + HOUR_MS >= TEST_START) {
       out.set(leg.id, null);
       continue;
     }
@@ -182,12 +200,12 @@ export async function readTapes(
     passFile(
       newPass(),
       new Set(),
-      CLOSED,
+      gate,
       ctx.store,
       ctx.list,
       key,
       ctx.coins,
-      TEST_START,
+      boundOf(gate),
       (rec) => {
         if (!coins.has(rec.fill.coin)) return;
         for (const a of asks)
@@ -209,17 +227,22 @@ export async function readTapes(
   return out;
 }
 
-/** The coins' market objects from SIZING's `asset_ctxs` days and funding windows (R1), with what was read. */
-export async function sizingMarkets(ctx: Ctx, iids: ReadonlySet<number>) {
-  const marks = newMarks(ctx.coins, MARKS_START, TEST_START);
+/** The coins' market objects from the `asset_ctxs` days and funding windows (R1) before the gate's bound, with what was read. */
+export async function readMarkets(
+  ctx: Ctx,
+  gate: Gate,
+  iids: ReadonlySet<number>,
+) {
+  const bound = boundOf(gate);
+  const marks = newMarks(ctx.coins, MARKS_START, bound);
   const ctxs = { files: 0, rows: 0, failed: 0, late: 0, twice: 0 };
-  for (let d = MARKS_START; d < TEST_START; d += DAY_MS) {
+  for (let d = MARKS_START; d < bound; d += DAY_MS) {
     await ctx.pace();
     const key = `asset_ctxs/${dayKey(d).replaceAll("-", "")}.csv.lz4`;
     const c = addCtxs(
       marks,
-      Buffer.from(readLz4(CLOSED, ctx.store, ctx.list, key)).toString("utf8"),
-      TEST_START,
+      Buffer.from(readLz4(gate, ctx.store, ctx.list, key)).toString("utf8"),
+      bound,
     );
     ctxs.files += 1;
     ctxs.rows += c.rows;
@@ -236,12 +259,11 @@ export async function sizingMarkets(ctx: Ctx, iids: ReadonlySet<number>) {
     for (const key of [...ctx.list.keys()]
       .filter((k) => k.startsWith(prefix))
       .sort()) {
-      if (Number(key.slice(prefix.length, -".json".length)) >= TEST_START)
-        continue;
+      if (Number(key.slice(prefix.length, -".json".length)) >= bound) continue;
       const r = fundingRows(
         coin.name,
-        readStoreFile(CLOSED, ctx.store, ctx.list, key).toString("utf8"),
-        TEST_START,
+        readStoreFile(gate, ctx.store, ctx.list, key).toString("utf8"),
+        bound,
       );
       funding.files += 1;
       funding.rows += r.rows.length;
@@ -260,18 +282,19 @@ export async function sizingMarkets(ctx: Ctx, iids: ReadonlySet<number>) {
   return { markets, ctxs, funding };
 }
 
-/** H8's files at x for a coin, from the store's book list (a key the archive lacks is "no file"), and the snapshot's age. */
+/** H8's files at x for a coin, from the store's book list (a key the archive lacks is "no file"); the snapshot's age and its file. */
 export function bookFound(
   ctx: Ctx,
+  gate: Gate,
   books: BookList,
   coin: string,
   x: number,
-): { atHour: Found; before: Found; age: number | null } {
+): { atHour: Found; before: Found; age: number | null; file: string | null } {
   const found = (hour: number): Found => {
     const key = bookKey(coin, hour);
     if (books.missing.has(key)) return "no file";
     if (!books.files.has(key)) throw new BooksNeeded(key);
-    return lastAtOrBefore(readLz4(CLOSED, ctx.store, books.files, key), coin, x)
+    return lastAtOrBefore(readLz4(gate, ctx.store, books.files, key), coin, x)
       .book;
   };
   const [h, prior] = bookHours(x);
@@ -280,13 +303,18 @@ export function bookFound(
     prior !== undefined && (atHour === null || atHour === "no file")
       ? found(prior)
       : null;
-  const snap =
+  const [snap, hour] =
     atHour !== null && atHour !== "no file"
-      ? atHour
+      ? [atHour, h!]
       : before !== null && before !== "no file"
-        ? before
-        : null;
-  return { atHour, before, age: snap === null ? null : x - snap.ts };
+        ? [before, prior!]
+        : [null, null];
+  return {
+    atHour,
+    before,
+    age: snap === null ? null : x - snap.ts,
+    file: hour === null ? null : bookKey(coin, hour),
+  };
 }
 
 export type LegPrint = {
@@ -295,21 +323,31 @@ export type LegPrint = {
   why: string | null;
   /** x less the snapshot's time, when one was found. */
   age: number | null;
+  /** The book file of the snapshot found (H9: so the Final review can reprice). */
+  file: string | null;
   trades: number;
+  /** The tape's `tid`s in H4's order, when the book did not price the leg. */
+  tids: string[];
   /** R2: (the tape's walk − the book's) ÷ the book's × 10⁴, when both priced the leg. */
   tapeMinusBook: number | null;
 };
 
 export type Outcome = { spot: Spot; priced: Priced | null; legs: LegPrint[] };
 
-/** One SIZING position priced (H8, H9), with what the prints count of its legs; a leg needing a sealed tape leaves it for the look. */
+/**
+ * One position priced (H8, H9) with what the prints count of its legs; `base`
+ * its BASE cell (null in the rehearsal). With the gate closed, a leg needing
+ * a sealed tape leaves the position for the look.
+ */
 export function priceSpot(
   ctx: Ctx,
+  gate: Gate,
   books: BookList,
   tapes: ReadonlyMap<string, Trade[] | null>,
   market: Market,
   s: Spot,
   id: string,
+  base: number | null,
 ): Outcome {
   const coin = coinName(ctx.coins, s.iid);
   const legs: LegPrint[] = [];
@@ -317,7 +355,7 @@ export function priceSpot(
   let units: number | null = null;
   for (const [n, x] of [s.xIn, s.xOut].entries()) {
     const buy = n === 0 ? s.dir > 0 : s.dir < 0;
-    const f = bookFound(ctx, books, coin, x);
+    const f = bookFound(ctx, gate, books, coin, x);
     const at = bookAt(x, f.atHour, f.before);
     const tape = tapes.get(`${id}|${n}`) ?? null;
     const walk = (levels: readonly Level[]) =>
@@ -327,7 +365,9 @@ export function priceSpot(
       source: "book",
       why: null,
       age: f.age,
+      file: f.file,
       trades: tape?.length ?? 0,
+      tids: [],
       tapeMinusBook: null,
     };
     let levels: readonly Level[] = [];
@@ -347,6 +387,7 @@ export function priceSpot(
       levels = levelsOf(tape);
       print.source = levels.length > 0 ? "tape" : "none";
       print.why = at.why;
+      print.tids = tape.map((t) => t.tid);
       quotes.push({ source: "tape", why: at.why, trades: tape });
     }
     if (n === 0 && levels.length > 0) units = walkOpen(levels, 1_000).units;
@@ -362,7 +403,7 @@ export function priceSpot(
       xOut: s.xOut,
       entry: quotes[0] ?? null,
       exit: quotes[1] ?? null,
-      base: null,
+      base,
     }),
     legs,
   };
@@ -374,7 +415,8 @@ const quantiles = (xs: readonly number[]) => {
     s.length === 0 ? null : s[Math.floor(q * (s.length - 1))]!;
   return { n: s.length, p10: at(0.1), median: at(0.5), p90: at(0.9) };
 };
-const tally = <T>(xs: readonly T[], key: (x: T) => string | null) => {
+/** How many of `xs` have each key (a null key is not counted). */
+export const tally = <T>(xs: readonly T[], key: (x: T) => string | null) => {
   const out: Record<string, number> = {};
   for (const x of xs) {
     const k = key(x);
@@ -454,21 +496,23 @@ export async function rehearse(ctx: Ctx, root: string): Promise<Sizing> {
   });
   if (lacking.length > 0)
     throw new BooksNeeded(`${lacking.length} of ${needed.length} book files`);
-  const legs = priceable.flatMap((s, i) =>
-    [s.xIn, s.xOut].map((x, n) => ({
-      id: `${i}|${n}`,
-      coin: coinName(ctx.coins, s.iid),
-      buy: n === 0 ? s.dir > 0 : s.dir < 0,
-      x,
-    })),
-  );
-  const tapes = await readTapes(ctx, legs);
-  const { markets, ctxs, funding } = await sizingMarkets(
+  const tapes = await readTapes(ctx, CLOSED, legsOf(priceable, ctx.coins));
+  const { markets, ctxs, funding } = await readMarkets(
     ctx,
+    CLOSED,
     new Set(priceable.map((s) => s.iid)),
   );
   const outcomes = priceable.map((s, i) =>
-    priceSpot(ctx, books, tapes, markets.get(s.iid)!, s, String(i)),
+    priceSpot(
+      ctx,
+      CLOSED,
+      books,
+      tapes,
+      markets.get(s.iid)!,
+      s,
+      String(i),
+      null,
+    ),
   );
   const sealed = gzipSync(
     `${[

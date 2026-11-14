@@ -36,6 +36,8 @@ export type Pass = {
   blocks: { missing: Map<string, number>; back: number; last: number | null };
   /** By month: the highest fee ÷ notional of a taker's fill in the 38 coins without a builder fee. */
   topTaker: Map<string, number>;
+  /** The 38 coins' names with a record used (H13's late coins: none in SIZING). */
+  coins: Set<string>;
 };
 
 export const newPass = (): Pass => ({
@@ -45,6 +47,7 @@ export const newPass = (): Pass => ({
   late: 0,
   blocks: { missing: new Map(), back: 0, last: null },
   topTaker: new Map(),
+  coins: new Set(),
 });
 
 const add = (m: Map<string, number>, k: string, n = 1) =>
@@ -107,6 +110,7 @@ export function passFile(
       }
       visit?.(rec);
       if (!coins.byName.has(rec.fill.coin)) continue;
+      pass.coins.add(rec.fill.coin);
       const month = monthOf(rec.fill.time);
       if (
         rec.fill.crossed &&
