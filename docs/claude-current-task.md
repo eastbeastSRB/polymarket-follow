@@ -7,9 +7,9 @@ clock; the forward paper experiment is FROZEN (2026-11-12, tag
 liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
 history, is being built (WAVE-H-BUILD, 2026-11-14): the reproduction holds,
-the rehearsal and the look are code and tested; the rehearsal's first run is
-done (M = 147, 560 book files needed); its book fetch waits for the
-supervisor's go; nothing is frozen or run on TEST.** The plan is the plan
+the rehearsal and the look are code and tested; the rehearsal passed (M =
+147, `waveh/sizing.json`, a draft freeze list); one marks question is open
+(decisions 2026-11-14, Q6); nothing is frozen or run on TEST.** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -60,12 +60,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **WAVE-H's rehearsal** (WAVE-H-BUILD; its `progress.md`, the state at
-   12:51Z):
-   - the supervisor's go for the book fetch (`--plan`, then `--books …
-     --sizing-only`, 560 keys; the main download stopped for it);
-   - the rehearsal again → `sizing.json` (M must stay 147); the heap's
-     projection to TEST; the draft freeze list.
+1. **WAVE-H's Q6** (WAVE-H-BUILD's `progress.md`, the state at 15:51Z):
+   off-minute `asset_ctxs` rows leave 7 SIZING positions without a funding
+   mark; if H10 changes, the rehearsal runs a third time, then
+   `sizing.json` and the draft list again. The look's heap: 8 GB (Q5).
 2. **WAVE-H's test months** downloaded (the supervisor), then
    `waveh-freeze.cjs --data` (`data.sha256`, R3 (i)'s short files).
 3. **WAVE-H's fresh rules and code reviews**, the fixes, a fix-check, the
