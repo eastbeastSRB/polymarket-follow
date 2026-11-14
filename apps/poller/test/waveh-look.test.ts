@@ -307,6 +307,22 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
         "d",
       ),
     ).rejects.toThrow("position 1 is not SIZING's");
+    // Our own file: a line failing its schema throws, whatever its hash.
+    const broken = gzipSync(
+      gunzipSync(real)
+        .toString("utf8")
+        .replace('"depthShort":false', '"depthShort":"no"'),
+    );
+    writeFileSync(sealedFile, broken);
+    await expect(
+      look(
+        ctx,
+        { open: true },
+        root,
+        { ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(broken) } },
+        "d",
+      ),
+    ).rejects.toThrow("depthShort");
     writeFileSync(sealedFile, real);
     // R7: a book file held but not its list's bytes stops the look.
     const bad = books.map((l) =>

@@ -214,6 +214,49 @@ export async function lookStep1(
 
 const Step1File = z.object({ sha256: z.string().regex(SHA256) });
 
+const num = z.number().nullable();
+const Leg = z.object({
+  source: z.enum(["book", "tape"]),
+  why: z
+    .enum(["no book file", "no snapshot", "stale", "not usable"])
+    .nullable(),
+  price: z.number(),
+  deepest: z.number(),
+  short: z.boolean(),
+  at: z.array(z.number()),
+});
+/** A line of the rehearsal's sealed outcomes (our own file: a line that fails throws). */
+const SealedLine = z.object({
+  spot: z.unknown(),
+  priced: z
+    .object({
+      net: num,
+      unpriced: z.string().nullable(),
+      gross: num,
+      fees: num,
+      funding: num,
+      fundingMissing: z.number(),
+      grossOnMarks: num,
+      excess: num,
+      entryCost: num,
+      legs: z.tuple([Leg.nullable(), Leg.nullable()]),
+      depthShort: z.boolean(),
+    })
+    .nullable(),
+  legs: z.array(
+    z.object({
+      side: z.enum(["buy", "sell"]),
+      source: z.enum(["book", "tape", "none", "sealed"]),
+      why: z.string().nullable(),
+      age: num,
+      file: z.string().nullable(),
+      trades: z.number(),
+      tids: z.array(z.string()),
+      tapeMinusBook: num,
+    }),
+  ),
+});
+
 /** A file written whole or not at all. */
 function writeWhole(file: string, data: string | Buffer): void {
   writeFileSync(`${file}.part`, data);
@@ -237,12 +280,13 @@ function sizingOutcomes(
       `the sealed SIZING outcomes hold ${lines.length} positions, SIZING ${want.length}`,
     );
   return lines.map((line, i) => {
-    const o = JSON.parse(line) as Outcome;
+    const o = SealedLine.parse(JSON.parse(line));
     if (JSON.stringify(o.spot) !== want[i])
       throw new StoreError(
         `the sealed SIZING outcomes' position ${i + 1} is not SIZING's`,
       );
-    if (o.priced !== null) return o;
+    if (o.priced !== null)
+      return { spot: step.sizing[i]!, priced: o.priced, legs: o.legs };
     const again = late.get(want[i]);
     if (again === undefined)
       throw new StoreError(
