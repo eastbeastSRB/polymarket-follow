@@ -1,5 +1,96 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (WAVE-H-BUILD's technical calls, its second session, from
+10:24Z — the look's code, inside the plan approved the same day): **THE ONE
+LOOK IS A COMMAND, TESTED END TO END IN A SYNTHETIC STORE; ITS PRINTS ARE
+MARKET-1'S OWN CODE; THE REHEARSAL WAITS FOR THE SIZING DOWNLOAD.**
+
+**What:** commits `ad0f3d7`, `1350e77`, `97310fe`, `4bad8ab` and this
+entry's; architecture, "WAVE-H" (the look); rules.md H0, H1, H13, H14 and
+H15 made exact to the code; current-task rewritten. `dist/waveh.js look`
+(`look.ts`): step 1 writes `look/step1.json` (R3's counts, the positions'
+SHA-256) and `look/books-needed.txt` and stops (exit 5); step 2 holds that
+hash, the books and the sealed SIZING outcomes, prices every leg, writes
+`look/result.json` first, then `positions.jsonl.gz` and `report.json`; a
+third run refuses. `report.ts`: H13's lines and H14's prints. Tests
+`waveh-look` (the rehearsal, then both steps, each hold, the net by hand) and
+`waveh-report` (each line function by hand); builders shared in
+`test/waveh-world.ts`. `pnpm verify` green (55 files + 1 skipped, 491 tests +
+7 skipped); both freezes verify after every commit (61, 64).
+
+**Calls:**
+1. **Step 1 always stops** after writing its files, so R3's counts are read
+   before any book is fetched or any price exists (H15); step 2 recomputes
+   the pass and stops when the positions' SHA-256 differs from
+   `step1.json`'s. After a defect fixed between the steps, `step1.json` is
+   removed by hand in the same decisions entry (H15).
+2. **The SIZING line** (H13) is the rehearsal's sealed outcomes, held to
+   `sizing.json`'s SHA-256 and to SIZING's recomputed positions (in time
+   order, the rehearsal's own), with the positions it left priced at the
+   look. The look prices every SIZING position whose x_out is at or after
+   2025-07-31 23:00Z again (all the rehearsal can leave: an exit in TEST, or
+   a tape reaching a file of TEST); the sealed outcome stands where it
+   exists. SIZING's positions carry no BASE, as in the rehearsal. The sealed
+   file is read from `WAVEH_ROOT\rehearsal\`.
+3. **R5's other side (a rule addition, for the reviewers):** a counted fill
+   of a file dated 2025-08-01 or later stamped before that is in neither
+   part, dropped and counted (`early`), so the look's SIZING is the
+   rehearsal's fill for fill. Without it a misfiled fill in TEST's first
+   file could change SIZING's last positions and stop step 2 at the sealed
+   check. One sentence in H1.
+4. **H14's prints are MARKET-1's `summarize` (M13)** through `asPosition`:
+   a tape leg is priced (H12), never a mark leg; WAVE-H adds its slices, the
+   tape legs by reason and the depth-short legs. MARKET-1's own extra prints
+   come along (by week, the costliest third, OWN, which is null here).
+5. **The lines on marks use MARKET-1's `statOf`** (the two-way error; by the
+   day alone for a set in one coin), as MARKET-1's lines.
+6. **M BY MONTH's window:** the 68 days before the month's first day, from
+   SIZING's start at the earliest, r(M) over that window's length in days,
+   so August's M is H5's M on the same fills.
+7. **BY MONTH's R9 counts** run at M inside each month; `burstiness` now
+   counts accounts and fills inside its window (the same numbers for
+   SIZING, where it was called over the whole list).
+8. **LATE is MARKET-1's B3:** in at t + 1 h and t + 3 h; a position whose
+   exit marks pass DATA END is counted without marks.
+9. **THE DAY WITH THE MOST POSITIONS:** the earlier day on a tie.
+10. **Each leg keeps its source** (H9, for the Final review): the book file
+    of the snapshot found, or the tape's `tid`s; in the look's positions and
+    in the rehearsal's sealed outcomes alike.
+11. **The gate requires `waveh/rules.md`, `coins.json`, `sizing.json` and
+    `data.sha256` by name** (a list without one: exit 4, not a crash), and
+    `tools/waveh-freeze.cjs --final` refuses without the last two.
+12. **The closure is now ten files** (R4, walked by the test): MARKET-1's
+    `waves`, `fills`, `book`, `price`, `stats`, `lines`, `summary` and the
+    paper's `instants`, `stats`, `research`, each equal to its freeze. **What
+    a fix to a frozen program does to WAVE-H:** a fix to any of these ten
+    stops WAVE-H (exit 4) until a re-freeze (`waveh-freeze-2`) in the same
+    decisions entry that re-runs the reproduction; a fix to any other of
+    their files changes nothing here; `test/waveh-freeze.test.ts` fails in
+    the session that makes such a fix once a WAVE-H list exists.
+
+**Breaks, in scratch copies only** (`git archive`, a real `node_modules`
+folder of junctions, vitest run directly, never pnpm): the predicted
+survivors were closed with tests first (`1350e77`); round one, 45 breaks of
+the look, the readers' gate and the lines: 42 killed; k09 (no BASE for
+WAVE-H: `toBeCloseTo(0)` passes on null), k36 (its list named the wrong test)
+and k46 (no counted fill outside TEST in the lines' test) survived; round
+two, those three with three breaks of the new code: 6 of 6 killed; round
+three, LATE's two delays: 2 of 2 killed. None by a time limit. One break
+(the sealed file's two-group order) was equivalent: the code now compares in
+time order. Lists and results: `workers/WAVE-H-BUILD/` (scratchpad
+`breaks/`).
+
+**A slip:** a `node -e` edit mangled four Windows paths in architecture
+(code-rules' own warning); repaired from a script file and checked for
+control characters.
+
+**Not done:** the rehearsal's run (the SIZING download held 1,452 of the
+rehearsal's 1,839 files at 10:48Z, paused for 10:25–11:15Z); its book fetch
+(the supervisor's go, asked with `--plan`'s count once `books-needed.txt`
+exists); M and SIZING's counts in the rules; `data.sha256` (the whole
+download first); the draft freeze list. The order is in
+`workers/WAVE-H-BUILD/progress.md`.
+
 2026-11-14 (WAVE-H-BUILD's technical calls — WAVE-H's build, its first
 session, inside the plan approved the same day): **THE REPRODUCTION HOLDS
 THROUGH WAVE-H'S OWN MAPPING; THE GATE, THE READERS, THE RULES AS PURE
