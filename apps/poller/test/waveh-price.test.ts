@@ -217,6 +217,8 @@ describe("a position's price (H7–H9)", () => {
     expect(p.funding).toBeCloseTo(0.0105 * 10 * 10, 9);
     expect(p.excess).toBeNull();
     expect(p.grossOnMarks).toBeCloseTo(-1000, 9);
+    // A short sells into the bids: at 100 against a mid of 100.5, it gains on the mid.
+    expect(p.entryCost).toBeCloseTo(-(100 / 100.5 - 1) * 1e4, 9);
   });
 
   it("walks the tape's takers, short of the leg when the minute holds too little", () => {
@@ -313,36 +315,42 @@ describe("the positions (H6, H7, H13)", () => {
   });
 
   it("opens against the forced side 2 minutes after t for 24 hours, entries in [from, to) only, an earlier entry still blocking", () => {
-    // SOL's entry at H − 5 min blocks its waves at H + 1 and H + 2 min; kPEPE enters at H + 4 min.
+    // SOL's entry at H − 5 min blocks its waves at H + 1 and H + 2 min; kPEPE's wave (accounts 8
+    // and 9, the first in PUMP) enters at H + 3 min by account 9's backstop and blocks H + 4 min.
     const fills = [
       c(1, H - 10 * MINUTE_MS),
       c(2, H - 5 * MINUTE_MS),
       c(3, H + MINUTE_MS),
       c(4, H + 2 * MINUTE_MS),
+      c(8, H + 2.5 * MINUTE_MS, 200, 1),
       c(9, H + 3 * MINUTE_MS, 15, 1),
       c(5, H + 4 * MINUTE_MS, 15, 1),
     ];
     const all = waveSpots(0, fills, 0, Infinity);
     expect(all.map((s) => [s.t - H, s.iid, s.side, s.dir])).toEqual([
       [-5 * MINUTE_MS, 5, -1, 1],
-      [4 * MINUTE_MS, 15, 1, -1],
+      [3 * MINUTE_MS, 15, 1, -1],
     ]);
     const late = waveSpots(0, fills, H, Infinity);
     expect(late).toHaveLength(1);
     expect(late[0]).toMatchObject({
-      t: H + 4 * MINUTE_MS,
-      xIn: H + 4 * MINUTE_MS + 120_000,
-      xOut: H + 4 * MINUTE_MS + 120_000 + 86_400_000,
-      method: "market",
+      t: H + 3 * MINUTE_MS,
+      xIn: H + 3 * MINUTE_MS + 120_000,
+      xOut: H + 3 * MINUTE_MS + 120_000 + 86_400_000,
+      method: "backstop",
+      accounts: [c(8, 0).addr, c(9, 0).addr],
     });
     expect(waveSpots(0, fills, H, Infinity, HOUR_MS)[0]!.xIn).toBe(
-      H + 4 * MINUTE_MS + HOUR_MS,
+      H + 3 * MINUTE_MS + HOUR_MS,
     );
     expect(waveSpots(0, fills, 0, H)).toHaveLength(1);
+    // [from, to): an entry at `to` is not in it.
+    expect(waveSpots(0, fills, 0, H + 3 * MINUTE_MS)).toHaveLength(1);
     const eps = episodeSpots(0, fills, 0, Infinity);
     expect(eps.map((e) => [e.t - H, e.alone, e.method])).toEqual([
       [-10 * MINUTE_MS, true, "market"],
-      [3 * MINUTE_MS, true, "backstop"],
+      [2.5 * MINUTE_MS, true, "market"],
+      [3 * MINUTE_MS, false, "backstop"],
     ]);
   });
 });
