@@ -1,5 +1,36 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-13 (WAVE-H's download — the owner's advance approval): **THE
+SUPERVISOR MAY START WAVE-H'S DATA DOWNLOAD WITHOUT WAITING FOR THE OWNER,
+ONCE THE PLAN AND ITS FRESH REVIEW AGREE ON IT.**
+
+The owner, before an absence: "if that comes and am not here, you have
+approve, you can download, everything inside F:, as always careful on
+limits and on everything."
+
+**What it covers:** only the download of the public, keyless Hyperliquid
+data the plan names (AWS's public bucket), into F:. Iron Rule 1 as widened
+the same day applies.
+
+**The conditions:**
+- the rate cap and schedule the plan sets, protecting the collector's live
+  line;
+- the collector's health watched during the download (the price audit's
+  timing misses, its coverage and any gap), and a pause on any sign of
+  harm;
+- no request in the night window 02:35–03:50Z if the plan says so;
+- checksums;
+- a resumable download.
+
+**The seal:** the test months' files (2025-08-01 to 2026-05-28) are stored
+unopened. No code reads them until WAVE-H's freeze list exists.
+
+**What it does not cover:**
+- WAVE-H's plan itself and its rules, which still wait for the owner's
+  approval;
+- the build;
+- any account, key or payment, which stay the owner's.
+
 2026-11-13 (the two outside researches — the owner's ruling): **WAVE-H
 FIRST, IN THIS PROJECT; IRON RULE 1 WIDENED FOR READ-ONLY RESEARCH DATA;
 THE FIRST KEYLESS CHECKS APPROVED; THE ON-CHAIN PROJECT AFTER WAVE-H'S
