@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (WAVE-H-BUILD's technical calls, its second session continued,
+to 15:50Z — the rehearsal and the draft list): **THE REHEARSAL PASSED ON
+SIZING (M = 147, EXIT 0); ITS OUTCOMES ARE SEALED UNREAD; THE DRAFT LIST IS
+WRITTEN; ONE MARKS QUESTION IS OPEN.**
+
+**What:** commits after the entry below: `df15448` (the sealed outcomes
+Zod-parsed where the look reads them), `b9fe89d` (the entry point's exit-2
+refusals tested through the built program; two mislabelled refusals fixed),
+`81698bd` (the look computes its report before writing `result.json`, writes
+it after), `479a10a` (H5: M = 147, SIZING's R9 counts), `4ce16c4` (the passes
+log the heap), `ae478c2` (current-task), `5ac401a` (`waveh/sizing.json`),
+`c1fbeb8` (the draft list) and this entry's.
+
+**The rehearsal** (`WAVEH_ROOT` a FIND-SLOTS slot): run one 11:53–12:46Z,
+exit 5, 560 book files needed; the supervisor's `--plan` (560 files, 0.71
+GB, none missing) and fetch; run two 14:29–15:43Z, exit 0. Counts, deciding
+nothing: 1,619 fill files, 472,259,255 records, none failing; 425,433 counted
+fills (425,300 market, 133 backstop) in 31 coins; M = 147 again; slice 0's
+290 positions, 283 priced in the rehearsal and 7 left for the look; all 566
+legs at the book, none on the tape, none depth short; the book's age at a leg
+65 / 295 / 493 ms (p10, median, p90); R2's tape − book median 0 bps on each
+side (p10 −7.5 and −7.2, p90 +5.8 and +7.4); the highest taker rate 4.5 bps
+each month; the sealed outcomes' SHA-256 `1a9f731d…3e59`, in `sizing.json`.
+
+**The draft list** `waveh/FROZEN.draft.sha256`: 71 files from `5ac401a`, its
+SHA-256 `4c08ef95b4750fe0e23700baaa44cf7b1b90cd0dddbf3079d3a9f0627b379056`;
+without `data.sha256` (the test months first), which the gate requires by
+name, so only a list made after `--data` can be final.
+
+**The look's memory (Q5):** SIZING's pass ended at a 453 MB heap sample
+(425,433 counted fills, 850,866 legs held for "each fill once"). TEST's fills
+are 5.2 times SIZING's bytes (the plan's listing, 182.44 GB against 34.98):
+at SIZING's density the look's pass holds about 2.8 GB; at 1.5 times it,
+about 4 GB. The PC has 34 GB: the look's runs should take
+`--max-old-space-size=8192` (a run setting, not code; the supervisor's).
+
+**Open (Q6, asked):** 2,831 of SIZING's `asset_ctxs` rows of the 38 coins
+are stamped off the minute (`…:32:20Z`), in stretches on 12 days; H10's
+schema takes only minute-start stamps, so those minutes have no mark and 7
+SIZING positions are unpriced, "funding without a mark". A change to H10
+(a row stamped s gives the mark at the end of the minute ending at or after
+s) would price them and change the sealed outcomes' hash, so the rehearsal
+would run a third time.
+
 2026-11-14 (WAVE-H-BUILD's technical calls, its second session, from
 10:24Z — the look's code, inside the plan approved the same day): **THE ONE
 LOOK IS A COMMAND, TESTED END TO END IN A SYNTHETIC STORE; ITS PRINTS ARE
