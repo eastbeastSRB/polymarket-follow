@@ -1,0 +1,242 @@
+{
+  "rule": "WAVE-H rules.md H3: MARKET-1's 38 small coins (M3) by Hyperliquid's names on its first perp dex",
+  "meta": {
+    "read": "2026-11-14T09:11:32Z, POST https://api.hyperliquid.xyz/info {\"type\":\"meta\"}, keyless (WAVE-H-BUILD request 1)",
+    "universe": 235,
+    "check": "each name is exactly one universe entry, not delisted; assetId is its index"
+  },
+  "prices": {
+    "source": "WAVE-H-PLAN's check, 2026-11-14 (its requests 553-591; supervisor folder workers/WAVE-H-PLAN/out/identity.out.txt)",
+    "check": "on 2026-11-06, each of the 24 hourly closes of Hyperliquid's candleSnapshot within 1% of Polymarket's minute mark (the kit's panel); worstHourPct is the largest difference"
+  },
+  "coins": [
+    {
+      "name": "SOL",
+      "assetId": 5,
+      "iid": 8,
+      "worstHourPct": 0.11
+    },
+    {
+      "name": "HYPE",
+      "assetId": 159,
+      "iid": 10,
+      "worstHourPct": 0.08
+    },
+    {
+      "name": "PUMP",
+      "assetId": 200,
+      "iid": 31,
+      "worstHourPct": 0.101
+    },
+    {
+      "name": "ZEC",
+      "assetId": 214,
+      "iid": 32,
+      "worstHourPct": 0.124
+    },
+    {
+      "name": "XRP",
+      "assetId": 25,
+      "iid": 33,
+      "worstHourPct": 0.074
+    },
+    {
+      "name": "LIT",
+      "assetId": 223,
+      "iid": 34,
+      "worstHourPct": 0.129
+    },
+    {
+      "name": "kPEPE",
+      "assetId": 15,
+      "iid": 35,
+      "worstHourPct": 0.102
+    },
+    {
+      "name": "AAVE",
+      "assetId": 28,
+      "iid": 54,
+      "worstHourPct": 0.076
+    },
+    {
+      "name": "UNI",
+      "assetId": 39,
+      "iid": 55,
+      "worstHourPct": 0.084
+    },
+    {
+      "name": "WLD",
+      "assetId": 31,
+      "iid": 56,
+      "worstHourPct": 0.123
+    },
+    {
+      "name": "NEAR",
+      "assetId": 74,
+      "iid": 57,
+      "worstHourPct": 0.083
+    },
+    {
+      "name": "kSHIB",
+      "assetId": 38,
+      "iid": 58,
+      "worstHourPct": 0.087
+    },
+    {
+      "name": "FARTCOIN",
+      "assetId": 165,
+      "iid": 59,
+      "worstHourPct": 0.194
+    },
+    {
+      "name": "DOGE",
+      "assetId": 12,
+      "iid": 60,
+      "worstHourPct": 0.115
+    },
+    {
+      "name": "ENA",
+      "assetId": 122,
+      "iid": 61,
+      "worstHourPct": 0.085
+    },
+    {
+      "name": "ONDO",
+      "assetId": 106,
+      "iid": 62,
+      "worstHourPct": 0.089
+    },
+    {
+      "name": "SUI",
+      "assetId": 14,
+      "iid": 63,
+      "worstHourPct": 0.079
+    },
+    {
+      "name": "VVV",
+      "assetId": 178,
+      "iid": 64,
+      "worstHourPct": 0.089
+    },
+    {
+      "name": "TAO",
+      "assetId": 116,
+      "iid": 65,
+      "worstHourPct": 0.098
+    },
+    {
+      "name": "ADA",
+      "assetId": 65,
+      "iid": 66,
+      "worstHourPct": 0.159
+    },
+    {
+      "name": "ZRO",
+      "assetId": 46,
+      "iid": 67,
+      "worstHourPct": 0.135
+    },
+    {
+      "name": "BNB",
+      "assetId": 7,
+      "iid": 68,
+      "worstHourPct": 0.121
+    },
+    {
+      "name": "PONS",
+      "assetId": 232,
+      "iid": 69,
+      "worstHourPct": 0.296
+    },
+    {
+      "name": "CASHCAT",
+      "assetId": 231,
+      "iid": 70,
+      "worstHourPct": 0.148
+    },
+    {
+      "name": "USELESS",
+      "assetId": 233,
+      "iid": 71,
+      "worstHourPct": 0.351
+    },
+    {
+      "name": "KAITO",
+      "assetId": 185,
+      "iid": 72,
+      "worstHourPct": 0.169
+    },
+    {
+      "name": "ARB",
+      "assetId": 11,
+      "iid": 73,
+      "worstHourPct": 0.108
+    },
+    {
+      "name": "LDO",
+      "assetId": 17,
+      "iid": 74,
+      "worstHourPct": 0.159
+    },
+    {
+      "name": "AVAX",
+      "assetId": 6,
+      "iid": 75,
+      "worstHourPct": 0.088
+    },
+    {
+      "name": "LTC",
+      "assetId": 10,
+      "iid": 76,
+      "worstHourPct": 0.159
+    },
+    {
+      "name": "XPL",
+      "assetId": 203,
+      "iid": 77,
+      "worstHourPct": 0.171
+    },
+    {
+      "name": "XMR",
+      "assetId": 224,
+      "iid": 78,
+      "worstHourPct": 0.152
+    },
+    {
+      "name": "LINK",
+      "assetId": 18,
+      "iid": 79,
+      "worstHourPct": 0.075
+    },
+    {
+      "name": "VIRTUAL",
+      "assetId": 162,
+      "iid": 80,
+      "worstHourPct": 0.143
+    },
+    {
+      "name": "JUP",
+      "assetId": 90,
+      "iid": 81,
+      "worstHourPct": 0.128
+    },
+    {
+      "name": "ETHFI",
+      "assetId": 121,
+      "iid": 82,
+      "worstHourPct": 0.249
+    },
+    {
+      "name": "PENDLE",
+      "assetId": 70,
+      "iid": 83,
+      "worstHourPct": 0.177
+    },
+    {
+      "name": "MORPHO",
+      "assetId": 173,
+      "iid": 84,
+      "worstHourPct": 0.129
+    }
+  ]
+}

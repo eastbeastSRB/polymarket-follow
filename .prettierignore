@@ -14,3 +14,5 @@ README.md
 apps/poller/experiment
 # MARKET-1's frozen files (its rules): hashed at its freeze.
 apps/poller/market1
+# WAVE-H's frozen files (its rules, coins, sizing, the store's list): hashed at its freeze.
+apps/poller/waveh
