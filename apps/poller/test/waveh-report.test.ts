@@ -10,14 +10,18 @@ import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import type { Counted } from "../src/waveh/fills.js";
 import { SIZING_START, TEST_END, TEST_START } from "../src/waveh/instants.js";
-import type { Spot } from "../src/waveh/positions.js";
+import { waveSpots, type Spot } from "../src/waveh/positions.js";
+import { loadCoins } from "../src/waveh/coins.js";
 import type { Priced } from "../src/waveh/price.js";
 import { burstiness, type Outcome } from "../src/waveh/rehearse.js";
 import {
   asPosition,
   dayMost,
+  linesBeside,
+  markAt,
   marksLine,
   monthM,
+  monthWindow,
   netLine,
   testMonths,
   type MarkAt,
@@ -243,7 +247,147 @@ describe("M BY MONTH and TEST's months (H13)", () => {
     const sep = Date.parse("2025-09-01T00:00:00Z");
     expect(counted.filter((f) => f.t >= sep - 68 * DAY_MS).length).toBe(443);
     expect(monthM(counted, sep)).toBe(1);
-    expect(SIZING_START).toBe(TEST_START - 67 * DAY_MS - 10 * HOUR_MS);
+    expect(monthWindow(sep)).toEqual({
+      from: Date.parse("2025-06-25T00:00:00Z"),
+      days: 68,
+    });
+    expect(monthWindow(TEST_START)).toEqual({
+      from: SIZING_START,
+      days: 67 + 10 / 24,
+    });
+  });
+});
+
+describe("BASE at a position (H10)", () => {
+  it("reads the cell of x_in's 4-hour block, none where no minute had both marks", () => {
+    // Marks only from 00:00 to 04:00 on three days from TEST's start, rising 1% a day.
+    const mk = kit.panel.marketFrom({
+      iid: 5,
+      symbol: "SOL",
+      category: "crypto",
+      start: TEST_START,
+      end: TEST_START + 3 * DAY_MS,
+      firstTrade: null,
+      retired: null,
+      marks: Array.from({ length: (3 * DAY_MS) / MINUTE_MS }, (_, i) =>
+        i % 1_440 < 240 ? 100 * 1.01 ** Math.floor(i / 1_440) : null,
+      ),
+      klines: { minute: [], trades: [], volume: [] },
+      funding: [],
+    });
+    const at = markAt(kit, new Map([[5, mk]]));
+    expect(at.base(5, TEST_START + HOUR_MS)).toBeCloseTo(100, 9);
+    expect(at.base(5, TEST_START + 13 * HOUR_MS)).toBeNull();
+    expect(at.base(6, TEST_START + HOUR_MS)).toBeNull();
+    expect(at.market(5)).toBe(mk);
+  });
+});
+
+describe("the lines beside (H13): which positions each takes", () => {
+  it("splits WAVE-H and the slices' entries and episodes by line, side, method, month and coin", () => {
+    const coins = loadCoins();
+    const iid = (name: string) => coins.byName.get(name)!.assetId;
+    const S = Date.parse("2025-09-10T00:00:00Z");
+    const O = Date.parse("2025-10-10T00:00:00Z");
+    const fill = (
+      n: number,
+      coin: string,
+      side: 1 | -1,
+      t: number,
+      method = "market",
+    ): Counted => ({
+      t,
+      iid: iid(coin),
+      addr: addr(n),
+      side,
+      tid: String(n),
+      method,
+    });
+    // M = 2: even accounts in slice 0, odd in slice 1.
+    const counted = [
+      fill(2, "SOL", -1, S),
+      fill(4, "SOL", -1, S + 5 * MINUTE_MS),
+      fill(12, "kPEPE", -1, S + 10 * MINUTE_MS, "backstop"),
+      fill(1, "DOGE", -1, S + 2 * HOUR_MS),
+      fill(3, "DOGE", -1, S + 2 * HOUR_MS + 5 * MINUTE_MS),
+      fill(6, "SOL", 1, O),
+      fill(8, "SOL", 1, O + 5 * MINUTE_MS),
+    ];
+    const slice0 = counted.filter((f) => BigInt(f.addr) % 2n === 0n);
+    const spots = waveSpots(0, slice0, TEST_START, TEST_END);
+    expect(spots.map((s) => [s.t, s.method])).toEqual([
+      [S + 5 * MINUTE_MS, "market"],
+      [S + 10 * MINUTE_MS, "backstop"],
+      [O + 5 * MINUTE_MS, "market"],
+    ]);
+    const leg = (source: "book" | "tape") => ({
+      side: "buy" as const,
+      source,
+      why: null,
+      age: null,
+      file: null,
+      trades: 0,
+      tids: [],
+      tapeMinusBook: null,
+    });
+    const wave: Outcome[] = spots.map((s, i) => ({
+      spot: s,
+      priced: priced([10, -20, 30][i]!),
+      legs: [leg("book"), leg(i === 1 ? "tape" : "book")],
+    }));
+    const m: MarkAt = { kit, market: () => undefined, base: () => null };
+    const out = linesBeside({
+      m,
+      coins,
+      counted,
+      M: 2,
+      wave,
+      sizingCoins: new Set(["SOL"]),
+    });
+    const n = (line: { positions: number }) => line.positions;
+    expect(n(out.ALONE.B1)).toBe(4);
+    expect(n(out.ALONE.B2)).toBe(3);
+    expect(n(out.LATE["1 h"])).toBe(3);
+    expect(n(out.LATE["3 h"])).toBe(3);
+    expect(n(out.SIDES["forced sells"])).toBe(2);
+    expect(n(out.SIDES["forced buys"])).toBe(1);
+    expect(
+      out["EVERY SLICE"].slices.map((s) => [s.slice, s.positions]),
+    ).toEqual([
+      [0, 3],
+      [1, 1],
+    ]);
+    expect(out["EVERY SLICE"].pooled).toMatchObject({
+      positions: 4,
+      slices: 2,
+    });
+    expect(out["EVERY SLICE"].aboveZero).toBeNull();
+    expect(out["M HALVED"]).toMatchObject({ M: 1, positions: 4 });
+    expect(out["M DOUBLED"]).toMatchObject({ M: 4, positions: 1 });
+    expect(out["M BY MONTH"].months.slice(0, 3)).toEqual([
+      { month: "2025-08", M: 1, positions: 0 },
+      { month: "2025-09", M: 1, positions: 3 },
+      { month: "2025-10", M: 1, positions: 1 },
+    ]);
+    expect(n(out["M BY MONTH"].line)).toBe(4);
+    expect(n(out.METHOD.backstop)).toBe(1);
+    expect(out.METHOD.countedByMonth).toEqual({
+      "2025-09|market": 4,
+      "2025-09|backstop": 1,
+      "2025-10|market": 2,
+    });
+    expect(out["THE LATE COINS"].coins.length).toBe(37);
+    expect(n(out["THE LATE COINS"].line)).toBe(1);
+    expect(
+      out["BY MONTH"].slice(1, 3).map((b) => [b.month, n(b.line), b.M]),
+    ).toEqual([
+      ["2025-09", 2, 2],
+      ["2025-10", 1, 2],
+    ]);
+    expect(out["BY MONTH"][1]!.entriesASliceADay).toBeCloseTo(3 / 2 / 30, 12);
+    expect(out["THE BOOK AND THE TAPE"].book.positions).toBe(2);
+    expect(out["THE BOOK AND THE TAPE"].tape.positions).toBe(1);
+    expect(out["THE TAIL"].worst).toBe(-20);
   });
 });
 

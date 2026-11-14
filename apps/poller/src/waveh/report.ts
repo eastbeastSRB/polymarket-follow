@@ -171,12 +171,18 @@ export function dayMost(kit: Research, os: readonly Outcome[]) {
   };
 }
 
-/** M BY MONTH's M (H13): H5's scan on the counted fills of the 68 days before `start`, from SIZING's start at the earliest, over that window's days. */
-export function monthM(counted: readonly Counted[], start: number): number {
+/** M BY MONTH's window for the month starting at `start` (H13): the 68 days before it, from SIZING's start at the earliest, and its length in days. */
+export function monthWindow(start: number): { from: number; days: number } {
   const from = Math.max(start - 68 * DAY_MS, SIZING_START);
+  return { from, days: (start - from) / DAY_MS };
+}
+
+/** M BY MONTH's M: H5's scan on the counted fills of the month's window. */
+export function monthM(counted: readonly Counted[], start: number): number {
+  const { from, days } = monthWindow(start);
   return scanM(
     counted.filter((f) => f.t >= from && f.t < start),
-    (start - from) / DAY_MS,
+    days,
   ).M;
 }
 

@@ -219,10 +219,9 @@ function sizingOutcomes(
   step: Step1,
   late: ReadonlyMap<string, Outcome>,
 ): Outcome[] {
-  const want = [
-    ...step.sizing.filter((s) => s.xOut < TEST_START),
-    ...step.sizing.filter((s) => s.xOut >= TEST_START),
-  ].map((s) => JSON.stringify(s));
+  // The rehearsal wrote the positions it priced, then those whose exit is in
+  // TEST: time order, as every exit before TEST's start comes from an earlier t.
+  const want = step.sizing.map((s) => JSON.stringify(s));
   const lines = gunzipSync(sealed).toString("utf8").split("\n");
   if (lines.pop() !== "" || lines.length !== want.length)
     throw new StoreError(

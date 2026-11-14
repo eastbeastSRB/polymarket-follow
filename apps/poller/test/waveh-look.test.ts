@@ -15,7 +15,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { gunzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadResearch } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
@@ -53,10 +53,12 @@ import {
 
 afterAll(cleanScratch);
 
-// A SOL wave in SIZING (priced by the rehearsal), a kPEPE wave late on
-// 2025-07-31 (its exit in TEST: left for the look), a SOL wave in TEST
-// (WAVE-H's one position, its entry book missing: the tape).
+// A SOL wave in SIZING (priced by the rehearsal); a SOL wave late on
+// 2025-07-30 (its exit book missing and its tape sealed: left for the look);
+// a kPEPE wave late on 2025-07-31 (its exit in TEST: left for the look); a
+// SOL wave in TEST (WAVE-H's one position, its entry book missing: the tape).
 const W1 = Date.parse("2025-06-10T10:00:00Z");
+const W2 = Date.parse("2025-07-30T23:10:00Z");
 const W3 = Date.parse("2025-07-31T23:30:00Z");
 const W = Date.parse("2025-09-10T10:00:00Z");
 const ENTRY = 7 * MINUTE_MS;
@@ -73,11 +75,27 @@ function world() {
     ].join("\n"),
   );
   files.set(
-    fillKey(W3, "node_fills_by_block"),
+    fillKey(W2, "node_fills_by_block"),
     block(1, [
-      ...liquidation(5, "kPEPE", "B", W3, 3),
-      ...liquidation(6, "kPEPE", "B", W3 + 5 * MINUTE_MS, 4),
+      ...liquidation(7, "SOL", "A", W2, 11),
+      ...liquidation(8, "SOL", "A", W2 + 5 * MINUTE_MS, 12),
     ]),
+  );
+  files.set(
+    fillKey(W3, "node_fills_by_block"),
+    [
+      block(1, [
+        ...liquidation(5, "kPEPE", "B", W3, 3),
+        ...liquidation(6, "kPEPE", "B", W3 + 5 * MINUTE_MS, 4),
+      ]),
+      // W2's exit on the tape, read at the look only.
+      block(2, [taker("SOL", "A", W2 + ENTRY + DAY_MS + 100, "99", "50", 15)]),
+      // R5: stamped from TEST's start in a SIZING file: in neither SIZING nor TEST.
+      block(
+        3,
+        liquidation(9, "XRP", "A", Date.parse("2025-08-01T00:00:00.050Z"), 13),
+      ),
+    ].join("\n"),
   );
   files.set(
     fillKey(W, "node_fills_by_block"),
@@ -86,12 +104,14 @@ function world() {
       block(3, [
         ...liquidation(4, "SOL", "A", W + 5 * MINUTE_MS, 6),
         taker("SOL", "B", W + ENTRY + 100, "101", "20", 7),
+        // A coin with no record in SIZING: one of THE LATE COINS.
+        taker("DOGE", "B", W + 1_000, "0.2", "1000", 14),
       ]),
     ].join("\n"),
   );
   // Marks at 100 on the days the legs and their funding read; every day file present.
   const marked: [string, number[]][] = [
-    ["SOL", [W1, W, W + DAY_MS, W + 2 * DAY_MS, W1 + DAY_MS, W1 + 2 * DAY_MS]],
+    ["SOL", [W1, W2, W].flatMap((t) => [t, t + DAY_MS, t + 2 * DAY_MS])],
     ["kPEPE", [W3, W3 + DAY_MS, W3 + 2 * DAY_MS]],
   ];
   for (let d = Date.parse("2025-05-25T00:00:00Z"); d < DATA_END; d += DAY_MS) {
@@ -104,6 +124,7 @@ function world() {
   }
   for (const [coin, from] of [
     ["SOL", dayStart(W1)],
+    ["SOL", dayStart(W2)],
     ["kPEPE", dayStart(W3)],
     ["SOL", dayStart(W)],
   ] as const) {
@@ -158,6 +179,13 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       log: () => {},
     };
     putBook("SOL", W1 + ENTRY);
+    putBook("SOL", W2 + ENTRY);
+    books.push(
+      JSON.stringify({
+        key: bookKey("SOL", hourOf(W2 + ENTRY + DAY_MS)),
+        missing: true,
+      }),
+    );
     putBook("SOL", W1 + ENTRY + DAY_MS);
     writeBooks();
     // The frozen sizing.json is the rehearsal's own output: it must parse.
@@ -167,8 +195,8 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
   it("starts from the rehearsal's sealed outcomes, and refuses a closed gate before opening anything", async () => {
     expect(sizing).toMatchObject({
       M: 1,
-      counted: 4,
-      outcomes: { positions: 2 },
+      counted: 6,
+      outcomes: { positions: 3 },
     });
     await expect(
       look(
@@ -191,7 +219,7 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       "d",
     ).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BooksNeeded);
-    expect((err as Error).message).toBe("step 1 done: 4 book files listed");
+    expect((err as Error).message).toBe("step 1 done: 6 book files listed");
     const x = W + ENTRY;
     const x3 = W3 + 5 * MINUTE_MS + 2 * MINUTE_MS;
     expect(readFileSync(path.join(dir(), "books-needed.txt"), "utf8")).toBe(
@@ -200,6 +228,8 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
         bookKey("SOL", hourOf(x + DAY_MS)),
         bookKey("kPEPE", hourOf(x3)),
         bookKey("kPEPE", hourOf(x3 + DAY_MS)),
+        bookKey("SOL", hourOf(W2 + ENTRY)),
+        bookKey("SOL", hourOf(W2 + ENTRY + DAY_MS)),
       ]
         .sort()
         .join("\n")}\n`,
@@ -207,17 +237,17 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
     expect(readJson("step1.json")).toMatchObject({
       M: 1,
       positions: 1,
-      sizingLate: 1,
-      booksNeeded: 4,
+      sizingLate: 2,
+      booksNeeded: 6,
       dataSha256: "d",
-      counts: { counted: 6, sizingCoins: ["SOL", "kPEPE"] },
+      counts: { counted: 8, late: 2, sizingCoins: ["SOL", "kPEPE"] },
     });
     expect(existsSync(path.join(dir(), "result.json"))).toBe(false);
   });
 
   it("stops while a book file is lacking, when the positions' SHA-256 differs from step 1's, and when the sealed outcomes differ", async () => {
     await expect(look(ctx, { open: true }, root, sizing, "d")).rejects.toThrow(
-      "4 of 4 book files",
+      "4 of 6 book files",
     );
     const stepFile = path.join(dir(), "step1.json");
     const good = readFileSync(stepFile, "utf8");
@@ -249,6 +279,26 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
         "d",
       ),
     ).rejects.toThrow(StoreError);
+    // A sealed file whose bytes are its hash's but whose position is not SIZING's.
+    const sealedFile = path.join(root, "rehearsal", "sizing-outcomes.jsonl.gz");
+    const real = readFileSync(sealedFile);
+    const t1 = W1 + 5 * MINUTE_MS;
+    const moved = gzipSync(
+      gunzipSync(real)
+        .toString("utf8")
+        .replace(`"t":${t1}`, `"t":${t1 + 1}`),
+    );
+    writeFileSync(sealedFile, moved);
+    await expect(
+      look(
+        ctx,
+        { open: true },
+        root,
+        { ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(moved) } },
+        "d",
+      ),
+    ).rejects.toThrow("position 1 is not SIZING's");
+    writeFileSync(sealedFile, real);
     // R7: a book file held but not its list's bytes stops the look.
     const bad = books.map((l) =>
       l.includes("kPEPE") && !l.includes("missing")
@@ -315,7 +365,12 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
     expect(lines.map((l) => [l.set, l.spot.t])).toEqual([
       ["WAVE-H", W + 5 * MINUTE_MS],
       ["SIZING", W1 + 5 * MINUTE_MS],
+      ["SIZING", W2 + 5 * MINUTE_MS],
       ["SIZING", W3 + 5 * MINUTE_MS],
+    ]);
+    expect(lines[2]!.legs.map((l) => [l.source, l.why, l.tids])).toEqual([
+      ["book", null, []],
+      ["tape", "no book file", ["15"]],
     ]);
     expect(
       lines[0]!.legs.map((l) => [l.source, l.why, l.tids, l.file]),
@@ -339,7 +394,7 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       share: 1,
       fiveBusiestShare: 1,
     });
-    expect(report.SIZING).toMatchObject({ positions: 2, priced: 2 });
+    expect(report.SIZING).toMatchObject({ positions: 3, priced: 3 });
     expect(report["M HALVED"]).toMatchObject({ M: 1, positions: 1 });
     expect(report["M DOUBLED"]).toMatchObject({ M: 2 });
     expect((report["M BY MONTH"]!.months as unknown[]).length).toBe(10);
@@ -347,17 +402,20 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       false,
     );
     expect((report["THE LATE COINS"]!.coins as string[]).length).toBe(36);
+    expect(report["THE LATE COINS"]!.coins).toEqual(
+      expect.arrayContaining(["DOGE", "XRP"]),
+    );
     expect(report["THE BOOK AND THE TAPE"]).toMatchObject({
       book: { positions: 0 },
       tape: { positions: 1 },
     });
     expect(report.prints).toMatchObject({
       bookHoles: {
-        filesByDay: { "2025-09-10": 1 },
+        filesByDay: { "2025-07-31": 1, "2025-09-10": 1 },
         legsByDay: { "2025-09-10": 1 },
       },
       baseTier: [],
-      files: { books: 3, booksMissing: 1 },
+      files: { books: 4, booksMissing: 2 },
     });
     await expect(look(ctx, { open: true }, root, sizing, "d")).rejects.toThrow(
       AlreadyRun,
