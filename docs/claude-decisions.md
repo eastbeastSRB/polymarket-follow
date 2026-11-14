@@ -1,5 +1,105 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (WAVE-H-FETCH's technical calls — WAVE-H's download tool built):
+**THE TOOL AND ITS START SCRIPT ARE BUILT TO THE SPEC (THE ENTRY BELOW) AND
+TESTED WITH NO NETWORK; THE SMOKE TEST WAITS FOR 06:00Z AND THE SUPERVISOR'S
+GO; THE REAL DOWNLOAD IS THE SUPERVISOR'S TO START.**
+
+**What:** `tools/waveh-fetch.cjs`, `tools/waveh-fetch-start.ps1`,
+`apps/poller/test/waveh-fetch.test.ts` (`8f0cbd0`, `f5879fc`, `21bccce`);
+architecture, "WAVE-H's data download".
+
+**Ruled by the supervisor (02:32Z), as WAVE-H-FETCH proposed:**
+1. **DATA END is 2026-05-29T01:00:00.000Z.** The hourly file of its own
+   hour, 2026-05-29 01h, is the last one admitted: a file holds its writer's
+   hour (plan H1), the plan's table reads "05-29 00h–01h", and the review
+   counts 8,845 fill files. A daily file and a funding window end before
+   DATA END.
+2. **"Stop for the day"** means the tool exits (code 4) with a log line
+   saying why; the supervisor restarts it.
+3. **A file found without its manifest line is fetched again,** never
+   re-hashed from disk (D6 said re-hash): no data file is read after its
+   write.
+
+**WAVE-H-FETCH's calls:**
+4. **The start.** WMI's `Win32_Process.Create`, idle (64), hidden: the
+   process's parent is `WmiPrvSE.exe`, so it is no child of the session and
+   in no job of it. The tool also sets its own priority to idle. Shown on a
+   scratch store with no network: started, `-Check`, a second start
+   refused, stopped by the stop file in about a second.
+5. **Its own files are under the store,** in `store\fetch\`:
+   - the pid file is the lock, touched every minute; a holder is a live
+     process whose file was touched in the last 3 minutes, so a pid reused
+     after a crash or a restart holds nothing;
+   - the stop file;
+   - `rate.txt`, written by each pause (the halved rate) and read at a start;
+     the supervisor raises the rate by editing or deleting it before a start;
+   - `problems.jsonl`: the keys missing, bad or changed;
+   - `log\<UTC date>.jsonl`.
+6. **One gate for every request,** the listings and the funding reads too:
+   the stop file, the pause windows, a pause, the watch's first reading, 1 s
+   after any request and 6 s after a funding read. A tick each second runs
+   the watch and ends a transfer the gate closes on. The file is then fetched
+   again from its start when the gate opens; that is no error.
+7. **The watch's details.**
+   - A stat that fails gives no time that second, so the age grows.
+   - A failed content read is tried once more after 1 s, then counts as no
+     reading.
+   - A reading without a clock minute or an audit judges neither (the
+     collector's first minutes); one without a book connection is harm.
+   - A fault in the watch pauses the download; a fault in a pause stops it
+     (exit 1).
+8. **Listings month by month,** 27 for the full plan and 7 for the first
+   session, which lists no name of the test months. Each page is validated:
+   the bucket, the prefix, KeyCount equal to its entries, the truncation and
+   its token. A page that fails is an error of the ladder; an entry that
+   fails is dropped and logged.
+9. **The replies.**
+   - 403 or 404: missing, in `problems.jsonl`, tried again at the next
+     start.
+   - 429, 5xx, a network error, no byte for 60 s, or a local fault in a file:
+     the ladder (the reply is ended).
+   - A redirect or any other status: the run ends (exit 1).
+   - A file is kept when its size equals the listing's, the reply's ETag
+     header equals the listing's, and, single-part, its MD5 equals the
+     ETag. A body longer than listed is cut off.
+10. **The fundingHistory replies are stored unparsed,** since their test
+    windows are sealed. A reply is kept on HTTP 200, a JSON content type and
+    a non-empty body, at most 256 KiB. `endTime` is the window's end minus
+    1 ms, so a window is [start, end) whatever the API's convention. WAVE-H's
+    program parses them at its own boundary (Iron Rule 3).
+11. **The cap** is the listed bytes plus 256 KiB a funding read, times 1.02.
+    **The token bucket** holds one second of the rate.
+12. **A stored file whose listing changed** (its ETag or size) is listed as
+    "changed", never fetched again.
+13. **A rename refused 10 times** (D6's retry, a second apart) stops the run
+    (exit 1); its `.part` is removed at the next start.
+
+**Tests:** 37 in `test/waveh-fetch.test.ts`, with no network: a fake bucket
+and info API through the injected fetch, a fake clock that moves only when
+the run waits, and heartbeats built from the collector's own `Heartbeat`
+schema. A kill is simulated by abandoning a run in a file.
+
+**Breaks,** in scratch copies only (`git archive`, the test file run per
+break, no network):
+- **Round one, 98 breaks on `8f0cbd0`: 96 killed,** none by a wall-clock
+  limit. A17 and A18 (the third pause not stopping the day) were killed by
+  the fake clock's six-hour bound: without the stop, the run never ends.
+- G17 survived because its target, `keyTime`'s hour check, was dead code: an
+  hour past 23 rolls the date, which the round trip already refuses. It is
+  deleted in `f5879fc`. G18 survived through the same overlap.
+- **Round two, on `f5879fc` with `21bccce`'s tests:** all 101 finds match
+  once. G18, E1 (a local fault leaves the reply open), R10 and R11 (the
+  rename retry) and S10 (the "changed" report) are all killed.
+- The lists and results are in the supervisor folder,
+  `workers/WAVE-H-FETCH/`.
+
+**Not done:**
+- the smoke test (three keyless requests at most), after 06:00Z on the
+  supervisor's go;
+- `--plan` against the bucket, which takes 7 listings for the first
+  session and 27 for the full plan, more than the smoke test's three.
+
 2026-11-14 (WAVE-H's download spec — the supervisor's calls under the owner's
 advance approval): **THE PLAN AND ITS FRESH REVIEW AGREE: THE DOWNLOAD MAY
 START, AS SPECIFIED HERE. THE PLAN'S RULES STILL WAIT FOR THE OWNER.**

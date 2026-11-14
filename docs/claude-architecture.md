@@ -269,3 +269,29 @@ start when available. Neither is done before the freeze and the owner's word.
 `test/market1-reproduce.test.ts`, and `test/market1-rehearsal.test.ts` (the
 forward run over the old weeks in a FIND-SLOTS slot), both pre-cut data only,
 run when `MARKET1_PRECUT` names the paths.
+
+## WAVE-H's data download (built 2026-11-14 by WAVE-H-FETCH; the supervisor starts it)
+
+`tools/waveh-fetch.cjs`, plain Node, no package, part of no frozen program
+(decisions 2026-11-14, "WAVE-H's download spec", and WAVE-H-FETCH's
+technical calls): the plan's files of Hyperliquid's archive (AWS's keyless
+bucket, `v1.1/hyperliquid/mainnet/` `node_fills/hourly/`,
+`node_fills_by_block/hourly/`, `asset_ctxs/`) and the 38 coins' settled
+funding (`POST /info` `fundingHistory`, 760 windows aligned to the seal) into
+`F:\polymarket-follow-research\WAVE-H\store\`: the keys mirrored,
+`info\fundingHistory\<coin>\<window start ms>.json`, `manifest.jsonl`
+(key, bytes, ETag, LastModified, MD5, SHA-256, fetch time), and its own
+`fetch\` (the pid file, which is its lock; the stop file `waveh-fetch.stop`;
+`rate.txt`; `problems.jsonl`; `log\<UTC date>.jsonl`). It hashes the bytes as
+they come and never decodes, parses or reads back a data file. Every request
+passes one gate: the guards on prefix and date, one at a time, a 2 MB/s token
+bucket, no request 02:30–06:00Z and 10:25–11:15Z, the error ladder, the F:
+floor and the cap, and the watch on the collector's `heartbeat.json` (its
+time by stat, its content once a minute at most; a 10-minute pause and the
+rate halved on harm, three in an hour stop the day). `--plan` prints the plan,
+`--sizing-only` keeps to the sizing months. `tools\waveh-fetch-start.ps1`
+starts it through WMI at idle priority, so it outlives the session
+(`-Check` says whether it runs); the stop file stops it within a second.
+Tests: `test/waveh-fetch.test.ts`, no network; its heartbeats are built from
+the collector's `Heartbeat` schema, so a change of those fields fails there
+(a contract).

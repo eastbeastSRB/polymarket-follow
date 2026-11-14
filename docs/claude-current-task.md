@@ -5,8 +5,11 @@ polymarket-follow: a watch-only tracker of Polymarket Perps traders
 clock; the forward paper experiment is FROZEN (2026-11-12, tag
 `paper-freeze-1`) and runs daily; MARKET-1, the forward paper test of the
 liquidation wave, is FROZEN (2026-11-13 14:29:11Z, tag `market1-freeze-1`),
-deployed (14:33:39Z) and runs daily at 10:30Z.** The plan is the plan page
-(docs/claude-master-plan.md); what exists is architecture.
+deployed (14:33:39Z) and runs daily at 10:30Z. WAVE-H, MARKET-1's wave tested
+once on Hyperliquid's history, is planned and reviewed; its download tool is
+built and waits for its smoke test and the supervisor's start; its rules wait
+for the owner.** The plan is the plan page (docs/claude-master-plan.md); what
+exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -29,65 +32,70 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
     `b9e17505d8d4dfc87101b35c4908929b4ed18c6dd401cf723dfbab0c15452f1d`,
     commit `4832a6a`, tag `market1-freeze-1`;
   - START 2026-11-11; looks at the paper experiment's dates;
-  - its daily task at 10:30Z once registered.
-
-  Before the freeze:
-  - two fresh reviews, the owner's ruling, MARKET-FIX's calls 1–12, a fresh
-    fix-check, and MARKET-FIX-2's M0 wording and seven pinned breaks;
-  - 240 of 249 deliberate breaks caught;
-  - the old weeks reproduced byte for byte (153 entries, +309.7 ± 67.7);
-  - `pnpm verify` green with and without the list (380 tests).
+  - its daily task at 10:30Z.
+- **WAVE-H** (decisions 2026-11-13, the owner's ruling, and 2026-11-14,
+  "WAVE-H's download spec"):
+  - the plan, `docs/reviews/wave-h-plan-2026-11-13.md`, and its fresh
+    review, `docs/reviews/wave-h-plan-review-2026-11-14.md` (download: safe
+    after D1–D8; plan: approvable after R1–R10);
+  - the download tool `tools/waveh-fetch.cjs` and its start script
+    `tools/waveh-fetch-start.ps1` (architecture, "WAVE-H's data download";
+    decisions 2026-11-14, WAVE-H-FETCH's technical calls): built, tested
+    with no network, not yet run against the bucket;
+  - the rules (H0–H15) and R1–R10 wait for the owner.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
   - the collector's share is 50 and 15;
   - the experiment's is 120 and 15;
-  - MARKET-1 reads nothing from the API.
+  - MARKET-1 reads nothing from the API; WAVE-H reads Hyperliquid and
+    AWS only, never Polymarket.
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes (the
   tags too).
 
 ## Next up — IN ORDER
 
-1. **MARKET-1's second run (2026-11-14 10:30Z), the first with decided
-   legs.**
-   - The first run (2026-11-13 14:33:59–14:39:02Z, exit 0) passed its format
-     check (F7 (c)): 3 days closed and checked; 52 hour files, the 20 missing
-     being 11-10 before recording began; 12,095,293 lines, 0 failed; no
-     alarm day, no unreadable coverage, no changed file.
-   - Every non-P position entered on 11-12, so its legs wait for 11-13 to
-     close (F3).
-   - The book level's unit (decisions 2026-11-13, call 11) is confirmed from
-     the first decided legs: depth-short legs must be rare.
-   - No paper command by hand while a MARKET-1 run is live (rules.md M2).
-2. **The daily runs:** the supervisor checks each program's log, budget and
+1. **WAVE-H's download, the first session** (decisions 2026-11-14, the
+   spec's point 8):
+   - WAVE-H-FETCH's smoke test (at most 3 keyless requests: one listing,
+     one sizing file, one `fundingHistory` read), after 06:00Z on the
+     supervisor's go;
+   - the supervisor reads the tool against D1–D8, then starts it:
+     `tools\waveh-fetch-start.ps1 -SizingOnly` (about 35 GB, the sizing
+     months), with one mid-file kill and restart;
+   - then the supervisor's check of the collector's day (its price audits
+     and warnings) and the tool's log, before the test months
+     (`tools\waveh-fetch-start.ps1`, the full run);
+   - each morning: `-Check`, `fetch\problems.jsonl`, the collector's log.
+2. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
+   book level's unit (decisions 2026-11-13, call 11); no paper command by
+   hand while a MARKET-1 run is live (rules.md M2).
+3. **The daily runs:** the supervisor checks each program's log, budget and
    page; no running number is read as evidence before a look.
-3. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
+4. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
    (R8's B2 confirmation, after 2026-11-30), each with its own share of the
    remaining 80 a minute (and a burst share: decisions 2026-11-13, Q12).
-5. **Small collector follow-ups, when convenient:**
+5. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
+   owner's rulings after the deploy).
+6. **Small collector follow-ups, when convenient:**
    - drop the boards' `consistent` flag;
    - a coverage mark for books that arrive late;
    - the backup task's trigger from UTC takes effect when the tasks are next
      registered;
    - the page's fee-category alarm (a naming mismatch in the collector's
      fees document).
-6. **The v1 plan** (the plan page), early December.
+7. **The v1 plan** (the plan page), early December.
 
-## Last session (2026-11-13)
+## Last session (2026-11-14)
 
-MARKET-FIND sharpened the small-coin lead into the wave. MARKET-PLAN planned
-MARKET-1, and MARKET-BUILD built it. Two fresh reviews (rules and code) said
-"after these fixes", and the owner approved the batch.
+WAVE-H-PLAN planned WAVE-H, and a fresh review agreed the download "safe
+after D1–D8". The supervisor wrote the download's spec into decisions.
+WAVE-H-FETCH built the tool to it:
+- the plan's keys only, hashed as they come, never read back;
+- one request at a time at 2 MB/s, the pause windows, the error ladder;
+- the watch on the collector's heartbeat, failing closed;
+- the F: floor, the cap, a lock, a stop file, `--plan`, `--sizing-only`;
+- a detached start through WMI at idle priority.
 
-MARKET-FIX made the fixes:
-- the page's freeze date;
-- the book lookup's JSON spacing;
-- the settings' refusals;
-- a pure verdict function;
-- the verdict box after a verdict;
-- dead code out;
-- many new tests.
-
-A fresh MARKET-FIX-CHECK found every finding closed and asked for M0's
-wording; MARKET-FIX-2 applied it word for word and pinned seven more
-breaks. The supervisor verified each step on its own path and froze
-MARKET-1 at 14:29:11Z.
+Its 37 tests run with a fake clock and a fake bucket. The deliberate breaks
+ran in a scratch copy (decisions, WAVE-H-FETCH's entry). `pnpm verify` is
+green, and both freezes still verify.
