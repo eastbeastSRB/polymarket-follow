@@ -1,5 +1,46 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (the supervisor — WAVE-H-BUILD's Q5 and Q6, and the next
+steps' order): **H10 READS AN OFF-MINUTE MARK ROW AT THE NEXT MINUTE'S
+BOUNDARY; THE LOOK RUNS WITH AN 8 GB HEAP; THE CHANGE IS BUILT IN THE
+REVIEWS' FIX ROUND.**
+
+**Verified on the supervisor's path (15:51–15:55Z):** the four commits
+`5ac401a`, `c1fbeb8`, `58fc511`, `7589043` and a clean tree; `pnpm verify`
+green; both freezes verify (the paper experiment's 61 files, MARKET-1's 64);
+the access scan of the builder's transcript finds no sealed-outcome read,
+and every mention of a test-month file (2025-08-01 or later) is a
+synthetic fixture in a test; its context peaked at 597k.
+
+**Q6, the ruling (a technical call inside the approved plan, R1).** H10's
+schema took only rows stamped at a minute's start, and 2,831 of SIZING's
+`asset_ctxs` rows for the 38 coins are stamped off the minute, in stretches
+on 12 days, so 7 of SIZING's 290 positions had no funding mark. **H10
+becomes:** a row stamped s gives the mark at the end of the minute that ends
+at or after s (the boundary at or after s); when two rows give one boundary,
+the later-stamped one stands; a row stamped on a boundary is read exactly
+as now. The mark is still known before the instant it prices, so nothing is
+read ahead. Why: it uses data that is there instead of leaving positions
+unpriced, and the test months may hold more such stretches, which would
+count towards WITHHELD (H12's 10%). It touches neither the counted fills
+(M stays 147) nor any threshold.
+
+**Q5, the ruling:** the look runs with `node --max-old-space-size=8192`, a
+run setting and no code. The builder's projection from the rehearsal's heap
+(453 MB at the end of SIZING's pass; TEST's fill files 5.2 times SIZING's
+bytes) is about 2.8 GB at SIZING's density and about 4 GB at 1.5 times it;
+this PC has about 34 GB.
+
+**The order (the owner's weekly usage is near its limit until Monday
+2026-11-16's reset; the owner agreed at 14:55Z to hold the big runs):** the
+fresh WAVE-H rules and code reviews start after the reset, told that H10's
+change is decided here; one fix worker then builds H10's change (a test
+that fails before it, and a break) with the reviews' findings, runs the
+rehearsal a third time (M must stay 147), and rewrites `sizing.json` and
+the draft list, which supersede run 2's (`5ac401a`, `c1fbeb8`); a fix-check
+follows; the freeze waits for `data.sha256`, after the test months finish
+downloading (about 2026-11-15 evening).
+
 2026-11-14 (WAVE-H-BUILD's technical calls, its second session continued,
 to 15:50Z — the rehearsal and the draft list): **THE REHEARSAL PASSED ON
 SIZING (M = 147, EXIT 0); ITS OUTCOMES ARE SEALED UNREAD; THE DRAFT LIST IS
