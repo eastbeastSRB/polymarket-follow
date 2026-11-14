@@ -62,6 +62,18 @@ describe("a record (H2)", () => {
       '"tid":123456789012345678901',
     );
     expect(recOf(parseLine(big)).fill.tid).toBe("123456789012345678901");
+    // 16 digits, above 2^53 − 1: a float would read 9007199254740992.
+    const above = JSON.stringify(fill(addr(1))).replace(
+      '"tid":101',
+      '"tid":9007199254740993',
+    );
+    expect(recOf(parseLine(above)).fill.tid).toBe("9007199254740993");
+    // A tid that is not written in digits is refused, never read through a float.
+    const exp = JSON.stringify(fill(addr(1))).replace(
+      '"tid":101',
+      '"tid":1e20',
+    );
+    expect(parseRecord(parseLine(exp))).toBeNull();
     expect(
       recOf(parseLine(JSON.stringify(fill(addr(1), { tid: 964005809299725 }))))
         .fill.tid,
@@ -292,7 +304,27 @@ describe("the slices (H5)", () => {
   });
 
   it("scans M from 1 to the first rate below 2.84 and takes the rate nearest 5.68", () => {
-    // 57 accounts' fills two hours apart in one coin: every fill an episode in every slicing.
+    // n accounts' fills two hours apart in one coin: every fill an episode in every slicing.
+    const world = (n: number): Counted[] =>
+      Array.from({ length: n }, (_, i) => ({
+        t: T + i * 2 * HOUR,
+        iid: 5,
+        addr: addr(1000 + i),
+        side: -1,
+        tid: String(i),
+        method: "market",
+      }));
+    // 71 ÷ 25 is 2.84 exactly: not below, so the scan goes on to 26; 71 ÷ 13 is the nearest 5.68.
+    const exact = scanM(world(71), 1);
+    expect(exact.scan.map((r) => r.M)).toEqual(
+      Array.from({ length: 26 }, (_, i) => i + 1),
+    );
+    expect(exact.scan[24]!.rate).toBe(2.84);
+    expect(exact.M).toBe(13);
+    // 56.7 ÷ 20 = 2.835 stops the scan at 20; 56.7 ÷ 10 = 5.67 is the nearest.
+    const below = scanM(world(567), 10);
+    expect(below.scan).toHaveLength(20);
+    expect(below.M).toBe(10);
     const fills: Counted[] = Array.from({ length: 57 }, (_, i) => ({
       t: T + i * 2 * HOUR,
       iid: 5,
@@ -329,6 +361,13 @@ describe("the slices (H5)", () => {
         { M: 10, episodes: 0, rate: 5.5 },
       ]),
     ).toBe(10);
+    // 5.66 is 0.02 from 5.68, 5.71 is 0.03: the target is 5.68, not 5.7.
+    expect(
+      pickM([
+        { M: 7, episodes: 0, rate: 5.71 },
+        { M: 8, episodes: 0, rate: 5.66 },
+      ]),
+    ).toBe(8);
   });
 });
 

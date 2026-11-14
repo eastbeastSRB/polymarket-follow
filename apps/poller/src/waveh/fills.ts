@@ -104,7 +104,7 @@ export function legKind({ user, fill }: Rec): LegKind | null {
   if (liq.liquidatedUser.toLowerCase() !== user) return "counterparty";
   const side = fill.side === "B" ? 1 : -1;
   const start = Number(fill.startPosition);
-  if (start === 0 || Math.sign(start) !== -side) return "not reducing";
+  if (Math.sign(start) !== -side) return "not reducing";
   if (!fill.crossed && liq.method !== "backstop")
     return "neither crossed nor backstop";
   return "counted";

@@ -514,6 +514,10 @@ describe("the books (H8)", () => {
       asks: [[102, 4]],
     });
     expect(lastAtOrBefore(Buffer.from(text), "SOL", T - 501).book).toBeNull();
+    // A snapshot at x itself is at or before x.
+    expect(lastAtOrBefore(Buffer.from(text), "SOL", T).book?.bids[0]).toEqual([
+      100.5, 2,
+    ]);
   });
 
   it("names the files of x's hour, and of the hour before in its first 10 seconds", () => {
