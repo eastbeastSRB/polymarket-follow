@@ -139,6 +139,7 @@ export async function lookStep1(
           read,
           of: keys.length,
           counted: pass.counted.length,
+          heapMB: Math.round(process.memoryUsage().heapUsed / 2 ** 20),
         });
     }
   };

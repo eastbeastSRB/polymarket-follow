@@ -100,6 +100,7 @@ export async function sizingPass(ctx: Ctx): Promise<Pass> {
         read: i + 1,
         of: keys.length,
         counted: pass.counted.length,
+        heapMB: Math.round(process.memoryUsage().heapUsed / 2 ** 20),
       });
   }
   pass.counted.sort(byM4);
