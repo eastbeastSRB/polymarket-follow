@@ -165,17 +165,20 @@ trade.*
   taking the larger; the scan runs from M = 1 and stops after the first M
   whose r(M) is below 2.84. The rehearsal computes it and writes it, with the
   scan, in `waveh/sizing.json`; the look recomputes it and stops (exit 5) if
-  it differs. **M = …** (written in by the rehearsal) [about 119 on the
-  planner's three sample days, which one day alone would have put anywhere
-  from 11 to 411].
+  it differs. **M = 147** (the rehearsal's scan, 2026-11-14: 346 rows, on
+  SIZING's 425,433 counted fills) [about 119 on the planner's three sample
+  days, which one day alone would have put anywhere from 11 to 411].
 - **Each slice is a pool** of its own: M5 and every line beside apply inside
   one slice at a time.
 - **Burstier than the pool** (R9) [on the planner's three sample days, at the
   episode-matched M a slice saw 2.91 entries a day, a wave state in 6.4% of
   quarter-hours, about 7.9 different liquidated accounts a day and 7.5 counted
   fills an episode; the old weeks' pool 2.25, 3.9% (257 of 6,528), 2.25 and
-  1.88; SIZING's own counts: written in by the rehearsal]. M DOUBLED (H13)
-  matches the pool's wave-state share; it is printed beside.
+  1.88; SIZING's own counts at M = 147: 3.28 entries and 5.70 episodes a
+  slice a day, a wave state in 5.4% of quarter-hours, 3.32 different
+  liquidated accounts a slice a day (over SIZING, ÷ its days) and 7.5 counted
+  fills an episode; at 2M = 294: 1.49, 3.26, 2.7%, 1.66 and 6.6]. M DOUBLED
+  (H13) comes nearest the pool's wave-state share; it is printed beside.
 
 ## H6. The wave and an entry — M5 inside each slice
 
