@@ -1,5 +1,102 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-14 (WAVE-H's download spec — the supervisor's calls under the owner's
+advance approval): **THE PLAN AND ITS FRESH REVIEW AGREE: THE DOWNLOAD MAY
+START, AS SPECIFIED HERE. THE PLAN'S RULES STILL WAIT FOR THE OWNER.**
+
+**The papers:**
+- WAVE-H-PLAN: `docs/reviews/wave-h-plan-2026-11-13.md`, `22a4757`.
+- WAVE-H-PLAN-REVIEW: `docs/reviews/wave-h-plan-review-2026-11-14.md`,
+  `c723e9c`, Sonnet, fresh. Its verdicts:
+  - the download is "safe after these changes" (D1–D8);
+  - the plan is "approvable after these fixes" (R1–R10, none high).
+- Its recount on the pre-cut seed confirms the counted fill: Polymarket's
+  backstop own fills are takers with order id "0", and 727 = 695 + 32,
+  giving 153 entries.
+
+**The supervisor's checks:**
+- Both papers committed only themselves; access clean.
+- The planner's downloads: 107, all dated 2025-06-07 to 07-17, 1.56 GB,
+  deleted.
+- The collector during that planning download (2026-11-14 00:07:45–00:21:24Z,
+  about 1.9 MB/s): the price audits at 00:07:51Z and 00:17:51Z agreed
+  89/90 and 90/90, with no warning or error line in the window. This is the
+  only measured test of the rate on this line.
+
+**The spec of `tools/waveh-fetch.cjs`.** Plan section 3 with D1–D8; the
+tool is never part of a frozen program.
+
+1. **The data and guards.**
+   - Only the plan's prefixes of `aws-public-blockchain/v1.1/hyperliquid/mainnet/`
+     and `POST /info` `fundingHistory`.
+   - No date before 2025-05-25 or at or after DATA END.
+   - Keyless, `research-check/1.0`, never `/exchange`, no account, key or
+     payment.
+2. **The store:** `F:\polymarket-follow-research\WAVE-H\store\`, with a
+   manifest (key, bytes, ETag, LastModified, MD5, SHA-256, the fetch time).
+   - The MD5 must equal the ETag where single-part; the size where
+     multipart.
+   - **Never a file decoded or parsed.** The test months' files are stored
+     unopened.
+   - Every file goes on F:. A free-space floor of 200 GiB on F: and a
+     total-byte cap of the planned bytes + 2% (D4).
+3. **The rate.**
+   - **2 MB/s, with no automatic step to 4 MB/s** (D7). The test months are
+     not needed before the freeze.
+   - One request at a time.
+   - Pauses 02:30–06:00Z and 10:25–11:15Z.
+   - After an error it waits 30 s, 2 min and 10 min, then stops for the day.
+4. **The watch** (D1, D2), failing closed.
+   - The heartbeat's age by `statSync`.
+   - Its content by one read at most once a minute, right after its time
+     moves. A failed read counts as no reading.
+   - It pauses for 10 minutes, then halves the rate, on any of:
+     - clock offset above 400 ms;
+     - `heartbeat.time − lastFrameAt` above 15 s on a book connection;
+     - a heartbeat older than 60 s;
+     - the latest price audit's `agree` below 90% of its `rows`.
+   - After a pause the rate stays halved until the supervisor raises it.
+     Three pauses in an hour stop the day.
+   - Every reading is logged.
+   - The supervisor's measurement behind this (the review's D1): a content
+     reader in a tight loop failed 456 of 514 renames, while a stat-only
+     reader failed none. The collector's heartbeat write is in a try/catch
+     that retries in 10 s.
+5. **The funding windows** are aligned to the seal (D5).
+   - No window straddles 2025-08-01 or passes DATA END: 20 windows a coin,
+     760 reads, at least 6 s apart.
+   - `[]` with HTTP 200 for a coin before its listing is valid.
+6. **The writes** (D6):
+   - `<name>.part`, hashed, then renamed, with a rename retry;
+   - errors classed; listings validated;
+   - resumable;
+   - a kill-and-restart test.
+7. **The runner** (D3):
+   - one instance, with a pid file and a stop file;
+   - idle (below-normal) priority;
+   - started detached by the supervisor, so it outlives a chat session.
+     This is a deliberate exception to "a subagent's processes end with
+     it", recorded here; it is no Windows task, and the owner may stop it
+     at any time with the stop file.
+8. **The first session downloads the sizing months only** (about 35 GB),
+   with one mid-file kill and restart. The supervisor then reads the tool
+   against this spec, checks the collector's audits and the tool's log, and
+   only then lets it continue into the test months.
+9. **The daily check** (D8): the supervisor reads the collector's log
+   (price audits, warnings) and MARKET-1's day records. No
+   `coverage.jsonl` is read for the download.
+
+**Disclosed by the review:** one live `userFills` reply of the liquidator
+vault (its 2,000 newest fills) held records dated inside the sealed span
+(2026-05-18 to 05-28). The reviewer used two August fills only and one
+count, and deleted the reply. No price of the test months was analysed.
+
+**Left for the owner:**
+- the plan's rules and R1–R10;
+- question 9: the reviewer recommends keeping the raw files until the
+  on-chain project's founding rather than deleting them after the Final
+  review.
+
 2026-11-13 (WAVE-H's download — the owner's advance approval): **THE
 SUPERVISOR MAY START WAVE-H'S DATA DOWNLOAD WITHOUT WAITING FOR THE OWNER,
 ONCE THE PLAN AND ITS FRESH REVIEW AGREE ON IT.**
