@@ -7,8 +7,9 @@ clock; the forward paper experiment is FROZEN (2026-11-12, tag
 liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
 history, is being built (WAVE-H-BUILD, 2026-11-14): the reproduction holds,
-the rehearsal and the look are code and tested; the rehearsal waits for the
-sizing download; nothing is frozen or run on TEST.** The plan is the plan
+the rehearsal and the look are code and tested; the rehearsal's first run is
+done (M = 147, 560 book files needed); its book fetch waits for the
+supervisor's go; nothing is frozen or run on TEST.** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -36,14 +37,18 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **WAVE-H** (architecture, "WAVE-H" and "WAVE-H's data download";
   decisions 2026-11-14, "WAVE-H's plan approved" and both WAVE-H-BUILD
   entries):
-  - the rules `apps/poller/waveh/rules.md` (H0–H15 with R1–R10; M and
-    SIZING's counts not yet written); `dist/waveh.js` with `rehearse` and
+  - the rules `apps/poller/waveh/rules.md` (H0–H15 with R1–R10; M = 147 and
+    SIZING's R9 counts written in); `dist/waveh.js` with `rehearse` and
     `look`; the reproduction through WAVE-H's own mapping: 727 = 695 + 32
     counted fills, 153 entries;
-  - the download runs (`tools/waveh-fetch.cjs`, the sizing months first,
-    then the supervisor starts the test months, stored unopened);
-  - not yet: the rehearsal on SIZING, its book fetch, M, `data.sha256`, the
-    draft freeze list.
+  - the download (`tools/waveh-fetch.cjs`): the sizing months complete
+    2026-11-14 12:14Z; the test months next (the supervisor), stored
+    unopened;
+  - the rehearsal's first run (2026-11-14 11:53–12:46Z): SIZING's 1,619
+    fill files, 0 records failing, 425,433 counted fills, M = 147, slice 0's
+    283 priceable positions, 560 book files needed;
+  - not yet: the book fetch, the second run and `sizing.json`, the draft
+    freeze list, `data.sha256`.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
   - the collector's share is 50 and 15;
@@ -55,16 +60,12 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **WAVE-H's rehearsal** (a fresh or the same WAVE-H-BUILD; its
-   `progress.md`, "Left, in order"):
-   - once every SIZING file has its manifest line: `pnpm build`, then
-     `node --max-old-space-size=4096 dist/waveh.js rehearse` with
-     `WAVEH_STORE` and `WAVEH_ROOT` (a FIND-SLOTS slot) → exit 5 with
-     `rehearsal\books-needed.txt`;
-   - the supervisor's go for the book fetch (`--books … --sizing-only`;
-     the main download stopped for it, restarted after);
-   - the rehearsal again → `sizing.json`; M and SIZING's counts into the
-     rules; the draft freeze list.
+1. **WAVE-H's rehearsal** (WAVE-H-BUILD; its `progress.md`, the state at
+   12:51Z):
+   - the supervisor's go for the book fetch (`--plan`, then `--books …
+     --sizing-only`, 560 keys; the main download stopped for it);
+   - the rehearsal again → `sizing.json` (M must stay 147); the heap's
+     projection to TEST; the draft freeze list.
 2. **WAVE-H's test months** downloaded (the supervisor), then
    `waveh-freeze.cjs --data` (`data.sha256`, R3 (i)'s short files).
 3. **WAVE-H's fresh rules and code reviews**, the fixes, a fix-check, the
