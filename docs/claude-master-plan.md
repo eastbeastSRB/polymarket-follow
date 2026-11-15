@@ -316,6 +316,20 @@ review, the supervisor re-computing on its own path what decides.
   advice). Open: how to see liquidations soon enough inside the budget
   (decisions 2026-11-13, the owner's rulings after MARKET-1's deploy (2)).
   Trigger: the v1 plan.
+- ⏳ **Reading MARKET-1's page more easily** (the owner, 2026-11-15): a
+  legend that explains every number, column and status; colour in the
+  cells for a position's state; a status column (pending, open at the
+  mark, closed, mark-priced, depth short). MARKET-1's page is frozen code
+  (its rules M14), so it cannot change during the test without breaking
+  the freeze. M14 also bars colours for a result's sign (red or green), by
+  design: a running number must not pull at a test before its looks.
+  - **Proposed:** a separate, hand-written guide page beside it, which
+    touches no frozen file;
+  - the status column and status colours (never colours for a sign) in
+    v1's own page, and in the page of any arm frozen later (the second arm
+    above).
+
+  Trigger: the owner's usage reset; the supervisor proposes the guide.
 - ⏳ **The recordings' second copy**: the owner provides the space within
   one to two months; the supervisor sets up the copy (same entry, (3)).
 - ⏳ **The backup task's trigger from UTC**: it takes effect when the
