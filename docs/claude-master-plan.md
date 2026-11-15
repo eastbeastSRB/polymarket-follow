@@ -329,7 +329,8 @@ review, the supervisor re-computing on its own path what decides.
     v1's own page, and in the page of any arm frozen later (the second arm
     above).
 
-  Trigger: the owner's usage reset; the supervisor proposes the guide.
+  **The guide page approved** (decisions 2026-11-15, MARKET-1's page
+  guide). Trigger: the owner's usage reset.
 - ⏳ **The recordings' second copy**: the owner provides the space within
   one to two months; the supervisor sets up the copy (same entry, (3)).
 - ⏳ **The backup task's trigger from UTC**: it takes effect when the

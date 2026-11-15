@@ -1,5 +1,26 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-15 (the owner — MARKET-1's page guide): **A SEPARATE GUIDE PAGE
+EXPLAINS MARKET-1'S PAGE; THE FROZEN PAGE STAYS AS IT IS.**
+
+**What:** the owner asked for MARKET-1's page to be easier to read: a
+legend for every number, column and status; colour in the cells for a
+position's state; a status column. The owner approved the supervisor's
+recommendation:
+- **now** (after the owner's usage reset on 2026-11-16): a separate,
+  hand-written guide page beside MARKET-1's page. It explains its
+  boxes, the lines beside, the columns and the statuses ("pending",
+  "open, at the mark", a final net, the flags). It touches no frozen file
+  and is written by no program;
+- **later:** the status column and status colours in v1's own page, and
+  in the page of any arm frozen later.
+
+**Why:** MARKET-1's page is frozen code (its rules M14, frozen 2026-11-13).
+A change would break the freeze in the middle of the test. M14 also bars
+colours for a result's sign by design, so a running number does not pull
+at the test before its looks. Colours for a position's state carry no
+result and are allowed in a page frozen later.
+
 2026-11-14 (the supervisor — WAVE-H-BUILD's Q5 and Q6, and the next
 steps' order): **H10 READS AN OFF-MINUTE MARK ROW AT THE NEXT MINUTE'S
 BOUNDARY; THE LOOK RUNS WITH AN 8 GB HEAP; THE CHANGE IS BUILT IN THE
