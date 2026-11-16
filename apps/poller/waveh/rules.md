@@ -33,13 +33,15 @@ trade.*
   hashes the program also checks before it loads them; every file of `waveh/`:
   this file, `coins.json` (H3), `sizing.json` (H5) and `data.sha256` (H2),
   each of these four required in the list by name.
-- **Shared code** the program imports (the schedule's constants) is not
-  frozen: each run's log lists the hashes of the shared files it used and
-  Node's version (information, not a stop), as MARKET-1's M0.
-- **Every run starts by checking them** (`gate.ts`): the list exists, names
+- **Shared code** the program imports — the schedule's constants
+  (`dist/schedule.js`) and the logger (`dist/log.js`) — is not frozen: each
+  run's log lists the hashes of the shared files it used and Node's version
+  (information, not a stop), as MARKET-1's M0.
+- **The look starts by checking them** (`gate.ts`): the list exists, names
   every file of what runs, and each has its hash. Otherwise the run writes one
   line, "frozen files differ", and stops (exit 4) with nothing sealed opened.
-  The gate is open only from that check.
+  The gate is open only from that check; the rehearsal runs with the gate
+  closed, whatever the freeze.
 - **The sealed store.** No file of the store dated 2025-08-01 or later (by
   the date in its key) is opened unless the gate is open; a key whose date
   does not parse is refused the same way. Each reader takes the gate and
@@ -102,7 +104,8 @@ trade.*
   before the freeze) at the look, the store's manifest in the rehearsal.
   A fill file that is missing, differs or fails to decompress (the frame must
   end at the file's end), and a UTC day of fill files with more than 1%, and
-  at least 10, of its records failing the schema, stop the run (exit 5),
+  at least 10, of its records failing the schema (checked after each of the
+  day's files, on its records so far), stop the run (exit 5),
   naming it: the waves cannot be computed around a hole in the fills (the
   route: H0's defect fix). So does an `asset_ctxs` day or a funding window
   (H9, H10) that the run reads and that is missing from its list or differs
@@ -311,6 +314,8 @@ trade.*
   positions that have one is above 0 (F1: a market's drift cannot pass as
   the effect); a position without a BASE cell, or without the marks of its
   gross on marks, has no excess: it is left out of that mean and counted.
+  When no priced position has one, there is no mean excess, and HOLDS cannot
+  hold.
 - **NOT SETTLED** otherwise.
 - **The order:** WITHHELD, then TOO FEW TO TELL, then DOES NOT HOLD, then
   HOLDS, then NOT SETTLED; the first that holds is the verdict (so a real
@@ -370,13 +375,15 @@ BASE cell for its excess, is left out of that mean and counted.
 
 For WAVE-H and each set on the net (MARKET-1's M13 prints, its `summarize`,
 with z): positions, days, coins, slices; unpriced by reason; tape-priced legs
-by reason; depth-short legs; the share not at the book; the money mean with
-its two-way SE and the one-way SEs by day and by coin; Student's band on day
-clusters; the gross before costs; fees; funding; the win share; the median
-and quartiles of the net; the entry's cost at the book (median, p90); the
-gross on marks; the excess with its SE and lower bound and the priced
-positions without one; the mean without the two days that add most; each
-coin left out. For each line on marks: positions, days, coins, slices; the
+by reason; depth-short legs; the share not at the book (the unpriced
+positions and those with a leg short of depth: H12's WITHHELD share, a
+tape-priced leg being priced); the money mean with its two-way SE and the
+one-way SEs by day and by coin; Student's band on day clusters; the gross
+before costs; fees; funding; the win share; the median and quartiles of the
+net; the entry's cost at the book (median, p90); the gross on marks; the
+excess with its SE and lower bound and the priced positions without one
+(SIZING's positions have no BASE cell, so the SIZING line has no excess); the
+mean without the two days that add most; each coin left out. For each line on marks: positions, days, coins, slices; the
 gross on marks and the excess with their errors, the excess's lower bound,
 the positions without marks and without BASE. Once: the counted fills by
 method and coin and the left-out legs by reason (H4); the archive's book
