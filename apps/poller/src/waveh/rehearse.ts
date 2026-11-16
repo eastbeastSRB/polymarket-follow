@@ -21,10 +21,12 @@ import { CLOSED, sha256 } from "./gate.js";
 import { SIZING_DAYS, SIZING_START, TEST_START, isoDay } from "./instants.js";
 import {
   BooksNeeded,
+  bookLines,
   booksOf,
   legsOf,
   priceSpot,
   readTapes,
+  shelfOf,
   tally,
   type Ctx,
   type LegPrint,
@@ -205,11 +207,12 @@ export async function rehearse(ctx: Ctx, root: string): Promise<SizingFile> {
     CLOSED,
     new Set(priceable.map((s) => s.iid)),
   );
+  const shelf = shelfOf(books);
   const outcomes = priceable.map((s, i) =>
     priceSpot(
       ctx,
       CLOSED,
-      books,
+      shelf,
       tapes,
       markets.get(s.iid)!,
       s,
@@ -253,6 +256,7 @@ export async function rehearse(ctx: Ctx, root: string): Promise<SizingFile> {
     ),
     tapeTrades: quantiles(legPrints.map((l) => l.trades)),
     tapeMinusBookBps: sides((l) => l.tapeMinusBook),
+    bookLines: bookLines(shelf),
     ctxs,
     funding,
     fundingHoursMissing: outcomes.reduce(

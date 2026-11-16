@@ -433,7 +433,11 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
         legsByDay: { "2025-09-10": 1 },
       },
       baseTier: [],
-      files: { books: 4, booksMissing: 2 },
+      files: {
+        books: 4,
+        booksMissing: 2,
+        bookLines: { files: 4, lines: 4, failed: 0, filesWithFailed: [] },
+      },
     });
     await expect(look(ctx, { open: true }, root, sizing, "d")).rejects.toThrow(
       AlreadyRun,

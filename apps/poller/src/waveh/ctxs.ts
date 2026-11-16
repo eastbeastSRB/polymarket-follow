@@ -5,8 +5,9 @@
  * `mark_px` of the coin's row with the latest stamp in (m, m + 1 min]: a row
  * stamped on the boundary wins over an earlier one, and of two rows of one
  * stamp the first line stands (R1; decisions 2026-11-14, Q6). Only the small
- * coins' rows are read, each by WAVE-H's own schema; a row that fails is
- * dropped and counted, a row stamped at or after the run's bound is not used.
+ * coins' rows are read, each by WAVE-H's own schema; a row that fails, or has
+ * no coin cell, is dropped and counted; a row stamped at or after the run's
+ * bound is not used.
  */
 import { z } from "zod";
 import { MINUTE_MS } from "../schedule.js";
@@ -44,6 +45,7 @@ const Row = z.object({
 });
 
 export type CtxsCount = {
+  /** The small coins' rows, and those without a coin cell. */
   rows: number;
   failed: number;
   /** Rows stamped off a minute's start. */
@@ -73,7 +75,12 @@ export function addCtxs(marks: Marks, text: string, until: number): CtxsCount {
   for (let k = 1; k < lines.length; k++) {
     if (lines[k] === "") continue;
     const cells = lines[k]!.split(",");
-    const coin = cells[iCoin] ?? "";
+    const coin = cells[iCoin];
+    if (coin === undefined || coin === "") {
+      count.rows += 1;
+      count.failed += 1;
+      continue;
+    }
     const series = marks.byCoin.get(coin);
     if (series === undefined) continue;
     count.rows += 1;

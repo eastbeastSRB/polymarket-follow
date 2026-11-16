@@ -44,10 +44,12 @@ import {
 import {
   BooksNeeded,
   LegPrint,
+  bookLines,
   booksOf,
   legsOf,
   priceSpot,
   readTapes,
+  shelfOf,
   tally,
   type Ctx,
   type Outcome,
@@ -317,11 +319,12 @@ export async function look(
     new Set(ctx.coins.list.map((c) => c.assetId)),
   );
   const m = markAt(ctx.kit, read.markets);
+  const shelf = shelfOf(books);
   const priced = all.map((s, i) =>
     priceSpot(
       ctx,
       gate,
-      books,
+      shelf,
       tapes,
       read.markets.get(s.iid)!,
       s,
@@ -381,6 +384,7 @@ export async function look(
         funding: read.funding,
         books: step.needed.length - neededMissing.length,
         booksMissing: neededMissing.length,
+        bookLines: bookLines(shelf),
       },
       dataSha256,
       booksSha256: existsSync(bookText) ? sha256(readFileSync(bookText)) : null,

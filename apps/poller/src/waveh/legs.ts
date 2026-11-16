@@ -124,20 +124,52 @@ export async function readTapes(
   return out;
 }
 
+/** The book files a run reads (H8): the store's book list, and each file read with its lines and the lines failing WAVE-H's schema. */
+export type Shelf = {
+  books: BookList;
+  read: Map<string, { lines: number; failed: number }>;
+};
+
+export const shelfOf = (books: BookList): Shelf => ({ books, read: new Map() });
+
+/** H8's count of the book files read: their lines, those failing, and the files holding one. */
+export function bookLines(shelf: Shelf) {
+  let lines = 0;
+  let failed = 0;
+  for (const c of shelf.read.values()) {
+    lines += c.lines;
+    failed += c.failed;
+  }
+  return {
+    files: shelf.read.size,
+    lines,
+    failed,
+    filesWithFailed: [...shelf.read]
+      .filter(([, c]) => c.failed > 0)
+      .map(([key]) => key)
+      .sort(),
+  };
+}
+
 /** H8's files at x for a coin, from the store's book list (a key the archive lacks is "no file"); the snapshot's age and its file. */
 export function bookFound(
   ctx: Ctx,
   gate: Gate,
-  books: BookList,
+  shelf: Shelf,
   coin: string,
   x: number,
 ): { atHour: Found; before: Found; age: number | null; file: string | null } {
   const found = (hour: number): Found => {
     const key = bookKey(coin, hour);
-    if (books.missing.has(key)) return "no file";
-    if (!books.files.has(key)) throw new BooksNeeded(key);
-    return lastAtOrBefore(readLz4(gate, ctx.store, books.files, key), coin, x)
-      .book;
+    if (shelf.books.missing.has(key)) return "no file";
+    if (!shelf.books.files.has(key)) throw new BooksNeeded(key);
+    const { book, lines, failed } = lastAtOrBefore(
+      readLz4(gate, ctx.store, shelf.books.files, key),
+      coin,
+      x,
+    );
+    shelf.read.set(key, { lines, failed });
+    return book;
   };
   const [h, prior] = bookHours(x);
   const atHour = found(h!);
@@ -180,7 +212,7 @@ export type Outcome = { spot: Spot; priced: Priced | null; legs: LegPrint[] };
 export function priceSpot(
   ctx: Ctx,
   gate: Gate,
-  books: BookList,
+  shelf: Shelf,
   tapes: ReadonlyMap<string, Trade[] | null>,
   market: Market,
   s: Spot,
@@ -193,7 +225,7 @@ export function priceSpot(
   let units: number | null = null;
   for (const [n, x] of [s.xIn, s.xOut].entries()) {
     const buy = n === 0 ? s.dir > 0 : s.dir < 0;
-    const f = bookFound(ctx, gate, books, coin, x);
+    const f = bookFound(ctx, gate, shelf, coin, x);
     const at = bookAt(x, f.atHour, f.before);
     const tape = tapes.get(`${id}|${n}`) ?? null;
     const walk = (levels: readonly Level[]) =>

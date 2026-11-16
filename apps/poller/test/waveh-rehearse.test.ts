@@ -24,7 +24,12 @@ import { SIZING_START, TEST_START } from "../src/waveh/instants.js";
 import { lookStep1 } from "../src/waveh/look.js";
 import { CLOSED, SealedError } from "../src/waveh/gate.js";
 import { bookKey } from "../src/waveh/keys.js";
-import { BooksNeeded, priceSpot, type Ctx } from "../src/waveh/legs.js";
+import {
+  BooksNeeded,
+  priceSpot,
+  shelfOf,
+  type Ctx,
+} from "../src/waveh/legs.js";
 import { newPass, passFile } from "../src/waveh/pass.js";
 import { rehearse } from "../src/waveh/rehearse.js";
 import { Settings, windowEnd } from "../src/waveh/run.js";
@@ -317,10 +322,10 @@ describe(
       const x1 = W1 + 7 * MINUTE_MS;
       const x2 = W2 + 12 * MINUTE_MS;
       const books: string[] = [];
-      const book = (t: number) => {
+      const book = (t: number, tail = "") => {
         const key = bookKey("SOL", t - (t % HOUR_MS));
         const bytes = Buffer.from(
-          lz4js.compress(Buffer.from(snapshot("SOL", t - 2_000))),
+          lz4js.compress(Buffer.from(`${snapshot("SOL", t - 2_000)}${tail}`)),
         );
         const file = path.join(store, ...key.split("/"));
         mkdirSync(path.dirname(file), { recursive: true });
@@ -336,7 +341,8 @@ describe(
         }),
       );
       book(x1 + DAY_MS);
-      book(x2);
+      // H8: a line failing the schema is dropped and counted.
+      book(x2, "\n{not json");
       book(x2 + DAY_MS);
       writeFileSync(path.join(store, "books.jsonl"), `${books.join("\n")}\n`);
       // A TEST file in the list, which the rehearsal must never open: not even lz4.
@@ -389,6 +395,12 @@ describe(
         depthShortPositions: 0,
         unpriced: {},
         tapeMinusBookBps: { buy: { n: 1 }, sell: { n: 0 } },
+        bookLines: {
+          files: 3,
+          lines: 4,
+          failed: 1,
+          filesWithFailed: [bookKey("SOL", x2 - (x2 % HOUR_MS))],
+        },
       });
       // R2: the entry at 07-30 23:22 walked 50 at 99 on the tape against 100.1 at the book.
       expect(
@@ -525,7 +537,7 @@ describe(
       const out = priceSpot(
         ctx,
         CLOSED,
-        books,
+        shelfOf(books),
         new Map([
           ["0|0", []],
           ["0|1", null],

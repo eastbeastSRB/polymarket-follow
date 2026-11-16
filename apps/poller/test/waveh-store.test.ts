@@ -472,6 +472,22 @@ describe("the marks, funding and the market object (H9, H10; R1)", () => {
     expect(edge.byCoin.get("SOL")![1_439]).toBe(150);
   });
 
+  it("counts a row without a coin cell, which may be a small coin's, as failing", () => {
+    const marks = newMarks(coins, day, day + 86_400_000);
+    expect(
+      addCtxs(
+        marks,
+        [
+          head,
+          iso(day + MINUTE_MS),
+          `${iso(day + 2 * MINUTE_MS)},,0,1,1,1,0,1,100,1,1,1`,
+          row(day + 3 * MINUTE_MS, "SOL", "100"),
+        ].join("\n"),
+        Infinity,
+      ),
+    ).toEqual({ rows: 3, failed: 2, offMinute: 0, late: 0, twice: 0 });
+  });
+
   it("prices a settlement inside a stretch of rows stamped at :20, through the kit (Q6's 7 positions)", async () => {
     const kit = await loadResearch();
     const marks = newMarks(coins, day, day + 86_400_000);
