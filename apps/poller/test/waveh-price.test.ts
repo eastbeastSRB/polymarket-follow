@@ -13,6 +13,7 @@ import { episodeSpots, waveSpots } from "../src/waveh/positions.js";
 import {
   FEE,
   bookAt,
+  levelsOf,
   pricePosition,
   tapeAt,
   type Trade,
@@ -246,6 +247,30 @@ describe("a position's price (H7–H9)", () => {
     expect(p.depthShort).toBe(true);
     expect(p.entryCost).toBeNull();
     expect(p.net).not.toBeNull();
+  });
+
+  it("flags a position whose exit leg is short of depth, and walks no tape record of size or price 0", () => {
+    const thin = {
+      source: "book" as const,
+      book: toBook(xOut - 300, [["110", "1"]], [["111", "50"]]),
+    };
+    const p = pricePosition(kit, market(), {
+      dir: 1,
+      xIn,
+      xOut,
+      entry,
+      exit: thin,
+      base: null,
+    });
+    expect(p.legs.map((l) => l!.short)).toEqual([false, true]);
+    expect(p.depthShort).toBe(true);
+    expect(
+      levelsOf([
+        { t: xIn, px: 0, sz: 5, user: "0xa", tid: "1" },
+        { t: xIn, px: 100, sz: 0, user: "0xb", tid: "2" },
+        { t: xIn, px: 101, sz: 2, user: "0xc", tid: "3" },
+      ]),
+    ).toEqual([[101, 2]]);
   });
 
   it("leaves a leg with neither book nor trade unpriced, and a settlement without a mark", () => {

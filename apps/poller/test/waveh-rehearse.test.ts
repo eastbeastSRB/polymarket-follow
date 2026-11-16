@@ -48,6 +48,7 @@ import {
   dayOf,
   fillKey,
   liquidation,
+  lz4,
   lz4js,
   makeStore,
   scratch,
@@ -559,6 +560,82 @@ describe(
       expect(out.legs.map((l) => [l.source, l.why, l.file])).toEqual([
         ["book", null, inKey],
         ["sealed", "no book file", null],
+      ]);
+    });
+
+    it("reads the hour before's book in an hour's first 10 s, when x's file holds no snapshot at or before x or is not in the archive (H8)", async () => {
+      // A SOL wave whose position enters at 11:00:03 and leaves 24 h later.
+      const t2 = Date.parse("2025-06-20T10:58:03Z");
+      const { store } = makeStore(
+        new Map([
+          [
+            fillKey(t2),
+            [
+              ...liquidation(1, "SOL", "A", t2 - 8 * MINUTE_MS, 1),
+              ...liquidation(2, "SOL", "A", t2, 2),
+            ].join("\n"),
+          ],
+        ]),
+      );
+      const xIn = t2 + 2 * MINUTE_MS;
+      const xOut = xIn + DAY_MS;
+      const hour = (x: number) => x - (x % HOUR_MS);
+      const books: string[] = [];
+      const book = (key: string, at: number) => {
+        const bytes = lz4(snapshot("SOL", at));
+        const file = path.join(store, ...key.split("/"));
+        mkdirSync(path.dirname(file), { recursive: true });
+        writeFileSync(file, bytes);
+        books.push(
+          JSON.stringify({ key, bytes: bytes.length, sha256: sha(bytes) }),
+        );
+      };
+      // The entry: x's hour holds only a later snapshot; the hour before's is 4 s old.
+      book(bookKey("SOL", hour(xIn)), xIn + 2_000);
+      book(bookKey("SOL", hour(xIn) - HOUR_MS), xIn - 4_000);
+      // The exit: x's hour has no file in the archive; the hour before's is 5 s old.
+      books.push(
+        JSON.stringify({ key: bookKey("SOL", hour(xOut)), missing: true }),
+      );
+      book(bookKey("SOL", hour(xOut) - HOUR_MS), xOut - 5_000);
+      writeFileSync(path.join(store, "books.jsonl"), `${books.join("\n")}\n`);
+      const root = mkdtempSync(path.join(tmpdir(), "waveh-root-"));
+      scratch.push(root);
+      await rehearse(
+        {
+          store,
+          list: manifestList(
+            readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+          ),
+          coins,
+          kit,
+          pace: () => Promise.resolve(),
+          log: () => {},
+        },
+        root,
+      );
+      const dir = path.join(root, "rehearsal");
+      expect(readFileSync(path.join(dir, "books-needed.txt"), "utf8")).toBe(
+        `${[hour(xIn), hour(xIn) - HOUR_MS, hour(xOut), hour(xOut) - HOUR_MS]
+          .map((h) => bookKey("SOL", h))
+          .sort()
+          .join("\n")}\n`,
+      );
+      const [o] = gunzipSync(
+        readFileSync(path.join(dir, "sizing-outcomes.jsonl.gz")),
+      )
+        .toString("utf8")
+        .trim()
+        .split("\n")
+        .map(
+          (l) =>
+            JSON.parse(l) as {
+              legs: { source: string; file: string | null; age: number }[];
+            },
+        );
+      expect(o!.legs.map((l) => [l.source, l.file, l.age])).toEqual([
+        ["book", bookKey("SOL", hour(xIn) - HOUR_MS), 4_000],
+        ["book", bookKey("SOL", hour(xOut) - HOUR_MS), 5_000],
       ]);
     });
 

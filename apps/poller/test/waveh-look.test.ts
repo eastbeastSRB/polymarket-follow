@@ -365,6 +365,14 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       run({ ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(broken) } }),
     ).rejects.toThrow("depthShort");
     expect(paced).toBe(3 * once);
+    // A sealed file one position short of SIZING's.
+    const short = gzipSync(
+      `${gunzipSync(real).toString("utf8").trim().split("\n").slice(0, -1).join("\n")}\n`,
+    );
+    writeFileSync(sealedFile, short);
+    await expect(
+      run({ ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(short) } }),
+    ).rejects.toThrow("hold 2 positions, SIZING 3");
     writeFileSync(sealedFile, real);
     // R7: a book file held but not its list's bytes stops the look.
     const bad = books.map((l) =>
@@ -457,7 +465,7 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
           JSON.parse(l) as {
             set: string;
             spot: { t: number };
-            priced: { net: number } | null;
+            priced: { net: number; excess: number | null } | null;
             legs: {
               source: string;
               why: string | null;
@@ -483,6 +491,12 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       ["book", null, [], bookKey("SOL", hourOf(W + ENTRY + DAY_MS))],
     ]);
     expect(lines.every((l) => l.priced?.net !== null)).toBe(true);
+    // SIZING's positions have no BASE cell, those the look priced again too (H14).
+    expect(lines.slice(1).map((l) => l.priced?.excess)).toEqual([
+      null,
+      null,
+      null,
+    ]);
     const report = readJson("report.json") as Record<
       string,
       Record<string, unknown>

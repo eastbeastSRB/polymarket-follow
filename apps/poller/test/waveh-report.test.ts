@@ -116,6 +116,15 @@ describe("a line on marks (H13)", () => {
     expect(line.onMarks?.mean).toBeCloseTo(100, 9);
     expect(line.excess?.n).toBe(1);
     expect(line.excess?.mean).toBeCloseTo(90, 9);
+    // Two days, excess +90 and −10: the lower bound is mean − z·SE.
+    const day1 = T0 + DAY_MS + HOUR_MS;
+    const two = marksLine(m(), [
+      spot({}),
+      spot({ t: day1, xIn: day1 + 120_000, xOut: day1 + DAY_MS + 120_000 }),
+    ]);
+    expect(two.excess?.mean).toBeCloseTo(40, 9);
+    expect(two.excess?.se).toBeGreaterThan(0);
+    expect(two.excessLow).toBeCloseTo(40 - 2.58 * two.excess!.se!, 9);
   });
 });
 
@@ -211,6 +220,19 @@ describe("the net lines (H13, H14)", () => {
     expect(d.daysAlike.mean).toBeCloseTo(-5, 9);
     expect(d.daysAlike.days).toBe(3);
     expect(dayMost(kit, [])).toBeNull();
+    // A tie goes to the earlier day; the five busiest of six days hold 7 of 8.
+    const tie = dayMost(kit, [
+      at(1, 1),
+      at(1, 2),
+      at(0, 3),
+      at(0, 4),
+      ...[2, 3, 4, 5].map((day) => at(day, 5)),
+    ])!;
+    expect(tie).toMatchObject({
+      day: "2025-09-10",
+      positions: 2,
+      fiveBusiestShare: 7 / 8,
+    });
   });
 });
 
@@ -389,6 +411,36 @@ describe("the lines beside (H13): which positions each takes", () => {
     });
     // Slice 0's SOL entries gain (+3,310 and 0); slice 1 has no marked position.
     expect(out["EVERY SLICE"].aboveZero).toBe(1);
+    // With DOGE's marks flat, slice 1's mean is 0, which is not above zero.
+    const flat = kit.panel.marketFrom({
+      iid: iid("DOGE"),
+      symbol: "DOGE",
+      category: "crypto",
+      start: S,
+      end: O + 2 * DAY_MS,
+      firstTrade: null,
+      retired: null,
+      marks: Array.from(
+        { length: (O + 2 * DAY_MS - S) / MINUTE_MS },
+        () => 100,
+      ),
+      klines: { minute: [], trades: [], volume: [] },
+      funding: [],
+    });
+    const withFlat = linesBeside({
+      m: {
+        ...m,
+        market: (k) =>
+          k === iid("SOL") ? sol : k === iid("DOGE") ? flat : undefined,
+      },
+      coins,
+      counted,
+      M: 2,
+      wave,
+      sizingCoins: new Set(["SOL"]),
+    });
+    expect(withFlat["EVERY SLICE"].slices[1]!.mean).toBe(0);
+    expect(withFlat["EVERY SLICE"].aboveZero).toBe(1 / 2);
     expect(out["M HALVED"]).toMatchObject({ M: 1, positions: 4 });
     expect(out["M DOUBLED"]).toMatchObject({ M: 4, positions: 1 });
     expect(out["M BY MONTH"].months.slice(0, 3)).toEqual([
@@ -444,5 +496,9 @@ describe("R9's counts (burstiness)", () => {
       fillsAnEpisode: 2,
     });
     expect(b.waveStateShare).toBeCloseTo(4 / 96, 12);
+    // By quarter-hours: of 01:00, 01:15, 01:30 and 01:45, the last three hold.
+    expect(
+      burstiness(counted, 1, from + HOUR_MS, from + 2 * HOUR_MS).waveStateShare,
+    ).toBe(3 / 4);
   });
 });
