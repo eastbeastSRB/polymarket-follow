@@ -11,13 +11,12 @@ import type { Coin } from "./coins.js";
 import { addCtxs, newMarks, type Marks } from "./ctxs.js";
 import { fundingRows, joinFunding, type FundingRow } from "./funding.js";
 import { boundOf, type Gate } from "./gate.js";
+import { isoDay } from "./instants.js";
 import type { Ctx } from "./legs.js";
 import { StoreError, readLz4, readStoreFile } from "./store.js";
 
 /** The first `asset_ctxs` day: its rows give the marks from the minute before its 00:01 row. */
 export const MARKS_START = Date.parse("2025-05-25T00:00:00Z");
-
-const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
 
 export function marketOf(
   kit: Research,
@@ -52,7 +51,7 @@ export async function readMarkets(
   const ctxs = { files: 0, rows: 0, failed: 0, late: 0, twice: 0 };
   for (let d = MARKS_START; d < bound; d += DAY_MS) {
     await ctx.pace();
-    const key = `asset_ctxs/${dayKey(d).replaceAll("-", "")}.csv.lz4`;
+    const key = `asset_ctxs/${isoDay(d).replaceAll("-", "")}.csv.lz4`;
     const c = addCtxs(
       marks,
       Buffer.from(readLz4(gate, ctx.store, ctx.list, key)).toString("utf8"),

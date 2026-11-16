@@ -8,10 +8,8 @@
  */
 import { z } from "zod";
 import { HOUR_MS } from "../schedule.js";
+import { numText } from "./fills.js";
 
-const numText = z
-  .string()
-  .refine((s) => s.length > 0 && Number.isFinite(Number(s)), "not a number");
 const Row = z.object({
   coin: z.string(),
   fundingRate: numText,

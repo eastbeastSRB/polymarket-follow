@@ -8,17 +8,17 @@
  * prints counts and mechanics only: never a leg's prices, a gross, net,
  * excess, mean, error, win share or BASE value.
  */
-import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
+import { z } from "zod";
 import { byM4 } from "../market1/fills.js";
 import { accountsAt } from "../market1/waves.js";
 import { DAY_MS } from "../schedule.js";
 import { coinName } from "./coins.js";
 import type { Counted } from "./fills.js";
-import { CLOSED } from "./gate.js";
-import { SIZING_DAYS, SIZING_START, TEST_START } from "./instants.js";
+import { CLOSED, sha256 } from "./gate.js";
+import { SIZING_DAYS, SIZING_START, TEST_START, isoDay } from "./instants.js";
 import {
   BooksNeeded,
   booksOf,
@@ -32,10 +32,14 @@ import {
 import { readMarkets } from "./market.js";
 import { newPass, passFile, type Pass } from "./pass.js";
 import { episodeSpots, waveSpots } from "./positions.js";
-import { bySlice, scanM, type ScanRow } from "./slices.js";
-import { StoreError, fillKeys, readBookList, type BookList } from "./store.js";
-
-const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
+import { bySlice, scanM } from "./slices.js";
+import {
+  SHA256,
+  StoreError,
+  fillKeys,
+  readBookList,
+  type BookList,
+} from "./store.js";
 
 /** Every SIZING fill file, one at a time, into one pass; records stamped from TEST's start are not used. */
 export async function sizingPass(ctx: Ctx): Promise<Pass> {
@@ -117,16 +121,28 @@ const quantiles = (xs: readonly number[]) => {
   return { n: s.length, p10: at(0.1), median: at(0.5), p90: at(0.9) };
 };
 
-export type Sizing = {
-  M: number;
-  scan: ScanRow[];
-  days: number;
-  counted: number;
-  outcomes: { file: string; sha256: string; positions: number };
-};
+/** `sizing.json`, the rehearsal's (H5): M, its scan, and the sealed SIZING outcomes' file and SHA-256. */
+export const SizingFile = z.object({
+  M: z.number().int().positive(),
+  scan: z.array(
+    z.object({
+      M: z.number().int().positive(),
+      episodes: z.number().int().nonnegative(),
+      rate: z.number(),
+    }),
+  ),
+  days: z.number(),
+  counted: z.number().int().nonnegative(),
+  outcomes: z.object({
+    file: z.literal("sizing-outcomes.jsonl.gz"),
+    sha256: z.string().regex(SHA256),
+    positions: z.number().int().nonnegative(),
+  }),
+});
+export type SizingFile = z.infer<typeof SizingFile>;
 
 /** The whole rehearsal; writes `books-needed.txt` and throws BooksNeeded when the book list lacks a leg's file. */
-export async function rehearse(ctx: Ctx, root: string): Promise<Sizing> {
+export async function rehearse(ctx: Ctx, root: string): Promise<SizingFile> {
   const dir = path.join(root, "rehearsal");
   mkdirSync(dir, { recursive: true });
   const t0 = Date.now();
@@ -158,7 +174,7 @@ export async function rehearse(ctx: Ctx, root: string): Promise<Sizing> {
     ),
     counted: counted.length,
     countedByCoin: tally(counted, (f) => coinName(ctx.coins, f.iid)),
-    countedByDay: tally(counted, (f) => dayKey(f.t)),
+    countedByDay: tally(counted, (f) => isoDay(f.t)),
     liquidatedAccounts: new Set(counted.map((f) => f.addr)).size,
     M,
     scanRows: scan.length,
@@ -249,8 +265,8 @@ export async function rehearse(ctx: Ctx, root: string): Promise<Sizing> {
       0,
     ),
     outcomes: {
-      file: "sizing-outcomes.jsonl.gz",
-      sha256: createHash("sha256").update(sealed).digest("hex"),
+      file: "sizing-outcomes.jsonl.gz" as const,
+      sha256: sha256(sealed),
       positions: spots.length,
     },
     minutes: Math.round((Date.now() - t0) / 60_000),
@@ -260,7 +276,7 @@ export async function rehearse(ctx: Ctx, root: string): Promise<Sizing> {
     `${JSON.stringify(report, null, 2)}\n`,
   );
   ctx.log("rehearsal", { outcomes: report.outcomes, minutes: report.minutes });
-  const sizing: Sizing = {
+  const sizing: SizingFile = {
     M,
     scan,
     days: SIZING_DAYS,

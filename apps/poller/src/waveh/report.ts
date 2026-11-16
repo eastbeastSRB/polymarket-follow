@@ -15,15 +15,19 @@ import { dayOf } from "../paper/stats.js";
 import { DAY_MS, HOUR_MS } from "../schedule.js";
 import { coinName, type Coins } from "./coins.js";
 import type { Counted } from "./fills.js";
-import { DATA_END, SIZING_START, TEST_END, TEST_START } from "./instants.js";
+import {
+  DATA_END,
+  SIZING_START,
+  TEST_END,
+  TEST_START,
+  isoDay,
+  monthOf,
+} from "./instants.js";
 import { tally, type Outcome } from "./legs.js";
 import { episodeSpots, waveSpots, type Spot } from "./positions.js";
 import { burstiness } from "./rehearse.js";
 import { bySlice, scanM } from "./slices.js";
 import { Z } from "./verdict.js";
-
-const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
-const monthOf = (t: number) => new Date(t).toISOString().slice(0, 7);
 
 /** How a line on marks reads a position: the kit, the coin's market object, its BASE cell at x_in (H10). */
 export type MarkAt = {
@@ -158,7 +162,7 @@ export function dayMost(kit: Research, os: readonly Outcome[]) {
     [...sums].map(([d, g]) => ({ t: d, iid: 0, x: g.sum / g.n })),
   );
   return {
-    day: iso(day),
+    day: isoDay(day),
     positions: n,
     share: n / os.length,
     without: { mean: without?.mean ?? null, se: without?.se ?? null },

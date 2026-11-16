@@ -6,6 +6,7 @@
  * leg; funding by the kit's `fundingBetween`; the net by M9's formulas. The
  * walks are MARKET-1's.
  */
+import { z } from "zod";
 import { usable, walkClose, walkOpen, type Book } from "../market1/book.js";
 import { byM4 } from "../market1/fills.js";
 import { NOTIONAL, grossOnMarks } from "../market1/price.js";
@@ -19,7 +20,13 @@ export const FEE = 0.00045;
 /** The tape's window after a leg's instant (H8). */
 export const TAPE_MS = 60_000;
 
-export type TapeWhy = "no book file" | "no snapshot" | "stale" | "not usable";
+export const TapeWhy = z.enum([
+  "no book file",
+  "no snapshot",
+  "stale",
+  "not usable",
+]);
+export type TapeWhy = z.infer<typeof TapeWhy>;
 
 /** A book file's snapshot at or before x, none in the file, or no such file in the archive. */
 export type Found = Book | null | "no file";
@@ -105,33 +112,36 @@ export type Quote =
   | { source: "book"; book: Book }
   | { source: "tape"; why: TapeWhy; trades: readonly Trade[] };
 
-export type Leg = {
-  source: "book" | "tape";
-  why: TapeWhy | null;
-  price: number;
-  deepest: number;
-  short: boolean;
+export const Leg = z.object({
+  source: z.enum(["book", "tape"]),
+  why: TapeWhy.nullable(),
+  price: z.number(),
+  deepest: z.number(),
+  short: z.boolean(),
   /** The snapshot's time, or the tape's first and last instants. */
-  at: number[];
-};
+  at: z.array(z.number()),
+});
+export type Leg = z.infer<typeof Leg>;
 
-export type Priced = {
+const num = z.number().nullable();
+export const Priced = z.object({
   /** Null when unpriced. */
-  net: number | null;
-  unpriced: string | null;
-  gross: number | null;
-  fees: number | null;
-  funding: number | null;
-  fundingMissing: number;
+  net: num,
+  unpriced: z.string().nullable(),
+  gross: num,
+  fees: num,
+  funding: num,
+  fundingMissing: z.number(),
   /** dir × (the mark at x_out ÷ the mark at x_in − 1) × 10⁴. */
-  grossOnMarks: number | null;
+  grossOnMarks: num,
   /** The gross on marks − dir × BASE. */
-  excess: number | null;
+  excess: num,
   /** dir × (p_in ÷ the book's mid − 1) × 10⁴, for an entry at the book. */
-  entryCost: number | null;
-  legs: [Leg | null, Leg | null];
-  depthShort: boolean;
-};
+  entryCost: num,
+  legs: z.tuple([Leg.nullable(), Leg.nullable()]),
+  depthShort: z.boolean(),
+});
+export type Priced = z.infer<typeof Priced>;
 
 export const levelsOf = (trades: readonly Trade[]) =>
   trades.filter((t) => t.px > 0 && t.sz > 0).map((t) => [t.px, t.sz] as const);

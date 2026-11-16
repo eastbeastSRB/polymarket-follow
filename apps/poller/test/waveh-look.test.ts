@@ -24,13 +24,8 @@ import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
 import { CLOSED } from "../src/waveh/gate.js";
 import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
-import {
-  AlreadyRun,
-  FrozenDiffer,
-  look,
-  SizingFile,
-} from "../src/waveh/look.js";
-import { rehearse } from "../src/waveh/rehearse.js";
+import { AlreadyRun, FrozenDiffer, look } from "../src/waveh/look.js";
+import { SizingFile, rehearse } from "../src/waveh/rehearse.js";
 import { StoreError, manifestList } from "../src/waveh/store.js";
 import {
   CTXS_HEAD,

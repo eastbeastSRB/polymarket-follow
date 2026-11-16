@@ -22,6 +22,7 @@ import {
   type Format,
   type Rec,
 } from "./fills.js";
+import { monthOf } from "./instants.js";
 import { StoreError, linesOf, readLz4, type DataList } from "./store.js";
 
 export type Pass = {
@@ -52,7 +53,6 @@ export const newPass = (): Pass => ({
 
 const add = (m: Map<string, number>, k: string, n = 1) =>
   m.set(k, (m.get(k) ?? 0) + n);
-const monthOf = (t: number) => new Date(t).toISOString().slice(0, 7);
 /** The failure share above which a day stops the run, and the least count (H2). */
 export const FAIL_SHARE = 0.01;
 export const FAIL_LEAST = 10;

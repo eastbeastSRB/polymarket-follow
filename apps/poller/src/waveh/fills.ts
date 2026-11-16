@@ -30,7 +30,7 @@ export function parseLine(text: string): unknown {
 }
 
 /** As the kit's `isNumStr`: a non-empty string that is a finite number. */
-const numText = z
+export const numText = z
   .string()
   .refine((s) => s.length > 0 && Number.isFinite(Number(s)), "not a number");
 

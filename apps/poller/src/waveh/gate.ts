@@ -63,7 +63,7 @@ export type Freeze =
   | { ok: true; sha256: string; files: number }
   | { ok: false; problems: string[] };
 
-const sha256 = (bytes: Buffer): string =>
+export const sha256 = (bytes: Buffer | string): string =>
   createHash("sha256").update(bytes).digest("hex");
 
 function filesUnder(root: string, rel: string): string[] {

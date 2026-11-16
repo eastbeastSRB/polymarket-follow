@@ -7,11 +7,9 @@
 import { z } from "zod";
 import { HOUR_MS } from "../schedule.js";
 import { toBook, type Book } from "../market1/book.js";
+import { numText } from "./fills.js";
 import { linesOf } from "./store.js";
 
-const numText = z
-  .string()
-  .refine((s) => s.length > 0 && Number.isFinite(Number(s)), "not a number");
 const Level = z.object({ px: numText, sz: numText });
 const Snapshot = z.object({
   raw: z.object({

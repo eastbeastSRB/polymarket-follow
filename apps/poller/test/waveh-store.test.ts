@@ -6,7 +6,6 @@
  */
 import { createHash } from "node:crypto";
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -41,25 +40,18 @@ import {
   readLz4,
   readStoreFile,
 } from "../src/waveh/store.js";
+import { cleanScratch, lz4 as frame, scratch } from "./waveh-world.js";
 
 const CLOSED = { open: false } as const;
 const OPEN = { open: true } as const;
 const sha256 = (b: Buffer | Uint8Array | string) =>
   createHash("sha256").update(b).digest("hex");
-const lz4js = createRequire(import.meta.url)("lz4js") as {
-  compress: (src: Uint8Array) => Uint8Array;
-};
-const frame = (text: string) => Buffer.from(lz4js.compress(Buffer.from(text)));
-const scratch: string[] = [];
 const tmp = (name: string) => {
   const dir = mkdtempSync(path.join(tmpdir(), `waveh-${name}-`));
   scratch.push(dir);
   return dir;
 };
-afterEach(() => {
-  for (const d of scratch.splice(0))
-    rmSync(d, { recursive: true, force: true });
-});
+afterEach(cleanScratch);
 const put = (root: string, key: string, bytes: Buffer | string) => {
   const file = path.join(root, ...key.split("/"));
   mkdirSync(path.dirname(file), { recursive: true });

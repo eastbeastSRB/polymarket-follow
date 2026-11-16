@@ -3,7 +3,9 @@
  * context; the book files and the tapes a position's legs read, each through
  * the gate; a position priced, with what the prints count of its legs.
  */
+import { z } from "zod";
 import { walkClose, walkOpen, type Level } from "../market1/book.js";
+import { NOTIONAL } from "../market1/price.js";
 import type { Market, Research } from "../paper/research.js";
 import { HOUR_MS } from "../schedule.js";
 import { bookHours, bookKey, lastAtOrBefore } from "./books.js";
@@ -155,20 +157,21 @@ export function bookFound(
   };
 }
 
-export type LegPrint = {
-  side: "buy" | "sell";
-  source: "book" | "tape" | "none" | "sealed";
-  why: string | null;
+export const LegPrint = z.object({
+  side: z.enum(["buy", "sell"]),
+  source: z.enum(["book", "tape", "none", "sealed"]),
+  why: z.string().nullable(),
   /** x less the snapshot's time, when one was found. */
-  age: number | null;
+  age: z.number().nullable(),
   /** The book file of the snapshot found (H9: so the Final review can reprice). */
-  file: string | null;
-  trades: number;
+  file: z.string().nullable(),
+  trades: z.number(),
   /** The tape's `tid`s in H4's order, when the book did not price the leg. */
-  tids: string[];
+  tids: z.array(z.string()),
   /** R2: (the tape's walk − the book's) ÷ the book's × 10⁴, when both priced the leg. */
-  tapeMinusBook: number | null;
-};
+  tapeMinusBook: z.number().nullable(),
+});
+export type LegPrint = z.infer<typeof LegPrint>;
 
 export type Outcome = { spot: Spot; priced: Priced | null; legs: LegPrint[] };
 
@@ -197,7 +200,7 @@ export function priceSpot(
     const at = bookAt(x, f.atHour, f.before);
     const tape = tapes.get(`${id}|${n}`) ?? null;
     const walk = (levels: readonly Level[]) =>
-      n === 0 ? walkOpen(levels, 1_000) : walkClose(levels, units!);
+      n === 0 ? walkOpen(levels, NOTIONAL) : walkClose(levels, units!);
     const print: LegPrint = {
       side: buy ? "buy" : "sell",
       source: "book",
@@ -228,7 +231,7 @@ export function priceSpot(
       print.tids = tape.map((t) => t.tid);
       quotes.push({ source: "tape", why: at.why, trades: tape });
     }
-    if (n === 0 && levels.length > 0) units = walkOpen(levels, 1_000).units;
+    if (n === 0 && levels.length > 0) units = walkOpen(levels, NOTIONAL).units;
     legs.push(print);
   }
   if (legs.some((l) => l.source === "sealed"))

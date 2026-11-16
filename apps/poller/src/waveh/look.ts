@@ -17,7 +17,6 @@
  * outcome is written or logged; then the positions and the report. A second
  * step 2 refuses.
  */
-import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -32,16 +31,19 @@ import { byM4 } from "../market1/fills.js";
 import { DAY_MS, HOUR_MS } from "../schedule.js";
 import { WAVEH_DIR, coinName } from "./coins.js";
 import type { Counted } from "./fills.js";
-import { keyDate, type Gate } from "./gate.js";
+import { keyDate, sha256, type Gate } from "./gate.js";
 import {
   DATA_END,
   SIZING_DAYS,
   SIZING_START,
   TEST_END,
   TEST_START,
+  isoDay,
+  monthOf,
 } from "./instants.js";
 import {
   BooksNeeded,
+  LegPrint,
   booksOf,
   legsOf,
   priceSpot,
@@ -53,9 +55,17 @@ import {
 import { readMarkets } from "./market.js";
 import { newPass, passFile } from "./pass.js";
 import { episodeSpots, waveSpots, type Spot } from "./positions.js";
+import { Priced } from "./price.js";
+import { SizingFile } from "./rehearse.js";
 import { dayMost, linesBeside, markAt, netLine, testMonths } from "./report.js";
 import { bySlice, scanM } from "./slices.js";
-import { StoreError, fillKeys, readBookList, type BookList } from "./store.js";
+import {
+  SHA256,
+  StoreError,
+  fillKeys,
+  readBookList,
+  type BookList,
+} from "./store.js";
 import { Z, decide } from "./verdict.js";
 
 /** The run cannot start: WAVE-H's freeze is not valid (exit 4). */
@@ -63,38 +73,11 @@ export class FrozenDiffer extends Error {}
 /** `look/result.json` exists: the one look has run (exit 5). */
 export class AlreadyRun extends Error {}
 
-const SHA256 = /^[0-9a-f]{64}$/;
-
-/** `waveh/sizing.json`, the rehearsal's (H5): M, its scan, and the sealed SIZING outcomes' file and SHA-256. */
-export const SizingFile = z.object({
-  M: z.number().int().positive(),
-  scan: z.array(
-    z.object({
-      M: z.number().int().positive(),
-      episodes: z.number().int().nonnegative(),
-      rate: z.number(),
-    }),
-  ),
-  days: z.number(),
-  counted: z.number().int().nonnegative(),
-  outcomes: z.object({
-    file: z.literal("sizing-outcomes.jsonl.gz"),
-    sha256: z.string().regex(SHA256),
-    positions: z.number().int().nonnegative(),
-  }),
-});
-export type SizingFile = z.infer<typeof SizingFile>;
-
 /** The frozen `waveh/sizing.json`; a file that does not parse throws (our own file). */
 export const loadSizing = (dir = WAVEH_DIR): SizingFile =>
   SizingFile.parse(
     JSON.parse(readFileSync(path.join(dir, "sizing.json"), "utf8")),
   );
-
-const sha256 = (b: Buffer | string) =>
-  createHash("sha256").update(b).digest("hex");
-const monthOf = (t: number) => new Date(t).toISOString().slice(0, 7);
-const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 
 export type Step1 = {
   M: number;
@@ -214,47 +197,11 @@ export async function lookStep1(
 
 const Step1File = z.object({ sha256: z.string().regex(SHA256) });
 
-const num = z.number().nullable();
-const Leg = z.object({
-  source: z.enum(["book", "tape"]),
-  why: z
-    .enum(["no book file", "no snapshot", "stale", "not usable"])
-    .nullable(),
-  price: z.number(),
-  deepest: z.number(),
-  short: z.boolean(),
-  at: z.array(z.number()),
-});
 /** A line of the rehearsal's sealed outcomes (our own file: a line that fails throws). */
 const SealedLine = z.object({
   spot: z.unknown(),
-  priced: z
-    .object({
-      net: num,
-      unpriced: z.string().nullable(),
-      gross: num,
-      fees: num,
-      funding: num,
-      fundingMissing: z.number(),
-      grossOnMarks: num,
-      excess: num,
-      entryCost: num,
-      legs: z.tuple([Leg.nullable(), Leg.nullable()]),
-      depthShort: z.boolean(),
-    })
-    .nullable(),
-  legs: z.array(
-    z.object({
-      side: z.enum(["buy", "sell"]),
-      source: z.enum(["book", "tape", "none", "sealed"]),
-      why: z.string().nullable(),
-      age: num,
-      file: z.string().nullable(),
-      trades: z.number(),
-      tids: z.array(z.string()),
-      tapeMinusBook: num,
-    }),
-  ),
+  priced: Priced.nullable(),
+  legs: z.array(LegPrint),
 });
 
 /** A file written whole or not at all. */
@@ -422,10 +369,10 @@ export async function look(
         (f) => `${coinName(ctx.coins, f.iid)}|${f.method}`,
       ),
       bookHoles: {
-        filesByDay: tally(neededMissing, (k) => iso(keyDate(k)!)),
+        filesByDay: tally(neededMissing, (k) => isoDay(keyDate(k)!)),
         legsByDay: tally(
           legs.filter((x) => x.l.why === "no book file"),
-          (x) => iso(x.n === 0 ? x.o.spot.xIn : x.o.spot.xOut),
+          (x) => isoDay(x.n === 0 ? x.o.spot.xIn : x.o.spot.xOut),
         ),
       },
       baseTier: Object.entries(

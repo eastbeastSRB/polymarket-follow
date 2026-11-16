@@ -20,7 +20,7 @@ export class StoreError extends Error {}
 /** A list of store files: key → SHA-256. */
 export type DataList = ReadonlyMap<string, string>;
 
-const SHA256 = /^[0-9a-f]{64}$/;
+export const SHA256 = /^[0-9a-f]{64}$/;
 
 /** `waveh/data.sha256`: sha256sum lines `<hash> *<key>`, `#` comments; any other line throws (our own file). */
 export function readDataList(text: string): DataList {
