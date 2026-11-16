@@ -1,5 +1,132 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (WAVE-H-FIX's technical calls — WAVE-H's fix round, the
+supervisor's 12 calls of the entry below and its answers of 03:32Z to the
+round's plan): **THE 12 CALLS ARE BUILT, ONE FIX A COMMIT; THE REHEARSAL RAN
+A THIRD TIME AND HELD EVERY COUNT, BUT H10'S CHANGE PRICES NONE OF THE 7
+"FUNDING WITHOUT A MARK": THEIR CAUSE IS REAL HOLES IN THE ARCHIVE'S MARKS;
+`data.sha256` AND A NEW DRAFT LIST ARE COMMITTED; NOTHING IS FROZEN OR RUN ON
+TEST.**
+
+**What:** `875b9b6` `--data`'s checks (call 6); `708a0d4` `data.sha256`;
+`bff471a` L7, `da6a5fa` L6, `ade159d` L8, `b69fdf9` L9 (call 10's moves);
+`6fccbfd` H10 (call 1); `42d136f` the book lines and cell-less mark rows
+counted (call 5); `a3f27f2` step 1 reads the marks and funding (call 2);
+`1c177f2` step 2's cheap refusals first (call 4); `a4f1558` the look's writes
+and the recovery rule (call 3); `c1c82d6` the 8 GB heap (call 7); `c943446`
+the rules made exact (call 8); `40c66fe`, `9299b4e`, `0f6596f` the pins
+(call 9); `a186e8c` L10's cut (call 10); `1987b1c` a test after the breaks;
+`70cdda5` architecture; `c677d17` the draft list; this entry's. Each gated on
+`pnpm verify` in the same command (at the end 57 files + 1 skipped, 510 tests
++ 6 skipped); both live freezes verified after each (61 `d04d3cd8…f31c`, 64
+`b9e17505…2f1d`). Call 11 kept its four items as they were.
+
+**The supervisor's answers to the plan, recorded as the round's calls:**
+1. **Call 3 is amended: "MARKET-1's `writeWhole`" reads "a copy of its
+   behaviour".** WAVE-H's own `writeWhole` (`run.ts`) does what MARKET-1's
+   does: a `.tmp` file flushed, the rename tried again a second apart, 10
+   times in all; its comment names its source (`market1/run.ts`, F2).
+   Importing it would have put `dist/market1/run.js` in WAVE-H's frozen
+   closure and `dist/lock.js` among its shared files, so a change to
+   MARKET-1's process file could stop WAVE-H; the frozen boundary is worth
+   20 lines in two homes. The closure stays MARKET-1's and the paper's ten
+   files.
+2. Step 1's marks counts: the minutes without a mark between a coin's first
+   and last mark, and the settlements without a mark by coin (the kit's own
+   `cumUnmarked`, its 5-minute rule).
+3. "Every expected key": the download's funding grid in `keys.ts`
+   (`FUNDING_STARTS`: SIZING's four, then every 20 days from TEST's start),
+   pinned to `tools/waveh-fetch.cjs`'s `fundingWindows` by a contract test;
+   the readers read the grid's windows, not the list's keys under a prefix.
+4. The 1% day rule for mark rows sits in the marks reader (exit 5); its text
+   is H10's.
+5. Run 2's folder renamed `rehearsal-run2\` before the third run; only its
+   `counts.json`, `report.json` and `sizing.json` compared; the sealed file
+   moved unread, no line comparison.
+6. The checklist gained off-minute rows = 2,831 and `twice` rising.
+
+**WAVE-H-FIX's own calls:**
+- **Homes (L7, L9):** `legs.ts` (the run's context, the legs' books and
+  tapes, a position priced), `market.ts` (`readMarkets`, `MARKS_START`),
+  `gate.ts` (`CLOSED`, `boundOf`), `coins.ts` (`coinName`), `keys.ts` (every
+  key builder and `keyDate`, which the seal imports). Tests kept their
+  assertions; only their import lines moved.
+- **Call 5's book lines:** a `Shelf` (the book list, and each book file read
+  once with its lines and failing lines) replaces priceSpot's book list; the
+  sums and the files holding a failing line go to the rehearsal's report and
+  the look's `prints.files`. A mark row with no coin cell counts as a failing
+  row of the day (it may be a small coin's).
+- **Call 2:** step 1 reads the marks and funding first (minutes) and the fill
+  files after (hours), so a marks defect stops it early; step 2 takes the
+  market objects from its own step 1 and reads them once.
+- **Call 4:** step 2 checks `books-needed.txt` (step 1's own file) against
+  `books.jsonl` before step 1 again; the positions' hash then makes that
+  list the recomputed one. The check that a sealed line left for the look is
+  one the look prices again moved from the merge to before the tapes.
+- **Call 3:** the three writes stay inline in R7's order, after both payloads
+  are built (no `writeLook`).
+- **Call 9:** `exitOf` sits in `run.ts` with `FrozenDiffer` and `AlreadyRun`
+  moved beside it (no import cycle with `look.ts`); `--final`'s refusals are
+  `finalRefusal(status, present)`; `test/waveh-verdict.test.ts` is the rules
+  review's first made-up look (24 days, 12 coins, HOLDS end to end), so the
+  days and coins fed to the verdict are pinned. The survivors call 9 did not
+  list stay unpinned: d10, i05, j03, j08, n01 (i03 and j04 came with tests
+  written for other calls).
+
+**The breaks** (a scratch copy of `git archive HEAD` at `a186e8c`, a real
+`node_modules` folder of junctions, vitest run directly): 58 breaks of what
+the round adds and of the reviews' survivors; every find text matched once;
+**55 killed by a failing assertion, none by a time limit; 3 survived:** l03
+(no test held a sealed line left for the look to the positions priced
+again: a test added, `1987b1c`, and l03 killed); r03 (no fsync: nothing a
+test can see); t04 (the tool's main not calling its count check: a test of
+main's `--data` would write the real `waveh/data.sha256`). The print pins
+(b56, b65, b66, l02, l04 of `report.ts`) were broken after, all killed.
+`1987b1c`'s message says both r03 and t04 are out of reach for that reason;
+it holds for t04 only.
+
+**The lists:** `waveh/data.sha256` from the finished manifest (9,975 lines,
+completed 01:15:30Z): 9,975 files, `b66a9bb0f165685cb9c9a64a9ef0109681e493ada5e65c9f5a85307b8e6c676c`;
+R3 (i)'s short files: `node_fills_by_block/hourly/20250727/8.lz4` alone,
+the hour both formats share. The draft list `waveh/FROZEN.draft.sha256`: 74
+files (71 + `data.sha256`, `keys.js`, `legs.js`), from `70cdda5` on a clean
+tree, `6bd52e61029556477a51837f3d16b6703b793fc99c1eef4841c6b0b7e2c6a5f1`;
+it verifies against the build.
+
+**The rehearsal's third run** (the build of `70cdda5`, `node
+--max-old-space-size=8192 dist/waveh.js rehearse`, `WAVEH_ROOT` WAVE-H-BUILD's
+slot; started 05:10:40Z, waited out its window to 06:00Z, ended 07:11:48Z,
+exit 0). **Every "must not move" held:** `counts.json` equal to run 2's but
+the minutes; `report.json`'s legs (566 at the book), book ages, tape − book,
+funding (116 files, 46,220 rows), the files and rows of `asset_ctxs` (68,
+2,966,816); `sizing.json` byte-identical (M = 147, 346 scan rows, 425,433
+counted, 290 positions). **Must move:** failing mark rows 2,831 → 0 and
+off-minute rows 2,831 (the same rows, now read), `twice` 0 → 1,777: as
+expected. **"Funding without a mark" stayed 7 and the sealed outcomes'
+SHA-256 stayed `1a9f731d…3e59`: no outcome changed.** Why, from counts and
+times only (the program's readers, the gate closed, SIZING's days): the
+off-minute rows fill no minute a SIZING position reads; on most of their 12
+days each row shares its minute with the boundary row. The 7 come from
+minutes with no row for any coin — 2025-07-19 09:53 (21 minutes) and
+2025-07-27 11:53 (8) — which cover the settlements of 10:00 and 12:00 beyond
+the kit's 5 minutes; every coin has those two settlements without a mark
+(the kit's count, 3 a coin, adds the series' first hour, 2025-05-25 00:00).
+Two shorter holes (05-25 14:23, 9 minutes; 06-28 08:18, 7) cover no hour.
+H10's change is right and stays (in the test months a stretch without its
+boundary rows would otherwise drop marks, as 840 minutes on 2025-06-08 show);
+the decided premise that it would price the 7 does not hold. Nothing was
+fixed forward; the question is the supervisor's (WAVE-H-FIX's report, Q-A).
+`sizing.json` needs no new commit. Facts in external-apis (`asset_ctxs`).
+
+**Not done:** the fix-check, the freeze and the look (the supervisor's, on the
+owner's go). R3 (i)'s list was printed, not opened further.
+
+**Slips:** a Bash heredoc halved `\\n` in an edit script (code-rules' own
+warning), which broke one test string; seen before the commit and mended by
+the Edit tool, scripts written by the Write tool after. A first verify
+failed on Prettier alone (a moved file's import line); format runs before
+verify since.
+
 2026-11-16 (the supervisor — WAVE-H's two fresh reviews: the calls, under the
 owner's go of ~02:00Z, "you have my approvement to start with work"):
 **BOTH REVIEWS SAY "AFTER THESE FIXES"; ONE FIX ROUND, WAVE-H-FIX, BUILDS

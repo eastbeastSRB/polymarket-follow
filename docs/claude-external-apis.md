@@ -437,6 +437,18 @@ read from a venue's page is as that page read on the day.
   (user = `liquidatedUser`, `crossed` true, `startPosition` non-zero and
   opposite to the side) and the counterparty's (a maker, `crossed` false),
   with one `tid` and one `hash`. Method seen in that hour: "market".
+- **`asset_ctxs` rows (the 68 day files 2025-05-25 → 07-31, the 38 coins'
+  rows; WAVE-H-BUILD's E6 2026-11-14, counted again by WAVE-H-FIX's third
+  rehearsal 2026-11-16 07:11Z through the program's readers):** a CSV with the
+  header `time,coin,funding,open_interest,prev_day_px,day_ntl_vlm,premium,
+  oracle_px,mark_px,mid_px,impact_bid_px,impact_ask_px`, one row a coin a
+  minute stamped at the minute's start (`YYYY-MM-DDTHH:MM:SSZ`), 2,966,816
+  rows. 2,831 rows are stamped at another whole second (e.g. `…:32:20Z`), in
+  stretches on 12 days; read by the minute whose end is at or after the stamp
+  (WAVE-H's H10), 1,777 minutes are given by two rows (on-minute rows alone
+  never share a minute). Minutes with no row for any coin: 2025-05-25 14:23
+  (9 minutes), 06-28 08:18 (7), 07-19 09:53 (21), 07-27 11:53 (8); the last
+  two cover a funding hour by more than 5 minutes.
 - **Lighter, `v1.1/lighter/core/mainnet/trades/date=YYYY-MM-DD/trades.parquet`
   (2025-07-01: 53,421,855 B, ZSTD Parquet, one row group, header 770,163
   rows, 43 columns, read 2026-11-13 23:32Z):** `id, created_at, updated_at,
