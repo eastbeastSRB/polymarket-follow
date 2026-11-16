@@ -13,6 +13,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { RESEARCH_ROOT } from "../paper/research.js";
 import { DATA_END, TEST_START } from "./instants.js";
+import { keyDate } from "./keys.js";
 
 /** The package's folder: the repository's `apps/poller`. */
 export const PACKAGE_ROOT = path.join(RESEARCH_ROOT, "..");
@@ -126,37 +127,6 @@ export const CLOSED: Gate = { open: false };
 /** The records and marks a run uses end here: TEST's start while the gate is closed (the rehearsal), DATA END once it is open (the look). */
 export const boundOf = (gate: Gate): number =>
   gate.open ? DATA_END : TEST_START;
-
-/** The UTC date `YYYYMMDD` with an hour, or null when it is no such date. */
-function utc(ymd: string, hour: string): number | null {
-  const [y, m, d, h] = [
-    Number(ymd.slice(0, 4)),
-    Number(ymd.slice(4, 6)),
-    Number(ymd.slice(6, 8)),
-    Number(hour),
-  ];
-  const t = Date.UTC(y, m - 1, d, h);
-  const back = new Date(t);
-  return back.getUTCFullYear() === y &&
-    back.getUTCMonth() === m - 1 &&
-    back.getUTCDate() === d &&
-    back.getUTCHours() === h
-    ? t
-    : null;
-}
-
-/** The instant a store key is dated — its hour, its day, or a funding window's start — or null. */
-export function keyDate(key: string): number | null {
-  const hourly =
-    /^(?:node_fills|node_fills_by_block)\/hourly\/(\d{8})\/(\d{1,2})\.lz4$/.exec(
-      key,
-    ) ?? /^market_data\/(\d{8})\/(\d{1,2})\/l2Book\/[^/]+\.lz4$/.exec(key);
-  if (hourly) return utc(hourly[1]!, hourly[2]!);
-  const daily = /^asset_ctxs\/(\d{8})\.csv\.lz4$/.exec(key);
-  if (daily) return utc(daily[1]!, "0");
-  const funding = /^info\/fundingHistory\/[^/]+\/(\d{13})\.json$/.exec(key);
-  return funding ? Number(funding[1]) : null;
-}
 
 /** Refuses, before anything is opened, a key without a date that parses, and one dated at or after TEST's start while the gate is closed. */
 export function checkSealed(gate: Gate, key: string): void {

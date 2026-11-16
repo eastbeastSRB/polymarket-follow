@@ -19,10 +19,10 @@ import {
   parseRecord,
   rawRecords,
   type Counted,
-  type Format,
   type Rec,
 } from "./fills.js";
-import { monthOf } from "./instants.js";
+import { isoDay, monthOf } from "./instants.js";
+import { formatOf, keyDate } from "./keys.js";
 import { StoreError, linesOf, readLz4, type DataList } from "./store.js";
 
 export type Pass = {
@@ -73,10 +73,8 @@ export function passFile(
   until: number,
   visit?: (rec: Rec) => void,
 ): void {
-  const format: Format = key.startsWith("node_fills_by_block/")
-    ? "node_fills_by_block"
-    : "node_fills";
-  const day = `${key.split("/")[2]!.slice(0, 4)}-${key.split("/")[2]!.slice(4, 6)}-${key.split("/")[2]!.slice(6, 8)}`;
+  const format = formatOf(key);
+  const day = isoDay(keyDate(key)!);
   const tally = pass.days.get(day) ?? { records: 0, failed: 0 };
   pass.days.set(day, tally);
   for (const line of linesOf(readLz4(gate, store, list, key))) {

@@ -10,9 +10,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { HOUR_MS } from "../schedule.js";
 import { checkSealed, type Gate } from "./gate.js";
-import { DATA_END, SIZING_START } from "./instants.js";
 import { decodeLz4 } from "./lz4.js";
 
 export class StoreError extends Error {}
@@ -133,25 +131,4 @@ export function* linesOf(bytes: Uint8Array): Generator<string> {
     yield buf.toString("utf8", at, end);
     at = end + 1;
   }
-}
-
-/** The fill files' formats by hour (H2): `node_fills` from its first file to 2025-07-27 08h, `node_fills_by_block` from that hour to DATA END's. */
-export const FORMAT_SWITCH = Date.parse("2025-07-27T08:00:00Z");
-
-const keyHour = (t: number) => {
-  const iso = new Date(t).toISOString();
-  return `${iso.slice(0, 4)}${iso.slice(5, 7)}${iso.slice(8, 10)}/${new Date(t).getUTCHours()}`;
-};
-
-/** Every fill file of the hours [from, to), in time order: both formats in the hour they share. */
-export function fillKeys(from: number, to: number): string[] {
-  const keys: string[] = [];
-  const first = Math.max(from, SIZING_START);
-  const last = Math.min(to, DATA_END + HOUR_MS);
-  for (let h = first; h < last; h += HOUR_MS) {
-    if (h <= FORMAT_SWITCH) keys.push(`node_fills/hourly/${keyHour(h)}.lz4`);
-    if (h >= FORMAT_SWITCH)
-      keys.push(`node_fills_by_block/hourly/${keyHour(h)}.lz4`);
-  }
-  return keys;
 }

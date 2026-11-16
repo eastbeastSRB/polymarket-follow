@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { HOUR_MS } from "../src/schedule.js";
 import { DATA_END, SIZING_START, TEST_START } from "../src/waveh/instants.js";
-import { fillKeys } from "../src/waveh/store.js";
+import { fillKeys } from "../src/waveh/keys.js";
 
 export const lz4js = createRequire(import.meta.url)("lz4js") as {
   compress: (src: Uint8Array) => Uint8Array;

@@ -29,17 +29,12 @@ import {
   type Ctx,
   type LegPrint,
 } from "./legs.js";
+import { fillKeys } from "./keys.js";
 import { readMarkets } from "./market.js";
 import { newPass, passFile, type Pass } from "./pass.js";
 import { episodeSpots, waveSpots } from "./positions.js";
 import { bySlice, scanM } from "./slices.js";
-import {
-  SHA256,
-  StoreError,
-  fillKeys,
-  readBookList,
-  type BookList,
-} from "./store.js";
+import { SHA256, StoreError, readBookList, type BookList } from "./store.js";
 
 /** Every SIZING fill file, one at a time, into one pass; records stamped from TEST's start are not used. */
 export async function sizingPass(ctx: Ctx): Promise<Pass> {

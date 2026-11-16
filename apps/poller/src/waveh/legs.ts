@@ -8,11 +8,12 @@ import { walkClose, walkOpen, type Level } from "../market1/book.js";
 import { NOTIONAL } from "../market1/price.js";
 import type { Market, Research } from "../paper/research.js";
 import { HOUR_MS } from "../schedule.js";
-import { bookHours, bookKey, lastAtOrBefore } from "./books.js";
+import { bookHours, lastAtOrBefore } from "./books.js";
 import { coinName, type Coins } from "./coins.js";
 import type { Rec } from "./fills.js";
 import { boundOf, type Gate } from "./gate.js";
 import { TEST_START } from "./instants.js";
+import { bookKey, fillKeys } from "./keys.js";
 import { newPass, passFile } from "./pass.js";
 import type { Spot } from "./positions.js";
 import {
@@ -27,7 +28,7 @@ import {
   type Quote,
   type Trade,
 } from "./price.js";
-import { fillKeys, readLz4, type BookList, type DataList } from "./store.js";
+import { readLz4, type BookList, type DataList } from "./store.js";
 
 export type Ctx = {
   store: string;

@@ -22,12 +22,6 @@ const Snapshot = z.object({
   }),
 });
 
-/** The book file's key of a coin and an hour. */
-export function bookKey(coin: string, hour: number): string {
-  const iso = new Date(hour).toISOString();
-  return `market_data/${iso.slice(0, 4)}${iso.slice(5, 7)}${iso.slice(8, 10)}/${new Date(hour).getUTCHours()}/l2Book/${coin}.lz4`;
-}
-
 /** The coin's last snapshot with its time at or before x in a decoded book file (the later line on a tie), as MARKET-1's `Book`. */
 export function lastAtOrBefore(
   bytes: Uint8Array,

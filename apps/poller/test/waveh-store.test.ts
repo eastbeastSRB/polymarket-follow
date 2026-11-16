@@ -11,7 +11,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadResearch } from "../src/paper/research.js";
 import { HOUR_MS, MINUTE_MS } from "../src/schedule.js";
-import { bookHours, bookKey, lastAtOrBefore } from "../src/waveh/books.js";
+import { bookHours, lastAtOrBefore } from "../src/waveh/books.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { addCtxs, newMarks } from "../src/waveh/ctxs.js";
 import { fundingRows, joinFunding } from "../src/waveh/funding.js";
@@ -24,15 +24,20 @@ import {
   checkSealed,
   frozenFiles,
   gateOf,
-  keyDate,
   verifyFreeze,
 } from "../src/waveh/gate.js";
-import { TEST_START } from "../src/waveh/instants.js";
+import { DATA_END, SIZING_START, TEST_START } from "../src/waveh/instants.js";
+import {
+  bookKey,
+  ctxsKey,
+  fillKeys,
+  formatOf,
+  keyDate,
+} from "../src/waveh/keys.js";
 import { LZ4JS_DIR, decodeLz4, frameOf, loadLz4js } from "../src/waveh/lz4.js";
-import { marketOf } from "../src/waveh/market.js";
+import { MARKS_START, marketOf } from "../src/waveh/market.js";
 import {
   StoreError,
-  fillKeys,
   linesOf,
   manifestList,
   readBookList,
@@ -215,6 +220,21 @@ describe("the seal (H0)", () => {
     expect(() => readStoreFile(OPEN, store, list, sealed[0]!)).toThrow(
       StoreError,
     );
+  });
+
+  it("parses every key the program builds back to its own date: one grammar (L9)", () => {
+    const fills = fillKeys(0, Infinity);
+    for (const key of fills) {
+      const t = keyDate(key);
+      expect(t, key).not.toBeNull();
+      expect(fillKeys(t!, t! + HOUR_MS), key).toContain(key);
+      expect(formatOf(key), key).toBe(key.split("/")[0]);
+    }
+    for (let h = SIZING_START; h <= DATA_END; h += 7 * HOUR_MS)
+      for (const coin of ["SOL", "kPEPE", "FARTCOIN"])
+        expect(keyDate(bookKey(coin, h))).toBe(h);
+    for (let d = MARKS_START; d < DATA_END; d += 24 * HOUR_MS)
+      expect(keyDate(ctxsKey(d))).toBe(d);
   });
 });
 

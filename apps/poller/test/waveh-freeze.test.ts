@@ -12,7 +12,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import { CLOSURE, PACKAGE_ROOT } from "../src/waveh/gate.js";
-import { fillKeys } from "../src/waveh/store.js";
+import { fillKeys } from "../src/waveh/keys.js";
 
 const SHARED = ["dist/log.js", "dist/schedule.js"];
 const read = (rel: string) => readFileSync(path.join(PACKAGE_ROOT, rel));
