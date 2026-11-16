@@ -1,13 +1,13 @@
 /**
- * The store's keys (rules.md H0, H2, H8, H10), in one place: every key the
- * program builds — a fill file's, a book file's, an `asset_ctxs` day's — and
- * the one parser of a key's date, by which the seal refuses (gate.ts). A
- * builder that drifted from the parser would fail closed: its key's date would
- * not parse, and the seal refuses such a key.
+ * The store's keys (rules.md H0, H2, H8–H10), in one place: every key the
+ * program builds — a fill file's, a book file's, an `asset_ctxs` day's, a
+ * funding window's — and the one parser of a key's date, by which the seal
+ * refuses (gate.ts). A builder that drifted from the parser would fail closed:
+ * its key's date would not parse, and the seal refuses such a key.
  */
-import { HOUR_MS } from "../schedule.js";
+import { DAY_MS, HOUR_MS } from "../schedule.js";
 import type { Format } from "./fills.js";
-import { DATA_END, SIZING_START } from "./instants.js";
+import { DATA_END, SIZING_START, TEST_END, TEST_START } from "./instants.js";
 
 /** The fill files' formats by hour (H2): `node_fills` from its first file to 2025-07-27 08h, `node_fills_by_block` from that hour to DATA END's. */
 export const FORMAT_SWITCH = Date.parse("2025-07-27T08:00:00Z");
@@ -42,6 +42,25 @@ export const bookKey = (coin: string, hour: number): string =>
 /** The `asset_ctxs` day file's key of the day starting at `day`. */
 export const ctxsKey = (day: number): string =>
   `asset_ctxs/${ymd(day)}.csv.lz4`;
+
+/**
+ * The starts of each coin's `fundingHistory` windows, the download's (H9;
+ * decisions 2026-11-14, its spec's D5): SIZING's four, then every 20 days
+ * from TEST's start to TEST's end; the last ends at DATA END.
+ */
+export const FUNDING_STARTS: readonly number[] = [
+  ...["2025-05-25", "2025-06-14", "2025-07-04", "2025-07-24"].map((d) =>
+    Date.parse(`${d}T00:00:00Z`),
+  ),
+  ...Array.from(
+    { length: (TEST_END - TEST_START) / (20 * DAY_MS) + 1 },
+    (_, k) => TEST_START + k * 20 * DAY_MS,
+  ),
+];
+
+/** A coin's funding window's key, by its start. */
+export const fundingKey = (coin: string, start: number): string =>
+  `info/fundingHistory/${coin}/${start}.json`;
 
 /** The UTC date `YYYYMMDD` with an hour, or null when it is no such date. */
 function utc(ymdText: string, hour: string): number | null {

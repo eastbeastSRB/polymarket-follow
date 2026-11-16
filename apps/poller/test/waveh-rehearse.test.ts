@@ -23,20 +23,28 @@ import { loadCoins } from "../src/waveh/coins.js";
 import { SIZING_START, TEST_START } from "../src/waveh/instants.js";
 import { lookStep1 } from "../src/waveh/look.js";
 import { CLOSED, SealedError } from "../src/waveh/gate.js";
-import { bookKey } from "../src/waveh/keys.js";
+import {
+  FUNDING_STARTS,
+  bookKey,
+  ctxsKey,
+  fundingKey,
+} from "../src/waveh/keys.js";
 import {
   BooksNeeded,
   priceSpot,
   shelfOf,
   type Ctx,
 } from "../src/waveh/legs.js";
+import { readMarkets } from "../src/waveh/market.js";
 import { newPass, passFile } from "../src/waveh/pass.js";
 import { rehearse } from "../src/waveh/rehearse.js";
 import { Settings, windowEnd } from "../src/waveh/run.js";
 import { StoreError, manifestList } from "../src/waveh/store.js";
 import {
+  CTXS_HEAD,
   addr,
   cleanScratch,
+  ctxsRow,
   dayOf,
   fillKey,
   liquidation,
@@ -680,3 +688,153 @@ describe("the look's first step (H15, R3)", { timeout: 120_000 }, () => {
     await expect(lookStep1(ctx(), CLOSED, 1)).rejects.toThrow(SealedError);
   });
 });
+
+describe(
+  "the marks and funding a run reads (H9, H10; R3)",
+  {
+    timeout: 60_000,
+  },
+  () => {
+    const D = Date.parse("2025-06-10T00:00:00Z");
+    const SOL = new Set([coins.byName.get("SOL")!.assetId]);
+    const ctxOf = (files: Map<string, string>) => {
+      const { store } = makeStore(files);
+      let paced = 0;
+      const ctx: Ctx = {
+        store,
+        list: manifestList(
+          readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+        ),
+        coins,
+        kit,
+        pace: () => {
+          paced += 1;
+          return Promise.resolve();
+        },
+        log: () => {},
+      };
+      return { ctx, paced: () => paced };
+    };
+    /** SOL's rows of day D: every minute but those left out, then the extra lines. */
+    const day = (leftOut: (m: number) => boolean, extra: string[] = []) =>
+      [
+        CTXS_HEAD,
+        ...Array.from({ length: 1_440 }, (_, m) => m)
+          .filter((m) => !leftOut(m))
+          .map((m) => ctxsRow("SOL", D + m * MINUTE_MS, 100)),
+        ...extra,
+      ].join("\n");
+
+    it("counts the rows by day, the minutes without a mark and the settlements without one by coin, and funding by window", async () => {
+      // No rows 09:55–10:04: minutes 09:54–10:03 have no mark, so the settlement
+      // of 10:00 has none within 5 minutes; a row off the minute and three failing.
+      const leftOut = (m: number) => m >= 595 && m < 605;
+      const files = new Map([
+        [
+          ctxsKey(D),
+          day(leftOut, [
+            ctxsRow("SOL", D + 12 * HOUR_MS + 30_000, 100),
+            ...[1, 2, 3].map((k) =>
+              ctxsRow("SOL", D + k * HOUR_MS, Number.NaN),
+            ),
+          ]),
+        ],
+        [
+          fundingKey("SOL", FUNDING_STARTS[0]!),
+          JSON.stringify(
+            Array.from({ length: 23 }, (_, k) => ({
+              coin: "SOL",
+              fundingRate: "0.00001",
+              premium: "0",
+              time: D + (k + 1) * HOUR_MS + 17,
+            })),
+          ),
+        ],
+      ]);
+      const { ctx } = ctxOf(files);
+      const read = await readMarkets(ctx, CLOSED, SOL);
+      expect(read.ctxs).toEqual({
+        files: 68,
+        rows: 1_434,
+        failed: 3,
+        offMinute: 1,
+        late: 0,
+        twice: 1,
+      });
+      expect(Object.keys(read.ctxsByDay)).toHaveLength(68);
+      expect(read.ctxsByDay["2025-06-10"]).toEqual({
+        rows: 1_434,
+        failed: 3,
+        offMinute: 1,
+        late: 0,
+        twice: 1,
+      });
+      expect(read.ctxsByDay["2025-06-11"]).toEqual({
+        rows: 0,
+        failed: 0,
+        offMinute: 0,
+        late: 0,
+        twice: 0,
+      });
+      expect(read.funding).toEqual({ files: 4, rows: 23, failed: 0, late: 0 });
+      expect(read.byCoin.SOL).toEqual({
+        marks: {
+          first: "2025-06-09T23:59:00.000Z",
+          last: "2025-06-10T23:58:00.000Z",
+          without: 10,
+        },
+        funding: {
+          windows: {
+            "2025-05-25": 23,
+            "2025-06-14": 0,
+            "2025-07-04": 0,
+            "2025-07-24": 0,
+          },
+          failed: 0,
+          late: 0,
+          settlements: 23,
+          unmarked: 1,
+        },
+      });
+      expect(read.byCoin.kPEPE).toEqual({ marks: null, funding: null });
+      expect([...read.markets.keys()]).toEqual([...SOL]);
+    });
+
+    it("stops on a day with more than 1%, and at least 10, of its rows failing", async () => {
+      const bad = (n: number) =>
+        Array.from({ length: n }, (_, k) => ctxsRow("SOL", D + k, Number.NaN));
+      for (const [failing, good, stops] of [
+        [10, 989, true],
+        [10, 990, false],
+        [9, 100, false],
+      ] as const) {
+        const { ctx } = ctxOf(
+          new Map([[ctxsKey(D), day((m) => m >= good, bad(failing))]]),
+        );
+        const run = readMarkets(ctx, CLOSED, SOL);
+        if (stops)
+          await expect(run).rejects.toThrow(
+            `2025-06-10: ${failing} of ${failing + good} asset_ctxs rows`,
+          );
+        else await expect(run).resolves.toBeDefined();
+      }
+    });
+
+    it("stops before reading any file when a day or a funding window is not in the list", async () => {
+      for (const key of [ctxsKey(D), fundingKey("SOL", FUNDING_STARTS[3]!)]) {
+        const { ctx, paced } = ctxOf(new Map());
+        (ctx.list as Map<string, string>).delete(key);
+        await expect(readMarkets(ctx, CLOSED, SOL)).rejects.toThrow(
+          `1 asset_ctxs days and funding windows are not in the store's list, the first ${key}`,
+        );
+        expect(paced()).toBe(0);
+      }
+      // A coin outside `iids` is not read, so its windows are not asked for.
+      const { ctx } = ctxOf(new Map());
+      (ctx.list as Map<string, string>).delete(
+        fundingKey("kPEPE", FUNDING_STARTS[0]!),
+      );
+      await expect(readMarkets(ctx, CLOSED, SOL)).resolves.toBeDefined();
+    });
+  },
+);

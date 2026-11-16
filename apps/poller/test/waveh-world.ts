@@ -9,9 +9,16 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { HOUR_MS } from "../src/schedule.js";
+import { DAY_MS, HOUR_MS } from "../src/schedule.js";
+import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, SIZING_START, TEST_START } from "../src/waveh/instants.js";
-import { fillKeys } from "../src/waveh/keys.js";
+import {
+  FUNDING_STARTS,
+  ctxsKey,
+  fillKeys,
+  fundingKey,
+} from "../src/waveh/keys.js";
+import { MARKS_START } from "../src/waveh/market.js";
 
 export const lz4js = createRequire(import.meta.url)("lz4js") as {
   compress: (src: Uint8Array) => Uint8Array;
@@ -27,7 +34,11 @@ export const cleanScratch = () => {
     rmSync(d, { recursive: true, force: true });
 };
 
-/** A store: files by key, each lz4-compressed (or plain for funding), with the manifest; every fill file of SIZING (or to DATA END) present. */
+/**
+ * A store: files by key, each lz4-compressed (or plain for funding), with the
+ * manifest; every fill file, `asset_ctxs` day (its header only) and funding
+ * window (`[]`) of SIZING, or to DATA END, present when not given.
+ */
 export function makeStore(
   files: Map<string, string>,
   everyFillFile: boolean | "to DATA END" = true,
@@ -46,14 +57,36 @@ export function makeStore(
   };
   for (const [key, text] of files)
     put(key, key.endsWith(".json") ? Buffer.from(text) : lz4(text));
-  if (everyFillFile !== false)
+  if (everyFillFile !== false) {
+    const bound = everyFillFile === true ? TEST_START : DATA_END;
+    const absent = (key: string) => !files.has(key);
     for (const key of fillKeys(
       SIZING_START,
       everyFillFile === true ? TEST_START : DATA_END + HOUR_MS,
-    ))
-      if (!files.has(key)) put(key, empty);
+    ).filter(absent))
+      put(key, empty);
+    for (let d = MARKS_START; d < bound; d += DAY_MS)
+      if (absent(ctxsKey(d))) put(ctxsKey(d), lz4(`${CTXS_HEAD}\n`));
+    for (const coin of loadCoins().list)
+      for (const start of FUNDING_STARTS.filter((s) => s < bound))
+        if (absent(fundingKey(coin.name, start)))
+          put(fundingKey(coin.name, start), Buffer.from("[]"));
+  }
   writeFileSync(path.join(store, "manifest.jsonl"), `${lines.join("\n")}\n`);
   return { store, put };
+}
+
+/** Funding rows into the download's window files (H9): each coin's rows in the window holding their hour. */
+export function fundingFiles(
+  rows: readonly { coin: string; time: number }[],
+): Map<string, string> {
+  const byKey = new Map<string, object[]>();
+  for (const r of rows) {
+    const start = FUNDING_STARTS.findLast((s) => s <= r.time)!;
+    const key = fundingKey(r.coin, start);
+    byKey.set(key, [...(byKey.get(key) ?? []), r]);
+  }
+  return new Map([...byKey].map(([k, v]) => [k, JSON.stringify(v)]));
 }
 
 export const addr = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;

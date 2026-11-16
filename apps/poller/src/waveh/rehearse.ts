@@ -202,7 +202,7 @@ export async function rehearse(ctx: Ctx, root: string): Promise<SizingFile> {
   if (lacking.length > 0)
     throw new BooksNeeded(`${lacking.length} of ${needed.length} book files`);
   const tapes = await readTapes(ctx, CLOSED, legsOf(priceable, ctx.coins));
-  const { markets, ctxs, funding } = await readMarkets(
+  const { markets, ctxs, ctxsByDay, funding, byCoin } = await readMarkets(
     ctx,
     CLOSED,
     new Set(priceable.map((s) => s.iid)),
@@ -258,7 +258,9 @@ export async function rehearse(ctx: Ctx, root: string): Promise<SizingFile> {
     tapeMinusBookBps: sides((l) => l.tapeMinusBook),
     bookLines: bookLines(shelf),
     ctxs,
+    ctxsByDay,
     funding,
+    byCoin,
     fundingHoursMissing: outcomes.reduce(
       (s, o) => s + (o.priced?.fundingMissing ?? 0),
       0,

@@ -56,6 +56,22 @@ export type CtxsCount = {
   twice: number;
 };
 
+/** By coin: its first and last minute with a mark, and the minutes between without one (null: no mark at all). */
+export function minutesWithout(marks: Marks) {
+  const at = (i: number) => new Date(marks.start + i * MINUTE_MS).toISOString();
+  return Object.fromEntries(
+    [...marks.byCoin].map(([coin, series]) => {
+      const first = series.findIndex((v) => !Number.isNaN(v));
+      if (first < 0) return [coin, null];
+      const last = series.findLastIndex((v) => !Number.isNaN(v));
+      let without = 0;
+      for (let i = first; i <= last; i++)
+        if (Number.isNaN(series[i]!)) without += 1;
+      return [coin, { first: at(first), last: at(last), without }];
+    }),
+  );
+}
+
 /** Adds one day file's rows (decoded text) of the small coins to `marks`; rows stamped at or after `until` are not used. */
 export function addCtxs(marks: Marks, text: string, until: number): CtxsCount {
   const count: CtxsCount = {

@@ -6,6 +6,7 @@
  */
 import { createHash } from "node:crypto";
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -28,10 +29,12 @@ import {
 } from "../src/waveh/gate.js";
 import { DATA_END, SIZING_START, TEST_START } from "../src/waveh/instants.js";
 import {
+  FUNDING_STARTS,
   bookKey,
   ctxsKey,
   fillKeys,
   formatOf,
+  fundingKey,
   keyDate,
 } from "../src/waveh/keys.js";
 import { LZ4JS_DIR, decodeLz4, frameOf, loadLz4js } from "../src/waveh/lz4.js";
@@ -235,6 +238,20 @@ describe("the seal (H0)", () => {
         expect(keyDate(bookKey(coin, h))).toBe(h);
     for (let d = MARKS_START; d < DATA_END; d += 24 * HOUR_MS)
       expect(keyDate(ctxsKey(d))).toBe(d);
+    for (const start of FUNDING_STARTS)
+      expect(keyDate(fundingKey("SOL", start))).toBe(start);
+  });
+
+  it("names the download's funding windows: a contract with tools/waveh-fetch.cjs (D5)", () => {
+    const fetchTool = createRequire(import.meta.url)(
+      "../../../tools/waveh-fetch.cjs",
+    ) as {
+      fundingWindows: (sizingOnly: boolean) => { start: number; end: number }[];
+    };
+    const windows = fetchTool.fundingWindows(false);
+    expect(windows.map((w) => w.start)).toEqual(FUNDING_STARTS);
+    expect(windows.at(-1)!.end).toBe(DATA_END);
+    expect(FUNDING_STARTS).toHaveLength(20);
   });
 });
 

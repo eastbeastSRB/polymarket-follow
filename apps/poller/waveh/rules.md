@@ -104,7 +104,10 @@ trade.*
   end at the file's end), and a UTC day of fill files with more than 1%, and
   at least 10, of its records failing the schema, stop the run (exit 5),
   naming it: the waves cannot be computed around a hole in the fills (the
-  route: H0's defect fix).
+  route: H0's defect fix). So does an `asset_ctxs` day or a funding window
+  (H9, H10) that the run reads and that is missing from its list or differs
+  from it, or a day file that fails to decompress; every one of them is
+  checked to be in the list before any is read.
 
 ## H3. The coins
 
@@ -247,10 +250,12 @@ trade.*
   Σ rate × the mark at the end of the minute before the hour, by the kit's
   `fundingBetween` on the coin's market object (H10); a positive rate, longs
   pay. The rates are Hyperliquid's settled hourly rates (`fundingHistory`,
-  stamped 17–69 ms after the hour): **a row's nominal hour is its `time`
-  rounded to the nearest hour** (R1). An hour without a row is charged
-  nothing and counted; a settlement without a mark leaves the position
-  unpriced.
+  stamped 17–69 ms after the hour), stored a window a file, each coin's 20
+  windows (the download's: from 2025-05-25, 06-14, 07-04 and 07-24, then from
+  2025-08-01 every 20 days to 2026-05-28, the last ending at DATA END):
+  **a row's nominal hour is its `time` rounded to the nearest hour** (R1).
+  An hour without a row is charged nothing and counted; a settlement without
+  a mark leaves the position unpriced.
 - **The net**, in bps of the $1,000: M9's formulas exactly — gross = dir ×
   (p_out − p_in) × Q ÷ 1,000 × 10⁴; fees = (f × 1,000 + f × p_out × Q) ÷ 1,000 ×
   10⁴; funding = −dir × Σ × Q ÷ 1,000 × 10⁴; **net = gross − fees + funding.**
@@ -272,11 +277,12 @@ trade.*
   the first line stands, and for 23:59 the next day file's 00:00 row serves.
   A row's time is `YYYY-MM-DDTHH:MM:SSZ`, whole seconds; a row of another
   form, whose `mark_px` is not a number above 0, or without a coin cell fails
-  WAVE-H's schema, is dropped and counted. A row stamped at or after DATA END
-  is not read. The coin's **market object** is the kit's (`marketFrom`), built
-  from those marks and the settled funding rows, so the kit's
-  `markAtMinuteEnd` (5 minutes' staleness at most) and `fundingBetween` read it
-  unchanged.
+  WAVE-H's schema, is dropped and counted; a day file with more than 1%, and
+  at least 10, of its rows of the 38 coins failing stops the run (exit 5), as
+  H2's rule for fills. A row stamped at or after DATA END is not read. The
+  coin's **market object** is the kit's (`marketFrom`), built from those
+  marks and the settled funding rows, so the kit's `markAtMinuteEnd` (5
+  minutes' staleness at most) and `fundingBetween` read it unchanged.
 - **BASE** (MARKET-1's `baseOf`): for coin i and the 4-hour UTC block b of
   x_in, the mean of (marks[j + 1,440] ÷ marks[j] − 1) × 10⁴ over every whole
   minute j in [TEST's start, TEST's end − 24 h) of coin i whose minute lies in
@@ -383,19 +389,28 @@ book files' lines read and failing, and the files holding a failing line
 
 ## H15. The one look
 
-- **Step 1** (`waveh look`): the gate; every fill file verified against
-  `data.sha256` and read once; M recomputed from SIZING and held to
-  `sizing.json`'s (else exit 5); the counted fills, the slices, the entries,
-  WAVE-H's positions and the SIZING positions to price again (H1), and their
-  legs. Before any book is fetched and before any price exists, it writes
-  (R3) to `look/step1.json`: the records failing by day; the counted fills
-  and the own legs by month and method; slice 0's episodes a day by month;
-  where the block numbers of `node_fills_by_block` run consecutively, the
-  missing blocks by day; the coins with a record in SIZING; and the
-  positions' SHA-256. It writes the book files their legs need to
-  `look/books-needed.txt`, then stops (exit 5, "books needed"). A data defect
-  seen here is fixed by H0's route before step 2; then `look/step1.json` is
-  removed by hand, in the same decisions entry, and step 1 runs again.
+- **Step 1** (`waveh look`): the gate; every fill file, `asset_ctxs` day and
+  funding window the look reads named in `data.sha256` — every fill file, the
+  370 days to DATA END's and each coin's 20 windows (H9) — else it stops
+  (exit 5) before reading any; the 38 coins' marks and funding verified and
+  read once into their market objects (H10: a day of mark rows failing stops
+  it); every fill file verified and read once; M recomputed from SIZING and
+  held to `sizing.json`'s (else exit 5); the counted fills, the slices, the
+  entries, WAVE-H's positions and the SIZING positions to price again (H1),
+  and their legs. Before any book is fetched and before any price exists, it
+  writes (R3) to `look/step1.json`: the records failing by day; the counted
+  fills and the own legs by month and method; slice 0's episodes a day by
+  month; where the block numbers of `node_fills_by_block` run consecutively,
+  the missing blocks by day; the coins with a record in SIZING; the mark rows
+  of the 38 coins by day — read, failing, stamped off the minute, given twice,
+  stamped from DATA END on; by coin, the minutes without a mark between its
+  first and last mark, and the settlements without a mark (H9); the funding
+  rows by coin and window, and by coin those failing and stamped from DATA
+  END on; and the positions' SHA-256. It writes the book files their legs
+  need to `look/books-needed.txt`, then stops (exit 5, "books needed"). A
+  data defect seen here is fixed by H0's route before step 2; then
+  `look/step1.json` is removed by hand, in the same decisions entry, and step
+  1 runs again.
 - **Between:** the downloader fetches those book files under the same caps
   and watch as the main download, into the store's book list.
 - **Step 2** (`waveh look` again): recomputes step 1 and stops (exit 5) if its

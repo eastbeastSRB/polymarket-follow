@@ -1,9 +1,12 @@
 /**
  * The one look (rules.md H15, R3, R7), `waveh look`, with the gate open.
  *
- * Step 1: every fill file read and verified into one pass — SIZING's files
- * first, their records before TEST's start, then TEST's to DATA END's hour —
- * M recomputed from SIZING alone and held to the frozen `sizing.json`;
+ * Step 1: the 38 coins' marks and funding read into their market objects,
+ * with their counts by day and by coin (a defect in them is seen here, before
+ * any price exists); every fill file read and verified into one pass —
+ * SIZING's files first, their records before TEST's start, then TEST's to
+ * DATA END's hour — M recomputed from SIZING alone and held to the frozen
+ * `sizing.json`;
  * slice 0's TEST positions (WAVE-H's) and the SIZING positions whose exit
  * reaches TEST's hour before (the rehearsal left those it could not price);
  * R3's counts printed before any book is fetched or any price exists; the
@@ -28,6 +31,7 @@ import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
 import { byM4 } from "../market1/fills.js";
+import type { Market } from "../paper/research.js";
 import { DAY_MS, HOUR_MS } from "../schedule.js";
 import { WAVEH_DIR, coinName } from "./coins.js";
 import type { Counted } from "./fills.js";
@@ -91,6 +95,8 @@ export type Step1 = {
   counted: Counted[];
   /** The coins with a record in SIZING (H13's late coins have none). */
   sizingCoins: Set<string>;
+  /** The 38 coins' market objects (H10), for step 2. */
+  markets: Map<number, Market>;
   counts: Record<string, unknown>;
 };
 
@@ -105,6 +111,12 @@ export async function lookStep1(
     throw new StoreError(
       `${absent.length} fill files are not in the store's list, the first ${absent[0]}`,
     );
+  // The marks and funding first: minutes, before the hours of fill files.
+  const marks = await readMarkets(
+    ctx,
+    gate,
+    new Set(ctx.coins.list.map((c) => c.assetId)),
+  );
   const pass = newPass();
   const seen = new Set<string>();
   let read = 0;
@@ -159,6 +171,7 @@ export async function lookStep1(
     needed: booksOf([...spots, ...late], ctx.coins),
     counted,
     sizingCoins,
+    markets: marks.markets,
     counts: {
       files: keys.length,
       days: Object.fromEntries(pass.days),
@@ -188,6 +201,10 @@ export async function lookStep1(
         sizingPositions: sizing.length,
         sizingLate: late.length,
       },
+      ctxs: marks.ctxs,
+      ctxsByDay: marks.ctxsByDay,
+      funding: marks.funding,
+      byCoin: marks.byCoin,
     },
   };
 }
@@ -313,12 +330,7 @@ export async function look(
 
   const all = [...step.spots, ...step.late];
   const tapes = await readTapes(ctx, gate, legsOf(all, ctx.coins));
-  const read = await readMarkets(
-    ctx,
-    gate,
-    new Set(ctx.coins.list.map((c) => c.assetId)),
-  );
-  const m = markAt(ctx.kit, read.markets);
+  const m = markAt(ctx.kit, step.markets);
   const shelf = shelfOf(books);
   const priced = all.map((s, i) =>
     priceSpot(
@@ -326,7 +338,7 @@ export async function look(
       gate,
       shelf,
       tapes,
-      read.markets.get(s.iid)!,
+      step.markets.get(s.iid)!,
       s,
       String(i),
       i < step.spots.length ? m.base(s.iid, s.xIn) : null,
@@ -380,8 +392,8 @@ export async function look(
         .map(([month, bps]) => `ALARM ${month}: a taker paid ${bps} bps`),
       files: {
         fill: step.counts.files,
-        assetCtxs: read.ctxs,
-        funding: read.funding,
+        assetCtxs: step.counts.ctxs,
+        funding: step.counts.funding,
         books: step.needed.length - neededMissing.length,
         booksMissing: neededMissing.length,
         bookLines: bookLines(shelf),

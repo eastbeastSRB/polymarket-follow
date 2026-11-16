@@ -34,6 +34,7 @@ import {
   ctxsRow,
   dayOf,
   fillKey,
+  fundingFiles,
   liquidation,
   lz4,
   makeStore,
@@ -123,17 +124,16 @@ function world() {
           rows.push(ctxsRow(coin, d + m * MINUTE_MS, 100));
     files.set(`asset_ctxs/${dayOf(d)}.csv.lz4`, rows.join("\n"));
   }
+  const rows = [];
   for (const [coin, from] of [
     ["SOL", dayStart(W1)],
     ["SOL", dayStart(W2)],
     ["kPEPE", dayStart(W3)],
     ["SOL", dayStart(W)],
-  ] as const) {
-    const rows = [];
+  ] as const)
     for (let h = from; h < from + 3 * DAY_MS; h += HOUR_MS)
       rows.push({ coin, fundingRate: "0.00001", premium: "0", time: h + 17 });
-    files.set(`info/fundingHistory/${coin}/${from}.json`, JSON.stringify(rows));
-  }
+  for (const [key, text] of fundingFiles(rows)) files.set(key, text);
   return files;
 }
 
@@ -241,7 +241,44 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       sizingLate: 2,
       booksNeeded: 6,
       dataSha256: "d",
-      counts: { counted: 8, late: 2, early: 2, sizingCoins: ["SOL", "kPEPE"] },
+      counts: {
+        counted: 8,
+        late: 2,
+        early: 2,
+        sizingCoins: ["SOL", "kPEPE"],
+        // The marks and funding, counts only: 12 marked days, 4 blocks of 72 hours.
+        ctxs: {
+          files: 370,
+          rows: 12 * 1_440,
+          failed: 0,
+          offMinute: 0,
+          late: 0,
+          twice: 0,
+        },
+        funding: { files: 760, rows: 4 * 72, failed: 0, late: 0 },
+        byCoin: {
+          SOL: {
+            marks: {
+              first: "2025-06-09T23:59:00.000Z",
+              last: "2025-09-12T23:58:00.000Z",
+            },
+            funding: { settlements: 3 * 72, unmarked: 0 },
+          },
+          kPEPE: { funding: { settlements: 72, unmarked: 0 } },
+          DOGE: { marks: null, funding: { settlements: 0, unmarked: 0 } },
+        },
+      },
+    });
+    const step1 = readJson("step1.json") as {
+      counts: { ctxsByDay: Record<string, { rows: number }> };
+    };
+    expect(Object.keys(step1.counts.ctxsByDay)).toHaveLength(370);
+    expect(step1.counts.ctxsByDay["2025-09-10"]).toEqual({
+      rows: 1_440,
+      failed: 0,
+      offMinute: 0,
+      late: 0,
+      twice: 0,
     });
     expect(existsSync(path.join(dir(), "result.json"))).toBe(false);
   });
