@@ -6,12 +6,11 @@ clock; the forward paper experiment is FROZEN (2026-11-12, tag
 `paper-freeze-1`) and runs daily; MARKET-1, the forward paper test of the
 liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
-history, is built and its two fresh reviews' fixes are in (WAVE-H-FIX,
-2026-11-16): the rehearsal held every count a third time (M = 147);
-`data.sha256` and a new draft list are committed; one question is open (Q-A:
-the 7 "funding without a mark" come from holes in the archive, not from the
-off-minute rows); nothing is frozen or run on TEST.** The plan is the plan
-page (docs/claude-master-plan.md); what exists is architecture.
+history, is built, fixed and checked: the fresh fix-check found it ready to
+freeze after small fixes, and WAVE-H-FIX-2 made them (2026-11-16): three
+rule sentences, two tests, a new draft list. It waits for the owner's go for
+the freeze and the one look; nothing is frozen or run on TEST.** The plan is
+the plan page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -37,23 +36,21 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
   - its daily task at 10:30Z.
 - **WAVE-H** (architecture, "WAVE-H" and "WAVE-H's data download";
   decisions 2026-11-14, "WAVE-H's plan approved" and the WAVE-H-BUILD
-  entries; 2026-11-16, the supervisor's calls and WAVE-H-FIX's entry):
-  - the rules `apps/poller/waveh/rules.md` (H0–H15 with R1–R10, M = 147;
-    H10 reads a mark from the latest whole-second stamp in (m, m + 1 min];
-    the look's step 1 reads and counts the marks and funding first; step 2's
-    cheap refusals first; the recovery rule after a failure between step 2's
-    writes; an 8 GB heap); `dist/waveh.js` with `rehearse` and `look`;
+  entries; 2026-11-16, from WAVE-H-FIX's entry to WAVE-H-FIX-2's):
+  - the rules `apps/poller/waveh/rules.md` (H0–H15 with R1–R10, M = 147);
+    `dist/waveh.js` with `rehearse` and `look`;
   - the download complete (2026-11-16 01:15:30Z): `waveh/data.sha256`, 9,975
-    files, `b66a9bb0…676c`; R3 (i)'s short files: the shared hour
-    `node_fills_by_block/hourly/20250727/8.lz4` alone;
-  - the rehearsal's third run (2026-11-16 05:10–07:11Z, exit 0): every count
-    of run 2 held; failing mark rows 2,831 → 0 (the 2,831 off-minute rows now
-    read); **but "funding without a mark" stayed 7 and the sealed outcomes'
-    hash `1a9f731d…3e59` did not move**: the 7 come from minutes with no row
-    for any coin (2025-07-19 09:53, 21 minutes; 07-27 11:53, 8) over a
-    funding hour; `sizing.json` unchanged (byte-identical); run 2's folder
-    kept as `rehearsal-run2\` beside `rehearsal\`;
-  - the draft list, 74 files, `6bd52e61…a5f1` (`c677d17`).
+    files, `b66a9bb0…676c`;
+  - the rehearsal's third run (2026-11-16 05:10–07:11Z) held every count;
+    the 7 SIZING positions with a funding settlement without a mark stay
+    unpriced, as H9 says (holes in the archive's marks; decisions
+    2026-11-16, "WAVE-H-FIX verified", Q-A); `sizing.json` unchanged;
+  - the fix-check (`docs/reviews/wave-h-fix-check-2026-11-16.md`): ready to
+    freeze after small fixes; F1–F5 made by WAVE-H-FIX-2, F6 and its Q3 left
+    as they are;
+  - the draft list, 74 files,
+    `1d85e2f6276247dae03f0f2ee394255375aa59e28154f7eb5c210cfc1e28dd38`
+    (`496ad5d`).
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
   - the collector's share is 50 and 15;
@@ -65,15 +62,12 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **Q-A, the supervisor's:** accept the 7 as the rules already say (an
-   unpriced position, counted; the test months' holes now show in step 1's
-   counts before any verdict), or a rule for archive holes (a new rule, the
-   owner's). Then **WAVE-H's fix-check** (a fresh worker on a different
-   model) on WAVE-H-FIX's commits; then the owner's go for the freeze (the
-   supervisor: `pnpm verify` on a clean tree, `node tools/waveh-freeze.cjs
-   --final`, commit, tag `waveh-freeze-1`) and for the one look (H15's two
-   steps, `node --max-old-space-size=8192 dist/waveh.js look`; step 1's
-   counts read before the books are fetched).
+1. **The owner's go for WAVE-H's freeze and its one look.** The freeze, by
+   the supervisor: `pnpm verify` on a clean tree, `node
+   tools/waveh-freeze.cjs --final`, commit; the owner pushes the tag
+   `waveh-freeze-1`. Then the look (H15's two steps, `node
+   --max-old-space-size=8192 dist/waveh.js look`): step 1's counts checked
+   by the supervisor before the books are fetched, then step 2 (the verdict).
 2. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
    book level's unit (decisions 2026-11-13, call 11); no paper command by
    hand while a MARKET-1 run is live (rules.md M2).
@@ -91,17 +85,13 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
    registered; the page's fee-category alarm.
 7. **The v1 plan** (the plan page), early December.
 
-## Last session (2026-11-16)
+## Last session (2026-11-16, WAVE-H-FIX-2)
 
-WAVE-H-FIX built the supervisor's 12 calls on WAVE-H's two fresh reviews, one
-fix a commit, each gated on `pnpm verify`, both live freezes verified after
-each: `--data`'s checks and `data.sha256`; the quality moves (the shared
-layer split out, one home for helpers and types, one place for a leg's
-snapshot, the store's keys in one place, unused exports cut); H10; the book
-lines and cell-less mark rows counted; step 1 reading the marks and funding;
-step 2's cheap refusals first; the look's whole-file writes (a copy of
-MARKET-1's behaviour, the supervisor's answer) and the recovery rule; the 8 GB
-heap; the rules made exact; pins for the reviews' surviving breaks. 58
-deliberate breaks in a scratch copy: 55 killed, one more after its test, two
-out of a test's reach (an fsync, the freeze tool's main). Then the third
-rehearsal (all counts held; H10 priced none of the 7) and the draft list.
+Three commits, each gated on `pnpm verify` (at the end 57 files + 1 skipped,
+512 tests + 6 skipped), both live freezes verified after each: `6c673ba`
+the fix-check's three rule sentences (F1 H15 step 2, F2 H10's bound, F3
+H8's coin); `326ecd5` its two tests (F4: the freeze tool's `--data` run
+whole from a copy in a made-up tree; F5: the built program's exit code
+through its catch), each shown in a scratch copy to pass and to fail on its
+break (`t04`, `n_exitwire`); `496ad5d` the draft list again, differing from
+the last one only in `rules.md`'s line and the head.
