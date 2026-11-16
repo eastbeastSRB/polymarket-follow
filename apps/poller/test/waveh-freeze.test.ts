@@ -6,11 +6,21 @@
  * hashes, so a MARKET-1 or paper fix fails here, in the session that makes
  * it. Run in `pnpm verify`'s order: the build first.
  */
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { CLOSURE, PACKAGE_ROOT } from "../src/waveh/gate.js";
 import { fillKeys } from "../src/waveh/keys.js";
 
@@ -215,4 +225,64 @@ describe("the store's list and R3 (i)'s short files (the freeze tool's --data)",
       },
     ]);
   });
+});
+
+describe("the freeze tool's --data, run whole from a copy in a made-up tree", () => {
+  // The tool writes beside its own file (`../apps/poller/waveh/`), so a copy
+  // writes inside the made-up tree, never the repository's data.sha256.
+  const made: string[] = [];
+  afterAll(() => {
+    for (const d of made) rmSync(d, { recursive: true, force: true });
+  });
+  const h = (n: number) => n.toString(16).padStart(64, "0");
+  const manifest = (counts: Record<string, number>) =>
+    `${Object.entries(counts)
+      .flatMap(([prefix, n]) =>
+        Array.from({ length: n }, (_, i) =>
+          JSON.stringify({
+            key: prefix.startsWith("node_fills")
+              ? `${prefix}${20250101 + Math.floor(i / 24)}/${i % 24}.lz4`
+              : `${prefix}${i}`,
+            bytes: 1_000,
+            sha256: h(i),
+          }),
+        ),
+      )
+      .join("\n")}\n`;
+
+  it("writes nothing when a count is off, and every file's line when the counts are right", () => {
+    const real = path.join(PACKAGE_ROOT, "waveh", "data.sha256");
+    const before = readFileSync(real);
+    const root = mkdtempSync(path.join(tmpdir(), "waveh-tool-"));
+    made.push(root);
+    mkdirSync(path.join(root, "tools"));
+    mkdirSync(path.join(root, "apps", "poller", "waveh"), { recursive: true });
+    const tool = path.join(root, "tools", "waveh-freeze.cjs");
+    copyFileSync(
+      path.join(PACKAGE_ROOT, "..", "..", "tools", "waveh-freeze.cjs"),
+      tool,
+    );
+    const run = (file: string) =>
+      spawnSync(process.execPath, [tool, "--data", file], {
+        encoding: "utf8",
+        timeout: 60_000,
+      });
+    const out = path.join(root, "apps", "poller", "waveh", "data.sha256");
+    const wrong = path.join(root, "wrong.jsonl");
+    writeFileSync(
+      wrong,
+      manifest({ ...freezeTool.DATA_COUNTS, "asset_ctxs/": 369 }),
+    );
+    const bad = run(wrong);
+    expect(bad.status).toBe(1);
+    expect(bad.stderr).toContain("369 asset_ctxs/ files, not 370");
+    expect(existsSync(out)).toBe(false);
+    const good = path.join(root, "good.jsonl");
+    writeFileSync(good, manifest(freezeTool.DATA_COUNTS));
+    const ok = run(good);
+    expect(ok.status, ok.stderr).toBe(0);
+    expect(ok.stdout).toContain("waveh/data.sha256: 9975 files");
+    expect(readFileSync(out, "utf8").split("\n")).toHaveLength(9_975 + 1);
+    expect(readFileSync(real).equals(before)).toBe(true);
+  }, 120_000);
 });

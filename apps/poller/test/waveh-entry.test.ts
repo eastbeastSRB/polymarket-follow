@@ -2,11 +2,18 @@
  * WAVE-H's entry point (rules.md H15's runs): a missing or bad setting and a
  * command it does not know are refused in one line, before anything runs
  * (exit 2). Only what never depends on WAVE-H's freeze is run through the
- * built program; the exits 4, 5 and 1 are tested through `exitOf`, which the
- * program's catch uses. Run in `pnpm verify`'s order: the build first.
+ * built program; the exits 4, 5 and 1 are tested through `exitOf`, and the
+ * catch's use of it through `rehearse` on made-up folders (5 and 1). Run in
+ * `pnpm verify`'s order: the build first.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,6 +66,22 @@ describe("WAVE-H's entry point (exit 2)", () => {
     }
     expect(existsSync(settings.WAVEH_ROOT)).toBe(false);
   }, 60_000);
+});
+
+describe("the built program's exit code, through its catch", () => {
+  it("exits 5 when the list lacks SIZING's files (not ready) and 1 when the manifest is missing (a crash)", () => {
+    const env = (store: string) => ({
+      WAVEH_STORE: path.join(dir, store),
+      WAVEH_ROOT: path.join(dir, "exit-root"),
+    });
+    mkdirSync(path.join(dir, "empty-store"));
+    writeFileSync(path.join(dir, "empty-store", "manifest.jsonl"), "");
+    const notReady = run(["rehearse"], env("empty-store"));
+    expect(notReady.status, notReady.stderr).toBe(5);
+    mkdirSync(path.join(dir, "no-manifest-store"));
+    const crash = run(["rehearse"], env("no-manifest-store"));
+    expect(crash.status, crash.stderr).toBe(1);
+  }, 120_000);
 });
 
 describe("WAVE-H's exit codes (H15's Runs)", () => {
