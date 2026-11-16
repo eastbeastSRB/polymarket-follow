@@ -32,22 +32,30 @@ export type TapeWhy = z.infer<typeof TapeWhy>;
 export type Found = Book | null | "no file";
 
 /**
- * H8's book at x: x's hour file's last snapshot at or before x; when it holds
- * none and x lies within 10 s after its hour's start, the hour before's. Live
- * within 10 s, and usable; else why the tape stands in.
+ * H8's snapshot at x, the one place that chooses it: x's hour file's last
+ * snapshot at or before x; when it holds none and x lies within 10 s after
+ * its hour's start, the hour before's (`prior`).
  */
+export function snapshotAt(
+  x: number,
+  atHour: Found,
+  before: Found,
+): { book: Book; prior: boolean } | null {
+  if (atHour !== null && atHour !== "no file")
+    return { book: atHour, prior: false };
+  const hour = Math.floor(x / HOUR_MS) * HOUR_MS;
+  return x - hour < LIVE_MS && before !== null && before !== "no file"
+    ? { book: before, prior: true }
+    : null;
+}
+
+/** H8's book at x: the snapshot at x, live within 10 s, and usable; else why the tape stands in. */
 export function bookAt(
   x: number,
   atHour: Found,
   before: Found,
 ): { book: Book } | { why: TapeWhy } {
-  const hour = Math.floor(x / HOUR_MS) * HOUR_MS;
-  const snap =
-    atHour !== null && atHour !== "no file"
-      ? atHour
-      : x - hour < LIVE_MS && before !== null && before !== "no file"
-        ? before
-        : null;
+  const snap = snapshotAt(x, atHour, before)?.book ?? null;
   if (snap === null)
     return { why: atHour === "no file" ? "no book file" : "no snapshot" };
   if (snap.ts < x - LIVE_MS)

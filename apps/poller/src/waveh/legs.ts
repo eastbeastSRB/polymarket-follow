@@ -20,6 +20,7 @@ import {
   bookAt,
   levelsOf,
   pricePosition,
+  snapshotAt,
   tapeAt,
   type Found,
   type Priced,
@@ -143,17 +144,12 @@ export function bookFound(
     prior !== undefined && (atHour === null || atHour === "no file")
       ? found(prior)
       : null;
-  const [snap, hour] =
-    atHour !== null && atHour !== "no file"
-      ? [atHour, h!]
-      : before !== null && before !== "no file"
-        ? [before, prior!]
-        : [null, null];
+  const snap = snapshotAt(x, atHour, before);
   return {
     atHour,
     before,
-    age: snap === null ? null : x - snap.ts,
-    file: hour === null ? null : bookKey(coin, hour),
+    age: snap === null ? null : x - snap.book.ts,
+    file: snap === null ? null : bookKey(coin, snap.prior ? prior! : h!),
   };
 }
 
