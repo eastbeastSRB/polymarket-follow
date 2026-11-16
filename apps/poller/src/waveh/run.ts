@@ -2,10 +2,19 @@
  * How WAVE-H runs (rules.md H0, H15): its settings, with no defaults; the
  * windows in which no heavy work runs (02:30–06:00Z and 10:25–11:15Z, the
  * other programs' runs); the hashes of the shared files it imports, logged
- * at each start (information, not a stop, as MARKET-1's M0).
+ * at each start (information, not a stop, as MARKET-1's M0); its whole-file
+ * writes.
  */
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import {
+  closeSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { DAY_MS, MINUTE_MS } from "../schedule.js";
@@ -48,6 +57,45 @@ export function windowEnd(now: number): number | null {
   for (const [from, to] of WINDOWS)
     if (minute >= from && minute < to) return day + to * MINUTE_MS;
   return null;
+}
+
+/** A refused rename is tried again once a second, 10 times in all. */
+export const RENAME_TRIES = 10;
+export const RENAME_PAUSE_MS = 1_000;
+
+const pause = (ms: number) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+/**
+ * Written whole to `<file>.tmp`, flushed, then renamed over the file; a
+ * rename refused (on Windows, while a reader holds the file) is tried again
+ * before the error is thrown. A copy of MARKET-1's `writeWhole`
+ * (market1/run.ts; MARKET-PLAN-REVIEW F2), so that no MARKET-1 process file
+ * joins WAVE-H's frozen closure (decisions 2026-11-16, WAVE-H-FIX's calls).
+ */
+export function writeWhole(
+  file: string,
+  bytes: Buffer | string,
+  tries = RENAME_TRIES,
+  pauseMs = RENAME_PAUSE_MS,
+): void {
+  mkdirSync(path.dirname(file), { recursive: true });
+  const fd = openSync(`${file}.tmp`, "w");
+  try {
+    writeFileSync(fd, bytes);
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  for (let i = 1; ; i++) {
+    try {
+      renameSync(`${file}.tmp`, file);
+      return;
+    } catch (err) {
+      if (i >= tries) throw err;
+      pause(pauseMs);
+    }
+  }
 }
 
 /** The shared files the program imports, unfrozen (R4): their hashes for the run's log. */

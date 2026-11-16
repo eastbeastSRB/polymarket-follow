@@ -21,13 +21,7 @@
  * before anything about an outcome is written or logged; then the positions
  * and the report. A second step 2 refuses.
  */
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
@@ -66,6 +60,7 @@ import { episodeSpots, waveSpots, type Spot } from "./positions.js";
 import { Priced } from "./price.js";
 import { SizingFile } from "./rehearse.js";
 import { dayMost, linesBeside, markAt, netLine, testMonths } from "./report.js";
+import { writeWhole } from "./run.js";
 import { bySlice, scanM } from "./slices.js";
 import { SHA256, StoreError, readBookList, type BookList } from "./store.js";
 import { Z, decide } from "./verdict.js";
@@ -218,12 +213,6 @@ const SealedLine = z.object({
   priced: Priced.nullable(),
   legs: z.array(LegPrint),
 });
-
-/** A file written whole or not at all. */
-function writeWhole(file: string, data: string | Buffer): void {
-  writeFileSync(`${file}.part`, data);
-  renameSync(`${file}.part`, file);
-}
 
 const json = (x: unknown) => `${JSON.stringify(x, null, 2)}\n`;
 
@@ -411,7 +400,18 @@ export async function look(
       minutes: Math.round((Date.now() - t0) / 60_000),
     },
   };
-  // R7: the result exists before anything about an outcome is written or logged.
+  const positions = gzipSync(
+    `${[
+      ...wave.map((o) => ({ set: "WAVE-H", ...o })),
+      ...sizingSet.map((o) => ({ set: "SIZING", ...o })),
+    ]
+      .map((o) => JSON.stringify(o))
+      .join("\n")}\n`,
+  );
+  const reportText = json(report);
+  // R7: the result exists before anything about an outcome is written or
+  // logged; only writes follow it (H15: a failure among them is recovered by
+  // one more step 2, which must give the same result).
   writeWhole(
     path.join(dir, "result.json"),
     json({
@@ -424,18 +424,8 @@ export async function look(
     }),
   );
   ctx.log("result", { verdict: decision.verdict });
-  writeWhole(
-    path.join(dir, "positions.jsonl.gz"),
-    gzipSync(
-      `${[
-        ...wave.map((o) => ({ set: "WAVE-H", ...o })),
-        ...sizingSet.map((o) => ({ set: "SIZING", ...o })),
-      ]
-        .map((o) => JSON.stringify(o))
-        .join("\n")}\n`,
-    ),
-  );
-  writeWhole(path.join(dir, "report.json"), json(report));
+  writeWhole(path.join(dir, "positions.jsonl.gz"), positions);
+  writeWhole(path.join(dir, "report.json"), reportText);
   ctx.log("done", { verdict: decision.verdict });
   return { verdict: decision.verdict };
 }

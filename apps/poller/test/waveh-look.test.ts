@@ -6,12 +6,14 @@
  * SIZING line from the sealed outcomes and the position the rehearsal left),
  * and a second step 2 refused. The tests run in order on one store.
  */
+import { spawn, type ChildProcess } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   renameSync,
+  rmdirSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -27,6 +29,7 @@ import { bookKey } from "../src/waveh/keys.js";
 import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
 import { AlreadyRun, FrozenDiffer, look } from "../src/waveh/look.js";
 import { SizingFile, rehearse } from "../src/waveh/rehearse.js";
+import { RENAME_PAUSE_MS, RENAME_TRIES, writeWhole } from "../src/waveh/run.js";
 import { manifestList } from "../src/waveh/store.js";
 import {
   CTXS_HEAD,
@@ -371,12 +374,48 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
     expect(existsSync(path.join(dir(), "result.json"))).toBe(false);
   });
 
-  it("step 2 prices every leg, writes the result, the positions and the report, and a second step 2 refuses", async () => {
-    await expect(look(ctx, { open: true }, root, sizing, "d")).resolves.toEqual(
-      {
-        verdict: "TOO FEW TO TELL",
+  it("step 2 writes the result first; after a failure at the report, one more step 2 with the result moved aside gives the same result (H15)", async () => {
+    // At the "result" event, which of the three files exist (R7's order).
+    const three = ["result.json", "positions.jsonl.gz", "report.json"];
+    const atResult: boolean[][] = [];
+    const watching: Ctx = {
+      ...ctx,
+      log: (event) => {
+        if (event === "result")
+          atResult.push(three.map((f) => existsSync(path.join(dir(), f))));
       },
+    };
+    // The report's file cannot be written (a folder where its whole-file copy goes).
+    mkdirSync(path.join(dir(), "report.json.tmp"));
+    await expect(
+      look(watching, { open: true }, root, sizing, "d"),
+    ).rejects.toThrow(/EISDIR|EPERM/);
+    expect(three.map((f) => existsSync(path.join(dir(), f)))).toEqual([
+      true,
+      true,
+      false,
+    ]);
+    rmdirSync(path.join(dir(), "report.json.tmp"));
+    renameSync(
+      path.join(dir(), "result.json"),
+      path.join(dir(), "result.first.json"),
     );
+    await expect(
+      look(watching, { open: true }, root, sizing, "d"),
+    ).resolves.toEqual({ verdict: "TOO FEW TO TELL" });
+    // The second run finds the first run's positions, which it writes again.
+    expect(atResult).toEqual([
+      [true, false, false],
+      [true, true, false],
+    ]);
+    const first = readJson("result.first.json");
+    expect({ ...readJson("result.json"), written: "" }).toEqual({
+      ...first,
+      written: "",
+    });
+  });
+
+  it("step 2 priced every leg into the result, the positions and the report, and a second step 2 refuses", async () => {
     // The entry bought 1,000 ÷ 101 on the tape; the exit sold at the book's 99.9;
     // 4.5 bps a leg; 24 settlements of 0.00001 at the mark 100, a long paying.
     const Q = 1_000 / 101;
@@ -484,4 +523,48 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       AlreadyRun,
     );
   });
+});
+
+describe("WAVE-H's own writes (H15; MARKET-1's F2 behaviour, copied)", () => {
+  const children: ChildProcess[] = [];
+  afterAll(() => {
+    for (const c of children) c.kill();
+  });
+
+  it("writes a file whole, tries a refused rename again until it goes through, and gives up after its tries", async () => {
+    const at = mkdtempSync(path.join(tmpdir(), "waveh-write-"));
+    scratch.push(at);
+    const file = path.join(at, "look", "result.json");
+    writeWhole(file, "one");
+    writeWhole(file, "two");
+    expect(readFileSync(file, "utf8")).toBe("two");
+    expect([RENAME_TRIES, RENAME_PAUSE_MS]).toEqual([10, 1_000]);
+    // A rename onto a folder is refused every time: 10 tries, 9 pauses between.
+    const folder = path.join(at, "folder");
+    mkdirSync(path.join(folder, "x"), { recursive: true });
+    const t0 = Date.now();
+    expect(() => writeWhole(folder, "three", RENAME_TRIES, 500)).toThrow(
+      /EPERM|EISDIR|ENOTEMPTY/,
+    );
+    const waited = Date.now() - t0;
+    expect(waited).toBeGreaterThanOrEqual(9 * 500);
+    expect(waited).toBeLessThan(10 * 500);
+    if (process.platform !== "win32") return;
+    // Another process holds the file for 1.5 s: Windows refuses a rename over it.
+    const holder = spawn(
+      process.execPath,
+      [
+        "-e",
+        `const fs=require("fs");const fd=fs.openSync(${JSON.stringify(file)},"r");process.stdout.write("held\\n");setTimeout(()=>fs.closeSync(fd),1500);`,
+      ],
+      { stdio: ["ignore", "pipe", "ignore"] },
+    );
+    children.push(holder);
+    await new Promise<void>((resolve) =>
+      holder.stdout.once("data", () => resolve()),
+    );
+    expect(() => writeWhole(file, "four", 1)).toThrow(/EPERM|EACCES|EBUSY/);
+    writeWhole(file, "five", RENAME_TRIES, 500);
+    expect(readFileSync(file, "utf8")).toBe("five");
+  }, 30_000);
 });

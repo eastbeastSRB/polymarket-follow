@@ -423,10 +423,18 @@ book files' lines read and failing, and the files holding a failing line
   leg; the statistic and the verdict, written to
   `look/result.json`; then `look/positions.jsonl.gz` (every position with
   its legs' book file and snapshot time or the tape's `tid`s, H9) and
-  `look/report.json` (H13, H14). Nothing about an outcome is printed or
-  logged before `look/result.json` exists (R7). A second step 2 refuses
-  (exit 5, "already run"). A run that crashes before its result exists is
-  not a look.
+  `look/report.json` (H13, H14), both made before the result is written.
+  Each file is written whole: flushed to a file beside it, then renamed over
+  it, a refused rename tried again once a second, 10 times in all. Nothing
+  about an outcome is printed or logged before `look/result.json` exists
+  (R7). A second step 2 refuses (exit 5, "already run"). A run that crashes
+  before its result exists is not a look. **The look is complete when
+  `look/positions.jsonl.gz` and `look/report.json` exist beside
+  `look/result.json`. If one is missing (a failure between the writes), the
+  supervisor moves `result.json` aside (to `look/result.first.json`), in a
+  decisions entry, and runs step 2 again: it must write the same
+  `positionsSha256`, verdict and numbers as the first, else the difference
+  is a code defect (the route below).**
 - **Then:** the report `docs/reviews/wave-h-look-<date>.md` and a Final review
   that recomputes WAVE-H with independent code, position by position. **A
   code defect it finds** is fixed by M0's route (a decisions entry, a test
