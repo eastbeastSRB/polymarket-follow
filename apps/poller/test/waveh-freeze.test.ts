@@ -88,6 +88,10 @@ const freezeTool = createRequire(import.meta.url)(
 ) as {
   DATA_COUNTS: Record<string, number>;
   checkCounts: (lines: Line[]) => void;
+  finalRefusal: (
+    status: string,
+    present: (file: string) => boolean,
+  ) => string | null;
   manifestLines: (text: string) => Line[];
   dataList: (lines: Line[]) => string;
   shortFiles: (
@@ -166,6 +170,18 @@ describe("the store's list and R3 (i)'s short files (the freeze tool's --data)",
         { key: "market_data/x", bytes: 1, sha256: h(1) },
       ]),
     ).toThrow("market_data/x, under none of the prefixes");
+  });
+
+  it("lets --final write only from a clean tree holding sizing.json and data.sha256", () => {
+    const all = () => true;
+    expect(freezeTool.finalRefusal("", all)).toBeNull();
+    expect(freezeTool.finalRefusal(" M apps/poller/waveh/rules.md", all)).toBe(
+      "the tree is not clean: commit first, then freeze",
+    );
+    for (const missing of ["waveh/sizing.json", "waveh/data.sha256"])
+      expect(freezeTool.finalRefusal("", (f) => f !== missing)).toBe(
+        `${missing} is missing: nothing written`,
+      );
   });
 
   it("names a fill file under 30% of its 24 nearest neighbours' median bytes, in each format", () => {

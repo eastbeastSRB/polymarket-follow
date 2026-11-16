@@ -126,6 +126,18 @@ function shortFiles(lines) {
   return out;
 }
 
+/**
+ * Why --final writes nothing, or null: a tree that is not clean (`git status
+ * --porcelain`'s text), or a file the gate requires by name missing (the
+ * look reads both: WAVEH_FILES).
+ */
+function finalRefusal(status, present) {
+  if (status !== "") return "the tree is not clean: commit first, then freeze";
+  for (const f of ["waveh/sizing.json", "waveh/data.sha256"])
+    if (!present(f)) return `${f} is missing: nothing written`;
+  return null;
+}
+
 /** waveh/data.sha256's text: every file of the manifest, by key. */
 const dataList = (lines) =>
   `${[...lines]
@@ -151,12 +163,12 @@ async function main() {
   const final = process.argv.includes("--final");
   const git = (...args) =>
     execFileSync("git", args, { cwd: PKG, encoding: "utf8" }).trim();
-  if (final && git("status", "--porcelain") !== "")
-    throw new Error("the tree is not clean: commit first, then freeze");
-  // The look reads them; the gate requires them in the list (WAVEH_FILES).
-  for (const f of ["waveh/sizing.json", "waveh/data.sha256"])
-    if (final && !fs.existsSync(path.join(PKG, f)))
-      throw new Error(`${f} is missing: nothing written`);
+  if (final) {
+    const why = finalRefusal(git("status", "--porcelain"), (f) =>
+      fs.existsSync(path.join(PKG, f)),
+    );
+    if (why !== null) throw new Error(why);
+  }
   fs.rmSync(path.join(PKG, "dist", "waveh.js"), { force: true });
   fs.rmSync(path.join(PKG, "dist", "waveh"), { recursive: true, force: true });
   execFileSync(
@@ -223,6 +235,7 @@ module.exports = {
   DATA_COUNTS,
   checkCounts,
   dataList,
+  finalRefusal,
   manifestLines,
   shortFiles,
 };
