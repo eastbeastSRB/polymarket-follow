@@ -330,7 +330,14 @@ review, the supervisor re-computing on its own path what decides.
     above).
 
   **The guide page approved** (decisions 2026-11-15, MARKET-1's page
-  guide). Trigger: the owner's usage reset.
+  guide). **The paper experiment's page joins it** (the owner,
+  2026-11-16): the guide explains its five lines, the "m ± SE" reading,
+  the band, "against random trades", the daily e-value, the traders' table
+  and the positions' columns. Its page is frozen too (its rules R15, frozen
+  2026-11-12), so two readability points also wait for v1's page and later
+  arms: repeated exits shown compactly ("reduce ×6, close" instead of
+  "reduce reduce … close", which widens the table), and prices rounded to
+  a sensible number of digits. Trigger: the owner's usage reset.
 - ⏳ **The recordings' second copy**: the owner provides the space within
   one to two months; the supervisor sets up the copy (same entry, (3)).
 - ⏳ **The backup task's trigger from UTC**: it takes effect when the

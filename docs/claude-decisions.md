@@ -1,5 +1,29 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (the owner — the guide covers the paper experiment's page too):
+**THE SEPARATE GUIDE PAGE EXPLAINS BOTH PAGES, MARKET-1'S AND THE PAPER
+EXPERIMENT'S; BOTH FROZEN PAGES STAY AS THEY ARE.**
+
+**What:** the owner asked for the paper experiment's page to be
+explained as MARKET-1's was (decisions 2026-11-15, MARKET-1's page guide).
+The guide page will also cover:
+- the five lines;
+- how to read "m ± SE";
+- the band at the next look;
+- "against random trades";
+- the daily e-value;
+- the traders' table;
+- the positions' columns and exits.
+
+The owner also noted that repeated exits ("reduce reduce … close") widen
+the positions table, and proposed a compact form ("reduce ×6"). That
+change, and prices rounded to a sensible number of digits, wait for v1's
+page and for arms frozen later.
+
+**Why:** the paper experiment's page is frozen code (its rules R15, frozen
+2026-11-12), like MARKET-1's. A change would break the freeze in the middle
+of the test. The guide touches no frozen file.
+
 2026-11-15 (the owner — MARKET-1's page guide): **A SEPARATE GUIDE PAGE
 EXPLAINS MARKET-1'S PAGE; THE FROZEN PAGE STAYS AS IT IS.**
 
