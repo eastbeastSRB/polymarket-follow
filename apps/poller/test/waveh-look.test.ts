@@ -11,6 +11,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -26,7 +27,7 @@ import { bookKey } from "../src/waveh/keys.js";
 import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
 import { AlreadyRun, FrozenDiffer, look } from "../src/waveh/look.js";
 import { SizingFile, rehearse } from "../src/waveh/rehearse.js";
-import { StoreError, manifestList } from "../src/waveh/store.js";
+import { manifestList } from "../src/waveh/store.js";
 import {
   CTXS_HEAD,
   block,
@@ -283,10 +284,40 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
     expect(existsSync(path.join(dir(), "result.json"))).toBe(false);
   });
 
-  it("stops while a book file is lacking, when the positions' SHA-256 differs from step 1's, and when the sealed outcomes differ", async () => {
-    await expect(look(ctx, { open: true }, root, sizing, "d")).rejects.toThrow(
-      "4 of 6 book files",
+  it("stops, before reading any store file, while a book file is lacking or the sealed outcomes are missing or changed; then when the positions' SHA-256 differs from step 1's or the sealed outcomes hold other positions, before any tape", async () => {
+    let paced = 0;
+    const counting: Ctx = {
+      ...ctx,
+      pace: () => {
+        paced += 1;
+        return Promise.resolve();
+      },
+    };
+    const run = (s: SizingFile = sizing) =>
+      look(counting, { open: true }, root, s, "d");
+    // Step 2's cheap refusals come before step 1 again (L1): no file is read.
+    await expect(run()).rejects.toThrow("4 of 6 book files");
+    expect(paced).toBe(0);
+    books.push(
+      JSON.stringify({ key: bookKey("SOL", hourOf(W + ENTRY)), missing: true }),
     );
+    putBook("SOL", W + ENTRY + DAY_MS);
+    putBook("kPEPE", W3 + ENTRY);
+    putBook("kPEPE", W3 + ENTRY + DAY_MS);
+    writeBooks();
+    await expect(
+      run({
+        ...sizing,
+        outcomes: { ...sizing.outcomes, sha256: "0".repeat(64) },
+      }),
+    ).rejects.toThrow("the sealed SIZING outcomes' SHA-256");
+    const sealedFile = path.join(root, "rehearsal", "sizing-outcomes.jsonl.gz");
+    const real = readFileSync(sealedFile);
+    renameSync(sealedFile, `${sealedFile}.away`);
+    await expect(run()).rejects.toThrow("no rehearsal");
+    renameSync(`${sealedFile}.away`, sealedFile);
+    expect(paced).toBe(0);
+    // Then step 1 again, its positions' SHA-256 held to step1.json's.
     const stepFile = path.join(dir(), "step1.json");
     const good = readFileSync(stepFile, "utf8");
     const step = JSON.parse(good) as { sha256: string };
@@ -297,29 +328,12 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
         step.sha256.replace(/^./, (c) => (c === "0" ? "1" : "0")),
       ),
     );
-    await expect(look(ctx, { open: true }, root, sizing, "d")).rejects.toThrow(
-      "the positions' SHA-256",
-    );
+    await expect(run()).rejects.toThrow("the positions' SHA-256");
     writeFileSync(stepFile, good);
-    books.push(
-      JSON.stringify({ key: bookKey("SOL", hourOf(W + ENTRY)), missing: true }),
-    );
-    putBook("SOL", W + ENTRY + DAY_MS);
-    putBook("kPEPE", W3 + ENTRY);
-    putBook("kPEPE", W3 + ENTRY + DAY_MS);
-    writeBooks();
-    await expect(
-      look(
-        ctx,
-        { open: true },
-        root,
-        { ...sizing, outcomes: { ...sizing.outcomes, sha256: "0".repeat(64) } },
-        "d",
-      ),
-    ).rejects.toThrow(StoreError);
-    // A sealed file whose bytes are its hash's but whose position is not SIZING's.
-    const sealedFile = path.join(root, "rehearsal", "sizing-outcomes.jsonl.gz");
-    const real = readFileSync(sealedFile);
+    const once = paced;
+    expect(once).toBeGreaterThan(0);
+    // A sealed file whose bytes are its hash's but whose position is not
+    // SIZING's: refused after step 1, before any tape is read.
     const t1 = W1 + 5 * MINUTE_MS;
     const moved = gzipSync(
       gunzipSync(real)
@@ -328,14 +342,9 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
     );
     writeFileSync(sealedFile, moved);
     await expect(
-      look(
-        ctx,
-        { open: true },
-        root,
-        { ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(moved) } },
-        "d",
-      ),
+      run({ ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(moved) } }),
     ).rejects.toThrow("position 1 is not SIZING's");
+    expect(paced).toBe(2 * once);
     // Our own file: a line failing its schema throws, whatever its hash.
     const broken = gzipSync(
       gunzipSync(real)
@@ -344,14 +353,9 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
     );
     writeFileSync(sealedFile, broken);
     await expect(
-      look(
-        ctx,
-        { open: true },
-        root,
-        { ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(broken) } },
-        "d",
-      ),
+      run({ ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(broken) } }),
     ).rejects.toThrow("depthShort");
+    expect(paced).toBe(3 * once);
     writeFileSync(sealedFile, real);
     // R7: a book file held but not its list's bytes stops the look.
     const bad = books.map((l) =>

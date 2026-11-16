@@ -413,12 +413,14 @@ book files' lines read and failing, and the files holding a failing line
   1 runs again.
 - **Between:** the downloader fetches those book files under the same caps
   and watch as the main download, into the store's book list.
-- **Step 2** (`waveh look` again): recomputes step 1 and stops (exit 5) if its
-  positions' SHA-256 differs from `step1.json`'s, if a needed book file is
-  neither in the book list nor listed missing, or if the sealed SIZING
-  outcomes (`rehearsal/sizing-outcomes.jsonl.gz` under `WAVEH_ROOT`) differ
-  from `sizing.json`'s SHA-256 or hold other positions than SIZING's; then
-  prices every leg; the statistic and the verdict, written to
+- **Step 2** (`waveh look` again): before reading any store file, it stops
+  (exit 5) if a book file of `look/books-needed.txt` is neither in the book
+  list nor listed missing, or if the sealed SIZING outcomes
+  (`rehearsal/sizing-outcomes.jsonl.gz` under `WAVEH_ROOT`) are missing or
+  differ from `sizing.json`'s SHA-256; then it recomputes step 1 and stops
+  (exit 5) if its positions' SHA-256 differs from `step1.json`'s or the
+  sealed outcomes hold other positions than SIZING's; then it prices every
+  leg; the statistic and the verdict, written to
   `look/result.json`; then `look/positions.jsonl.gz` (every position with
   its legs' book file and snapshot time or the tape's `tid`s, H9) and
   `look/report.json` (H13, H14). Nothing about an outcome is printed or

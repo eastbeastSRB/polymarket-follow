@@ -13,12 +13,13 @@
  * book files their legs need and the positions' SHA-256 written to
  * `look/step1.json`; then it stops (books needed).
  *
- * Step 2 (the same command again): step 1 recomputed and its SHA-256 held to
- * `step1.json`'s; every needed book file answered by the store's book list;
- * the sealed SIZING outcomes held to `sizing.json`'s SHA-256; every leg
- * priced; the verdict written to `look/result.json` before anything about an
- * outcome is written or logged; then the positions and the report. A second
- * step 2 refuses.
+ * Step 2 (the same command again): first what refuses cheaply — every
+ * needed book file answered by the store's book list, the sealed SIZING
+ * outcomes held to `sizing.json`'s SHA-256; then step 1 recomputed and its
+ * SHA-256 held to `step1.json`'s, the sealed outcomes held to SIZING's
+ * positions; every leg priced; the verdict written to `look/result.json`
+ * before anything about an outcome is written or logged; then the positions
+ * and the report. A second step 2 refuses.
  */
 import {
   existsSync,
@@ -226,15 +227,16 @@ function writeWhole(file: string, data: string | Buffer): void {
 
 const json = (x: unknown) => `${JSON.stringify(x, null, 2)}\n`;
 
-/** The sealed SIZING outcomes (H13's SIZING line): the rehearsal's, the ones it left priced at the look. */
-function sizingOutcomes(
-  sealed: Buffer,
-  step: Step1,
-  late: ReadonlyMap<string, Outcome>,
-): Outcome[] {
+/**
+ * The sealed SIZING outcomes' lines (H13's SIZING line), held to SIZING's
+ * positions one by one; a position the rehearsal left must be one the look
+ * prices again.
+ */
+function sealedLines(sealed: Buffer, step: Step1) {
   // The rehearsal wrote the positions it priced, then those whose exit is in
   // TEST: time order, as every exit before TEST's start comes from an earlier t.
   const want = step.sizing.map((s) => JSON.stringify(s));
+  const again = new Set(step.late.map((s) => JSON.stringify(s)));
   const lines = gunzipSync(sealed).toString("utf8").split("\n");
   if (lines.pop() !== "" || lines.length !== want.length)
     throw new StoreError(
@@ -246,14 +248,11 @@ function sizingOutcomes(
       throw new StoreError(
         `the sealed SIZING outcomes' position ${i + 1} is not SIZING's`,
       );
-    if (o.priced !== null)
-      return { spot: step.sizing[i]!, priced: o.priced, legs: o.legs };
-    const again = late.get(want[i]);
-    if (again === undefined)
+    if (o.priced === null && !again.has(want[i]))
       throw new StoreError(
         `the sealed SIZING outcomes' position ${i + 1} was left for the look, but its exit is before TEST's hour before`,
       );
-    return again;
+    return o;
   });
 }
 
@@ -274,9 +273,9 @@ export async function look(
     throw new AlreadyRun("look/result.json exists");
   mkdirSync(dir, { recursive: true });
   const t0 = Date.now();
-  const step = await lookStep1(ctx, gate, sizing.M);
   const stepFile = path.join(dir, "step1.json");
   if (!existsSync(stepFile)) {
+    const step = await lookStep1(ctx, gate, sizing.M);
     writeWhole(
       path.join(dir, "books-needed.txt"),
       `${step.needed.join("\n")}\n`,
@@ -303,22 +302,20 @@ export async function look(
       `step 1 done: ${step.needed.length} book files listed`,
     );
   }
+  // Step 2: its cheap refusals first, before step 1's hours again.
   const prior = Step1File.parse(JSON.parse(readFileSync(stepFile, "utf8")));
-  if (prior.sha256 !== step.sha256)
-    throw new StoreError(
-      `the positions' SHA-256 is ${step.sha256}, step 1's ${prior.sha256}`,
-    );
+  const needed = readFileSync(path.join(dir, "books-needed.txt"), "utf8")
+    .split("\n")
+    .filter((k) => k !== "");
   const bookText = path.join(ctx.store, "books.jsonl");
   const books: BookList = existsSync(bookText)
     ? readBookList(readFileSync(bookText, "utf8"))
     : { files: new Map(), missing: new Set() };
-  const lacking = step.needed.filter(
+  const lacking = needed.filter(
     (k) => !books.files.has(k) && !books.missing.has(k),
   );
   if (lacking.length > 0)
-    throw new BooksNeeded(
-      `${lacking.length} of ${step.needed.length} book files`,
-    );
+    throw new BooksNeeded(`${lacking.length} of ${needed.length} book files`);
   const sealedFile = path.join(root, "rehearsal", sizing.outcomes.file);
   if (!existsSync(sealedFile))
     throw new StoreError(`no ${path.join("rehearsal", sizing.outcomes.file)}`);
@@ -327,6 +324,12 @@ export async function look(
     throw new StoreError(
       `the sealed SIZING outcomes' SHA-256 is ${sha256(sealed)}, sizing.json's ${sizing.outcomes.sha256}`,
     );
+  const step = await lookStep1(ctx, gate, sizing.M);
+  if (prior.sha256 !== step.sha256)
+    throw new StoreError(
+      `the positions' SHA-256 is ${step.sha256}, step 1's ${prior.sha256}`,
+    );
+  const sealedSizing = sealedLines(sealed, step);
 
   const all = [...step.spots, ...step.late];
   const tapes = await readTapes(ctx, gate, legsOf(all, ctx.coins));
@@ -348,7 +351,12 @@ export async function look(
   const late = new Map(
     priced.slice(step.spots.length).map((o) => [JSON.stringify(o.spot), o]),
   );
-  const sizingSet = sizingOutcomes(sealed, step, late);
+  // The SIZING line: the rehearsal's outcome where it priced one, else the look's.
+  const sizingSet: Outcome[] = sealedSizing.map((o, i) =>
+    o.priced !== null
+      ? { spot: step.sizing[i]!, priced: o.priced, legs: o.legs }
+      : late.get(JSON.stringify(step.sizing[i]))!,
+  );
   const decision = decide(
     ctx.kit,
     wave.map((o) => ({ t: o.spot.t, iid: o.spot.iid, priced: o.priced! })),
