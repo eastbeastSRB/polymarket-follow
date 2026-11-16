@@ -8,8 +8,9 @@ liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
 history, is built, fixed and checked: the fresh fix-check found it ready to
 freeze after small fixes, and WAVE-H-FIX-2 made them (2026-11-16): three
-rule sentences, two tests, a new draft list. It waits for the owner's go for
-the freeze and the one look; nothing is frozen or run on TEST.** The plan is
+rule sentences, two tests, a new draft list. The owner gave the go for the
+freeze and the one look (decisions 2026-11-16, about 08:30Z); nothing is
+frozen or run on TEST yet.** The plan is
 the plan page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -62,12 +63,13 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The owner's go for WAVE-H's freeze and its one look.** The freeze, by
-   the supervisor: `pnpm verify` on a clean tree, `node
-   tools/waveh-freeze.cjs --final`, commit; the owner pushes the tag
-   `waveh-freeze-1`. Then the look (H15's two steps, `node
-   --max-old-space-size=8192 dist/waveh.js look`): step 1's counts checked
-   by the supervisor before the books are fetched, then step 2 (the verdict).
+1. **WAVE-H's freeze and its one look, with the owner's go** (decisions
+   2026-11-16, "the owner — the go"): the supervisor verifies WAVE-H-FIX-2,
+   then `pnpm verify` on a clean tree, `node tools/waveh-freeze.cjs
+   --final`, commit; the owner pushes the tag `waveh-freeze-1`. Then the
+   look (H15's two steps, `node --max-old-space-size=8192 dist/waveh.js
+   look`): step 1's counts checked by the supervisor before the books are
+   fetched, then step 2 (the verdict).
 2. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
    book level's unit (decisions 2026-11-13, call 11); no paper command by
    hand while a MARKET-1 run is live (rules.md M2).
