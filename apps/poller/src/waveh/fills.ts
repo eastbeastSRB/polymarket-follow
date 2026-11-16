@@ -89,7 +89,7 @@ export function parseRecord(raw: unknown): Rec | null {
 }
 
 /** How a record of a liquidation stands to H4 (null: no `liquidation` object). */
-export type LegKind =
+type LegKind =
   | "counted"
   | "counterparty"
   | "no liquidatedUser"

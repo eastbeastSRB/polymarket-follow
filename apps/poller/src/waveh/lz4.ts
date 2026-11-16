@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-export const LZ4JS_SHA256: Readonly<Record<string, string>> = {
+const LZ4JS_SHA256: Readonly<Record<string, string>> = {
   "lz4.js": "16a1df1eb50e74c1cbb0c4f4e947385b4918910a8081cd4bac90318b1052f2bb",
   "util.js": "7932a139124a291b71a073228e2651720c5cf0c83cfb4a52fc5eff0b8b5c0e18",
   "xxh32.js":

@@ -39,7 +39,7 @@ import { bySlice, scanM } from "./slices.js";
 import { SHA256, StoreError, readBookList, type BookList } from "./store.js";
 
 /** Every SIZING fill file, one at a time, into one pass; records stamped from TEST's start are not used. */
-export async function sizingPass(ctx: Ctx): Promise<Pass> {
+async function sizingPass(ctx: Ctx): Promise<Pass> {
   const keys = fillKeys(SIZING_START, TEST_START);
   const absent = keys.filter((k) => !ctx.list.has(k));
   if (absent.length > 0)

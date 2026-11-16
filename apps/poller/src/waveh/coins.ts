@@ -44,8 +44,8 @@ export function coinsFrom(text: string): Coins {
   return { list, byName, byIid: new Map(list.map((c) => [c.iid, c])) };
 }
 
-export const loadCoins = (dir = WAVEH_DIR): Coins =>
-  coinsFrom(readFileSync(path.join(dir, "coins.json"), "utf8"));
+export const loadCoins = (): Coins =>
+  coinsFrom(readFileSync(path.join(WAVEH_DIR, "coins.json"), "utf8"));
 
 export const coinName = (coins: Coins, iid: number) =>
   coins.list.find((c) => c.assetId === iid)!.name;

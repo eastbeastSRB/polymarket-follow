@@ -46,7 +46,7 @@ export function sentence(v: Verdict, mean: number, se: number | null): string {
     : "Holds and does not hold are verdicts on this test, never instructions to trade.";
 }
 
-export type Decision = {
+type Decision = {
   positions: number;
   priced: number;
   unpriced: number;

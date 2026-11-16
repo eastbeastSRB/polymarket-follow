@@ -125,7 +125,7 @@ export async function readTapes(
 }
 
 /** The book files a run reads (H8): the store's book list, and each file read with its lines and the lines failing WAVE-H's schema. */
-export type Shelf = {
+type Shelf = {
   books: BookList;
   read: Map<string, { lines: number; failed: number }>;
 };
@@ -152,7 +152,7 @@ export function bookLines(shelf: Shelf) {
 }
 
 /** H8's files at x for a coin, from the store's book list (a key the archive lacks is "no file"); the snapshot's age and its file. */
-export function bookFound(
+function bookFound(
   ctx: Ctx,
   gate: Gate,
   shelf: Shelf,

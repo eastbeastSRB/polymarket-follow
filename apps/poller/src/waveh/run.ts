@@ -62,7 +62,7 @@ export const Settings = z
 export type Settings = z.infer<typeof Settings>;
 
 /** The UTC minutes of the day in which WAVE-H starts no file: 02:30–06:00 and 10:25–11:15. */
-export const WINDOWS: readonly (readonly [number, number])[] = [
+const WINDOWS: readonly (readonly [number, number])[] = [
   [150, 360],
   [625, 675],
 ];

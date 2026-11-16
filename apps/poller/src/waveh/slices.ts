@@ -8,7 +8,7 @@ import type { Liq } from "../market1/fills.js";
 import { episodes } from "../market1/waves.js";
 
 /** MARKET-FIND's 386 episodes in 68 days: the rate M matches. */
-export const TARGET_RATE = 5.68;
+const TARGET_RATE = 5.68;
 /** The scan stops after the first M whose rate is below half the target. */
 export const STOP_RATE = 2.84;
 
@@ -30,7 +30,7 @@ export function bySlice<T extends Liq>(fills: readonly T[], M: number): T[][] {
   return out;
 }
 
-export type ScanRow = { M: number; episodes: number; rate: number };
+type ScanRow = { M: number; episodes: number; rate: number };
 
 /**
  * H5's scan on SIZING's counted fills in H4's order: r(M) = the slices' mean

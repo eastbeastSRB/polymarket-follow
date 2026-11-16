@@ -10,7 +10,7 @@ import type { Format } from "./fills.js";
 import { DATA_END, SIZING_START, TEST_END, TEST_START } from "./instants.js";
 
 /** The fill files' formats by hour (H2): `node_fills` from its first file to 2025-07-27 08h, `node_fills_by_block` from that hour to DATA END's. */
-export const FORMAT_SWITCH = Date.parse("2025-07-27T08:00:00Z");
+const FORMAT_SWITCH = Date.parse("2025-07-27T08:00:00Z");
 
 /** A UTC date as the keys write it, `YYYYMMDD`. */
 const ymd = (t: number) =>

@@ -66,12 +66,12 @@ import { SHA256, StoreError, readBookList, type BookList } from "./store.js";
 import { Z, decide } from "./verdict.js";
 
 /** The frozen `waveh/sizing.json`; a file that does not parse throws (our own file). */
-export const loadSizing = (dir = WAVEH_DIR): SizingFile =>
+export const loadSizing = (): SizingFile =>
   SizingFile.parse(
-    JSON.parse(readFileSync(path.join(dir, "sizing.json"), "utf8")),
+    JSON.parse(readFileSync(path.join(WAVEH_DIR, "sizing.json"), "utf8")),
   );
 
-export type Step1 = {
+type Step1 = {
   M: number;
   /** WAVE-H's positions: slice 0's entries with t in TEST and x_out before DATA END (H6, H11). */
   spots: Spot[];

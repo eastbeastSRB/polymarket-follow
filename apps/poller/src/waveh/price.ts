@@ -20,13 +20,8 @@ export const FEE = 0.00045;
 /** The tape's window after a leg's instant (H8). */
 export const TAPE_MS = 60_000;
 
-export const TapeWhy = z.enum([
-  "no book file",
-  "no snapshot",
-  "stale",
-  "not usable",
-]);
-export type TapeWhy = z.infer<typeof TapeWhy>;
+const TapeWhy = z.enum(["no book file", "no snapshot", "stale", "not usable"]);
+type TapeWhy = z.infer<typeof TapeWhy>;
 
 /** A book file's snapshot at or before x, none in the file, or no such file in the archive. */
 export type Found = Book | null | "no file";
@@ -120,7 +115,7 @@ export type Quote =
   | { source: "book"; book: Book }
   | { source: "tape"; why: TapeWhy; trades: readonly Trade[] };
 
-export const Leg = z.object({
+const Leg = z.object({
   source: z.enum(["book", "tape"]),
   why: TapeWhy.nullable(),
   price: z.number(),
@@ -129,7 +124,7 @@ export const Leg = z.object({
   /** The snapshot's time, or the tape's first and last instants. */
   at: z.array(z.number()),
 });
-export type Leg = z.infer<typeof Leg>;
+type Leg = z.infer<typeof Leg>;
 
 const num = z.number().nullable();
 export const Priced = z.object({
