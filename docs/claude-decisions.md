@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (the supervisor — WAVE-H-FIX-CHECK accepted; the last small
+fixes): **READY TO FREEZE AFTER THREE RULE SENTENCES AND TWO TESTS; A SMALL
+WORKER, WAVE-H-FIX-2, MAKES THEM; THE FREEZE AND THE ONE LOOK WAIT FOR THE
+OWNER'S GO.**
+
+**The fix-check** (`docs/reviews/wave-h-fix-check-2026-11-16.md`,
+`63b81e9`; Sonnet 5.5, fresh). Verified at 08:21Z: only its report changed;
+no sealed file was opened; the three lists verify.
+
+Its verdict is "ready to freeze after these small fixes": no high and no
+medium finding.
+- The two reviews' 24 findings: 23 fixed as ruled, L12 kept and sound, 0
+  open.
+- The third run's checklist holds item by item, by its own leaf-by-leaf
+  comparison.
+- The old build and the new give equal sealed outcomes, positions, legs,
+  prices and verdicts on two made-up stores. The fixes moved no price.
+- H10 matches a reference written from the rule's text, over 4,000 worlds.
+- `data.sha256` and the program's own key builders agree on all 9,975
+  keys.
+- On a freeze day rehearsed in a scratch repository, the gate accepts the
+  list and refuses each kind of change.
+
+**The calls:**
+- **F1** (needed; H15 step 2, the sentence that is shorter than the code),
+  **F2** (H10, "the run's end") and **F3** (H8, a line naming another coin):
+  the fix-check's exact wording, in one commit.
+- **F4** (the `--data` main path) and **F5** (the exit code's wiring): its
+  two tests, added. Neither uses a mock, and neither changes a frozen hash.
+- **F6** (no fsync is visible only to a mock): left as it is.
+- **Its Q3** (a count of positions with a settlement without a mark, at step
+  1): not added. The per-coin count already bounds it: about 25 holes would
+  be needed to reach WITHHELD.
+- Then the draft list is written again from a clean tree.
+
+**A correction to the entry below** ("WAVE-H-FIX verified"): its stamp
+"07:23–07:40Z" was an estimate. `date -u` read 07:26Z when that check
+ended.
+
+**Next:** WAVE-H-FIX-2, then the owner's go. The supervisor runs
+`waveh-freeze.cjs --final`, the owner pushes the tag `waveh-freeze-1`, and
+then the one look: step 1 (counts only, checked by the supervisor) and then
+step 2 (the verdict).
+
 2026-11-16 (the supervisor — WAVE-H-FIX verified; its Q-A to Q-D):
 **THE FIX ROUND IS IN AND VERIFIED; THE 7 SIZING POSITIONS WITHOUT A
 FUNDING MARK STAY UNPRICED, AS H9 SAYS; NO RULE BRIDGES ARCHIVE HOLES.**
