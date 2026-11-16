@@ -264,13 +264,18 @@ trade.*
 ## H10. The marks, the market object, BASE — M12's BASE
 
 - **Marks:** Hyperliquid's `asset_ctxs` day files (`asset_ctxs/<date>.csv.lz4`,
-  one row a coin a minute, stamped at the minute's start). **The mark at the
-  end of minute [m, m + 1 min) is the `mark_px` of the coin's row stamped
-  m + 1 min** (for 23:59, the next day file's 00:00 row) (R1). A row stamped
-  at or after DATA END is not read. The coin's **market object** is the kit's
-  (`marketFrom`), built from those marks and the settled funding rows, so the
-  kit's `markAtMinuteEnd` (5 minutes' staleness at most) and `fundingBetween`
-  read it unchanged.
+  one row a coin a minute, stamped at the minute's start, and in stretches on
+  12 of SIZING's 68 days at another second of it). **The mark at the end of
+  minute [m, m + 1 min) is the `mark_px` of the coin's row with the latest
+  stamp in (m, m + 1 min]** (R1; decisions 2026-11-14, Q6): a row stamped on
+  the boundary m + 1 min wins over an earlier one, of two rows of one stamp
+  the first line stands, and for 23:59 the next day file's 00:00 row serves.
+  A row's time is `YYYY-MM-DDTHH:MM:SSZ`, whole seconds; a row of another
+  form, or whose `mark_px` is not a number above 0, fails WAVE-H's schema, is
+  dropped and counted. A row stamped at or after DATA END is not read. The
+  coin's **market object** is the kit's (`marketFrom`), built from those marks
+  and the settled funding rows, so the kit's `markAtMinuteEnd` (5 minutes'
+  staleness at most) and `fundingBetween` read it unchanged.
 - **BASE** (MARKET-1's `baseOf`): for coin i and the 4-hour UTC block b of
   x_in, the mean of (marks[j + 1,440] ÷ marks[j] − 1) × 10⁴ over every whole
   minute j in [TEST's start, TEST's end − 24 h) of coin i whose minute lies in

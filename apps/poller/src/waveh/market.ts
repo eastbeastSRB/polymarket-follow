@@ -48,7 +48,14 @@ export async function readMarkets(
 ) {
   const bound = boundOf(gate);
   const marks = newMarks(ctx.coins, MARKS_START, bound);
-  const ctxs = { files: 0, rows: 0, failed: 0, late: 0, twice: 0 };
+  const ctxs = {
+    files: 0,
+    rows: 0,
+    failed: 0,
+    offMinute: 0,
+    late: 0,
+    twice: 0,
+  };
   for (let d = MARKS_START; d < bound; d += DAY_MS) {
     await ctx.pace();
     const c = addCtxs(
@@ -61,6 +68,7 @@ export async function readMarkets(
     ctxs.files += 1;
     ctxs.rows += c.rows;
     ctxs.failed += c.failed;
+    ctxs.offMinute += c.offMinute;
     ctxs.late += c.late;
     ctxs.twice += c.twice;
   }

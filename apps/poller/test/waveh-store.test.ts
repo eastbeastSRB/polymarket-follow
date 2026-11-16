@@ -394,7 +394,13 @@ describe("the marks, funding and the market object (H9, H10; R1)", () => {
       "",
     ].join("\n");
     const count = addCtxs(marks, text, day + 86_400_000);
-    expect(count).toEqual({ rows: 7, failed: 2, late: 1, twice: 1 });
+    expect(count).toEqual({
+      rows: 7,
+      failed: 2,
+      offMinute: 0,
+      late: 1,
+      twice: 1,
+    });
     const sol = marks.byCoin.get("SOL")!;
     expect([sol[0], sol[1], sol[2]]).toEqual([101, 102, NaN]);
     // The next day's 00:00 row fills the day's last minute.
@@ -407,6 +413,154 @@ describe("the marks, funding and the market object (H9, H10; R1)", () => {
     expect(() => addCtxs(marks, "time,coin,funding\n", Infinity)).toThrow(
       "header",
     );
+  });
+
+  it("reads a row stamped off the minute at the boundary at or after it, the latest stamp standing, the first line of two equal stamps (H10, Q6)", () => {
+    const end = day + 86_400_000;
+    const at = (minute: number, second: number) =>
+      day + minute * MINUTE_MS + second * 1_000;
+    const text = (rows: string[]) => [head, ...rows].join("\n");
+    // In either order, the boundary's own row (00:02:00) beats an earlier one (00:01:30).
+    for (const rows of [
+      [row(at(1, 30), "SOL", "101"), row(at(2, 0), "SOL", "102")],
+      [row(at(2, 0), "SOL", "102"), row(at(1, 30), "SOL", "101")],
+    ]) {
+      const marks = newMarks(coins, day, end);
+      expect(addCtxs(marks, text(rows), end)).toEqual({
+        rows: 2,
+        failed: 0,
+        offMinute: 1,
+        late: 0,
+        twice: 1,
+      });
+      const sol = marks.byCoin.get("SOL")!;
+      expect([sol[0], sol[1], sol[2]]).toEqual([NaN, 102, NaN]);
+    }
+    // Two rows off the minute: the later stamp in either order.
+    for (const rows of [
+      [row(at(4, 20), "SOL", "120"), row(at(4, 40), "SOL", "140")],
+      [row(at(4, 40), "SOL", "140"), row(at(4, 20), "SOL", "120")],
+    ]) {
+      const marks = newMarks(coins, day, end);
+      addCtxs(marks, text(rows), end);
+      expect(marks.byCoin.get("SOL")![4]).toBe(140);
+    }
+    const tie = newMarks(coins, day, end);
+    expect(
+      addCtxs(
+        tie,
+        text([row(at(5, 20), "SOL", "1"), row(at(5, 20), "SOL", "2")]),
+        end,
+      ),
+    ).toMatchObject({ twice: 1 });
+    expect(tie.byCoin.get("SOL")![5]).toBe(1);
+    // A fraction of a second and a mark of 0 fail; a row 20 s before the bound
+    // gives the bound's minute, a row at the bound is late.
+    const edge = newMarks(coins, day, end);
+    expect(
+      addCtxs(
+        edge,
+        text([
+          row(at(6, 30), "SOL", "100").replace("Z,", ".500Z,"),
+          row(at(7, 0), "SOL", "0"),
+          row(end - 20_000, "SOL", "150"),
+          row(end, "SOL", "160"),
+        ]),
+        end,
+      ),
+    ).toEqual({ rows: 4, failed: 2, offMinute: 1, late: 1, twice: 0 });
+    expect(edge.byCoin.get("SOL")![1_439]).toBe(150);
+  });
+
+  it("prices a settlement inside a stretch of rows stamped at :20, through the kit (Q6's 7 positions)", async () => {
+    const kit = await loadResearch();
+    const marks = newMarks(coins, day, day + 86_400_000);
+    const from = day + 10 * HOUR_MS + 20 * MINUTE_MS;
+    const rows = [head];
+    for (let t = day; t < day + 86_400_000; t += MINUTE_MS)
+      rows.push(
+        row(t >= from && t < from + HOUR_MS ? t + 20_000 : t, "SOL", "100"),
+      );
+    expect(addCtxs(marks, rows.join("\n"), Infinity)).toMatchObject({
+      failed: 0,
+      offMinute: 60,
+      twice: 1,
+    });
+    const H = day + 11 * HOUR_MS;
+    const mk = marketOf(kit, coins.byName.get("SOL")!, marks, [
+      [H, 0.001, H + 17],
+    ]);
+    expect(kit.panel.markAtMinuteEnd(mk, H - 1)).toBe(100);
+    expect(kit.panel.fundingBetween(mk, H - HOUR_MS, H)).toEqual({
+      sum: 0.001 * 100,
+      missing: 0,
+    });
+  });
+
+  it("equals a reference of H10 on 300 made-up day files: any order, stamps off the minute, equal stamps, the bound, bad rows", () => {
+    let a = 11;
+    const rand = () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+    };
+    const end = day + 2 * 86_400_000;
+    for (let w = 0; w < 300; w++) {
+      const until =
+        rand() < 0.3
+          ? day + 86_400_000 + Math.floor(rand() * 3) * MINUTE_MS
+          : end;
+      const rows: string[] = [];
+      for (let k = 0, n = 1 + Math.floor(rand() * 40); k < n; k++) {
+        const minute = Math.floor(rand() * 60) + (rand() < 0.5 ? 1_410 : 0);
+        const t =
+          day +
+          minute * MINUTE_MS +
+          (rand() < 0.5 ? 0 : Math.floor(rand() * 60)) * 1_000;
+        const kind = rand();
+        const mark = String(90 + Math.floor(rand() * 20));
+        rows.push(
+          kind < 0.05
+            ? row(t, "SOL", "-1")
+            : kind < 0.1
+              ? `${iso(t)},SOL,1`
+              : kind < 0.13
+                ? row(t, "SOL", mark).replace("Z,", ".500Z,")
+                : row(t, "SOL", mark),
+        );
+        if (rand() < 0.15) rows.push(row(t, "SOL", String(Number(mark) + 100)));
+      }
+      const shuffled = rows
+        .map((r) => [r, rand()] as const)
+        .sort((x, y) => x[1] - y[1])
+        .map(([r]) => r);
+      const marks = newMarks(coins, day, end);
+      addCtxs(marks, [head, ...shuffled].join("\n"), until);
+      // The rule read literally: each minute's mark is the first line of the
+      // latest whole-second stamp in (m, m + 1 min] before the bound.
+      const want = new Map<number, { t: number; mark: number }>();
+      for (const r of shuffled) {
+        const c = r.split(",");
+        const t = Date.parse(c[0]!);
+        if (c.length !== 12 || !/:\d\dZ$/.test(c[0]!) || !(Number(c[8]) > 0))
+          continue;
+        const i = Math.ceil((t - day) / MINUTE_MS) - 1;
+        const cur = want.get(i);
+        if (t < until && i >= 0 && (cur === undefined || t > cur.t))
+          want.set(i, { t, mark: Number(c[8]) });
+      }
+      const sol = marks.byCoin.get("SOL")!;
+      expect(
+        Array.from(sol, (v, i) => (Number.isNaN(v) ? null : [i, v])).filter(
+          (x) => x !== null,
+        ),
+        `file ${w}`,
+      ).toEqual(
+        [...want].sort((x, y) => x[0] - y[0]).map(([i, { mark }]) => [i, mark]),
+      );
+    }
   });
 
   it("rounds a funding row's stamp to its nominal hour and refuses two rows of an hour", () => {
