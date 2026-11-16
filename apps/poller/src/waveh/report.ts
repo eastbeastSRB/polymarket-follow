@@ -13,11 +13,12 @@ import { statOf, summarize, tailOf } from "../market1/summary.js";
 import type { Market, Research } from "../paper/research.js";
 import { dayOf } from "../paper/stats.js";
 import { DAY_MS, HOUR_MS } from "../schedule.js";
-import type { Coins } from "./coins.js";
+import { coinName, type Coins } from "./coins.js";
 import type { Counted } from "./fills.js";
 import { DATA_END, SIZING_START, TEST_END, TEST_START } from "./instants.js";
+import { tally, type Outcome } from "./legs.js";
 import { episodeSpots, waveSpots, type Spot } from "./positions.js";
-import { burstiness, coinName, tally, type Outcome } from "./rehearse.js";
+import { burstiness } from "./rehearse.js";
 import { bySlice, scanM } from "./slices.js";
 import { Z } from "./verdict.js";
 

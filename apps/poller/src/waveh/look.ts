@@ -30,7 +30,7 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
 import { byM4 } from "../market1/fills.js";
 import { DAY_MS, HOUR_MS } from "../schedule.js";
-import { WAVEH_DIR } from "./coins.js";
+import { WAVEH_DIR, coinName } from "./coins.js";
 import type { Counted } from "./fills.js";
 import { keyDate, type Gate } from "./gate.js";
 import {
@@ -40,20 +40,19 @@ import {
   TEST_END,
   TEST_START,
 } from "./instants.js";
-import { newPass, passFile } from "./pass.js";
-import { episodeSpots, waveSpots, type Spot } from "./positions.js";
 import {
   BooksNeeded,
   booksOf,
-  coinName,
   legsOf,
   priceSpot,
-  readMarkets,
   readTapes,
   tally,
   type Ctx,
   type Outcome,
-} from "./rehearse.js";
+} from "./legs.js";
+import { readMarkets } from "./market.js";
+import { newPass, passFile } from "./pass.js";
+import { episodeSpots, waveSpots, type Spot } from "./positions.js";
 import { dayMost, linesBeside, markAt, netLine, testMonths } from "./report.js";
 import { bySlice, scanM } from "./slices.js";
 import { StoreError, fillKeys, readBookList, type BookList } from "./store.js";

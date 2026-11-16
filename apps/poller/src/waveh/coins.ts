@@ -46,3 +46,6 @@ export function coinsFrom(text: string): Coins {
 
 export const loadCoins = (dir = WAVEH_DIR): Coins =>
   coinsFrom(readFileSync(path.join(dir, "coins.json"), "utf8"));
+
+export const coinName = (coins: Coins, iid: number) =>
+  coins.list.find((c) => c.assetId === iid)!.name;

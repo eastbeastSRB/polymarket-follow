@@ -22,8 +22,9 @@ import { createLog } from "./log.js";
 import { loadResearch } from "./paper/research.js";
 import { WAVEH_DIR, loadCoins } from "./waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, verifyFreeze } from "./waveh/gate.js";
+import { BooksNeeded, type Ctx } from "./waveh/legs.js";
 import { AlreadyRun, FrozenDiffer, loadSizing, look } from "./waveh/look.js";
-import { BooksNeeded, rehearse, type Ctx } from "./waveh/rehearse.js";
+import { rehearse } from "./waveh/rehearse.js";
 import { Settings, sharedHashes, windowEnd } from "./waveh/run.js";
 import {
   StoreError,

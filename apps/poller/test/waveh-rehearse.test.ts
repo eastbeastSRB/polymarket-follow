@@ -23,15 +23,10 @@ import { bookKey } from "../src/waveh/books.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { SIZING_START, TEST_START } from "../src/waveh/instants.js";
 import { lookStep1 } from "../src/waveh/look.js";
-import { SealedError } from "../src/waveh/gate.js";
+import { CLOSED, SealedError } from "../src/waveh/gate.js";
+import { BooksNeeded, priceSpot, type Ctx } from "../src/waveh/legs.js";
 import { newPass, passFile } from "../src/waveh/pass.js";
-import {
-  BooksNeeded,
-  CLOSED,
-  priceSpot,
-  rehearse,
-  type Ctx,
-} from "../src/waveh/rehearse.js";
+import { rehearse } from "../src/waveh/rehearse.js";
 import { Settings, windowEnd } from "../src/waveh/run.js";
 import { StoreError, manifestList } from "../src/waveh/store.js";
 import {

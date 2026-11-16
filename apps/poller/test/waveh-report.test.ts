@@ -12,8 +12,9 @@ import type { Counted } from "../src/waveh/fills.js";
 import { SIZING_START, TEST_END, TEST_START } from "../src/waveh/instants.js";
 import { waveSpots, type Spot } from "../src/waveh/positions.js";
 import { loadCoins } from "../src/waveh/coins.js";
+import type { Outcome } from "../src/waveh/legs.js";
 import type { Priced } from "../src/waveh/price.js";
-import { burstiness, type Outcome } from "../src/waveh/rehearse.js";
+import { burstiness } from "../src/waveh/rehearse.js";
 import {
   asPosition,
   dayMost,

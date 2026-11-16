@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { RESEARCH_ROOT } from "../paper/research.js";
-import { TEST_START } from "./instants.js";
+import { DATA_END, TEST_START } from "./instants.js";
 
 /** The package's folder: the repository's `apps/poller`. */
 export const PACKAGE_ROOT = path.join(RESEARCH_ROOT, "..");
@@ -120,6 +120,12 @@ export class SealedError extends Error {}
 export type Gate = { readonly open: boolean };
 
 export const gateOf = (freeze: Freeze): Gate => ({ open: freeze.ok });
+
+/** The rehearsal's gate: closed whatever the freeze says (the plan's 3.6). */
+export const CLOSED: Gate = { open: false };
+/** The records and marks a run uses end here: TEST's start while the gate is closed (the rehearsal), DATA END once it is open (the look). */
+export const boundOf = (gate: Gate): number =>
+  gate.open ? DATA_END : TEST_START;
 
 /** The UTC date `YYYYMMDD` with an hour, or null when it is no such date. */
 function utc(ymd: string, hour: string): number | null {

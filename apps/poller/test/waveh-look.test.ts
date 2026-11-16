@@ -22,18 +22,15 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { bookKey } from "../src/waveh/books.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
+import { CLOSED } from "../src/waveh/gate.js";
+import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
 import {
   AlreadyRun,
   FrozenDiffer,
   look,
   SizingFile,
 } from "../src/waveh/look.js";
-import {
-  BooksNeeded,
-  CLOSED,
-  rehearse,
-  type Ctx,
-} from "../src/waveh/rehearse.js";
+import { rehearse } from "../src/waveh/rehearse.js";
 import { StoreError, manifestList } from "../src/waveh/store.js";
 import {
   CTXS_HEAD,
