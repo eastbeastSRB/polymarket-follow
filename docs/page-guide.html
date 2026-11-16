@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page guide</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #1b1b1b;
+        --muted: #5a5a5a;
+        --line: #d6d6d6;
+        --box: #f3f3f3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c1c1c;
+          --fg: #e8e8e8;
+          --muted: #a8a8a8;
+          --line: #3a3a3a;
+          --box: #262626;
+        }
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.55 system-ui, sans-serif;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 19px;
+        margin-top: 2em;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 4px;
+      }
+      h3 {
+        font-size: 16px;
+        margin-top: 1.5em;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 8px 0 16px;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 5px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--box);
+      }
+      .box {
+        background: var(--box);
+        border: 1px solid var(--line);
+        padding: 8px 12px;
+        margin: 12px 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      code {
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Page guide</h1>
+    <p>
+      How to read the two daily pages: MARKET-1's and the paper experiment's.
+      Both pages are written by frozen programs, so they never change while
+      their tests run; this guide sits beside them and changes nothing they
+      show. Written 2026-11-16 by the supervisor, from the tests' rules
+      (<code>apps/poller/market1/rules.md</code> and
+      <code>apps/poller/experiment/rules.md</code>).
+    </p>
+
+    <h2>Where the pages are and when they change</h2>
+    <table>
+      <tr>
+        <th>Page</th>
+        <th>File</th>
+        <th>Written daily at</th>
+        <th>Data through</th>
+      </tr>
+      <tr>
+        <td>The paper experiment</td>
+        <td><code>F:\polymarket-follow\paper\page\index.html</code></td>
+        <td>04:00Z (05:00 your time), done within about an hour</td>
+        <td>midnight UTC that day</td>
+      </tr>
+      <tr>
+        <td>MARKET-1</td>
+        <td><code>F:\polymarket-follow\market1\page\index.html</code></td>
+        <td>10:30Z (11:30 your time), done within minutes</td>
+        <td>midnight UTC that day</td>
+      </tr>
+    </table>
+    <p>
+      Each page has a second file beside it, <code>positions.html</code>, with
+      every position; the main page shows the newest 500. MARKET-1 reads the
+      pool's trades that the paper experiment stored at 04:00Z.
+    </p>
+
+    <h2>Reading the numbers</h2>
+    <h3>Basis points (bps)</h3>
+    <p>
+      Every result is in basis points of the $1,000 each paper position puts
+      in: 100 bps = 1% = $10. So −106.7 bps is −1.07%, about −$10.67, and
+      +552.1 bps is +5.52%, about +$55.21. Results are after fees and funding
+      unless a column says otherwise.
+    </p>
+    <h3>"−154.0 ± 64.4": an average and its uncertainty</h3>
+    <p>
+      The first number is the average result a position. The second is its
+      standard error: how far that average could be from the true one by
+      chance. It is computed so that one trader's many positions, or one busy
+      day, cannot make it look more certain than it is. As a rule of thumb, the
+      true average is very likely within two of these either side: here about
+      −283 to −25.
+    </p>
+    <h3>The band at the next look</h3>
+    <p>
+      The average ± the next look's multiplier × its standard error: 2.81 at the
+      first look (2026-12-19), 2.43 at the second (2027-02-06), 2.17 at the third
+      (2027-05-08). Example: −154.0 ± 2.81 × 64.4 gives −334.9 … +26.9. Only the
+      band at a look decides; a band that crosses a line between looks decides
+      nothing.
+    </p>
+    <h3>The looks and the verdicts</h3>
+    <ul>
+      <li>
+        <strong>KEEP:</strong> the whole band is above 0 <em>and</em> a second
+        check agrees (the paper experiment: the copies beat random trades;
+        MARKET-1: the result beats the coin's own usual drift).
+      </li>
+      <li>
+        <strong>DROP:</strong> the whole band is below the line the owner set:
+        +10 bps for the paper experiment, +50 bps for MARKET-1.
+      </li>
+      <li>
+        <strong>WITHHELD:</strong> too many positions could not be priced
+        properly (more than 2% for the paper experiment, 10% for MARKET-1).
+      </li>
+      <li>
+        <strong>TOO FEW TO TELL:</strong> none of these holds yet (MARKET-1 also
+        needs at least 20 days and 10 markets).
+      </li>
+    </ul>
+    <p>
+      The first KEEP or DROP is the test's answer. Until the first look the
+      verdict box says "Too early to judge — next look 2026-12-19." Keep and
+      drop are verdicts on a test, never instructions to trade.
+    </p>
+    <h3>Why the pages have no red and green</h3>
+    <p>
+      Both tests' rules bar colours for a result's sign, and MARKET-1's page
+      hides the side lines' results until the looks. A running number must not
+      pull at a test before it is judged. Colours for a position's state
+      (pending, open, closed) carry no result and are planned for v1's own
+      pages.
+    </p>
+
+    <h2>MARKET-1's page</h2>
+    <p>
+      MARKET-1 is the live paper test of the liquidation wave on Polymarket
+      Perps: when two or more of the pool's accounts are forced to close
+      positions on the same side in small coins within an hour, a paper
+      position goes the other way 2 minutes later and is held 24 hours. Its
+      sister test, WAVE-H, checks the same rule once on Hyperliquid's history
+      and has no daily page.
+    </p>
+
+    <h3>"WAVE, complete weeks (positions before …)"</h3>
+    <p>
+      The headline counts only <strong>complete weeks</strong>: weeks for which
+      every one of the pool's 1,602 accounts has been read. The paper
+      experiment reads about a seventh of the accounts each day and the rest on
+      Monday, so a week becomes complete after its Monday read.
+    </p>
+    <table>
+      <tr>
+        <th>Line on the page</th>
+        <th>What it means</th>
+      </tr>
+      <tr>
+        <td>N positions on D days in K markets; mean net … ± …</td>
+        <td>
+          the complete weeks' positions, the days and markets they span, their
+          average result with its standard error, and the band the next look
+          will use
+        </td>
+      </tr>
+      <tr>
+        <td>The worst day …; the largest fall …</td>
+        <td>
+          the worst UTC day, the largest fall from a running peak, the most
+          positions open at once, the worst single position
+        </td>
+      </tr>
+      <tr>
+        <td>Priced at the mark on a leg; depth short; pending; unpriced</td>
+        <td>
+          quality counts: a leg priced at the fallback mark price because no
+          usable order book was recorded; a leg the book was too thin to fill
+          for $1,000; positions still waiting for data; positions with no
+          price at all (left out of every average, never guessed)
+        </td>
+      </tr>
+      <tr>
+        <td>Partial: the rest of the pool is read on Monday — N positions</td>
+        <td>
+          the current, unfinished week: positions found so far among the
+          accounts already read
+        </td>
+      </tr>
+    </table>
+
+    <h3>"The lines beside" (counts only)</h3>
+    <p>
+      Control versions of the wave, each asking "is it really the wave, or
+      something else?". Each counts the positions already closed by the run's
+      data end; their results appear only at the looks.
+    </p>
+    <table>
+      <tr>
+        <th>Line</th>
+        <th>What it counts</th>
+      </tr>
+      <tr>
+        <td>P</td>
+        <td>
+          waves from 2026-11-07 to 2026-11-10, before the collector recorded
+          order books; priced at the mark only
+        </td>
+      </tr>
+      <tr>
+        <td>B1 EPISODES</td>
+        <td>every burst of liquidations in a coin, even by one account</td>
+      </tr>
+      <tr>
+        <td>B2 ALONE</td>
+        <td>bursts with no wave (one account only): a control</td>
+      </tr>
+      <tr>
+        <td>B3 LATE 1 h / 3 h</td>
+        <td>the wave's positions entered 1 or 3 hours later</td>
+      </tr>
+      <tr>
+        <td>B4 COINS</td>
+        <td>bursts while two or more different coins were liquidated</td>
+      </tr>
+      <tr>
+        <td>B5 THREE</td>
+        <td>bursts with three or more accounts liquidated</td>
+      </tr>
+      <tr>
+        <td>B6 FORCED SELLS / BUYS</td>
+        <td>the wave split by side (forced sells: longs closed)</td>
+      </tr>
+      <tr>
+        <td>B7 BTC / ETH</td>
+        <td>
+          at each wave, the same trade in BTC and ETH: is it the coin or the
+          whole market?
+        </td>
+      </tr>
+      <tr>
+        <td>B10 LARGE</td>
+        <td>the same rule on BTC's and ETH's own liquidations</td>
+      </tr>
+      <tr>
+        <td>C WITHOUT COMPETITIONS / BOOSTED MARKETS</td>
+        <td>
+          the wave without positions inside a Polymarket trading competition,
+          and without those in a market a competition boosts
+        </td>
+      </tr>
+      <tr>
+        <td>S 2026-11, S BASKET …</td>
+        <td>
+          the wave by month, and by whether the small coins as a group rose or
+          fell over the 7 days before, crossed with forced sells and buys
+        </td>
+      </tr>
+    </table>
+
+    <h3>"The pool's liquidations in small coins, by week"</h3>
+    <p>
+      For each week (its Monday): the pool's forced-close fills in small coins,
+      how many different accounts were liquidated, and how many accounts
+      traded small coins at all. The current week is low only because it is
+      still partial.
+    </p>
+
+    <h3>"Every WAVE position, newest first"</h3>
+    <table>
+      <tr>
+        <th>Column</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>market</td>
+        <td>the coin</td>
+      </tr>
+      <tr>
+        <td>forced side</td>
+        <td>
+          "forced sell": longs were liquidated, so the paper position buys;
+          "forced buy": shorts were, so it sells
+        </td>
+      </tr>
+      <tr>
+        <td>liquidation (UTC)</td>
+        <td>the moment of the liquidation that started the wave</td>
+      </tr>
+      <tr>
+        <td>accounts</td>
+        <td>
+          how many pool accounts were liquidated on that side in the hour up
+          to it (2 or more is a wave)
+        </td>
+      </tr>
+      <tr>
+        <td>in (UTC)</td>
+        <td>the entry, 2 minutes later: a real follower's delay</td>
+      </tr>
+      <tr>
+        <td>price in</td>
+        <td>
+          the price paid walking the recorded order book for $1,000 "(book)";
+          "(mark)" when the fallback price was used; "— (pending)" until the
+          day's recordings are sealed and checked
+        </td>
+      </tr>
+      <tr>
+        <td>out (UTC)</td>
+        <td>the exit, always 24 hours after the entry; no stop</td>
+      </tr>
+      <tr>
+        <td>net, bps</td>
+        <td>the result after fees and funding (statuses below)</td>
+      </tr>
+      <tr>
+        <td>flags</td>
+        <td>
+          warnings: a leg priced at the mark (with the reason) or depth short;
+          empty is clean
+        </td>
+      </tr>
+      <tr>
+        <td>first seen</td>
+        <td>
+          the run that first found it; the pool's accounts are read gradually,
+          so a wave can surface a day or more later
+        </td>
+      </tr>
+    </table>
+    <div class="box">
+      <strong>The statuses in "net, bps"</strong>
+      <ul>
+        <li>
+          <strong>a plain number</strong> (−106.7): final. Closed, both prices
+          set.
+        </li>
+        <li>
+          <strong>pending</strong>: closed, but its prices wait for the next
+          day's recordings to be sealed; the next run fills it in.
+        </li>
+        <li>
+          <strong>"(open, at the mark)"</strong>: still open at the run's data
+          end; a temporary value at the market's mark price that will change.
+        </li>
+      </ul>
+    </div>
+
+    <h2>The paper experiment's page</h2>
+    <p>
+      The paper experiment copies, on paper, the new positions of a fixed pool
+      of traders: each copy opens 62–95 seconds after the trader (a fixed delay
+      per position, like a real follower's), puts in $1,000 and leaves when the
+      trader leaves, step by step.
+    </p>
+
+    <h3>"The five lines"</h3>
+    <table>
+      <tr>
+        <th>Line</th>
+        <th>Whose positions it copies</th>
+      </tr>
+      <tr>
+        <td>Main line (decides)</td>
+        <td>
+          traders the classifier calls directional, who usually hold 6 hours
+          or more and closed at least 3 trades in the 30 days before; the only
+          line with a verdict
+        </td>
+      </tr>
+      <tr>
+        <td>Ten closed cycles</td>
+        <td>the main line's traders with 10 or more closed trades</td>
+      </tr>
+      <tr>
+        <td>Every directional trader</td>
+        <td>all directional traders, however long they hold</td>
+      </tr>
+      <tr>
+        <td>Day-holders</td>
+        <td>the main line's traders who usually hold 24 hours or more</td>
+      </tr>
+      <tr>
+        <td>Your favourites</td>
+        <td>
+          your marked traders' positions since the freeze (2026-11-12),
+          whatever their type
+        </td>
+      </tr>
+    </table>
+    <table>
+      <tr>
+        <th>Column</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>Positions / Traders / Days / Open</td>
+        <td>
+          paper copies, the traders behind them, the days with a copy, and the
+          copies still open
+        </td>
+      </tr>
+      <tr>
+        <td>Result a position, bps</td>
+        <td>the average result after costs, "average ± its uncertainty"</td>
+      </tr>
+      <tr>
+        <td>Band at the next look</td>
+        <td>the range the next look will judge</td>
+      </tr>
+      <tr>
+        <td>Against random trades, bps</td>
+        <td>
+          each copy's 24-hour move, before costs, minus that of a random public
+          trade in the same market and hour with the same delay: do these
+          traders pick better moments than chance? The number in brackets is
+          how many copies have had their full 24 hours.
+        </td>
+      </tr>
+      <tr>
+        <td>Its band</td>
+        <td>the band at the next look, for that number</td>
+      </tr>
+      <tr>
+        <td>Daily e-value</td>
+        <td>
+          each UTC day casts one vote: did that day's copies beat random
+          trades? The e-value says how one-sided the votes are, in either
+          direction. About 1 or below: mixed (3 of 7 days gives 0.46). 16.00
+          over 7 days: all 7 days voted the same way; by chance alone a value
+          of 16 or more comes at most 1 time in 16. Read its direction from
+          "against random trades". It decides nothing.
+        </td>
+      </tr>
+    </table>
+
+    <h3>"Traders of the main line, by address"</h3>
+    <p>
+      One row per main-line trader: positions, open ones, the average result,
+      and a 95% band shown once the trader has 20 days with positions ("too few
+      days" before). About 1 in 20 such bands looks significant by chance alone,
+      so these rows decide nothing.
+    </p>
+
+    <h3>"Paper positions, newest first"</h3>
+    <table>
+      <tr>
+        <th>Column</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>Trader / Market / Side</td>
+        <td>who, where, and long or short (the copy goes the same way)</td>
+      </tr>
+      <tr>
+        <td>Trader's fill</td>
+        <td>when the trader opened</td>
+      </tr>
+      <tr>
+        <td>Paper entry</td>
+        <td>when the copy opened, 62–95 seconds later</td>
+      </tr>
+      <tr>
+        <td>Entry price</td>
+        <td>
+          the market's mark price then, plus or minus the spread and the
+          book's depth, as a real taker would pay (printed with every digit)
+        </td>
+      </tr>
+      <tr>
+        <td>Exits</td>
+        <td>every exit copied, in order (below)</td>
+      </tr>
+      <tr>
+        <td>State</td>
+        <td>open or closed</td>
+      </tr>
+      <tr>
+        <td>Result, bps</td>
+        <td>after fees and funding; an open copy at the current mark price</td>
+      </tr>
+      <tr>
+        <td>Flags</td>
+        <td>
+          the lines the copy belongs to (MAIN, TEN, BROAD, DAY, FAV), and a
+          warning such as a gap in the trader's read history
+        </td>
+      </tr>
+    </table>
+    <div class="box">
+      <strong>The words in "Exits"</strong>
+      <ul>
+        <li>
+          <strong>reduce</strong>: the trader closed part of the position; the
+          copy closed the same share.
+        </li>
+        <li>
+          <strong>close</strong>: the trader closed the rest; so did the copy.
+        </li>
+        <li><strong>flip</strong>: the trader reversed the position.</li>
+        <li>
+          A liquidation of the trader shows as reduce (in part) or close (in
+          full).
+        </li>
+        <li>
+          <strong>marked</strong>: still open; the open part is valued at the
+          mark price at the run's data end.
+        </li>
+      </ul>
+      Traders leave differently: one closes at once ("close"), another trims
+      in six steps ("reduce" six times, then "close"). Every step is copied, so
+      the number of words varies. A compact form ("reduce ×6, close") is
+      planned for v1's own pages.
+    </div>
+
+    <p class="muted">
+      This guide explains the pages; it is not a result and not advice. The
+      numbers on both pages are judged only at the looks.
+    </p>
+  </body>
+</html>

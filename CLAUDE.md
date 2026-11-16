@@ -64,6 +64,8 @@ docs/claude-master-plan.md — the owner's plan page: every item under a status
 docs/claude-external-apis.md — what we have VERIFIED about every external API,
   each fact dated and sourced. Read before calling one; append what you
   learn. Never trust an undated claim about someone else's API.
+docs/page-guide.html — how to read the daily pages (the owner's guide,
+  decisions 2026-11-15/16). Update it when a page's output changes.
 docs/reviews/ — research reports, plans, audits, build reviews: dated
   evidence, never edited (a Final review's corrections are marked in place),
   indexed in its README. A review decides nothing: what it concludes is
