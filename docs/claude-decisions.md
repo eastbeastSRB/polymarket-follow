@@ -1,5 +1,59 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (the owner — the go for WAVE-H's freeze and its one look, about
+08:30Z): **"you have approvement to continue as you suggested."**
+
+**What it covers:**
+1. **The freeze.** After WAVE-H-FIX-2 is verified, the supervisor runs
+   `node tools/waveh-freeze.cjs --final` on a clean tree. It commits
+   `waveh/FROZEN.sha256` and writes its hash in a decisions entry. That
+   commit is tagged `waveh-freeze-1`, and the owner pushes the tag.
+2. **The one look.**
+   - Step 1 gives counts only. The supervisor checks them before step 2:
+     the marks and funding holes, and whether the unpriced share could
+     reach WITHHELD.
+   - Step 2 gives the verdict.
+   - Both run with `node --max-old-space-size=8192 dist/waveh.js look`,
+     outside 02:35–03:50Z and 10:25–11:15Z, with the collector watched.
+
+**Afterwards:** the data stays on F:. The look spends only the test months'
+independence for this one question. Anything found by exploring them later
+is a lead, never proof. A lead is confirmed only on data no rule has seen,
+such as Hyperliquid's months after 2026-05-28, or MARKET-1's own looks.
+
+2026-11-16 (WAVE-H-FIX-2's technical calls — the last small fixes of the
+entry below, 08:22–08:31Z): **THE THREE SENTENCES AND THE TWO TESTS ARE IN;
+THE DRAFT LIST IS WRITTEN AGAIN (74 FILES, `1d85e2f6…dd38`); NOTHING IS
+FROZEN OR RUN ON TEST.**
+
+**What:**
+- `6c673ba` `waveh/rules.md`: F1 (H15 step 2), F2 (H10's bound) and F3
+  (H8's coin), each in the fix-check's exact wording; each old sentence was
+  found exactly once (line breaks normalised) before it was replaced.
+- `326ecd5` the two tests, no mock:
+  - F4 in `test/waveh-freeze.test.ts`: the tool's `--data` run whole from a
+    copy in a made-up tree (369 `asset_ctxs` days: exit 1, nothing written;
+    the right counts: 9,975 lines); it also checks that the repository's
+    `waveh/data.sha256` is byte-unchanged;
+  - F5 in `test/waveh-entry.test.ts`: `rehearse` on made-up folders through
+    the built program (an empty manifest: exit 5; none: exit 1). `rehearse`
+    never reads WAVE-H's freeze, so the answer is the same after `--final`.
+- `496ad5d` the draft list (`node tools/waveh-freeze.cjs`, clean tree, after
+  `pnpm verify`): 74 files,
+  `1d85e2f6276247dae03f0f2ee394255375aa59e28154f7eb5c210cfc1e28dd38`. Against
+  `6bd52e61…a5f1` only the head's "written … from commit" line and
+  `waveh/rules.md`'s line (`a0dadebc…` → `7e252d04…`) differ.
+
+**Checks:** in a scratch copy (`git archive 6c673ba` and the two test
+files), both tests pass; `t04` (main does not call `checkCounts`) fails F4
+("expected +0 to be 1"), `n_exitwire` (`code = 1;`) fails F5 ("expected 1
+to be 5"); both pass again once restored. Each commit is gated on `pnpm
+verify` in the same command (at the end 57 files + 1 skipped, 512 tests + 6
+skipped). Both live freezes verify after each (61 `d04d3cd8…f31c`, 64
+`b9e17505…2f1d`). The new draft verifies against the build.
+
+**Next:** the owner's go for the freeze and the one look (the entry below).
+
 2026-11-16 (the supervisor — WAVE-H-FIX-CHECK accepted; the last small
 fixes): **READY TO FREEZE AFTER THREE RULE SENTENCES AND TWO TESTS; A SMALL
 WORKER, WAVE-H-FIX-2, MAKES THEM; THE FREEZE AND THE ONE LOOK WAIT FOR THE
