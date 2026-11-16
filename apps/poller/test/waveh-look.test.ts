@@ -365,6 +365,27 @@ describe("the one look (H15, R3, R7)", { timeout: 180_000 }, () => {
       run({ ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(broken) } }),
     ).rejects.toThrow("depthShort");
     expect(paced).toBe(3 * once);
+    // A position the sealed file says was left for the look, which the look
+    // does not price again (its exit is long before TEST): refused before any tape.
+    const [first, ...rest] = gunzipSync(real)
+      .toString("utf8")
+      .trim()
+      .split("\n");
+    const left = gzipSync(
+      `${[
+        JSON.stringify({
+          spot: (JSON.parse(first!) as { spot: unknown }).spot,
+          priced: null,
+          legs: [],
+        }),
+        ...rest,
+      ].join("\n")}\n`,
+    );
+    writeFileSync(sealedFile, left);
+    await expect(
+      run({ ...sizing, outcomes: { ...sizing.outcomes, sha256: sha(left) } }),
+    ).rejects.toThrow("position 1 was left for the look");
+    expect(paced).toBe(4 * once);
     // A sealed file one position short of SIZING's.
     const short = gzipSync(
       `${gunzipSync(real).toString("utf8").trim().split("\n").slice(0, -1).join("\n")}\n`,
