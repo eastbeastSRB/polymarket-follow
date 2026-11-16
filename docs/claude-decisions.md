@@ -1,5 +1,45 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (the supervisor — WAVE-H's look, step 1 out of memory; the run's
+heap raised): **STEP 1 STOPPED AT THE 8 GB HEAP BEFORE WRITING ANYTHING;
+IT RUNS AGAIN WITH A 16 GB HEAP. NO RULE, NUMBER OR FROZEN FILE CHANGES.**
+
+**What happened:** step 1 started 08:38:24Z (pid 34528, idle priority,
+`--max-old-space-size=8192`, as H15 "Runs" says). The gate verified the
+freeze: 74 files, `864990da…8dd2`. It read 7,000 of 8,845 fill files by
+15:18Z (2,210,657 counted fills). It then stopped at about 15:4xZ with
+V8's "Ineffective mark-compacts near heap limit … JavaScript heap out of
+memory": the last full collections went from 8,156 MB to 8,140 MB.
+
+So the live data really is above 8 GB. It grew about 0.5–0.8 GB per 500
+fill files. The reviews' estimates (2.8–4 GB from the rehearsal's heap; a
+measured 0.48 KB a counted fill, about 1.2 GB) were too low for the test
+months.
+
+**Nothing was spent:**
+- `look/` is empty, and no `step1.json`, result or outcome exists;
+- H15 says "A run that crashes before its result exists is not a look";
+- the test months stay as they were.
+
+**The call:** step 1 runs again, unchanged, with `node
+--max-old-space-size=16384`, and step 2 gets a heap set from step 1's last
+heap line, at least 16 GB.
+- **Why 16 GB:** the end of the fill pass projects to about 10–11 GB. The
+  PC has 31.9 GB of RAM (17.8 GB free at 15:46Z) and 54.9 GB with its page
+  file.
+- **Why it is allowed:**
+  - the heap is a run setting: the gate checks the files, not the setting;
+  - no frozen file changes, and no number, rule or verdict depends on it;
+  - H15's "with an 8 GB heap" records the setting the supervisor ruled on
+    2026-11-14 (Q5). That ruling is replaced here, and the frozen text
+    stays as it is (a frozen file is never edited).
+- **The owner** was told in advance that this would be the route, and
+  accepted it ("if that is needed … we can accept that").
+
+**The lesson:** a heap ceiling costs nothing until it is used. On a PC with
+spare RAM, it is set generously, and never from an estimate made on a
+smaller sample.
+
 2026-11-16 (WAVE-H — THE FREEZE): **WAVE-H IS FROZEN.**
 
 **What:** after WAVE-H-FIX-2 was verified, the supervisor ran
