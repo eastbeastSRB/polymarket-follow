@@ -1,5 +1,48 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (WAVE-H — THE FREEZE): **WAVE-H IS FROZEN.**
+
+**What:** after WAVE-H-FIX-2 was verified, the supervisor ran
+`node tools/waveh-freeze.cjs --final` at 2026-11-16 08:37:06Z, from
+`f2836d0` on a clean tree, after `pnpm verify` (57 files + 1 skipped, 512
+tests + 6 skipped).
+
+**The frozen list:** `apps/poller/waveh/FROZEN.sha256`, 74 files, SHA-256
+`864990dafbc95975bc2cd889352028c42af2e124e8e3cc6da277b142faff8dd2`.
+- It verifies against the build (`sha256sum -c`), and its file lines equal
+  the draft's (`1d85e2f6…dd38`).
+- It names `waveh/rules.md`, `waveh/sizing.json`, `waveh/data.sha256`
+  (9,975 files, `b66a9bb0…676c`) and the toolchain: node v24.13.0,
+  typescript 6.0.3, zod 4.6.7, pino 10.4.0, lz4js 0.2.0.
+- Commit `9f99a0b`, annotated tag `waveh-freeze-1`; the owner pushes the
+  tag.
+- MARKET-1's 64 files (`b9e17505…2f1d`) and the paper experiment's 61
+  (`d04d3cd8…f31c`) still verify.
+
+**WAVE-H-FIX-2, verified first:**
+- its commits `6c673ba` (the three rule sentences: the rules' diff is
+  exactly those), `326ecd5` (the two tests; it showed each failing on its
+  break) and `496ad5d` (the draft list);
+- its decisions entry is inside `d72eb10`, word for word, as the worker
+  confirmed;
+- current-task `9a320ac` and `f2836d0`;
+- 0 tool calls under `F:\polymarket-follow-research\`.
+
+**From now on** no rule, number, coin, threshold, instant or file of the
+list changes (H15). A code defect found later goes by H0's route, with a new
+list and `waveh-freeze-2`.
+
+**Next: the one look** (H15), under the owner's go:
+- step 1, counts only, which the supervisor checks;
+- the book files it needs, fetched by `tools/waveh-fetch.cjs --books`
+  under the download's caps;
+- step 2, the verdict.
+
+Every run is started detached at idle priority, with an 8 GB heap,
+`WAVEH_STORE=F:\polymarket-follow-research\WAVE-H\store` and
+`WAVEH_ROOT=F:\polymarket-follow-research\FIND-SLOTS\WAVE-H-BUILD-rehearsal`
+(the rehearsal's folder, as H15 requires).
+
 2026-11-16 (the owner — the go for WAVE-H's freeze and its one look, about
 08:30Z): **"you have approvement to continue as you suggested."**
 
