@@ -3,7 +3,7 @@
  * windows in which no heavy work runs (02:30–06:00Z and 10:25–11:15Z, the
  * other programs' runs); the hashes of the shared files it imports, logged
  * at each start (information, not a stop, as MARKET-1's M0); its whole-file
- * writes.
+ * writes; its exit codes.
  */
 import { createHash } from "node:crypto";
 import {
@@ -18,6 +18,23 @@ import {
 import path from "node:path";
 import { z } from "zod";
 import { DAY_MS, MINUTE_MS } from "../schedule.js";
+import { BooksNeeded } from "./legs.js";
+import { StoreError } from "./store.js";
+
+/** The run cannot start: WAVE-H's freeze is not valid (exit 4). */
+export class FrozenDiffer extends Error {}
+/** `look/result.json` exists: the one look has run (exit 5). */
+export class AlreadyRun extends Error {}
+
+/** The program's exit for an error and its log line (H15's Runs): 4 frozen files differ; 5 not ready (books needed, a store file missing or failing, a hold) or already run; 1 a crash. */
+export function exitOf(err: unknown): { code: 1 | 4 | 5; event: string } {
+  if (err instanceof FrozenDiffer)
+    return { code: 4, event: "frozen files differ" };
+  if (err instanceof BooksNeeded) return { code: 5, event: "books needed" };
+  if (err instanceof AlreadyRun) return { code: 5, event: "already run" };
+  if (err instanceof StoreError) return { code: 5, event: "not ready" };
+  return { code: 1, event: "crash" };
+}
 
 const absolute = z
   .string()

@@ -27,9 +27,15 @@ import { DATA_END, TEST_START } from "../src/waveh/instants.js";
 import { CLOSED } from "../src/waveh/gate.js";
 import { bookKey } from "../src/waveh/keys.js";
 import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
-import { AlreadyRun, FrozenDiffer, look } from "../src/waveh/look.js";
+import { look } from "../src/waveh/look.js";
 import { SizingFile, rehearse } from "../src/waveh/rehearse.js";
-import { RENAME_PAUSE_MS, RENAME_TRIES, writeWhole } from "../src/waveh/run.js";
+import {
+  AlreadyRun,
+  FrozenDiffer,
+  RENAME_PAUSE_MS,
+  RENAME_TRIES,
+  writeWhole,
+} from "../src/waveh/run.js";
 import { manifestList } from "../src/waveh/store.js";
 import {
   CTXS_HEAD,

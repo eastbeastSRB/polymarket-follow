@@ -60,15 +60,10 @@ import { episodeSpots, waveSpots, type Spot } from "./positions.js";
 import { Priced } from "./price.js";
 import { SizingFile } from "./rehearse.js";
 import { dayMost, linesBeside, markAt, netLine, testMonths } from "./report.js";
-import { writeWhole } from "./run.js";
+import { AlreadyRun, FrozenDiffer, writeWhole } from "./run.js";
 import { bySlice, scanM } from "./slices.js";
 import { SHA256, StoreError, readBookList, type BookList } from "./store.js";
 import { Z, decide } from "./verdict.js";
-
-/** The run cannot start: WAVE-H's freeze is not valid (exit 4). */
-export class FrozenDiffer extends Error {}
-/** `look/result.json` exists: the one look has run (exit 5). */
-export class AlreadyRun extends Error {}
 
 /** The frozen `waveh/sizing.json`; a file that does not parse throws (our own file). */
 export const loadSizing = (dir = WAVEH_DIR): SizingFile =>

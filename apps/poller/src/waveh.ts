@@ -23,16 +23,17 @@ import { createLog } from "./log.js";
 import { loadResearch } from "./paper/research.js";
 import { WAVEH_DIR, loadCoins } from "./waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, verifyFreeze } from "./waveh/gate.js";
-import { BooksNeeded, type Ctx } from "./waveh/legs.js";
-import { AlreadyRun, FrozenDiffer, loadSizing, look } from "./waveh/look.js";
+import type { Ctx } from "./waveh/legs.js";
+import { loadSizing, look } from "./waveh/look.js";
 import { rehearse } from "./waveh/rehearse.js";
-import { Settings, sharedHashes, windowEnd } from "./waveh/run.js";
 import {
-  StoreError,
-  manifestList,
-  readDataList,
-  type DataList,
-} from "./waveh/store.js";
+  FrozenDiffer,
+  Settings,
+  exitOf,
+  sharedHashes,
+  windowEnd,
+} from "./waveh/run.js";
+import { manifestList, readDataList, type DataList } from "./waveh/store.js";
 
 function refuse(why: string): never {
   process.stderr.write(`waveh: refused: ${why}\n`);
@@ -109,27 +110,11 @@ try {
     );
   }
 } catch (err) {
-  if (err instanceof FrozenDiffer) {
-    log.warn({ why: err.message }, "frozen files differ");
-    code = 4;
-  } else if (
-    err instanceof BooksNeeded ||
-    err instanceof StoreError ||
-    err instanceof AlreadyRun
-  ) {
-    log.warn(
-      { why: err.message },
-      err instanceof BooksNeeded
-        ? "books needed"
-        : err instanceof AlreadyRun
-          ? "already run"
-          : "not ready",
-    );
-    code = 5;
-  } else {
-    log.error({ err: String((err as Error)?.stack ?? err) }, "crash");
-    code = 1;
-  }
+  const exit = exitOf(err);
+  if (exit.code === 1)
+    log.error({ err: String((err as Error)?.stack ?? err) }, exit.event);
+  else log.warn({ why: (err as Error).message }, exit.event);
+  code = exit.code;
 } finally {
   close();
 }
