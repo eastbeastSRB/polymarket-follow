@@ -1,5 +1,96 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (the supervisor — WAVE-H's two fresh reviews: the calls, under the
+owner's go of ~02:00Z, "you have my approvement to start with work"):
+**BOTH REVIEWS SAY "AFTER THESE FIXES"; ONE FIX ROUND, WAVE-H-FIX, BUILDS
+THEM WITH H10; NOTHING IS FROZEN OR LOOKED AT UNTIL THE OWNER'S GO.**
+
+**The reviews** (`docs/reviews/wave-h-rules-review-2026-11-16.md`, `1bdb0a2`;
+`docs/reviews/wave-h-code-review-2026-11-16.md`, `35fc884`):
+- each changed only its report;
+- neither opened the sealed data;
+- the three lists verify (61, 64, draft 71).
+
+They worked independently and agree on the two that matter most:
+- the look's step 1 does not yet check the marks and funding;
+- a failure after `result.json` would strand the look.
+
+**The calls** (technical, inside the approved plan; none moves a threshold, the
+sample, M or the verdict's logic):
+1. **H10 as decided, with the rules review's two clauses:** the mark at the
+   end of minute [m, m + 1 min) is the `mark_px` of the coin's row with the
+   latest stamp in (m, m + 1 min]; two rows of one stamp: the first line
+   stands; a stamp is whole seconds, `YYYY-MM-DDTHH:MM:SSZ`, any other form
+   fails and is counted. Tests that fail before the change (the reviewer's
+   `zz-review-h10.test.ts` may be adapted).
+2. **Step 1 reads the marks and funding, counts only** (both reviews):
+   - mark rows read, failing, off-minute and twice, by day;
+   - minutes without a mark, by coin;
+   - funding rows, by coin and window;
+   - every expected key in the list;
+   - a 1% day rule for mark rows, as H2's for fills.
+
+   So a data defect is seen before step 2 writes a verdict. The worker
+   proposes the exact H15 text first.
+3. **The look's writes:** MARKET-1's `writeWhole` (fsync, rename retries)
+   in place of WAVE-H's own (code M1). H15 gains the recovery rule: if the
+   positions or the report are missing after `result.json`, the supervisor
+   moves `result.json` aside and runs step 2 again. That run must reproduce
+   the same `positionsSha256` and verdict. A test kills break b24.
+4. **Step 2's cheap refusals run before its recompute** (code L1).
+5. **Counted as the rules say:** a failing book line (H8), and a mark row
+   without a coin cell (code L2, rules 6).
+6. **`waveh-freeze.cjs --data` checks before it writes:**
+   - the counts by prefix (node fills 8,845, `asset_ctxs` 370, funding
+     760);
+   - no duplicate key (code L4, rules 4).
+
+   Then it is run on the finished download's manifest, and `data.sha256`
+   is committed.
+7. **The 8 GB heap** in H15 "Runs" and in `waveh.ts`'s header (code L5,
+   rules 3).
+8. **Rule text made exact:**
+   - H0: what each run checks, and the shared `dist/log.js`;
+   - H2: the running failure share, as the code stops (code L11);
+   - H12: no excess at all → NOT SETTLED;
+   - H14: "not at the book" = unpriced + depth short, and SIZING carries no
+     BASE;
+   - architecture's WAVE-H lines.
+9. **Tests for the survivors that matter:**
+   - the write order, the exit codes 4 and 5, the `--final` refusals;
+   - the previous-hour book glue, a sealed SIZING file with fewer lines,
+     the `levelsOf` guard;
+   - the exit-leg depth short, the look's days and coins;
+   - the print-only lines where cheap.
+10. **Quality before the freeze, each a pure move or a small cut with the
+    tests unchanged and green:**
+    - `rehearse.ts`'s shared reading and pricing layer split out (code Q2,
+      L7);
+    - one home for the duplicated helpers and types (L6);
+    - one place that chooses a leg's snapshot (L8);
+    - the store's key grammar in one place, with a round-trip test (L9);
+    - unused parameters and exports removed (L10).
+11. **Kept as they are:**
+    - the tape read for every leg (code Q3; it gives R2's tape-minus-book
+      gap);
+    - the global `seen` set (Q4);
+    - no lock, and the sealed outcomes overwritten by the next rehearsal
+      (L12; the supervisor runs each command by hand, once);
+    - the plan's +309.7 figure is not built (rules Q4).
+12. **Then the rehearsal's third run**, outside 02:35–03:50Z and 10:25–11:15Z,
+    on the rules review's checklist:
+    - must not move: 425,433 counted fills, M = 147, the 346 scan rows,
+      290 / 283 positions, 566 legs at the book, the book ages, the
+      tape-minus-book figures, 4.5 bps;
+    - must move: failing mark rows 2,831 → 0, "funding without a mark"
+      7 → 0, the sealed outcomes' hash.
+
+    Then `sizing.json` and the draft list again (with `data.sha256`, a
+    candidate of 72 files).
+
+**Next:** a fresh fix-check on a different model; then the owner's go for the
+freeze and for the one look (the supervisor runs both).
+
 2026-11-16 (the owner — the guide covers the paper experiment's page too):
 **THE SEPARATE GUIDE PAGE EXPLAINS BOTH PAGES, MARKET-1'S AND THE PAPER
 EXPERIMENT'S; BOTH FROZEN PAGES STAY AS THEY ARE.**
