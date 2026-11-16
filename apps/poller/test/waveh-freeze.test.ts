@@ -12,6 +12,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import { CLOSURE, PACKAGE_ROOT } from "../src/waveh/gate.js";
+import { fillKeys } from "../src/waveh/store.js";
 
 const SHARED = ["dist/log.js", "dist/schedule.js"];
 const read = (rel: string) => readFileSync(path.join(PACKAGE_ROOT, rel));
@@ -85,6 +86,8 @@ type Line = { key: string; bytes: number; sha256: string };
 const freezeTool = createRequire(import.meta.url)(
   "../../../tools/waveh-freeze.cjs",
 ) as {
+  DATA_COUNTS: Record<string, number>;
+  checkCounts: (lines: Line[]) => void;
   manifestLines: (text: string) => Line[];
   dataList: (lines: Line[]) => string;
   shortFiles: (
@@ -120,6 +123,49 @@ describe("the store's list and R3 (i)'s short files (the freeze tool's --data)",
     expect(() => freezeTool.manifestLines('{"key":"b","bytes":1}\n')).toThrow(
       "line 1",
     );
+    expect(() =>
+      freezeTool.manifestLines(
+        `${line("a", 1)}\n${line("b", 1)}\n${line("a", 2)}\n`,
+      ),
+    ).toThrow("line 3 repeats a");
+  });
+
+  it("writes nothing unless the files are, by prefix, the ones the program reads", () => {
+    const fills = fillKeys(0, Infinity);
+    expect(freezeTool.DATA_COUNTS).toEqual({
+      "node_fills/hourly/": fills.filter((k) => k.startsWith("node_fills/"))
+        .length,
+      "node_fills_by_block/hourly/": fills.filter((k) =>
+        k.startsWith("node_fills_by_block/"),
+      ).length,
+      "asset_ctxs/": 370,
+      "info/fundingHistory/": 38 * 20,
+    });
+    const all: Line[] = Object.entries(freezeTool.DATA_COUNTS).flatMap(
+      ([prefix, n]) =>
+        Array.from({ length: n }, (_, i) => ({
+          key: `${prefix}${i}`,
+          bytes: 1,
+          sha256: h(i),
+        })),
+    );
+    expect(all).toHaveLength(9_975);
+    expect(() => freezeTool.checkCounts(all)).not.toThrow();
+    expect(() => freezeTool.checkCounts(all.slice(1))).toThrow(
+      "1506 node_fills/hourly/ files, not 1507",
+    );
+    expect(() =>
+      freezeTool.checkCounts([
+        ...all,
+        { key: "info/fundingHistory/x", bytes: 1, sha256: h(1) },
+      ]),
+    ).toThrow("761 info/fundingHistory/ files, not 760");
+    expect(() =>
+      freezeTool.checkCounts([
+        ...all,
+        { key: "market_data/x", bytes: 1, sha256: h(1) },
+      ]),
+    ).toThrow("market_data/x, under none of the prefixes");
   });
 
   it("names a fill file under 30% of its 24 nearest neighbours' median bytes, in each format", () => {

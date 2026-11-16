@@ -20,7 +20,8 @@
  * once the download is complete, before the draft) and prints R3 (i)'s list:
  * each fill file whose bytes are under 30% of the median of its 24 nearest
  * neighbours' in its format (12 before, 12 after), from the manifest's sizes
- * alone: no data file is opened.
+ * alone: no data file is opened. It writes nothing unless every key is new
+ * and the files are, by prefix, the counts the program reads (DATA_COUNTS).
  * The final list opens WAVE-H's gate; it is written only at the freeze
  * (after its fresh reviews), its SHA-256 recorded in decisions and its commit
  * tagged waveh-freeze-1. `--final` refuses a tree that is not clean, and both
@@ -46,10 +47,11 @@ function manifest(text) {
   return want;
 }
 
-/** The download's manifest lines (key, bytes, sha256); a line that is not one throws (our own file). */
+/** The download's manifest lines (key, bytes, sha256); a line that is not one, or repeats a key, throws (our own file). */
 function manifestLines(text) {
   const lines = text.split("\n");
   if (lines.pop() !== "") throw new Error("the manifest's last line is torn");
+  const keys = new Set();
   return lines.map((line, i) => {
     const l = JSON.parse(line);
     if (
@@ -58,8 +60,40 @@ function manifestLines(text) {
       !/^[0-9a-f]{64}$/.test(l.sha256 ?? "")
     )
       throw new Error(`the manifest's line ${i + 1} is not a file's`);
+    if (keys.has(l.key))
+      throw new Error(`the manifest's line ${i + 1} repeats ${l.key}`);
+    keys.add(l.key);
     return { key: l.key, bytes: l.bytes, sha256: l.sha256 };
   });
+}
+
+/**
+ * The store's files the program reads, by prefix: every fill file of both
+ * formats (fillKeys: 1,507 + 7,338), the asset_ctxs days from 2025-05-25 to
+ * DATA END's (370) and the 38 coins' 20 funding windows (760).
+ */
+const DATA_COUNTS = {
+  "node_fills/hourly/": 1_507,
+  "node_fills_by_block/hourly/": 7_338,
+  "asset_ctxs/": 370,
+  "info/fundingHistory/": 760,
+};
+
+/** Throws unless the manifest's files are, by prefix, DATA_COUNTS's, with no key under another prefix. */
+function checkCounts(lines) {
+  const prefixes = Object.keys(DATA_COUNTS);
+  const got = Object.fromEntries(prefixes.map((p) => [p, 0]));
+  for (const { key } of lines) {
+    const p = prefixes.find((q) => key.startsWith(q));
+    if (p === undefined)
+      throw new Error(`the manifest holds ${key}, under none of the prefixes`);
+    got[p] += 1;
+  }
+  const off = prefixes.filter((p) => got[p] !== DATA_COUNTS[p]);
+  if (off.length > 0)
+    throw new Error(
+      `the manifest holds ${off.map((p) => `${got[p]} ${p} files, not ${DATA_COUNTS[p]}`).join("; ")}`,
+    );
 }
 
 /** R3 (i): each fill file under 30% of the median of its 24 nearest neighbours' bytes in its format. */
@@ -103,6 +137,7 @@ async function main() {
   const at = process.argv.indexOf("--data");
   if (at !== -1) {
     const lines = manifestLines(fs.readFileSync(process.argv[at + 1], "utf8"));
+    checkCounts(lines);
     fs.writeFileSync(path.join(PKG, "waveh", "data.sha256"), dataList(lines));
     process.stdout.write(
       `waveh/data.sha256: ${lines.length} files\nR3 (i), fill files under 30% of their 24 neighbours' median bytes:\n${shortFiles(
@@ -184,7 +219,13 @@ async function main() {
   );
 }
 
-module.exports = { dataList, manifestLines, shortFiles };
+module.exports = {
+  DATA_COUNTS,
+  checkCounts,
+  dataList,
+  manifestLines,
+  shortFiles,
+};
 
 if (require.main === module)
   main().catch((err) => {
