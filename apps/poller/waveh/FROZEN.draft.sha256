@@ -1,5 +1,5 @@
 # DRAFT, not a freeze: WAVE-H's files of what runs (waveh/rules.md H0)
-# written 2026-11-16T07:15:09.995Z from commit 70cdda545efb7aa801a31e88818de13b5c8b5af1
+# written 2026-11-16T08:28:20.665Z from commit 326ecd5a067d6ea9fe9ab6b6bc56dd091ea34f7f
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; pino 10.4.0; lz4js 0.2.0
 # pnpm-lock.yaml sha256 62c1462948e0e8fb8b28c8490e442d4afe61d136aea1f3af808e6225d15f6e40
 4e8e1066f11022d864df74f940310780a82cd59dc4bb59bb6fc028ffb74c3d17 *dist/waveh.js
@@ -74,5 +74,5 @@ feb047a7bbf13a3bb4317181fcd2092d176eaf51fecea98a3474e8c06dec05d9 *research/kit/t
 a9cf1e92ce4c3d837c118faae2a0c689c000477422d582c8bcb4fc800bddb130 *node_modules/lz4js/xxh32.js
 483aff8e3c65202a65c290701a0c451e2eb98c1671fd994665f60f3279ede890 *waveh/coins.json
 b66a9bb0f165685cb9c9a64a9ef0109681e493ada5e65c9f5a85307b8e6c676c *waveh/data.sha256
-a0dadebca9b75cb145096f8297d61887e1ff9f5769dcd39ed7be27d5d49b505b *waveh/rules.md
+7e252d044f3a2112a73cf8f6690972029c8b0b695afba13bb369b76d3056eddd *waveh/rules.md
 77bf1525ea61dd5fc00518e49f3bad3499dd8ca0398ad89c1d5aceb1417b0ce3 *waveh/sizing.json
