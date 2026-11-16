@@ -348,6 +348,24 @@ review, the supervisor re-computing on its own path what decides.
   agreement (FIND-9) and the top accounts' long holds (FIND-2); the gate
   reopened after six more months; the kit's fixes from the Final reviews
   first. Trigger: the owner's word.
+- ⏳ **After WAVE-H's answer: the owner's three ideas** (2026-11-17, while
+  the look ran; nothing is decided). Trigger: the look's verdict; the
+  supervisor brings a plan.
+  1. **Using a confirmed wave:** where and how the owner acts, including
+     the delay, the costs, sizing against the overlap (up to 19 positions
+     open at once in the old weeks) and the worst days. This joins the
+     venue item below. The tool shows; the owner decides.
+  2. **Tuning on the test months, then confirming on fresh data:**
+     candidates fixed in advance, explored on the test months, and
+     confirmed on data no rule has seen. That data is Hyperliquid's months
+     after 2026-05-28 and MARKET-1's looks. The lines beside (B3 LATE, B4
+     COINS, B5 THREE …) are the first candidates.
+  3. **An analytic engine:** Hyperliquid's fills turned into a queryable
+     store (for example columnar files with an embedded SQL engine, so 10
+     GB need not sit in memory), with every trader's trades reconstructed:
+     entries and exits, size, profit, fees, funding, hold, instrument and
+     session. It is possibly the separate on-chain project of decisions
+     2026-11-13.
 - ⏳ **The owner's own execution venue and costs** — where the owner acts on what the tool shows and what a round trip costs there (the owner will explain and show; decisions 2026-11-10, round 2's rules and the collector approved). Until then every table uses Polymarket Perps' measured taker costs. Trigger: the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
