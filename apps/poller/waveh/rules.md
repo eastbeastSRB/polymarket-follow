@@ -238,8 +238,8 @@ trade.*
 - **A book file that is held but cannot be trusted** — its bytes differ from
   its line in the store's book list, or it fails to decompress — stops the
   run (exit 5, H0's defect route): the tape stands only for a file the archive
-  does not have (R7). A snapshot line that fails WAVE-H's schema is dropped
-  and counted.
+  does not have (R7). A snapshot line that fails WAVE-H's schema, or names
+  another coin, is dropped and counted as failing.
 - Prices and sizes are read into doubles (the kit's convention for research
   figures; no money moves).
 
@@ -282,8 +282,9 @@ trade.*
   form, whose `mark_px` is not a number above 0, or without a coin cell fails
   WAVE-H's schema, is dropped and counted; a day file with more than 1%, and
   at least 10, of its rows of the 38 coins failing stops the run (exit 5), as
-  H2's rule for fills. A row stamped at or after DATA END is not read. The
-  coin's **market object** is the kit's (`marketFrom`), built from those
+  H2's rule for fills. A row stamped at or after the run's end (DATA END at
+  the look; TEST's start in the rehearsal, H1) is not read. The coin's
+  **market object** is the kit's (`marketFrom`), built from those
   marks and the settled funding rows, so the kit's `markAtMinuteEnd` (5
   minutes' staleness at most) and `fundingBetween` read it unchanged.
 - **BASE** (MARKET-1's `baseOf`): for coin i and the 4-hour UTC block b of
@@ -426,8 +427,9 @@ book files' lines read and failing, and the files holding a failing line
   (`rehearsal/sizing-outcomes.jsonl.gz` under `WAVEH_ROOT`) are missing or
   differ from `sizing.json`'s SHA-256; then it recomputes step 1 and stops
   (exit 5) if its positions' SHA-256 differs from `step1.json`'s or the
-  sealed outcomes hold other positions than SIZING's; then it prices every
-  leg; the statistic and the verdict, written to
+  sealed outcomes hold other positions than SIZING's, or leave unpriced a
+  position the look does not price again (H1); then it prices every leg;
+  the statistic and the verdict, written to
   `look/result.json`; then `look/positions.jsonl.gz` (every position with
   its legs' book file and snapshot time or the tape's `tid`s, H9) and
   `look/report.json` (H13, H14), both made before the result is written.
