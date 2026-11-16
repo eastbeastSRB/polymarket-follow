@@ -302,64 +302,80 @@ Tests: `test/waveh-fetch.test.ts`, no network; its heartbeats are built from
 the collector's `Heartbeat` schema, so a change of those fields fails there
 (a contract).
 
-## WAVE-H (being built by WAVE-H-BUILD since 2026-11-14; not frozen, not run on the store)
+## WAVE-H (built by WAVE-H-BUILD 2026-11-14, its reviews' fixes by WAVE-H-FIX 2026-11-16; not frozen, not run on TEST)
 
 **What it is.** A fourth entry point of the same package, `dist/waveh.js`
 (`src/waveh.ts`, `src/waveh/`), MARKET-1's wave tested once on Hyperliquid's
-history by its rules, `apps/poller/waveh/rules.md` (a draft: M not yet
-written; the plan `docs/reviews/wave-h-plan-2026-11-13.md` with its review's
+history by its rules, `apps/poller/waveh/rules.md` (H0–H15, M = 147 written
+in H5; the plan `docs/reviews/wave-h-plan-2026-11-13.md` with its review's
 R1–R10). Run by hand from the repository's build only (no run copy, no task,
-no page), at idle priority, one run at a time; it makes no network request.
+no page), at idle priority, with an 8 GB heap (`node
+--max-old-space-size=8192`), one run at a time; it makes no network request.
 Its commands: `rehearse` and `look`. Settings, no defaults: `WAVEH_STORE`
 (the download's store, read only) and `WAVEH_ROOT` (its own files), neither
-inside the other. Exit codes: 0 done, 1 a crash, 2 bad settings, 4 frozen
-files differ (the look), 5 not ready (book files needed, a store file missing
-or failing, a hold of the look) or already run. No file is started in
-02:30–06:00Z or 10:25–11:15Z.
+inside the other. Exit codes (`exitOf`, `run.ts`): 0 done, 1 a crash, 2 bad
+settings, 4 frozen files differ (the look), 5 not ready (book files needed,
+a store file missing or failing, a hold of the look) or already run. No file
+is started in 02:30–06:00Z or 10:25–11:15Z.
 
 **Its modules.** `instants.ts` (SIZING's start 2025-05-25 14h, TEST
-2025-08-01 → 2026-05-28, DATA END 2026-05-29 01h); `coins.ts`
+2025-08-01 → 2026-05-28, DATA END 2026-05-29 01h; the day and month of an
+instant); `keys.ts` (every store key the program builds — fill files, book
+files, `asset_ctxs` days, the funding windows by the download's grid,
+`FUNDING_STARTS` — and the one parser of a key's date, `keyDate`); `coins.ts`
 (`waveh/coins.json`, M3's 38 by Hyperliquid's names); `fills.ts` (the record
 schema, a `tid` of any size kept as digits; H4's counted fill in MARKET-1's
 `Liq` shape, the asset id as its market); `slices.ts` (address mod M, M's
 scan); `positions.ts` (M6 on each entry of a slice, B1's episodes);
-`price.ts` (the book at x, the tape, the net at 4.5 bps a leg); `verdict.ts`
-(MARKET-1's two-way error, z = 2.58, H12's order); `pass.ts` (one pass over
-fill files: the counted fills and the counts printed before any price);
-`rehearse.ts` (the readers of tapes, marks and books, which take the gate;
-a position's legs priced); `look.ts`; `report.ts` (H13's lines beside, H14's
-prints); `run.ts` (settings, the windows, the shared files' hashes);
-the store's readers: `gate.ts`, `store.ts`, `lz4.ts`, `ctxs.ts`, `funding.ts`,
-`books.ts`, `market.ts`. Imported from MARKET-1, never copied: `waves`,
+`price.ts` (the snapshot at x chosen in one place, the book at x, the tape,
+the net at 4.5 bps a leg); `verdict.ts` (MARKET-1's two-way error, z = 2.58,
+H12's order); `pass.ts` (one pass over fill files: the counted fills and the
+counts printed before any price); `legs.ts` (the layer the rehearsal and the
+look share: the run's context, the legs' book files through a shelf that
+counts each file's lines and failing lines, the tapes, a position priced);
+`market.ts` (the coins' market objects from the `asset_ctxs` days and the
+funding windows, with their counts by day and by coin); `rehearse.ts`;
+`look.ts`; `report.ts` (H13's lines beside, H14's prints); `run.ts`
+(settings, the windows, the shared files' hashes, whole-file writes, the exit
+codes); the store's readers: `gate.ts`, `store.ts`, `lz4.ts`, `ctxs.ts`,
+`funding.ts`, `books.ts`. Imported from MARKET-1, never copied: `waves`,
 `fills`, `book`, `price`, `stats` (`twoWay`, `byDay`), `lines` (`baseOf`,
 `blockOf`), `summary` (`summarize`, `tailOf`, `statOf`: M13's prints); the
-paper's `instants`, `stats` and `research` (the kit).
+paper's `instants`, `stats` and `research` (the kit). One function is a copy:
+`run.ts`'s `writeWhole` has MARKET-1's behaviour (`market1/run.ts`, F2) so
+that no MARKET-1 process file joins the closure.
 
 **Its gates** (`gate.ts`). The freeze: `waveh/FROZEN.sha256` must list every
 file of what runs — `dist/waveh.js`, `dist/waveh/`, the closure of MARKET-1's
 and the paper's compiled files its imports reach (`CLOSURE`, exactly: a test
-walks the imports), `research/`, lz4js's three files and `waveh/` (its `rules.md`, `coins.json`,
-`sizing.json` and `data.sha256` required by name). The seal:
-every store read takes the gate and refuses first, before anything is
-opened, a key dated at or after 2025-08-01 while the gate is closed, and any
-key whose date does not parse. The rehearsal runs with the gate closed
+walks the imports), `research/`, lz4js's three files and `waveh/` (its
+`rules.md`, `coins.json`, `sizing.json` and `data.sha256` required by name).
+The seal: every store read takes the gate and refuses first, before anything
+is opened, a key dated at or after 2025-08-01 while the gate is closed, and
+any key whose date does not parse. The rehearsal runs with the gate closed
 whatever the freeze. `dist/log.js` and `dist/schedule.js` are shared,
 unfrozen, their hashes logged at each start. `tools/waveh-freeze.cjs` writes
 the list (`--final` on a clean tree, with `sizing.json` and `data.sha256`
-present) and refuses a closure file that is in
-neither MARKET-1's nor the paper experiment's freeze or differs from one;
-`test/waveh-freeze.test.ts` checks a WAVE-H list's lines against both freezes.
-A draft list, `waveh/FROZEN.draft.sha256`, is committed (without `data.sha256`,
-which the test months come first for); no final list.
+present) and refuses a closure file that is in neither MARKET-1's nor the
+paper experiment's freeze or differs from one; `--data` writes
+`waveh/data.sha256` only when the manifest repeats no key and holds, by
+prefix, the files the program reads (1,507 + 7,338 fill files, 370
+`asset_ctxs` days, 760 funding windows); `test/waveh-freeze.test.ts` checks a
+WAVE-H list's lines against both freezes. `waveh/data.sha256` (9,975 files)
+and a draft list, `waveh/FROZEN.draft.sha256`, are committed; no final list.
 
 **Its reads** (`store.ts`): a file only when its SHA-256 equals its list's
 line — the download's `manifest.jsonl` in the rehearsal, `waveh/data.sha256`
 at the look, `books.jsonl` for a book file — and an `.lz4` file only when its
 one frame ends at the file's end (lz4js 0.2.0, a devDependency, its three
 files' hashes checked before it loads; block checksums refused, which lz4js
-misreads). The marks: `asset_ctxs`, the row stamped m + 1 min as minute m's
-end (R1); funding: the stored `fundingHistory` replies, a row's hour its
-stamp rounded (R1); both into the kit's `marketFrom`.
+misreads). The marks: `asset_ctxs`, the mark at the end of minute [m, m + 1
+min) the row with the latest whole-second stamp in (m, m + 1 min], of two
+rows of one stamp the first (H10); funding: the stored `fundingHistory`
+replies of the download's 20 windows a coin, a row's hour its stamp rounded
+(R1); both into the kit's `marketFrom`. Every day and window a run reads is
+checked to be in its list before any is read, and a day with more than 1%,
+and at least 10, of its 38 coins' rows failing stops the run.
 
 **The rehearsal** (`rehearse`, the gate closed): every SIZING fill file
 through one pass; M's scan; slice 0's SIZING positions; the book files their
@@ -367,22 +383,30 @@ legs need written to `WAVEH_ROOT\rehearsal\books-needed.txt`, the run
 stopping (exit 5) until the store's `books.jsonl` answers each; then the
 tapes, the marks and funding, the legs priced, the outcomes sealed in
 `rehearsal\sizing-outcomes.jsonl.gz` with their hash; `counts.json`,
-`report.json` and `sizing.json` (counts and mechanics only).
+`report.json` (with the marks by day and by coin and the book files' lines)
+and `sizing.json` (counts and mechanics only).
 
 **The look** (`look`, H15; only once the freeze verifies, else exit 4;
-`waveh/data.sha256` as the list). Step 1: every fill file through one pass,
-M recomputed from SIZING and held to `waveh/sizing.json`'s; WAVE-H's
-positions (slice 0's TEST entries) and the SIZING positions whose exit
-reaches 2025-07-31 23h (the rehearsal may have left them); R3's counts and
-the positions' SHA-256 to `WAVEH_ROOT\look\step1.json`, their book files to
-`look\books-needed.txt`; exit 5. Step 2 (the same command): step 1 again,
-held to `step1.json`'s hash; every needed book file answered by
-`books.jsonl`; the sealed SIZING outcomes (`WAVEH_ROOT\rehearsal\`) held to
-`sizing.json`'s hash and to SIZING's positions; every leg priced (BASE from
-TEST's marks); `look\result.json` written first (the verdict), then
+`waveh/data.sha256` as the list). Step 1: every fill file, `asset_ctxs` day
+and funding window named in the list, else exit 5 before any is read; the 38
+coins' marks and funding read first, with their counts by day and by coin;
+every fill file through one pass, M recomputed from SIZING and held to
+`waveh/sizing.json`'s; WAVE-H's positions (slice 0's TEST entries) and the
+SIZING positions whose exit reaches 2025-07-31 23h (the rehearsal may have
+left them); R3's counts, the marks' and funding's, and the positions' SHA-256
+to `WAVEH_ROOT\look\step1.json`, their book files to `look\books-needed.txt`;
+exit 5. Step 2 (the same command): first, before any store file is read,
+every needed book file answered by `books.jsonl` and the sealed SIZING
+outcomes (`WAVEH_ROOT\rehearsal\`) held to `sizing.json`'s hash; then step 1
+again, held to `step1.json`'s hash, and the sealed outcomes to SIZING's
+positions; every leg priced (BASE from TEST's marks); the positions and the
+report made, then `look\result.json` written first (the verdict), then
 `positions.jsonl.gz` (each leg's book file or tape `tid`s) and `report.json`
 (the lines beside on marks, the sets on the net through MARKET-1's
-`summarize`, the SIZING line). A third run refuses (already run).
+`summarize`, the SIZING line), each whole (flushed, the rename tried again a
+second apart, 10 times). A third run refuses (already run); after a failure
+between the writes, H15's recovery moves `result.json` aside and runs step 2
+again.
 
 **The old weeks** (outside `dist`): `scripts/waveh-reproduce.ts` with
 `test/waveh-reproduce.test.ts`, the pre-cut seed converted to Hyperliquid's
