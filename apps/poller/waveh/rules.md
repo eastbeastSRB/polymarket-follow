@@ -443,9 +443,11 @@ book files' lines read and failing, and the files holding a failing line
 - **After the look** no number, line, coin, threshold, instant or rule of
   this file changes.
 - **Runs:** from the repository's build only (no run copy, no task, no page),
-  by hand, one at a time, at idle priority, starting no file in 02:30–06:00Z
-  or 10:25–11:15Z: `waveh rehearse` (the gate closed whatever the freeze, the
-  download's manifest as the list) and `waveh look`. Settings, no defaults:
+  by hand, one at a time, at idle priority, with an 8 GB heap (`node
+  --max-old-space-size=8192 dist/waveh.js rehearse`, and `… look`; decisions
+  2026-11-14, Q5), starting no file in 02:30–06:00Z or 10:25–11:15Z: `waveh
+  rehearse` (the gate closed whatever the freeze, the download's manifest as
+  the list) and `waveh look`. Settings, no defaults:
   `WAVEH_STORE` (the download's store, read only) and `WAVEH_ROOT` (the
   program's own files; the look's must hold the rehearsal's folder). Exit
   codes: 0 done, 1 crash, 2 bad settings, 4 frozen files differ, 5 not ready

@@ -1,9 +1,10 @@
 /**
  * WAVE-H's program (rules.md; the plan's section 4), run by hand from the
- * repository's build, one run at a time, at idle priority:
+ * repository's build, one run at a time, at idle priority, with an 8 GB heap
+ * (rules.md H15; decisions 2026-11-14, Q5):
  *
- *   node --max-old-space-size=4096 dist/waveh.js rehearse
- *   node --max-old-space-size=4096 dist/waveh.js look
+ *   node --max-old-space-size=8192 dist/waveh.js rehearse
+ *   node --max-old-space-size=8192 dist/waveh.js look
  *
  * `rehearse`: the rehearsal on SIZING with the gate closed (rehearse.ts),
  * the download's manifest as the list. `look`: the one look (look.ts, H15),
