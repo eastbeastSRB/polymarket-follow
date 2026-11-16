@@ -1,5 +1,51 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-16 (the supervisor — WAVE-H-FIX verified; its Q-A to Q-D):
+**THE FIX ROUND IS IN AND VERIFIED; THE 7 SIZING POSITIONS WITHOUT A
+FUNDING MARK STAY UNPRICED, AS H9 SAYS; NO RULE BRIDGES ARCHIVE HOLES.**
+
+**Verified on the supervisor's path (07:23–07:40Z):**
+- 22 commits `875b9b6` … `f396a8d`, every changed file inside WAVE-H or the
+  docs, and a clean tree;
+- `pnpm verify` green (57 files + 1 skipped, 510 tests + 6 skipped);
+- `sha256sum -c` of the three lists: the paper experiment's 61, MARKET-1's 64,
+  and the draft's 74 (`6bd52e61…a5f1`);
+- `data.sha256` (`b66a9bb0…676c`): all 9,975 lines equal the store's
+  manifest, none missing and none extra;
+- `sizing.json` is byte-identical in run 2's folder, run 3's folder and the
+  repository;
+- run 3 against run 2, leaf by leaf:
+  - `counts.json` differs only in its run time;
+  - `report.json` differs only in failing mark rows 2,831 → 0, off-minute
+    rows 2,831, `twice` 0 → 1,777, the new counts (book lines 560 files,
+    0 failing; by day; by coin) and the run time;
+- the access scan: no read of the sealed outcomes (its four mentions are
+  code edits naming the file).
+
+**Q-A, the ruling: the 7 stay unpriced.** WAVE-H-FIX found that their cause
+is two whole stretches with no `asset_ctxs` row for any coin (2025-07-19
+09:53, 21 minutes; 2025-07-27 11:53, 8 minutes). Each covers a funding
+settlement past the kit's 5 minutes. The cause is not the off-minute rows.
+
+So H9 holds as written: "a settlement without a mark leaves the position
+unpriced". That is 2.4% of SIZING; WITHHELD needs more than 10%. Step 1 now
+counts the settlements without a mark, by coin, before any verdict. A rule
+that bridged holes would be a new rule, made after seeing SIZING. It is not
+made.
+
+H10's change stays: it is correct, and on 2025-06-08 alone it fills 840
+minutes that had no other row. **Call 12's premise "7 → 0" was the
+builder's diagnosis and does not hold**: run 3's unchanged `sizing.json` and
+sealed hash are right, not a fault.
+
+**Q-B:** the fix-check is told so. **Q-C:** CLAUDE.md's "built so far"
+names `dist/waveh.js` (this commit). **Q-D:** the scratch copy with junctions
+is left as it is. **Q1's answer** (a copy of `writeWhole`'s behaviour, not an
+import) is in WAVE-H-FIX's entry.
+
+**Next:** WAVE-H-FIX-CHECK (fresh, Sonnet 5.5, max); then the owner's go for
+the freeze (`waveh-freeze-1`) and the one look.
+
 2026-11-16 (WAVE-H-FIX's technical calls — WAVE-H's fix round, the
 supervisor's 12 calls of the entry below and its answers of 03:32Z to the
 round's plan): **THE 12 CALLS ARE BUILT, ONE FIX A COMMIT; THE REHEARSAL RAN

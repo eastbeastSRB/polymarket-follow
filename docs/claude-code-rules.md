@@ -102,6 +102,13 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   (WAVE-H-FETCH, 2026-11-14).
 - **A test of the compiled imports keeps a freeze list exact:** it fails when
   the program reaches a file the list leaves out (WAVE-H-BUILD, 2026-11-14).
+- **Check that a break changes the value the test expects:** b66 survived
+  because 6/144 happens to equal 4/96 (WAVE-H-FIX, 2026-11-16).
+- **A write failure without mocks, on Windows:** opening a folder for
+  writing fails at once with EISDIR; renaming onto a non-empty folder fails
+  with EPERM every time. **A retry count tested by elapsed time** needs pauses
+  that absorb timer overshoot (500 ms; assert 9 pauses ≤ elapsed < 10)
+  (WAVE-H-FIX, 2026-11-16).
 - **A test gives the same answer before and after a freeze list is
   committed:** test an exit code that depends on the list through the
   functions, not the built program (MARKET-FIX, 2026-11-13).
@@ -244,7 +251,12 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   another worker blocks a deploy** (it deploys only a clean tree)
   (COLLECTOR-REVIEW, 2026-11-11).
 - **A Bash heredoc in this harness halves `\\`:** write regular expressions
-  with the Write or Edit tool (COLLECTOR-REVIEW, 2026-11-11).
+  with the Write or Edit tool (COLLECTOR-REVIEW, 2026-11-11; it halved a
+  `\\n` in an edit script again on 2026-11-16, WAVE-H-FIX). **Run Prettier
+  on the changed files before `pnpm verify`,** or a verify is spent on
+  formatting alone. **The harness moves a foreground command to the
+  background after about 180 s:** wait on the background task's notice
+  (WAVE-H-FIX, 2026-11-16).
 - **Node's `.env` loader** (`process.loadEnvFile`, Node 24.13) keeps unquoted
   backslashes, and a variable already set in the environment wins
   (COLLECTOR-BUILD, 2026-11-11).
