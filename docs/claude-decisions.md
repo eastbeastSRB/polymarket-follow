@@ -1,5 +1,64 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (the supervisor — WAVE-H's Final review accepted): **THE LOOK
+STANDS. Independent code reproduces every position, price and verdict of
+WAVE-H's one look exactly; WAVE-H's answer is final, NOT SETTLED.**
+
+**The review:** WAVE-H-LOOK-REVIEW (Sonnet 5.5, fresh), report and Final
+review `docs/reviews/wave-h-look-2026-11-17.md`, commit `552b147`.
+Verified at 17:55Z:
+- the commit holds only that file;
+- no tool call read WAVE-H's code;
+- 0 sealed-outcome hits;
+- the three lists verify.
+
+Its code shares nothing with WAVE-H's but the raw files and the rules'
+text: Node built-ins only, with its own LZ4 frame decoder and xxh32
+written from the specs (all 12,118 frames' checksums verified).
+
+**What matched:**
+
+| What | Matched |
+|---|---|
+| WAVE-H positions | 1,299 of 1,299, every field and the exact accounts |
+| SIZING positions | 290 of 290 |
+| M from SIZING | 147, all 346 scan rows |
+| Entries in all 147 slices | 176,986 |
+| Priced positions | 1,289 of 1,289 (largest difference in net 1.8e-12 bps) |
+| SIZING priced | 283 of 283 |
+| Leg prices | all 3,168, with their sources and snapshots |
+| Unpriced reasons | all 10 |
+| The statistic and the verdict | m +82.5568, SE 40.9102, 212 days, 35 coins, band −22.99 to +188.11, NOT SETTLED |
+| Lines beside | 782 fields, 0 differing |
+| Counted fills | 2,421,070 |
+| Mark rows | 17,618,289 |
+| BASE | on every position |
+| Funding | per coin |
+| Hashes | the data list, the book list and the freeze list (74 files) |
+
+The one difference is the entry cost's median print: the look takes the
+mean of the two middle values (n even), which is the ordinary median. It
+decides nothing.
+
+**Its notes, kept for the next tests' rules (WAVE-H's frozen rules do not
+change):**
+- define the median for an even count;
+- restate M5's same-millisecond clause with an example (it moves 23 of
+  1,299 positions);
+- the tape-priced positions (197) average +197.4 ± 124.9 against +61.8 ±
+  42.9 at the book: report them as their own line;
+- for the fresh-months test, consider an all-slices line, priced at the
+  book and the tape, as the deciding line, fixed in advance (SE about 31
+  against slice 0's 41).
+
+**Speed:** its one pass over the 8,845 fill files (2.66 billion records)
+took 25 minutes, against about 7 hours for WAVE-H's program. Its pipeline
+is the natural starting point for the polishing's extraction (the plan
+page's polishing row, step 2).
+
+**WAVE-H is closed:** frozen, looked at once, reviewed, and its answer
+stands. What follows is the polishing, and the exam on the fresh months.
+
 2026-11-17 (the owner — the fresh months downloaded and sealed; the review
 under way): **HYPERLIQUID'S MONTHS AFTER WAVE-H'S DATA ARE DOWNLOADED INTO
 THEIR OWN STORE AND KEPT UNOPENED, FOR ONE REAL TEST OF A SHARPENED RULE.**
