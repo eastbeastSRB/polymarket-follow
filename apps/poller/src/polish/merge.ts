@@ -220,8 +220,12 @@ export type MergeInput = {
 /** The manifest's fields the merge does not make. */
 export type Meta = Pick<
   Manifest,
-  "range" | "partial" | "end" | "minuteStart" | "inputs" | "code" | "peaks"
-> & { seconds: Record<string, number> };
+  "range" | "partial" | "end" | "minuteStart" | "inputs" | "code"
+> & {
+  /** Read when the manifest is written, so the merge's own peak is in it. */
+  peaks: () => Manifest["peaks"];
+  seconds: Record<string, number>;
+};
 
 export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
   const t0 = Date.now();
@@ -613,7 +617,7 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
       funding: Object.fromEntries(o.funding.counts),
       merge: counts,
     },
-    peaks: meta.peaks,
+    peaks: meta.peaks(),
     seconds: { ...meta.seconds, merge: Math.round((Date.now() - t0) / 1000) },
     written: new Date().toISOString(),
   };

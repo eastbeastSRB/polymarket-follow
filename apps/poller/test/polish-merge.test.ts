@@ -204,7 +204,7 @@ const META: Meta = {
     wavehFrozen: "2".repeat(64),
     node: process.version,
   },
-  peaks: {},
+  peaks: () => ({}),
   seconds: {},
 };
 
