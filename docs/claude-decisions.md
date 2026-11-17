@@ -1,5 +1,62 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (the owner — THE POLISHING PLAN APPROVED, with its fresh
+review's changes): **THE PLAN IS APPROVED WITH THE REVIEW'S CHANGES F1–F19
+AND ITS SIX ANSWERS; EXTRACT-BUILD STARTS.**
+
+**What:**
+- **The plan:** `docs/reviews/wave-polish-plan-2026-11-17.md` (`cdaf9f5`).
+- **Its fresh review:** `docs/reviews/wave-polish-plan-review-2026-11-17.md`
+  (`405c515`, `bf2e2e4`, `179aec3`; Sonnet 5.5): "approve after these
+  changes". It worked on synthetic data only and opened no store.
+- **The owner, about 21:55Z:** "I agree with your recommendation … so let's
+  proceed like you've suggested."
+- **Where the plan and the review differ, the review's change holds.** No
+  review is edited: this entry is the record.
+
+**The review's changes, adopted:**
+
+| Change | Plan section | What |
+|---|---|---|
+| F1 | 2.2, 3.2, 3.3, 3.5 | A placebo gate before the exam's freeze sets its z, never below 2.58 for one look or 2.81 for two. The side is flipped per episode over at least 1,000 draws, beside the B2 control, on random 100- and 182-day windows. Observed window errors replace the √(300/D) scaling. |
+| F2 | 1.4; 2.1 step 4 | The nominee needs, on the check months, a mean net of at least +25, at least 30 days and 15 coins, and an exam footprint that clears TOO FEW. B0 is exempt as the fallback. |
+| F3 | 4.4 | Named memory ceilings, under the owner's standing rule: the extraction 16 GB for the main process plus 4 GB a worker, the exploration 16 GB, the exam 20 GB. Peak memory is logged. The merge runs by month, all coins at once. F: is a hard disk, so one day's pass is timed with its writes before the whole run. |
+| F4 | | A gain floor D ≥ max(+10 bps, 10% of \|m_B0\|); D5 is dropped. |
+| F5 | | The nine families are named: S, D, H, W, R, C, T, X, N. N is tested on the check months only. |
+| F6 | | Each try is marked as seeded by the look or not. The 3.7% is stated for the unseeded tries only. |
+| F7 | | 2026-07-08 (no day file, no books) and the thin day files are listed at the freeze, with about 2% budgeted toward WITHHELD. |
+| F8 | | HOLDS also needs the book-priced positions' mean above 0 (a sign, no band); each segment is printed apart. |
+| F9 | | A tape-completeness gate: taker notional per coin and day against `day_ntl_vlm`, and row counts against a full parse of 12 sample days, including 2025-10-10. |
+| F10 | | The timing conventions are pinned: the price at τ, "up to t", the monthly ranks, and the decision instant per try. |
+| F11 | | BASE's excess is defined for the 1–12 h holds and the X exits. |
+| F12 | | The beta months (2026-05-30 → 08-29) stay among the deciding days, printed apart. |
+| F13 | | The projection from the check months is made from their estimate minus one error. |
+| F14 | | The first look that is not NOT SETTLED decides; it is never combined with MARKET-1's verdicts. |
+| F15 | | H48 is cut; X2 is a print only. |
+| F16 | | S1 is tagged for Hyperliquid, not "Both". |
+| F17 | | An event-level mean (one position per coin-episode) and MARKET-1's OWN line are printed. |
+| F18 | | All tries' legs are priced in one sweep of the tape. |
+| F19 | | K, the deciding line's number of slices, is chosen by a count (the smallest K within 3% of all 147's error, about 20 on the plan's model) from the exploration's print, and frozen; all 147 are printed beside. |
+
+**The eight answers of the entry below, as now amended:**
+- (2) The discovery window is excluded; the beta months stay (F12).
+- (3) Two looks; their z comes from the placebo gate, at least 2.81 each
+  (F1).
+- (4) δ = +50 for every hold, with each exam's net per hour held printed
+  beside, deciding nothing.
+- (5) K slices by a count, all 147 beside (F19). This replaces "every
+  slice, 20 as the fallback".
+- The others stand.
+
+**The re-checks:** the reviewer recomputed every line of the planner's
+power file, and the 3.7% false pass while B0's true mean is at most about
++60.
+
+**Next:** EXTRACT-BUILD (Opus 5.5, max): the extraction (plan 4.1–4.6,
+with F3, F9, F18) and the frame of `explore`. Its plan comes first. Its run
+waits for FRESH's download to end. After it: EXTRACT-REVIEW, then
+POLISH-EXPLORE (plan section 6).
+
 2026-11-17 (the owner — the polishing plan, on the supervisor's
 recommendations, after its fresh review): **THE PLAN'S EIGHT QUESTIONS ARE
 ANSWERED AS RECOMMENDED; A FRESH REVIEW READS IT FIRST; NO RUN MAY HIT A
