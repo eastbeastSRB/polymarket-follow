@@ -1,7 +1,7 @@
 # WAVE-POLISH-PLAN-REVIEW — the fresh review of the polishing plan, before anything is built on it
 
 WAVE-POLISH-PLAN-REVIEW (Sonnet 5.5, max; the plan's planner was Opus), 2026-11-17
-20:59Z – 21:55Z (UTC; every stamp from `date -u`; the last is in `progress.md`), for
+20:59Z – 21:47Z (UTC; every stamp from `date -u`; the last is in `progress.md`), for
 polymarket-follow's supervisor. The plan under review is
 `docs/reviews/wave-polish-plan-2026-11-17.md` (`cdaf9f5`); the model of this review is
 `docs/reviews/wave-h-plan-review-2026-11-14.md`. Evidence: the supervisor folder
@@ -53,8 +53,9 @@ All are text or gates; none touches the design you approved on 2026-11-17.
 1. **Measure the exam's size before the freeze (F1).** The plan's z of 2.58 and 2.81 assumes
    the error is honest. In my simulated worlds it is: 0.46% false passes at 2.58 when shocks
    are plain; **but 1.28% (and 0.75% at 2.81) when the big cascades also sit on the volatile
-   days**, as liquidations do. Two looks could then carry about 1.5% of false passes, not 0.5%.
-   One cheap gate on the 10 months (a placebo) tells the true size, and z is set from it.
+   days**, as liquidations do. Two looks could then carry about 1% of false passes (0.75% at the first look, 0.3% at the
+   second, in my runs), double the plan's 0.5%. One cheap gate on the 10 months (a placebo)
+   tells the true size, and z is set from it.
 2. **Close the check part's gate (F2).** The second test of a chosen change (the check months,
    t ≥ 1.0) is easy to pass for any narrower rule when B0 happens to do badly on those months,
    and the "+50 net" floors are applied to single changes on the explore months only. The
