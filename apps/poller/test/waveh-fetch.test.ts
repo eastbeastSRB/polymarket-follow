@@ -1379,6 +1379,53 @@ describe("the watch", () => {
     expect(partsIn(w.store)).toEqual([]);
   }, 60_000);
 
+  it("judges a pause's end only on a reading taken at or after it: an older one neither pauses again nor clears", async () => {
+    const w = setup();
+    sizingWorld(w.server);
+    const bad: Health = { ...HEALTHY, audit: { rows: 90, agree: 70 } };
+    w.collector.health = bad;
+    // One heartbeat not written (130 s) moves the minute's reads off the pause's grid: 10, 70, 140, ... 560, 620 s.
+    w.clock.after(125 * SECOND, () => {
+      w.collector.health = { ...bad, writes: false };
+    });
+    w.clock.after(135 * SECOND, () => {
+      w.collector.health = bad;
+    });
+    // The audit recovers after the pause's last reading (560 s) and before its end (610 s).
+    w.clock.after(600 * SECOND, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    expect(await w.run()).toBe(0);
+    expect(eventsOf(w.store, "pause")).toMatchObject([
+      {
+        at: iso(T0 + 10 * SECOND),
+        why: "the price audit 70 of 90 agree",
+        until: iso(T0 + 610 * SECOND),
+      },
+    ]);
+    const readings = eventsOf(w.store, "reading");
+    expect(readings.slice(0, 3).map((l) => l.at)).toEqual(
+      [10, 70, 140].map((s) => iso(T0 + s * SECOND)),
+    );
+    expect(
+      readings
+        .filter((l) => Date.parse(l.at) >= T0 + 550 * SECOND)
+        .slice(0, 2)
+        .map((l) => [l.at, l.conditions]),
+    ).toEqual([
+      [iso(T0 + 560 * SECOND), ["the price audit 70 of 90 agree"]],
+      [iso(T0 + 620 * SECOND), []],
+    ]);
+    const after = eventsOf(w.store, "waiting").find(
+      (l) => l.why === "a reading after the pause",
+    );
+    expect(within(after, T0 + 610 * SECOND)).toBe(true);
+    const first = w.server.calls[0]?.at ?? 0;
+    expect(first).toBeGreaterThanOrEqual(T0 + 620 * SECOND);
+    expect(first).toBeLessThanOrEqual(T0 + 621 * SECOND);
+    expect(manifestOf(w.store).length).toBe(SIZING_KEYS.length + FUNDING_READS);
+  }, 60_000);
+
   it("reads the heartbeat's content once a minute at most, each right after its time moved, and logs every reading", async () => {
     const w = setup();
     sizingWorld(w.server);

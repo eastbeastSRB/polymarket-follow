@@ -532,7 +532,7 @@ class Watch {
       return;
     }
     this.noReadings = 0;
-    this.reading = reading;
+    this.reading = { ...reading, at: now };
     this.log("reading", {
       ageMs: now - this.mtime,
       ...reading.fields,
@@ -553,8 +553,13 @@ class Watch {
     return sorted.length === 0 ? null : sorted[Math.floor(sorted.length / 2)];
   }
 
-  /** The conditions that pause the download now, and whether the watch is clear (a reading, no condition). */
-  verdict(now) {
+  /**
+   * The conditions that pause the download now, and whether the watch is
+   * clear: no condition, on a reading taken at or after `since` (a pause's
+   * end). An older reading neither pauses nor clears: one up to a minute old
+   * re-paused the run on 2026-11-15 00:18Z, the audit recovered.
+   */
+  verdict(now, since) {
     const conditions = [];
     if (this.mtime === null) conditions.push("no heartbeat");
     else if (now - this.mtime > WATCH.ageMs) {
@@ -564,11 +569,9 @@ class Watch {
     }
     if (this.noReadings >= WATCH.noReadings)
       conditions.push(`no reading ${this.noReadings} times in a row`);
-    if (this.reading !== null) conditions.push(...this.reading.conditions);
-    return {
-      conditions,
-      clear: conditions.length === 0 && this.reading !== null,
-    };
+    const fresh = this.reading !== null && this.reading.at >= since;
+    if (fresh) conditions.push(...this.reading.conditions);
+    return { conditions, clear: conditions.length === 0 && fresh };
   }
 }
 
@@ -873,7 +876,7 @@ class Fetcher {
       if (this.current !== null && windowEnd(now) !== null)
         this.current.abort("window");
       if (now >= this.pausedUntil) {
-        const { conditions } = this.watch.verdict(now);
+        const { conditions } = this.watch.verdict(now, this.pausedUntil);
         if (conditions.length > 0) this.pause(now, conditions.join("; "));
       }
     } catch (err) {
@@ -943,9 +946,12 @@ class Fetcher {
     const end = windowEnd(now);
     if (end !== null) return `the pause window to ${iso(end)}`;
     if (now < this.pausedUntil) return `paused to ${iso(this.pausedUntil)}`;
-    const { conditions, clear } = this.watch.verdict(now);
+    const { conditions, clear } = this.watch.verdict(now, this.pausedUntil);
     if (conditions.length > 0) return "the watch sees harm";
-    return clear ? null : "the watch's first reading";
+    if (clear) return null;
+    return this.watch.reading === null
+      ? "the watch's first reading"
+      : "a reading after the pause";
   }
 
   /** Waits until a request may start: the gate open, 1 s after the last request, 6 s after the last fundingHistory read (D5). */
