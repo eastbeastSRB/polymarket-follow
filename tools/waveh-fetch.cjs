@@ -1696,6 +1696,7 @@ module.exports = {
   checkRequest,
   fundingBody,
   fundingWindows,
+  grid,
   judge,
   makeLog,
   parseArgs,

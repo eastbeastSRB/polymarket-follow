@@ -77,6 +77,7 @@ type Tool = {
   readBooks: (file: string, range: Range) => Set<string>;
   fundingBody: (coin: string, w: Window) => string;
   fundingWindows: (sizingOnly: boolean) => Window[];
+  grid: (from: number, to: number) => Window[];
   judge: (beat: unknown) => { conditions: string[] } | null;
   parseArgs: (argv: string[]) => Opts;
   parseListing: (
@@ -1610,17 +1611,17 @@ describe("the watch", () => {
     w.clock.after(15 * MINUTE, () => {
       w.collector.health = { ...HEALTHY };
     });
-    // One heartbeat unreadable (1810 s), one without a price audit (2530 s): each a minute's read.
+    // A heartbeat unreadable in the first streak (1810 s), one without a price audit in the second (4330 s): each a minute's read.
     w.clock.after(1805 * SECOND, () => {
       w.collector.health = { ...HEALTHY, garbage: true };
     });
     w.clock.after(1815 * SECOND, () => {
       w.collector.health = { ...HEALTHY };
     });
-    w.clock.after(2525 * SECOND, () => {
+    w.clock.after(4325 * SECOND, () => {
       w.collector.health = { ...HEALTHY, audit: null };
     });
-    w.clock.after(2535 * SECOND, () => {
+    w.clock.after(4335 * SECOND, () => {
       w.collector.health = { ...HEALTHY };
     });
     expect(await w.run({ rate: 4_000 })).toBe(0);
@@ -1632,14 +1633,14 @@ describe("the watch", () => {
       iso(T0 + 1811 * SECOND),
     ]);
     expect(eventsOf(w.store, "reading").find((l) => l.audit === null)?.at).toBe(
-      iso(T0 + 2530 * SECOND),
+      iso(T0 + 4330 * SECOND),
     );
     expect(eventsOf(w.store, "rate")).toMatchObject([
       {
-        at: iso(T0 + 4390 * SECOND),
+        at: iso(T0 + 3670 * SECOND),
         from: 1_000,
         to: 2_000,
-        cleanSince: iso(T0 + 2590 * SECOND),
+        cleanSince: iso(T0 + 1870 * SECOND),
       },
       {
         at: iso(T0 + 6190 * SECOND),
@@ -1672,25 +1673,81 @@ describe("the watch", () => {
     );
   }, 60_000);
 
-  it("steps a halved rate.txt back at a start too, after 30 clean minutes", async () => {
+  it("steps a halved rate.txt back at a start too, after 30 clean minutes, up to the run's --rate and no further", async () => {
     const w = setup();
     const key = "node_fills/hourly/20250607/0.lz4";
-    w.server.put(key, bytes(4_000_000, 1));
+    w.server.put(key, bytes(13_500_000, 1));
     fs.mkdirSync(path.join(w.store, "fetch"), { recursive: true });
-    fs.writeFileSync(fetchFile(w.store, "rate.txt"), "2000\n");
+    fs.writeFileSync(fetchFile(w.store, "rate.txt"), "3000\n");
     expect(await w.run({ rate: 4_000 })).toBe(0);
     expect(eventsOf(w.store, "pause")).toEqual([]);
     expect(eventsOf(w.store, "rate")).toMatchObject([
       {
         at: iso(T0 + 10 * SECOND + 30 * MINUTE),
-        from: 2_000,
+        from: 3_000,
         to: 4_000,
         cleanSince: iso(T0 + 10 * SECOND),
       },
     ]);
+    const last = w.server.delivered.filter((d) => d.url === urlOf(key)).at(-1);
+    expect(last?.at).toBeGreaterThan(T0 + 10 * SECOND + 60 * MINUTE);
     expect(fs.readFileSync(fetchFile(w.store, "rate.txt"), "utf8")).toBe(
       "4000\n",
     );
+  }, 60_000);
+
+  it("starts the streak again on a reading without a clock minute", async () => {
+    const w = setup();
+    const key = "node_fills/hourly/20250607/0.lz4";
+    w.server.put(key, bytes(6_000_000, 1));
+    w.collector.health = { ...HEALTHY, audit: { rows: 90, agree: 70 } };
+    w.clock.after(5 * MINUTE, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    w.clock.after(1205 * SECOND, () => {
+      w.collector.health = { ...HEALTHY, clockMs: null };
+    });
+    w.clock.after(1215 * SECOND, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    expect(await w.run({ rate: 4_000 })).toBe(0);
+    expect(
+      eventsOf(w.store, "reading").find((l) => l.clockMs === null)?.at,
+    ).toBe(iso(T0 + 1210 * SECOND));
+    expect(eventsOf(w.store, "rate")).toMatchObject([
+      {
+        at: iso(T0 + 1270 * SECOND + 30 * MINUTE),
+        from: 2_000,
+        to: 4_000,
+        cleanSince: iso(T0 + 1270 * SECOND),
+      },
+    ]);
+  }, 60_000);
+
+  it("starts the streak again at a pause: a clean streak before it never counts after it", async () => {
+    const w = setup();
+    const key = "node_fills/hourly/20250607/0.lz4";
+    w.server.put(key, bytes(5_000_000, 1));
+    fs.mkdirSync(path.join(w.store, "fetch"), { recursive: true });
+    fs.writeFileSync(fetchFile(w.store, "rate.txt"), "2000\n");
+    w.clock.after(1200 * SECOND, () => {
+      w.collector.health = { ...HEALTHY, audit: { rows: 90, agree: 70 } };
+    });
+    w.clock.after(1500 * SECOND, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    expect(await w.run({ rate: 4_000 })).toBe(0);
+    expect(eventsOf(w.store, "pause").map((l) => [l.at, l.rate])).toEqual([
+      [iso(T0 + 1210 * SECOND), 1_000],
+    ]);
+    expect(eventsOf(w.store, "rate").slice(0, 1)).toMatchObject([
+      {
+        at: iso(T0 + 1810 * SECOND + 30 * MINUTE),
+        from: 1_000,
+        to: 2_000,
+        cleanSince: iso(T0 + 1810 * SECOND),
+      },
+    ]);
   }, 60_000);
 });
 
@@ -2526,6 +2583,15 @@ describe("the FRESH range (--fresh)", () => {
       expect(x.end - x.start).toBeLessThanOrEqual(20 * DAY);
     });
     expect(tool.COINS.length * w.length).toBe(342);
+    // The grid cuts its last window at its end, never an empty one after it.
+    expect(tool.grid(0, 40 * DAY)).toEqual([
+      { start: 0, end: 20 * DAY },
+      { start: 20 * DAY, end: 40 * DAY },
+    ]);
+    expect(tool.grid(0, 25 * DAY)).toEqual([
+      { start: 0, end: 20 * DAY },
+      { start: 20 * DAY, end: 25 * DAY },
+    ]);
     expect(tool.WAVEH.windows).toEqual(tool.fundingWindows(false));
     expect(tool.SIZING.windows).toEqual(tool.fundingWindows(true));
     expect(tool.WAVEH.windows.at(-1)?.end).toBe(w[0]?.start);
