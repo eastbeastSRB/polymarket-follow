@@ -2108,6 +2108,39 @@ describe("the book files (--books)", () => {
     ]);
   });
 
+  it("caps a run by its own keys' bytes: an earlier run's books in books.jsonl never count, its own stored ones do (exit 4)", async () => {
+    const line = (key: string) =>
+      `${JSON.stringify({ key, bytes: 10 ** 12, etag: null, lastModified: null, md5: "0".repeat(32), sha256: "0".repeat(64), fetchedAt: iso(T0) })}\n`;
+    const earlier = setup();
+    earlier.server.put(SOL, bytes(50_000, 21));
+    earlier.server.put(KPEPE, bytes(30_000, 22));
+    fs.mkdirSync(earlier.store, { recursive: true });
+    fs.writeFileSync(path.join(earlier.store, "books.jsonl"), line(OTHER));
+    expect(
+      await earlier.run({ books: listFile(earlier.root, [SOL, KPEPE]) }),
+    ).toBe(0);
+    expect(earlier.server.calls.map((c) => c.url)).toEqual([
+      listingUrlOf("market_data/20250715/3/l2Book/"),
+      urlOf(SOL),
+      urlOf(KPEPE),
+    ]);
+    expect(eventsOf(earlier.store, "stopped")).toEqual([]);
+
+    const own = setup();
+    own.server.put(SOL, bytes(50_000, 21));
+    own.server.put(KPEPE, bytes(30_000, 22));
+    fs.mkdirSync(own.store, { recursive: true });
+    fs.writeFileSync(path.join(own.store, "books.jsonl"), line(SOL));
+    expect(await own.run({ books: listFile(own.root, [SOL, KPEPE]) })).toBe(4);
+    expect(eventsOf(own.store, "stopped")).toMatchObject([
+      {
+        code: 4,
+        why: `stopped at the cap: ${10 ** 12} B stored, 30000 B more would pass ${Math.ceil(80_000 * 1.02)} B`,
+      },
+    ]);
+    expect(own.server.calledFor(urlOf(KPEPE))).toHaveLength(0);
+  });
+
   it("records a book whose bytes differ from its listing as bad, never in the list", async () => {
     const w = setup();
     w.server.put(SOL, bytes(20_000, 31), md5(bytes(20_000, 32)));

@@ -27,7 +27,9 @@
  * the look's after the freeze), under the same gate: each hour folder listed,
  * each key the listing holds fetched and checked as any file, into the
  * store's `books.jsonl` (a manifest line each), and each key its folder's
- * listing lacks written there as missing. Nothing else is requested.
+ * listing lacks written there as missing. Nothing else is requested. Its cap,
+ * 1.02 times its listed bytes, counts its own keys' bytes only, for
+ * `books.jsonl` keeps earlier runs' books.
  *
  * tools/waveh-fetch-start.ps1 starts it detached at idle priority; the stop
  * file stops it. In the store: the bucket's keys mirrored below ROOT,
@@ -1105,8 +1107,8 @@ class Fetcher {
     }
   }
 
-  /** The floor on the store's disk and the cap on the store's bytes (D4). */
-  checkLimits(max, manifest, cap) {
+  /** The floor on the store's disk and the cap on the bytes `stored` the cap counts (D4). */
+  checkLimits(max, stored, cap) {
     const disk = this.statfs(this.store);
     const free = disk.bavail * disk.bsize;
     if (free - max < FLOOR) {
@@ -1115,19 +1117,19 @@ class Fetcher {
         `stopped at the floor: ${gib(free)} GiB free on the store's disk, ${gib(FLOOR)} GiB kept`,
       );
     }
-    if (manifest.bytes + max > cap) {
+    if (stored + max > cap) {
       throw new Stop(
         4,
-        `stopped at the cap: ${manifest.bytes} B stored, ${max} B more would pass ${cap} B`,
+        `stopped at the cap: ${stored} B stored, ${max} B more would pass ${cap} B`,
       );
     }
   }
 
   /** One file or reply: `.part`, hashed as it comes, checked, renamed, then its manifest line (D6). */
-  async fetchItem(item, manifest, cap) {
+  async fetchItem(item, manifest, cap, stored) {
     const file = path.join(this.store, ...item.key.split("/"));
     const part = `${file}.part`;
-    this.checkLimits(item.max, manifest, cap);
+    this.checkLimits(item.max, stored, cap);
     if (fs.existsSync(file)) {
       fs.rmSync(file);
       this.log("removed", {
@@ -1389,7 +1391,8 @@ async function run(opts, deps) {
     }
     for (const item of items) {
       const done = manifest.lines.get(item.key);
-      if (done === undefined) await fetcher.fetchItem(item, manifest, cap);
+      if (done === undefined)
+        await fetcher.fetchItem(item, manifest, cap, manifest.bytes);
       else if (
         item.kind === "file" &&
         (done.etag !== item.etag || done.bytes !== item.size)
@@ -1436,11 +1439,15 @@ async function runBooks(fetcher, books, manifest, opts, deps, log) {
   for (const key of missing)
     if (!manifest.missing.has(key) && !manifest.lines.has(key))
       manifest.addMissing(key, deps.clock.now());
+  // The cap counts this run's keys only: books.jsonl also holds earlier runs' books.
+  const stored = () =>
+    items.reduce((s, i) => s + (manifest.lines.get(i.key)?.bytes ?? 0), 0);
   for (const item of items) {
     const done = manifest.lines.get(item.key);
     if (manifest.missing.has(item.key))
       fetcher.problem(item.key, "changed", "written as missing; listed now");
-    else if (done === undefined) await fetcher.fetchItem(item, manifest, cap);
+    else if (done === undefined)
+      await fetcher.fetchItem(item, manifest, cap, stored());
     else if (done.etag !== item.etag || done.bytes !== item.size)
       fetcher.problem(
         item.key,
