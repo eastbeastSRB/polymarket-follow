@@ -270,34 +270,52 @@ start when available. Neither is done before the freeze and the owner's word.
 forward run over the old weeks in a FIND-SLOTS slot), both pre-cut data only,
 run when `MARKET1_PRECUT` names the paths.
 
-## WAVE-H's data download (built 2026-11-14 by WAVE-H-FETCH; the supervisor starts it)
+## WAVE-H's data download (built 2026-11-14 by WAVE-H-FETCH, FRESH's range added 2026-11-17 by FRESH-FETCH; the supervisor starts it)
 
 `tools/waveh-fetch.cjs`, plain Node, no package, part of no frozen program
 (decisions 2026-11-14, "WAVE-H's download spec", and WAVE-H-FETCH's
-technical calls): the plan's files of Hyperliquid's archive (AWS's keyless
-bucket, `v1.1/hyperliquid/mainnet/` `node_fills/hourly/`,
-`node_fills_by_block/hourly/`, `asset_ctxs/`) and the 38 coins' settled
-funding (`POST /info` `fundingHistory`, 760 windows aligned to the seal) into
-`F:\polymarket-follow-research\WAVE-H\store\`: the keys mirrored,
-`info\fundingHistory\<coin>\<window start ms>.json`, `manifest.jsonl`
-(key, bytes, ETag, LastModified, MD5, SHA-256, fetch time), and its own
-`fetch\` (the pid file, which is its lock; the stop file `waveh-fetch.stop`;
-`rate.txt`; `problems.jsonl`; `log\<UTC date>.jsonl`). It hashes the bytes as
-they come and never decodes, parses or reads back a data file. Every request
-passes one gate: the guards on prefix and date, one at a time, a 2 MB/s token
-bucket, no request 02:30–06:00Z and 10:25–11:15Z, the error ladder, the F:
-floor and the cap, and the watch on the collector's `heartbeat.json` (its
-time by stat, its content once a minute at most; a 10-minute pause and the
-rate halved on harm, three in an hour stop the day). `--plan` prints the plan,
-`--sizing-only` keeps to the sizing months. `tools\waveh-fetch-start.ps1`
-starts it through WMI at idle priority, so it outlives the session
-(`-Check` says whether it runs); the stop file stops it within a second.
-`--books <file>` fetches only the book files a file names (`market_data/
-<date>/<h>/l2Book/<COIN>.lz4` of the 38 coins and the plan's dates, before the
-seal with `--sizing-only`) under the same gate: each needed key's hour folder
-listed, each listed key checked as any file into the store's `books.jsonl`,
-a key its listing lacks written there as missing; it takes the same lock, so
-it never runs beside the main download.
+technical calls; 2026-11-17, FRESH-FETCH's): files of Hyperliquid's archive
+(AWS's keyless bucket, `v1.1/hyperliquid/mainnet/`) and the 38 coins' settled
+funding (`POST /info` `fundingHistory`) into a store on F:. **A run downloads
+one range:**
+- **WAVE-H's** (the default; `--sizing-only` its first session):
+  `node_fills/hourly/`, `node_fills_by_block/hourly/` and `asset_ctxs/` from
+  2025-05-25 to DATA END, 760 funding windows aligned to the seal, into
+  `F:\polymarket-follow-research\WAVE-H\store\`;
+- **FRESH's** (`--fresh`): the months after WAVE-H's data, stored unopened
+  until a sharpened rule is frozen: `node_fills_by_block` hours from 2026-05-29
+  02h and `asset_ctxs` days from 2026-05-29, both before `FRESH_END`
+  (2026-11-16T00:00Z), 342 funding windows on the same 20-day grid from DATA
+  END, into `F:\polymarket-follow-research\FRESH\store\`.
+
+A store sits in its range's folder (`…\WAVE-H\store` or `…\FRESH\store`,
+checked before anything is written), and one download runs at a time on the
+line: a run refuses to start while the other range's store holds a live lock.
+In a store: the keys mirrored, `info\fundingHistory\<coin>\<window start
+ms>.json`, `manifest.jsonl` (key, bytes, ETag, LastModified, MD5, SHA-256,
+fetch time), and its own `fetch\` (the pid file, which is its lock; the stop
+file `waveh-fetch.stop`; `rate.txt`; `problems.jsonl`; `log\<UTC date>.jsonl`).
+It hashes the bytes as they come and never decodes, parses or reads back a
+data file. Every request passes one gate: the range's guards on prefix and
+date, one at a time, a 2 MB/s token bucket, no request 02:30–06:00Z and
+10:25–11:15Z, the error ladder, the F: floor and the cap, and the watch on the
+collector's `heartbeat.json`:
+- its time by stat, its content once a minute at most;
+- harm pauses 10 minutes and halves the rate (three pauses in an hour stop the
+  day); at a pause's end only a reading taken at or after it counts;
+- after 30 clean minutes (every second clear on a reading that judged the
+  clock and the price audit, no read failed) the rate doubles back, up to the
+  run's full rate, kept in `rate.txt` and logged.
+
+`--plan` prints the plan. `tools\waveh-fetch-start.ps1` (`-Fresh` for FRESH's
+range and store) starts it through WMI at idle priority, so it outlives the
+session (`-Check` says whether it runs, on its store or the other); the stop
+file stops it within a second. `--books <file>` fetches only the book files a
+file names (`market_data/<date>/<h>/l2Book/<COIN>.lz4` of the 38 coins and the
+range's hours) under the same gate: each needed key's hour folder listed, each
+listed key checked as any file into the store's `books.jsonl`, a key its
+listing lacks written there as missing; its cap counts its own keys only; it
+takes the store's lock, so it never runs beside a download.
 Tests: `test/waveh-fetch.test.ts`, no network; its heartbeats are built from
 the collector's `Heartbeat` schema, so a change of those fields fails there
 (a contract).

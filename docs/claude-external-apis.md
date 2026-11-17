@@ -428,6 +428,30 @@ read from a venue's page is as that page read on the day.
     `Content-Type: binary/octet-stream`, `Content-Length` 7,259,417 (the
     listing's Size), no `Content-Encoding`, the `ETag` header quoted and
     equal to the listing's. The bytes' MD5 equals that single-part ETag.
+- **The newest days and how they are uploaded** (2026-11-17 17:10:45–17:11:16Z,
+  FRESH-FETCH's listing: 14 LIST requests, months 202605–202611 of
+  `node_fills_by_block/hourly/` and `asset_ctxs/`, every page valid by the
+  download tool's own parser; evidence in the supervisor folder,
+  `workers/FRESH-FETCH/listing/`):
+  - `node_fills_by_block` ran to `20261117/8.lz4`, `asset_ctxs` to
+    `20261116.csv.lz4`.
+  - **The fill files are uploaded once a day, at 09:19–09:29Z** (LastModified,
+    2026-11-12 to 11-17). **A day D's 24 files carry three LastModified:**
+    hours 0–7 on D, hours 8–21 on D+1, hours 22–23 on D+2 (alike on 11-12,
+    11-13, 11-14 and 11-15). 11-16's hours 22–23 still showed D+1. So a day is
+    settled only after its D+2 upload; whether that rewrite changes the bytes
+    (and the ETag) is not known from one listing.
+  - `asset_ctxs` is written once a day, at D+1 about 06:02Z (from 2026-11-07).
+    No file for 2026-07-08.
+  - Everything older was written in bulk: the fill files on 2026-11-03, the
+    `asset_ctxs` files on 2026-11-02 at 22:37Z.
+  - **Sizes,** 2026-05-29 02h to 2026-11-15 23h: 4,102 fill files,
+    159,875,660,010 B, 11.1–257.6 MB a file, 351 with a multipart ETag; about
+    26.7 GB in June 2026 and 32.3 GB in October, against 0.74 GB on
+    2025-07-28. `asset_ctxs` 2026-05-29 to 11-15: 170 files, 1,378,600,797 B, none
+    multipart. Most `asset_ctxs` files from 2026-09-22 on are 1.1–5.5 MB,
+    against 10.0–12.0 MB on most earlier days (sizes only; the files are
+    sealed and were not opened).
 - **Fill file line (`node_fills_by_block`, read 2025-07-28 12h):**
   `{local_time, block_time, block_number, events: [[user, fill], …]}`; fill
   `{coin, px, sz, side "A"|"B", time (ms), startPosition, dir, closedPnl,

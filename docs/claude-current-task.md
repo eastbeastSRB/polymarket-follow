@@ -6,12 +6,12 @@ clock; the forward paper experiment is FROZEN (2026-11-12, tag
 `paper-freeze-1`) and runs daily; MARKET-1, the forward paper test of the
 liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
-history, is built, fixed and checked: the fresh fix-check found it ready to
-freeze after small fixes, and WAVE-H-FIX-2 made them (2026-11-16): three
-rule sentences, two tests, a new draft list. The owner gave the go for the
-freeze and the one look (decisions 2026-11-16, about 08:30Z); nothing is
-frozen or run on TEST yet.** The plan is
-the plan page (docs/claude-master-plan.md); what exists is architecture.
+history, is FROZEN (2026-11-16, tag `waveh-freeze-1`) and its one look says
+NOT SETTLED (2026-11-17: +82.6 bps a position, SE 40.9, 1,289 priced); its
+Final review reproduced it exactly, so the answer is final. The download of
+the months after WAVE-H's data (FRESH), for one real test of a sharpened
+rule, is built and waits for the supervisor's start.** The plan is the plan page
+(docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -30,70 +30,79 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **MARKET-1** (architecture, "MARKET-1"; decisions 2026-11-13, from "the
   market lead" to "MARKET-1 — the freeze"):
   - `dist/market1.js`, with its rules in `apps/poller/market1/rules.md`;
-  - frozen: `market1/FROZEN.sha256`, 64 files,
-    `b9e17505d8d4dfc87101b35c4908929b4ed18c6dd401cf723dfbab0c15452f1d`,
-    commit `4832a6a`, tag `market1-freeze-1`;
+  - frozen: `market1/FROZEN.sha256`, 64 files, `b9e17505…2f1d`, commit
+    `4832a6a`, tag `market1-freeze-1`;
   - START 2026-11-11; looks at the paper experiment's dates;
   - its daily task at 10:30Z.
-- **WAVE-H** (architecture, "WAVE-H" and "WAVE-H's data download";
-  decisions 2026-11-14, "WAVE-H's plan approved" and the WAVE-H-BUILD
-  entries; 2026-11-16, from WAVE-H-FIX's entry to WAVE-H-FIX-2's):
-  - the rules `apps/poller/waveh/rules.md` (H0–H15 with R1–R10, M = 147);
-    `dist/waveh.js` with `rehearse` and `look`;
-  - the download complete (2026-11-16 01:15:30Z): `waveh/data.sha256`, 9,975
+- **WAVE-H** (architecture, "WAVE-H"; decisions 2026-11-16, "WAVE-H — the
+  freeze"; 2026-11-17, "WAVE-H — the one look's result" and "WAVE-H's Final
+  review accepted"):
+  - frozen: `waveh/FROZEN.sha256`, 74 files, `864990da…8dd2`, commit
+    `9f99a0b`, tag `waveh-freeze-1`; its data `waveh/data.sha256`, 9,975
     files, `b66a9bb0…676c`;
-  - the rehearsal's third run (2026-11-16 05:10–07:11Z) held every count;
-    the 7 SIZING positions with a funding settlement without a mark stay
-    unpriced, as H9 says (holes in the archive's marks; decisions
-    2026-11-16, "WAVE-H-FIX verified", Q-A); `sizing.json` unchanged;
-  - the fix-check (`docs/reviews/wave-h-fix-check-2026-11-16.md`): ready to
-    freeze after small fixes; F1–F5 made by WAVE-H-FIX-2, F6 and its Q3 left
-    as they are;
-  - the draft list, 74 files,
-    `1d85e2f6276247dae03f0f2ee394255375aa59e28154f7eb5c210cfc1e28dd38`
-    (`496ad5d`).
+  - the one look: **NOT SETTLED**, band −23.0 to +188.1 bps at z 2.58;
+  - the report and Final review (`docs/reviews/wave-h-look-2026-11-17.md`):
+    independent code reproduces every position, price and the verdict; its
+    notes are kept for the next tests' rules.
+- **FRESH, the months after WAVE-H's data** (architecture, "WAVE-H's data
+  download"; decisions 2026-11-17, the owner's go and FRESH-FETCH's calls):
+  - `tools/waveh-fetch.cjs --fresh`: `node_fills_by_block` hours from
+    2026-05-29 02h, `asset_ctxs` days from 2026-05-29, both before
+    `FRESH_END` 2026-11-16T00:00Z, and 342 funding reads, into
+    `F:\polymarket-follow-research\FRESH\store\`, stored unopened until a
+    sharpened rule is frozen;
+  - listed 2026-11-17 17:10Z: 4,102 + 170 files, 161.3 GB planned (cap
+    164.6 GB), about 27 h at 2 MB/s with the pause windows;
+  - not started yet.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07):
   - the collector's share is 50 and 15;
   - the experiment's is 120 and 15;
-  - MARKET-1 reads nothing from the API; WAVE-H reads Hyperliquid and
-    AWS only, never Polymarket.
+  - MARKET-1 reads nothing from the API; WAVE-H and FRESH read Hyperliquid
+    and AWS only, never Polymarket.
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes (the
   tags too).
 
 ## Next up — IN ORDER
 
-1. **WAVE-H's freeze and its one look, with the owner's go** (decisions
-   2026-11-16, "the owner — the go"): the supervisor verifies WAVE-H-FIX-2,
-   then `pnpm verify` on a clean tree, `node tools/waveh-freeze.cjs
-   --final`, commit; the owner pushes the tag `waveh-freeze-1`. Then the
-   look (H15's two steps, `node --max-old-space-size=8192 dist/waveh.js
-   look`): step 1's counts checked by the supervisor before the books are
-   fetched, then step 2 (the verdict).
-2. **MARKET-1's daily runs** (10:30Z): the first decided legs confirm the
-   book level's unit (decisions 2026-11-13, call 11); no paper command by
-   hand while a MARKET-1 run is live (rules.md M2).
-3. **The daily runs:** the supervisor checks each program's log, budget and
+1. **FRESH's download, started by the supervisor:**
+   - `node tools\waveh-fetch.cjs --fresh --plan --store
+     F:\polymarket-follow-research\FRESH\store --heartbeat
+     E:\polymarket-follow-run\var\heartbeat.json` (14 listings);
+   - then `powershell -NoProfile -ExecutionPolicy Bypass -File
+     tools\waveh-fetch-start.ps1 -Fresh`, and `-Fresh -Check` to watch it;
+   - stop: `New-Item -ItemType File
+     F:\polymarket-follow-research\FRESH\store\fetch\waveh-fetch.stop`.
+2. **The polishing** (the plan page, "after WAVE-H's Final review"): a
+   sharpened rule chosen on the 10 months already seen, frozen, then its
+   one test on FRESH's months; the review's notes go into its rules.
+3. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
+   MARKET-1 run is live (rules.md M2).
+4. **The daily runs:** the supervisor checks each program's log, budget and
    page; no running number is read as evidence before a look.
-4. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
+5. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
    (R8's B2 confirmation, after 2026-11-30), each with its own share of the
    remaining 80 a minute (and a burst share: decisions 2026-11-13, Q12).
-5. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
-   owner's rulings after the deploy); WAVE-H's closure holds ten of
-   MARKET-1's and the paper's files until its look.
-6. **Small collector follow-ups, when convenient:** drop the boards'
+6. **MARKET-1's second arm** about 2026-11-20 (decisions 2026-11-13, the
+   owner's rulings after the deploy).
+7. **Small collector follow-ups, when convenient:** drop the boards'
    `consistent` flag; a coverage mark for books that arrive late; the
    backup task's trigger from UTC takes effect when the tasks are next
    registered; the page's fee-category alarm.
-7. **The v1 plan** (the plan page), early December.
+8. **The v1 plan** (the plan page), early December; the backlog's ideas
+   after WAVE-H's answer.
 
-## Last session (2026-11-16, WAVE-H-FIX-2)
+## Last session (2026-11-17, FRESH-FETCH)
 
-Three commits, each gated on `pnpm verify` (at the end 57 files + 1 skipped,
-512 tests + 6 skipped), both live freezes verified after each: `6c673ba`
-the fix-check's three rule sentences (F1 H15 step 2, F2 H10's bound, F3
-H8's coin); `326ecd5` its two tests (F4: the freeze tool's `--data` run
-whole from a copy in a made-up tree; F5: the built program's exit code
-through its catch), each shown in a scratch copy to pass and to fail on its
-break (`t04`, `n_exitwire`); `496ad5d` the draft list again, differing from
-the last one only in `rules.md`'s line and the head.
+`tools/waveh-fetch.cjs` extended to FRESH's range, each change gated on
+`pnpm verify` with the three freezes verified after each (61, 64, 74):
+`54f77fb` the `--books` cap counts its own keys only; `153fead` a pause's
+end judged only on a reading taken at or after it; `263a6bf` the rate steps
+back after 30 clean minutes, doubled up to the full rate; `0525e22` the
+FRESH range (`--fresh`); `5a28c47` one store per range and one download on
+the line, and the start script's `-Fresh`; `89dcca8` tests for the breaks'
+six survivors. 58 breaks in scratch copies, 52 killed in round one and the
+other 6 in round two. At the end `pnpm verify` was green: 57 files + 1
+skipped, 527 tests + 5 skipped. The start script was proven on scratch
+stores without a heartbeat, so no request could start (decisions
+2026-11-17, FRESH-FETCH's technical calls).

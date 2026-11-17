@@ -1,5 +1,131 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (FRESH-FETCH's technical calls — the download of the months
+after WAVE-H's data, built): **THE DOWNLOAD TOOL TAKES FRESH'S RANGE INTO ITS
+OWN STORE, WITH EVERY GUARD OF THE FIRST DOWNLOAD AND THE THREE FIXES THE
+NIGHTS SHOWED. THE SUPERVISOR STARTS IT.**
+
+**What:** in six commits, `tools/waveh-fetch.cjs`, `tools/waveh-fetch-start.ps1`
+and `apps/poller/test/waveh-fetch.test.ts`: `54f77fb` (a),
+`153fead` (b), `263a6bf` (c), `0525e22` the range, `5a28c47` the store guards
+and the start script, `89dcca8` the breaks' tests. Architecture, "WAVE-H's
+data download"; external-apis, the AWS bucket's newest days.
+
+**The range, ruled by the supervisor (17:19Z, Q1–Q3 and Q6):**
+1. **The last day is 2026-11-15, so `FRESH_END` is 2026-11-16T00:00Z.** It is
+   the archive's newest settled day: a day's hours 22–23 are written again on
+   the second day after it (the listing, external-apis), and 11-16's had not
+   been yet.
+2. **Hourly fill files from 2026-05-29 02h** (the first after DATA END's own
+   hour) **and day files from 2026-05-29.** `asset_ctxs/20260529.csv.lz4` is
+   in FRESH's store too, so the store stands alone. The same key is in
+   WAVE-H's store, which WAVE-H's program read; any overlap rule is the
+   exam's call.
+3. **The funding windows start at DATA END** on WAVE-H's 20-day grid, the last
+   cut at `FRESH_END`: 9 a coin, 342 reads. They join WAVE-H's last window, so
+   no settlement is read twice or missed.
+4. **The size**, from the listing (2026-11-17 17:10:45–17:11:16Z, 14 LIST
+   requests): 4,102 fill files (159.9 GB) and 170 day files (1.4 GB); planned
+   161,343,914,055 B with the funding reads at 256 KiB each, the cap
+   164,570,792,337 B. About 27 h at 2 MB/s with the pause windows. F: had
+   1,338.8 GiB free.
+5. **`--books` with `--fresh`** takes book keys of FRESH's hours, for the
+   exam's books.
+
+**The three fixes:**
+- **(a) A `--books` run's cap counts its own keys' bytes only** (those in
+  `books.jsonl` and those it fetches): `books.jsonl` keeps earlier runs'
+  books, and a second run stopped at its cap on 2026-11-17 00:30Z. The main
+  download keeps its total cap on the store.
+- **(b) At a pause's end, only a reading taken at or after it counts.** Until
+  it comes (the next minute's read), no request starts ("a reading after the
+  pause"), and the older reading neither pauses again nor clears. The live
+  checks still pause at once, and the content read stays once a minute. A
+  reading up to a minute old had re-paused the run on 2026-11-15 00:18Z.
+- **(c) The step back (Q4):** after 30 minutes of clean seconds, the rate
+  doubles, up to the run's full rate (2 MB/s, or a lower `--rate`). The tool
+  writes it to `rate.txt` and logs `rate {from, to, cleanSince}`, and a new
+  streak starts.
+  - A clean second: not paused, the verdict clear on a fresh reading that
+    judged both the clock and the price audit, and no content read failed
+    since the last good one.
+  - Any other second, or a pause, starts the streak again; the pause windows
+    do not.
+  - A start at a halved `rate.txt` steps back the same way.
+  - A bad reading still pauses at once.
+
+**The two guards (Q5):**
+- **A store sits in its range's folder:** `<root>\FRESH\store` with
+  `--fresh`, `<root>\WAVE-H\store` otherwise, case-insensitive. It is checked
+  in `parseArgs`, before anything is written (exit 2). A test runs the tool
+  with a wrong store and finds nothing written.
+- **One download at a time on the line:** a run refuses (exit 3) while the
+  other range's store, beside its own, holds a live lock touched in the last
+  3 minutes. It reads that pid file before taking its own lock, so a refused
+  run holds no lock. The start script checks both locks as well.
+
+**FRESH-FETCH's calls:**
+- **`sizingOnly` became a range** (WAVE-H, its sizing months, FRESH): parts
+  listed month by month, the hours and days admitted (`[from, to)`), the
+  windows, the title and the store's folder. Every guard reads the range.
+  - WAVE-H's two ranges equal the old rules: the 42 earlier tests pass with
+    their calls moved to the ranges.
+  - `fundingWindows(sizingOnly)` stays as it was: `test/waveh-store.test.ts`
+    pins it with `src/waveh/keys.ts`, and that test is untouched.
+- One grid function for all windows. WAVE-H's are grid(2025-05-25, seal)
+  followed by grid(seal, DATA END), its same 20.
+- A `--books` run's plan line names its range's folder.
+
+**A signal for the exam's design (sizes only; nothing in the new store is
+opened):** most `asset_ctxs` day files from 2026-09-22 on are 1.1–5.5 MB,
+against 10.0–12.0 MB on most earlier days. Three are 10.4–10.7 MB: 10-03,
+11-03 and 11-04. Smaller days before that: 05-30, 08-08, 08-09, 08-27,
+08-30, 09-15, 09-16 and 09-18. These may be partial days of marks. The
+exam's step 1 counts will show any holes.
+
+**Tests:** 55 in `test/waveh-fetch.test.ts`, up from 41, with no network (a
+fake bucket and info API, a fake clock). The 41 still pass, their calls
+moved to the ranges.
+- Each fix's test failed on the tool before it, in a scratch copy: (a) exit 4
+  at the cap; (b) a second pause at the pause's end; (c) no step.
+- `pnpm verify` was green after every commit; at the end, 57 files + 1
+  skipped, 527 tests + 5 skipped.
+- The three freezes were verified after each commit: 61 `d04d3cd8…`, 64
+  `b9e17505…`, 74 `864990da…`.
+
+**Breaks,** in scratch copies of `5a28c47` (`git archive`, `node_modules` a
+real folder of per-package junctions, vitest run directly, no pnpm):
+- **Round one, 58 breaks of the new code:** the range's edges, the grid, the
+  guards through the range, the folder rule, the other store's lock, the
+  books cap, (b) and (c). **52 killed,** none by a wall-clock limit. Three
+  finds were re-aimed after Prettier moved their text (F29, B4, B5); none was
+  dropped.
+- **Six survived:**
+  - F12: the grid's `<=` changes nothing on the three real grids;
+  - C2 and C9: the step's cap at the run's `--rate`;
+  - C5: a failed read's restart, masked by an audit-less reading in the same
+    streak;
+  - C7: a reading without a clock minute;
+  - C8: a pause after a clean streak.
+
+  `89dcca8` adds a test for each.
+- **Round two,** the six and the four breaks whose killing test changed:
+  **all 10 killed.**
+- The lists and results are in the supervisor folder,
+  `workers/FRESH-FETCH/breaks/`.
+
+**The start script**, proven on scratch stores with a heartbeat that does not
+exist, so no request could start (2026-11-17 17:39:19–17:39:36Z):
+- `-Fresh -SizingOnly` was refused.
+- The start was detached: pid 32996 at Idle, and `-Check` saw it.
+- A second start was refused.
+- A WAVE-H start beside it was refused by the script, and by the tool itself
+  (exit 3, logged).
+- The stop file ended it in 0.8 s, with no pid file left.
+- A start was refused while the stop file was there.
+
+**Not done:** the download itself, which the supervisor starts.
+
 2026-11-17 (the supervisor — WAVE-H's Final review accepted): **THE LOOK
 STANDS. Independent code reproduces every position, price and verdict of
 WAVE-H's one look exactly; WAVE-H's answer is final, NOT SETTLED.**
