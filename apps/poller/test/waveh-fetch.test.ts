@@ -519,9 +519,9 @@ function sizingWorld(server: FakeServer): void {
 }
 const FUNDING_READS = 4 * 38;
 
-function setup(start = T0) {
+function setup(start = T0, folder = "WAVE-H") {
   const root = fs.mkdtempSync(path.join(tmpdir(), "waveh-fetch-"));
-  const store = path.join(root, "store");
+  const store = path.join(root, folder, "store");
   const clock = new FakeClock(start);
   const collector = new FakeCollector(
     clock,
@@ -2103,8 +2103,10 @@ describe("the runner", () => {
   }, 60_000);
 
   it("takes --store and --heartbeat, --sizing-only or --fresh, --plan and a --rate from 1 to 2000000", () => {
-    expect(tool.parseArgs(["--store", "s", "--heartbeat", "h"])).toEqual({
-      store: path.resolve("s"),
+    const W = path.join("x", "WAVE-H", "store");
+    const F = path.join("x", "FRESH", "store");
+    expect(tool.parseArgs(["--store", W, "--heartbeat", "h"])).toEqual({
+      store: path.resolve(W),
       heartbeat: path.resolve("h"),
       sizingOnly: false,
       fresh: false,
@@ -2113,11 +2115,10 @@ describe("the runner", () => {
       books: null,
     });
     expect(
-      tool.parseArgs(["--fresh", "--store", "s", "--heartbeat", "h"]),
-    ).toMatchObject({ sizingOnly: false, fresh: true });
+      tool.parseArgs(["--fresh", "--store", F, "--heartbeat", "h"]),
+    ).toMatchObject({ store: path.resolve(F), sizingOnly: false, fresh: true });
     expect(
-      tool.parseArgs(["--store", "s", "--heartbeat", "h", "--books", "b"])
-        .books,
+      tool.parseArgs(["--store", W, "--heartbeat", "h", "--books", "b"]).books,
     ).toBe(path.resolve("b"));
     expect(
       tool.parseArgs([
@@ -2126,12 +2127,12 @@ describe("the runner", () => {
         "--rate",
         "500000",
         "--store",
-        "s",
+        W,
         "--heartbeat",
         "h",
       ]),
     ).toEqual({
-      store: path.resolve("s"),
+      store: path.resolve(W),
       heartbeat: path.resolve("h"),
       sizingOnly: true,
       fresh: false,
@@ -2144,23 +2145,107 @@ describe("the runner", () => {
         "--fresh",
         "--sizing-only",
         "--store",
-        "s",
+        F,
         "--heartbeat",
         "h",
       ]),
     ).toThrow("--fresh and --sizing-only name two ranges");
-    for (const argv of [
-      [],
-      ["--store", "s"],
-      ["--store", "s", "--heartbeat"],
-      ["--store", "s", "--heartbeat", "h", "--rate", "0"],
-      ["--store", "s", "--heartbeat", "h", "--rate", "1.5"],
-      ["--store", "s", "--heartbeat", "h", "--fast"],
-      ["--store", "s", "--heartbeat", "h", "--books"],
-    ]) {
-      expect(() => tool.parseArgs(argv), argv.join(" ")).toThrow();
+    for (const [argv, why] of [
+      [[], "are needed"],
+      [["--store", W], "are needed"],
+      [["--store", W, "--heartbeat"], "needs a value"],
+      [["--store", W, "--heartbeat", "h", "--rate", "0"], "lower the rate"],
+      [["--store", W, "--heartbeat", "h", "--rate", "1.5"], "lower the rate"],
+      [["--store", W, "--heartbeat", "h", "--fast"], "an unknown argument"],
+      [["--store", W, "--heartbeat", "h", "--books"], "needs a value"],
+    ] as const) {
+      expect(() => tool.parseArgs([...argv]), argv.join(" ")).toThrow(why);
     }
   });
+
+  it("needs a store in its range's folder, <root>/FRESH/store with --fresh and <root>/WAVE-H/store without it, refused before anything is written (exit 2)", () => {
+    const args = (store: string, ...more: string[]) => [
+      ...more,
+      "--store",
+      store,
+      "--heartbeat",
+      "h",
+    ];
+    for (const argv of [
+      args(path.join("x", "WAVE-H", "store")),
+      args(path.join("x", "wave-h", "Store"), "--sizing-only"),
+      args(path.join("x", "FRESH", "store"), "--fresh"),
+      args(path.join("x", "fresh", "store"), "--fresh"),
+    ])
+      expect(() => tool.parseArgs(argv), argv.join(" ")).not.toThrow();
+    for (const argv of [
+      args(path.join("x", "WAVE-H", "store"), "--fresh"),
+      args(path.join("x", "FRESH", "store")),
+      args(path.join("x", "FRESH", "store"), "--sizing-only"),
+      args(path.join("x", "FRESH", "data"), "--fresh"),
+      args(path.join("x", "FRESH-2", "store"), "--fresh"),
+      args(path.join("x", "store")),
+      args("s"),
+    ])
+      expect(() => tool.parseArgs(argv), argv.join(" ")).toThrow(
+        /a store of (FRESH|WAVE-H)'s range is <folder>.(FRESH|WAVE-H).store/,
+      );
+    const root = fs.mkdtempSync(path.join(tmpdir(), "waveh-fetch-"));
+    const wrong = path.join(root, "WAVE-H", "store");
+    const out = spawnSync(
+      process.execPath,
+      [
+        createRequire(import.meta.url).resolve(
+          "../../../tools/waveh-fetch.cjs",
+        ),
+        "--fresh",
+        "--plan",
+        "--store",
+        wrong,
+        "--heartbeat",
+        path.join(root, "heartbeat.json"),
+      ],
+      { encoding: "utf8", timeout: 30_000 },
+    );
+    expect(out.status).toBe(2);
+    expect(out.stderr).toContain(
+      `waveh-fetch: --store ${wrong}: a store of FRESH's range is`,
+    );
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it("runs one download at a time across the two stores: a run refuses (exit 3) while the other range's store holds a live, fresh lock, and never takes it", async () => {
+    for (const [folder, otherFolder, more] of [
+      ["FRESH", "WAVE-H", { fresh: true, sizingOnly: false }],
+      ["WAVE-H", "FRESH", { sizingOnly: false }],
+      ["WAVE-H", "FRESH", { sizingOnly: true }],
+    ] as const) {
+      const w = setup(T0, folder);
+      const other = path.join(
+        w.root,
+        otherFolder,
+        "store",
+        "fetch",
+        "waveh-fetch.pid",
+      );
+      fs.mkdirSync(path.dirname(other), { recursive: true });
+      fs.writeFileSync(other, `${process.ppid}\n`);
+      fs.utimesSync(other, T0 / SECOND, T0 / SECOND);
+      expect(await w.run({ ...more, plan: true })).toBe(3);
+      expect(w.server.calls).toEqual([]);
+      expect(eventsOf(w.store, "refused")).toMatchObject([
+        {
+          why: `the other range's download runs (pid ${process.ppid}, ${other}): one download at a time on the line`,
+        },
+      ]);
+      expect(fs.existsSync(fetchFile(w.store, "waveh-fetch.pid"))).toBe(false);
+      expect(fs.readFileSync(other, "utf8")).toBe(`${process.ppid}\n`);
+      const stale = (T0 - 3 * MINUTE) / SECOND;
+      fs.utimesSync(other, stale, stale);
+      expect(await w.run({ ...more, plan: true })).toBe(0);
+      expect(fs.readFileSync(other, "utf8")).toBe(`${process.ppid}\n`);
+    }
+  }, 60_000);
 });
 
 describe("the book files (--books)", () => {
@@ -2517,7 +2602,7 @@ describe("the FRESH range (--fresh)", () => {
   });
 
   it("downloads only FRESH's months and keys: 14 listings, its keys in time order, 342 reads; in the store only the manifest and the pid file read", async () => {
-    const w = setup();
+    const w = setup(T0, "FRESH");
     freshWorld(w.server);
     expect(await w.run({ ...FRESH_RUN, plan: true })).toBe(0);
     const plan = w.out.join("").split("\n");
@@ -2603,7 +2688,7 @@ describe("the FRESH range (--fresh)", () => {
   }, 60_000);
 
   it("takes --books of its own hours only, and fetches them into books.jsonl", async () => {
-    const w = setup();
+    const w = setup(T0, "FRESH");
     const file = (keys: string[]) => {
       const f = path.join(w.root, "books-needed.txt");
       fs.writeFileSync(f, `${keys.join("\n")}\n`);

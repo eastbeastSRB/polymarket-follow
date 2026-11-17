@@ -37,7 +37,10 @@
  * `books.jsonl` keeps earlier runs' books.
  *
  * tools/waveh-fetch-start.ps1 starts it detached at idle priority; the stop
- * file stops it. In the store: the bucket's keys mirrored below ROOT,
+ * file stops it. A range's store sits in its own folder, <root>/WAVE-H/store
+ * or <root>/FRESH/store, and one download runs at a time on the line: a run
+ * refuses to start while the other range's store holds a live lock. In the
+ * store: the bucket's keys mirrored below ROOT,
  * info/fundingHistory/<coin>/<window start ms>.json, manifest.jsonl, and the
  * tool's own fetch/ (the pid file, which is its lock; the stop file;
  * rate.txt, the rate each pause halves and each 30 clean minutes double back
@@ -46,7 +49,8 @@
  * bad or changed; log/<UTC date>.jsonl). Exit codes: 0 done, or
  * stopped by the stop file; 1 a crash or an abort (a request outside the
  * guard, a redirect, an unexpected reply); 2 bad settings; 3 another
- * instance runs; 4 stopped for the day (the error ladder, three pauses in an
+ * instance runs, on this store or the other range's; 4 stopped for the day
+ * (the error ladder, three pauses in an
  * hour) or at the floor or the cap: the supervisor restarts it.
  */
 const { createHash } = require("node:crypto");
@@ -817,8 +821,8 @@ function alive(pid) {
   }
 }
 
-/** One instance (D3): null when taken, else the holder's pid. A holder is a live process whose pid file was touched in the last 3 minutes. */
-function takeLock(file, now) {
+/** A pid file's holder, or null: a live process (not this one) whose pid file was touched in the last 3 minutes. */
+function holder(file, now) {
   try {
     const pid = Number(fs.readFileSync(file, "utf8").trim());
     if (
@@ -833,6 +837,13 @@ function takeLock(file, now) {
   } catch (err) {
     if (err.code !== "ENOENT") throw err;
   }
+  return null;
+}
+
+/** One instance (D3): null when taken, else the holder's pid. */
+function takeLock(file, now) {
+  const pid = holder(file, now);
+  if (pid !== null) return pid;
   fs.rmSync(file, { force: true });
   try {
     fs.writeFileSync(file, `${process.pid}\n`, { flag: "wx" });
@@ -1439,15 +1450,35 @@ function planText(items, manifest, cap, disk, range) {
 const rangeOf = (opts) =>
   opts.fresh ? FRESH : opts.sizingOnly ? SIZING : WAVEH;
 
-/** The run: the lock, the plan from the listings, then every planned item not in the manifest. */
+/** The other range's store, beside this one: `<root>\FRESH\store` and `<root>\WAVE-H\store`. */
+const otherStore = (store, range) =>
+  path.join(
+    path.dirname(path.dirname(store)),
+    range === FRESH ? WAVEH.folder : FRESH.folder,
+    "store",
+  );
+
+/**
+ * The run: one download at a time on the line (the other range's store's
+ * lock read, never taken), the lock, the plan from the listings, then every
+ * planned item not in the manifest.
+ */
 async function run(opts, deps) {
   const range = rangeOf(opts);
   const files = storeFiles(opts.store);
   fs.mkdirSync(files.logDir, { recursive: true });
   const log = makeLog(files.logDir, deps.clock);
-  const holder = takeLock(files.pid, deps.clock.now());
-  if (holder !== null) {
-    log("refused", { why: `another instance runs (pid ${holder})` });
+  const other = storeFiles(otherStore(opts.store, range)).pid;
+  const running = holder(other, deps.clock.now());
+  if (running !== null) {
+    log("refused", {
+      why: `the other range's download runs (pid ${running}, ${other}): one download at a time on the line`,
+    });
+    return 3;
+  }
+  const taken = takeLock(files.pid, deps.clock.now());
+  if (taken !== null) {
+    log("refused", { why: `another instance runs (pid ${taken})` });
     return 3;
   }
   let fetcher = null;
@@ -1597,6 +1628,15 @@ function parseArgs(argv) {
     throw new Settings("--store and --heartbeat are needed");
   if (opts.fresh && opts.sizingOnly)
     throw new Settings("--fresh and --sizing-only name two ranges");
+  // Checked before anything is written: a FRESH run never writes WAVE-H's store, nor the reverse.
+  const { folder } = rangeOf(opts);
+  if (
+    path.basename(opts.store).toLowerCase() !== "store" ||
+    path.basename(path.dirname(opts.store)).toUpperCase() !== folder
+  )
+    throw new Settings(
+      `--store ${opts.store}: a store of ${folder}'s range is <folder>${path.sep}${folder}${path.sep}store`,
+    );
   return opts;
 }
 
