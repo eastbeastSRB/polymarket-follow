@@ -236,16 +236,35 @@ export function readPart(file: string): PartRows {
     Object.fromEntries(
       cols.map(([name, type]) => [name, valuesOf(type, at(blobs[name]!))]),
     );
-  const u = at(head.header.users.blob);
-  const users: string[] = [];
-  for (let i = 0; i < head.header.users.count; i++)
-    users.push(`0x${u.toString("hex", 20 * i, 20 * i + 20)}`);
   return {
     header: head.header,
-    users,
+    users: addresses(at(head.header.users.blob), head.header.users.count),
     taker: new Map(
       head.header.taker.map((t) => [t.coin, columns(TAPE, t.blobs)]),
     ),
     liq: columns(LIQ, head.header.liq.blobs),
   };
+}
+
+const addresses = (u: Buffer, count: number): string[] =>
+  Array.from(
+    { length: count },
+    (_, i) => `0x${u.toString("hex", 20 * i, 20 * i + 20)}`,
+  );
+
+/** A part's addresses alone, read from where its header says (the merge's dictionary reads no rows). */
+export function readUsers(
+  file: string,
+  head: { header: PartHeader; start: number },
+): string[] {
+  const [o, n] = head.header.users.blob;
+  const u = Buffer.alloc(n);
+  const fd = openSync(file, "r");
+  try {
+    if (readSync(fd, u, 0, n, head.start + o) !== n)
+      throw new StoreError(`${file}: its addresses are cut short`);
+  } finally {
+    closeSync(fd);
+  }
+  return addresses(u, head.header.users.count);
 }
