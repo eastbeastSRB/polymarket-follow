@@ -1553,7 +1553,95 @@ describe("the watch", () => {
     expect(w.server.calls).toEqual([]);
   }, 60_000);
 
-  it("keeps a halved rate for the next start until the supervisor raises it", async () => {
+  it("steps the rate back after 30 clean minutes: doubled to the run's full rate, kept in rate.txt and logged", async () => {
+    const w = setup();
+    const key = "node_fills/hourly/20250607/0.lz4";
+    w.server.put(key, bytes(5_000_000, 1));
+    w.collector.health = { ...HEALTHY, audit: { rows: 90, agree: 70 } };
+    w.clock.after(5 * MINUTE, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    expect(await w.run({ rate: 4_000 })).toBe(0);
+    expect(eventsOf(w.store, "pause").map((l) => [l.at, l.rate])).toEqual([
+      [iso(T0 + 10 * SECOND), 2_000],
+    ]);
+    const stepAt = T0 + 610 * SECOND + 30 * MINUTE;
+    expect(eventsOf(w.store, "rate")).toMatchObject([
+      {
+        at: iso(stepAt),
+        from: 2_000,
+        to: 4_000,
+        cleanSince: iso(T0 + 610 * SECOND),
+      },
+    ]);
+    expect(fs.readFileSync(fetchFile(w.store, "rate.txt"), "utf8")).toBe(
+      "4000\n",
+    );
+    const file = w.server.delivered.filter((d) => d.url === urlOf(key));
+    const before = file.filter((d) => d.at < stepAt);
+    const after = file.filter((d) => d.at >= stepAt);
+    expect(overRate(before, 2_000)).toBeLessThanOrEqual(2_000 + 64 * 1024);
+    expect(overRate(after, 4_000)).toBeLessThanOrEqual(4_000 + 64 * 1024);
+    const span = ((after.at(-1)?.at ?? 0) - stepAt) / SECOND;
+    expect(after.reduce((s, d) => s + d.bytes, 0) / span).toBeGreaterThan(
+      3_000,
+    );
+    expect(fileKeysOf(w.store)).toEqual([key]);
+  }, 60_000);
+
+  it("starts the streak again on a failed read or a reading without an audit, and steps once for each halving", async () => {
+    const w = setup();
+    const key = "node_fills/hourly/20250607/0.lz4";
+    w.server.put(key, bytes(8_000_000, 1));
+    w.collector.health = { ...HEALTHY, audit: { rows: 90, agree: 70 } };
+    w.clock.after(15 * MINUTE, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    // One heartbeat unreadable (1810 s), one without a price audit (2530 s): each a minute's read.
+    w.clock.after(1805 * SECOND, () => {
+      w.collector.health = { ...HEALTHY, garbage: true };
+    });
+    w.clock.after(1815 * SECOND, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    w.clock.after(2525 * SECOND, () => {
+      w.collector.health = { ...HEALTHY, audit: null };
+    });
+    w.clock.after(2535 * SECOND, () => {
+      w.collector.health = { ...HEALTHY };
+    });
+    expect(await w.run({ rate: 4_000 })).toBe(0);
+    expect(eventsOf(w.store, "pause").map((l) => [l.at, l.rate])).toEqual([
+      [iso(T0 + 10 * SECOND), 2_000],
+      [iso(T0 + 610 * SECOND), 1_000],
+    ]);
+    expect(eventsOf(w.store, "no reading").map((l) => l.at)).toEqual([
+      iso(T0 + 1811 * SECOND),
+    ]);
+    expect(eventsOf(w.store, "reading").find((l) => l.audit === null)?.at).toBe(
+      iso(T0 + 2530 * SECOND),
+    );
+    expect(eventsOf(w.store, "rate")).toMatchObject([
+      {
+        at: iso(T0 + 4390 * SECOND),
+        from: 1_000,
+        to: 2_000,
+        cleanSince: iso(T0 + 2590 * SECOND),
+      },
+      {
+        at: iso(T0 + 6190 * SECOND),
+        from: 2_000,
+        to: 4_000,
+        cleanSince: iso(T0 + 4390 * SECOND),
+      },
+    ]);
+    expect(fs.readFileSync(fetchFile(w.store, "rate.txt"), "utf8")).toBe(
+      "4000\n",
+    );
+    expect(fileKeysOf(w.store)).toEqual([key]);
+  }, 60_000);
+
+  it("keeps a halved rate for the next start in rate.txt, and refuses one above 2 MB/s", async () => {
     const w = setup();
     for (let h = 0; h < 2; h++) {
       w.server.put(`node_fills/hourly/20250607/${h}.lz4`, bytes(1_500_000, h));
@@ -1563,10 +1651,32 @@ describe("the watch", () => {
     expect(await w.run()).toBe(0);
     const files = w.server.delivered.filter((d) => d.url.endsWith(".lz4"));
     expect(overRate(files, 250_000)).toBeLessThanOrEqual(250_000 + 64 * 1024);
+    expect(eventsOf(w.store, "rate")).toEqual([]);
     fs.writeFileSync(fetchFile(w.store, "rate.txt"), "2000001\n");
     expect(await w.run()).toBe(2);
     expect(eventsOf(w.store, "refused").at(-1)?.why).toMatch(
       /not a rate of 1 to 2000000 bytes a second/,
+    );
+  }, 60_000);
+
+  it("steps a halved rate.txt back at a start too, after 30 clean minutes", async () => {
+    const w = setup();
+    const key = "node_fills/hourly/20250607/0.lz4";
+    w.server.put(key, bytes(4_000_000, 1));
+    fs.mkdirSync(path.join(w.store, "fetch"), { recursive: true });
+    fs.writeFileSync(fetchFile(w.store, "rate.txt"), "2000\n");
+    expect(await w.run({ rate: 4_000 })).toBe(0);
+    expect(eventsOf(w.store, "pause")).toEqual([]);
+    expect(eventsOf(w.store, "rate")).toMatchObject([
+      {
+        at: iso(T0 + 10 * SECOND + 30 * MINUTE),
+        from: 2_000,
+        to: 4_000,
+        cleanSince: iso(T0 + 10 * SECOND),
+      },
+    ]);
+    expect(fs.readFileSync(fetchFile(w.store, "rate.txt"), "utf8")).toBe(
+      "4000\n",
     );
   }, 60_000);
 });

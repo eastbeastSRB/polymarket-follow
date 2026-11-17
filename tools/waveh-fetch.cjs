@@ -35,8 +35,9 @@
  * file stops it. In the store: the bucket's keys mirrored below ROOT,
  * info/fundingHistory/<coin>/<window start ms>.json, manifest.jsonl, and the
  * tool's own fetch/ (the pid file, which is its lock; the stop file;
- * rate.txt, the rate each pause halves, which the supervisor raises by
- * editing or deleting it before a start; problems.jsonl, the keys missing,
+ * rate.txt, the rate each pause halves and each 30 clean minutes double back
+ * up to the run's full rate, which the supervisor may also raise by editing or
+ * deleting it before a start; problems.jsonl, the keys missing,
  * bad or changed; log/<UTC date>.jsonl). Exit codes: 0 done, or
  * stopped by the stop file; 1 a crash or an abort (a request outside the
  * guard, a redirect, an unexpected reply); 2 bad settings; 3 another
@@ -116,6 +117,7 @@ const WATCH = {
   noReadings: 3,
   pauseMs: 10 * MINUTE,
   pausesToStop: 3,
+  cleanMs: 30 * MINUTE,
 };
 /** The tool touches its pid file every minute; one untouched for 3 minutes holds no lock. */
 const LOCK_FRESH_MS = 3 * MINUTE;
@@ -573,6 +575,16 @@ class Watch {
     if (fresh) conditions.push(...this.reading.conditions);
     return { conditions, clear: conditions.length === 0 && fresh };
   }
+
+  /** Whether the latest reading judged both the clock and the price audit, and no content read failed since: a clear verdict is then clean (the step back). */
+  judgedAll() {
+    return (
+      this.noReadings === 0 &&
+      this.reading !== null &&
+      this.reading.fields.clockMs !== null &&
+      this.reading.fields.audit !== null
+    );
+  }
 }
 
 /** The bytes kept in memory (a listing page). */
@@ -808,8 +820,8 @@ function removeParts(store, log) {
  * The one door to the network: one request at a time through the gate (the
  * stop file, the pause windows, the watch, the spacing), the token bucket
  * and the error ladder. A tick every second checks the stop file, touches the
- * pid file, runs the watch, pauses on harm, and ends a transfer the gate
- * closes on.
+ * pid file, runs the watch, pauses on harm or steps the rate back, and ends a
+ * transfer the gate closes on.
  */
 class Fetcher {
   constructor({
@@ -821,6 +833,7 @@ class Fetcher {
     store,
     sizingOnly,
     rate,
+    fullRate,
     watch,
     books = null,
   }) {
@@ -834,11 +847,13 @@ class Fetcher {
     this.books = books;
     this.watch = watch;
     this.bucket = new Bucket(rate, clock.now());
+    this.fullRate = fullRate;
     this.errors = 0;
     this.lastStart = -Infinity;
     this.lastFunding = -Infinity;
     this.pausedUntil = 0;
     this.pauses = [];
+    this.cleanSince = null;
     this.stopping = null;
     this.current = null;
     this.touchedAt = clock.now();
@@ -876,8 +891,9 @@ class Fetcher {
       if (this.current !== null && windowEnd(now) !== null)
         this.current.abort("window");
       if (now >= this.pausedUntil) {
-        const { conditions } = this.watch.verdict(now, this.pausedUntil);
+        const { conditions, clear } = this.watch.verdict(now, this.pausedUntil);
         if (conditions.length > 0) this.pause(now, conditions.join("; "));
+        else this.stepBack(now, clear && this.watch.judgedAll());
       }
     } catch (err) {
       // Failing closed (D1): a fault in the watch pauses the download, and a fault in the pause stops it.
@@ -891,8 +907,36 @@ class Fetcher {
     }
   }
 
-  /** A pause of 10 minutes; the rate halved and kept in rate.txt until the supervisor raises it; the third in an hour stops the day. */
+  /**
+   * The step back (decisions 2026-11-17, FRESH-FETCH): after 30 minutes of
+   * clean seconds, the rate doubles, up to the run's full rate, and is kept in
+   * rate.txt. A second that is not clean, or a pause, starts the streak again.
+   */
+  stepBack(now, clean) {
+    if (!clean) {
+      this.cleanSince = null;
+      return;
+    }
+    this.cleanSince ??= now;
+    if (
+      now - this.cleanSince < WATCH.cleanMs ||
+      this.bucket.rate >= this.fullRate
+    )
+      return;
+    const rate = Math.min(this.fullRate, this.bucket.rate * 2);
+    fs.writeFileSync(this.files.rate, `${rate}\n`);
+    this.log("rate", {
+      from: this.bucket.rate,
+      to: rate,
+      cleanSince: iso(this.cleanSince),
+    });
+    this.bucket.setRate(rate);
+    this.cleanSince = now;
+  }
+
+  /** A pause of 10 minutes; the rate halved and kept in rate.txt until the step back or the supervisor raises it; the third in an hour stops the day. */
   pause(now, why) {
+    this.cleanSince = null;
     this.pauses = this.pauses.filter((t) => now - t < HOUR).concat(now);
     if (this.pauses.length >= WATCH.pausesToStop) {
       this.halt(
@@ -1375,6 +1419,7 @@ async function run(opts, deps) {
       store: opts.store,
       sizingOnly: opts.sizingOnly,
       rate: Math.min(readRate(files.rate), opts.rate ?? MAX_RATE),
+      fullRate: opts.rate ?? MAX_RATE,
       watch: new Watch(opts.heartbeat, log),
       books,
     });
