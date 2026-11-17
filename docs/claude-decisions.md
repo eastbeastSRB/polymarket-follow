@@ -1,5 +1,79 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (WAVE-H — THE ONE LOOK'S RESULT): **WAVE-H IS NOT SETTLED. On
+1,289 priced positions it nets +82.6 bps a position, with a two-way SE of
+40.9: the band at z 2.58 runs from −23.0 to +188.1.**
+
+**The run:**
+- step 2 started 2026-11-17 01:09:21Z, node pid 26652, a 20 GB heap;
+- its reading pass ended 13:17:34Z: 8,845 files and 2,421,070 counted
+  fills, equal to step 1;
+- the positions' SHA-256 `a5506b86…85e5` equals step 1's;
+- `look/result.json` was written 16:10:37Z, followed by
+  `positions.jsonl.gz` and `report.json`, so the look is complete (H15);
+- `dataSha256` `b66a9bb0…676c`, M = 147, z = 2.58.
+
+**The verdict (H12):**
+- positions 1,299; priced 1,289; unpriced 10 (no book and no trade at the
+  exit); depth short 39;
+- not at the book 3.8%, so not WITHHELD;
+- 212 days and 35 coins, so not TOO FEW;
+- m − z·SE = −23.0, not above 0, so not HOLDS;
+- m + z·SE = +188.1, not below +50, so not DOES NOT HOLD;
+- **NOT SETTLED.** The sentence: "No mean result as large as 188.1 bps a
+  position was seen."
+
+**Printed beside, deciding nothing (H13, H14):**
+
+| Line | bps a position | SE / note |
+|---|---|---|
+| Excess over each coin's 4-hour BASE | +103.7 | 41.0 (z 2.58 low −2.2) |
+| Gross on marks | +95.9 | |
+| Gross at the book | +92.3 | |
+| Fees | 9.04 | |
+| Funding | −0.73 | |
+| Win share | 53% | |
+| Median | +23.8 | |
+| Quartiles | −284.9 / +391.4 | |
+| Without the two days that add most | +51.6 | |
+| One day left out | +67.0 to +89.3 | |
+| One coin left out | +61.8 to +108.3 | |
+| Entry cost at the book | 0.85 median, 4.8 p90 | |
+
+- **EVERY SLICE** (all 147 address slices, 176,986 positions, 298 days):
+  +66.1 ± 31.3 on marks and +72.0 ± 31.3 excess; 146 of 147 slices'
+  means are above 0, the median slice +64.5.
+- **The control:** ALONE B2 (episodes without a wave, 167,603) −6.3 ± 17.9;
+  B1 (every episode, 303,340) +31.2 ± 21.4.
+- **LATE:** +33.0 at 1 h and +32.7 at 3 h, both ± ~41.
+- **SIDES:** forced sells (1,050) +121.9 ± 51.7; forced buys (249)
+  −19.0 ± 64.8.
+- **M halved** (2,257) +10.8 ± 35.2; **M doubled** (603) +205.9 ± 104.6.
+- **By month** (on marks): 7 of 10 above 0. February 2026 is +312.7; the
+  weakest are January 2026 at −67.7 and September 2025 at −34.5.
+- **SIZING** (2025-05-25 → 07-31, 283 priced): −96.9 ± 65.5.
+- **The tail:** the worst day 2025-09-08 (−6,141 over 4); the worst
+  position −4,906.1; the worst 5% average −1,796.1; the largest fall from a
+  peak 19,813; at most 56 open at once.
+
+**What it decides:**
+- Nothing for MARKET-1, which keeps its own frozen test.
+- WAVE-H's question is answered "not settled": not proven, and effects
+  above about +188 bps a position are ruled out on Hyperliquid.
+- After the look, no rule of WAVE-H changes (H15).
+
+**Next (H15 "Then"):**
+- the look's report `docs/reviews/wave-h-look-2026-11-17.md`;
+- a Final review that recomputes WAVE-H with independent code, position
+  by position (a fresh worker), before anything is built on the numbers.
+
+Leads for later, as the owner's idea 2 (decisions 2026-11-17, plan
+backlog), each to be fixed in advance and confirmed only on data no rule
+has seen, such as Hyperliquid's months after 2026-05-28:
+- forced sells only;
+- the entry's speed;
+- larger waves (M doubled).
+
 2026-11-16 (the supervisor — WAVE-H's look, step 1 out of memory; the run's
 heap raised): **STEP 1 STOPPED AT THE 8 GB HEAP BEFORE WRITING ANYTHING;
 IT RUNS AGAIN WITH A 16 GB HEAP. NO RULE, NUMBER OR FROZEN FILE CHANGES.**
