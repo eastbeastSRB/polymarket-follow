@@ -380,6 +380,20 @@ review, the supervisor re-computing on its own path what decides.
      still unseen, provided its rules are frozen before any copy is priced.
      It needs the paper kit's events, cycles and labels mapped onto
      Hyperliquid's fills. It builds on the engine's extraction (3).
+     **The owner, 2026-11-17:** it gives ten months of results now, instead
+     of waiting for the paper experiment's looks. It can also find the
+     accounts worth following, honestly: they are chosen by rules on
+     earlier months and measured only on later ones (LESSONS 5).
+  5. **The app the owner pictures** (2026-11-17), for the v1 plan:
+     - pages in a sidebar: **Wave Trade** (an ocean icon), **Copy Trade**,
+       and **the Analyzer**;
+     - charts, statuses and colours for a state;
+     - perhaps the signals shown on an MT5 chart, read only. Iron Rule 1
+       holds: no order is ever placed and no trading key is held.
+
+     **The name:** the project has grown beyond following Polymarket's
+     leaderboards, so a new name, with Polymarket as one section, is the
+     owner's call at the v1 plan.
 - ⏳ **The owner's own execution venue and costs** — where the owner acts on what the tool shows and what a round trip costs there (the owner will explain and show; decisions 2026-11-10, round 2's rules and the collector approved). Until then every table uses Polymarket Perps' measured taker costs. Trigger: the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
