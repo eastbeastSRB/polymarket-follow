@@ -9,8 +9,7 @@
  * file starts in WAVE-H's windows; a line every 25 files says how far, and
  * memory is sampled on every file, its peaks kept.
  */
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { Worker } from "node:worker_threads";
 import { PACKAGE_ROOT } from "../waveh/gate.js";
@@ -21,7 +20,8 @@ import { writeWhole } from "../waveh/run.js";
 import { StoreError } from "../waveh/store.js";
 import { partFile, partOf, readPartHeader } from "./part.js";
 import { scanFill } from "./scan.js";
-import { SealedError, checkKey, checkPath } from "./seal.js";
+import { readHeld } from "./held.js";
+import { SealedError } from "./seal.js";
 import { LiqWriter, Names, TakerWriter } from "./writers.js";
 
 /** The worker's compiled file: tests through the sources start the build's worker too. */
@@ -80,22 +80,7 @@ export type Done = {
 
 /** One input file into its part: sealed and listed first, then read, held to its hash, scanned and written whole. */
 export function extractFile(task: Task): Done {
-  const file = path.join(task.store, ...task.key.split("/"));
-  checkPath(file);
-  checkKey(task.key);
-  let bytes: Buffer;
-  try {
-    bytes = readFileSync(file);
-  } catch (err) {
-    throw new StoreError(
-      `${task.key}: ${(err as NodeJS.ErrnoException).code ?? String(err)}`,
-    );
-  }
-  const got = createHash("sha256").update(bytes).digest("hex");
-  if (got !== task.sha256)
-    throw new StoreError(
-      `${task.key}: SHA-256 ${got}, the list's ${task.sha256}`,
-    );
+  const bytes = readHeld(task.store, task.key, task.sha256);
   const forty = new Set(task.forty);
   const users = new Names();
   const taker = new TakerWriter(forty, new Set(task.small));
