@@ -1,7 +1,7 @@
 # WAVE-POLISH-PLAN-REVIEW — the fresh review of the polishing plan, before anything is built on it
 
 WAVE-POLISH-PLAN-REVIEW (Sonnet 5.5, max; the plan's planner was Opus), 2026-11-17
-20:59Z – 21:47Z (UTC; every stamp from `date -u`; the last is in `progress.md`), for
+20:59Z – 21:46Z (UTC; every stamp from `date -u`; the last is in `progress.md`), for
 polymarket-follow's supervisor. The plan under review is
 `docs/reviews/wave-polish-plan-2026-11-17.md` (`cdaf9f5`); the model of this review is
 `docs/reviews/wave-h-plan-review-2026-11-14.md`. Evidence: the supervisor folder
