@@ -10,21 +10,26 @@
  * unopened.
  *
  *   node tools/waveh-fetch.cjs --store <dir> --heartbeat <file>
- *     [--sizing-only] [--plan] [--rate <bytes a second, at most 2000000>]
- *     [--books <file>]
+ *     [--sizing-only | --fresh] [--plan]
+ *     [--rate <bytes a second, at most 2000000>] [--books <file>]
  *
- * The dates: nothing before 2025-05-25T00:00Z; DATA END is
- * 2026-05-29T01:00:00.000Z, and the hourly file of its own hour (2026-05-29
- * 01h) is the last one admitted, because a file holds its writer's hour
- * (plan H1); a daily file and a funding window end before DATA END.
- * --sizing-only keeps to files dated 2025-05-25 to 2025-07-31 and the
- * windows before 2025-08-01 (the first session); --plan lists and prints
- * what would come down; --rate may only lower the rate.
+ * A run downloads one range. WAVE-H's dates: nothing before
+ * 2025-05-25T00:00Z; DATA END is 2026-05-29T01:00:00.000Z, and the hourly
+ * file of its own hour (2026-05-29 01h) is the last one admitted, because a
+ * file holds its writer's hour (plan H1); a daily file and a funding window
+ * end before DATA END. --sizing-only keeps to files dated 2025-05-25 to
+ * 2025-07-31 and the windows before 2025-08-01 (the first session). --fresh
+ * takes the months after WAVE-H's data (decisions 2026-11-17, FRESH-FETCH),
+ * stored unopened as the test months were: hourly fill files from 2026-05-29
+ * 02h, the day files from 2026-05-29, the funding windows from DATA END, all
+ * before FRESH_END. --plan lists and prints what would come down; --rate may
+ * only lower the rate.
  *
  * --books <file> fetches only the book files a file names, a key a line
  * (`market_data/<YYYYMMDD>/<h>/l2Book/<COIN>.lz4`, one of the 38 coins, of
- * the plan's dates, before the seal with --sizing-only: the rehearsal's legs;
- * the look's after the freeze), under the same gate: each hour folder listed,
+ * the range's hours: the rehearsal's legs before the seal with
+ * --sizing-only; the look's after the freeze; FRESH's exam's with --fresh),
+ * under the same gate: each hour folder listed,
  * each key the listing holds fetched and checked as any file, into the
  * store's `books.jsonl` (a manifest line each), and each key its folder's
  * listing lacks written there as missing. Nothing else is requested. Its cap,
@@ -61,8 +66,13 @@ const DAY = 24 * HOUR;
 const FIRST = Date.UTC(2025, 4, 25);
 /** TEST's first day: from it on, the store is sealed (decisions 2026-11-13, the owner's advance approval). */
 const SEAL = Date.UTC(2025, 7, 1);
-const TEST_END = Date.UTC(2026, 4, 28);
 const DATA_END = Date.UTC(2026, 4, 29, 1);
+/**
+ * FRESH's end, the day after its last day, 2026-11-15: the archive's newest
+ * settled day when listed on 2026-11-17 17:10Z (a day's hours 22-23 are
+ * written again on the second day after it; decisions 2026-11-17, FRESH-FETCH).
+ */
+const FRESH_END = Date.UTC(2026, 10, 16);
 
 /** MARKET-1's 38 small coins by Hyperliquid's names (plan H3). */
 const COINS =
@@ -91,6 +101,54 @@ const PARTS = [
     hourly: false,
   },
 ];
+
+/**
+ * The ranges a run downloads: their parts (each listed month by month), the
+ * hours an hourly file and the days a daily file may be dated in, `[from,
+ * to)`, their funding windows, and the folder their store sits in.
+ */
+const WAVEH = {
+  title: "WAVE-H's download: the full plan",
+  folder: "WAVE-H",
+  parts: PARTS,
+  hours: [FIRST, DATA_END + HOUR],
+  days: [FIRST, DATA_END],
+  windows: [...grid(FIRST, SEAL), ...grid(SEAL, DATA_END)],
+};
+const SIZING = {
+  title: "WAVE-H's download: the sizing months only",
+  folder: "WAVE-H",
+  parts: PARTS.map((p) => ({
+    ...p,
+    months: p.months.filter(
+      (m) => Date.UTC(Number(m.slice(0, 4)), Number(m.slice(4)) - 1) < SEAL,
+    ),
+  })),
+  hours: [FIRST, SEAL],
+  days: [FIRST, SEAL],
+  windows: grid(FIRST, SEAL),
+};
+const FRESH = {
+  title: "FRESH's download: the months after WAVE-H's data",
+  folder: "FRESH",
+  parts: [
+    {
+      name: "node_fills_by_block",
+      dir: "node_fills_by_block/hourly/",
+      months: months("202605", "202611"),
+      hourly: true,
+    },
+    {
+      name: "asset_ctxs",
+      dir: "asset_ctxs/",
+      months: months("202605", "202611"),
+      hourly: false,
+    },
+  ],
+  hours: [DATA_END + HOUR, FRESH_END],
+  days: [Date.UTC(2026, 4, 29), FRESH_END],
+  windows: grid(DATA_END, FRESH_END),
+};
 
 const MAX_RATE = 2_000_000;
 const FLOOR = 200 * 2 ** 30;
@@ -145,10 +203,6 @@ function months(from, to) {
   return out;
 }
 
-const monthOk = (month, sizingOnly) =>
-  !sizingOnly ||
-  Date.UTC(Number(month.slice(0, 4)), Number(month.slice(4)) - 1) < SEAL;
-
 /** The instant a name below its part's folder dates (its hour, or its day), or null when it is not the part's shape. */
 function keyTime(part, name) {
   const m = part.hourly
@@ -166,28 +220,27 @@ function keyTime(part, name) {
     : null;
 }
 
-/** The date guard: whether a file may come down (the header gives the rule). */
-function admitted(part, name, sizingOnly) {
+/** The date guard: whether a file may come down in a range (the header gives the rule). */
+function admitted(part, name, range) {
   const t = keyTime(part, name);
-  if (t === null || t < FIRST) return false;
-  if (sizingOnly) return t < SEAL;
-  return part.hourly ? t <= DATA_END : t < DATA_END;
+  if (t === null) return false;
+  const [from, to] = part.hourly ? range.hours : range.days;
+  return t >= from && t < to;
 }
 
-/** fundingHistory's windows (D5): aligned to the seal, so that none straddles it; the last ends at DATA END. */
-function fundingWindows(sizingOnly) {
-  const edges = [
-    FIRST,
-    Date.UTC(2025, 5, 14),
-    Date.UTC(2025, 6, 4),
-    Date.UTC(2025, 6, 24),
-    SEAL,
-  ];
-  for (let t = SEAL + 20 * DAY; t <= TEST_END; t += 20 * DAY) edges.push(t);
-  edges.push(DATA_END);
-  const windows = edges.slice(1).map((end, i) => ({ start: edges[i], end }));
-  return sizingOnly ? windows.filter((w) => w.end <= SEAL) : windows;
+/**
+ * fundingHistory's windows (D5's grid): 20 days each from `from`, the last cut
+ * at `to`. WAVE-H's are aligned to the seal, so that none straddles it.
+ */
+function grid(from, to) {
+  const edges = [];
+  for (let t = from; t < to; t += 20 * DAY) edges.push(t);
+  edges.push(to);
+  return edges.slice(1).map((end, i) => ({ start: edges[i], end }));
 }
+
+/** WAVE-H's windows, the contract test/waveh-store.test.ts pins with src/waveh/keys.ts. */
+const fundingWindows = (sizingOnly) => (sizingOnly ? SIZING : WAVEH).windows;
 
 /** The read of one window, its end made exclusive whether the API's end is inclusive or not. */
 const fundingBody = (coin, w) =>
@@ -209,8 +262,8 @@ function bookTime(key) {
 
 const bookFolder = (key) => key.slice(0, key.lastIndexOf("/") + 1);
 
-/** The book files a --books file names, a key a line: each of the plan's dates, before the seal with --sizing-only. */
-function readBooks(file, sizingOnly) {
+/** The book files a --books file names, a key a line: each of the range's hours. */
+function readBooks(file, range) {
   const keys = fs
     .readFileSync(file, "utf8")
     .split("\n")
@@ -218,9 +271,9 @@ function readBooks(file, sizingOnly) {
     .filter((line) => line !== "");
   for (const key of keys) {
     const t = bookTime(key);
-    if (t === null || t < FIRST || t > DATA_END || (sizingOnly && t >= SEAL))
+    if (t === null || t < range.hours[0] || t >= range.hours[1])
       throw new Settings(
-        `--books: "${key.slice(0, 120)}" is not a book file of the plan's dates`,
+        `--books: "${key.slice(0, 120)}" is not a book file of the range's hours`,
       );
   }
   return new Set(keys);
@@ -236,7 +289,7 @@ function listingUrl(prefix, token) {
   return `${BUCKET}/?${q}`;
 }
 
-function listingOk(q, sizingOnly, books) {
+function listingOk(q, range, books) {
   const names = [...q.keys()].sort().join(",");
   const prefix = q.get("prefix");
   return (
@@ -245,28 +298,26 @@ function listingOk(q, sizingOnly, books) {
     q.get("list-type") === "2" &&
     q.get("max-keys") === "1000" &&
     (books === null
-      ? PARTS.some((p) =>
-          p.months.some(
-            (m) => monthOk(m, sizingOnly) && prefix === `${ROOT}${p.dir}${m}`,
-          ),
+      ? range.parts.some((p) =>
+          p.months.some((m) => prefix === `${ROOT}${p.dir}${m}`),
         )
       : [...books].some((k) => prefix === `${ROOT}${bookFolder(k)}`))
   );
 }
 
 /**
- * The guard on every request: a listing of a planned month, a GET of an
- * admitted key, or a planned fundingHistory read; with --books, only a
- * listing of a needed key's hour folder and a GET of a needed key. Anything
+ * The guard on every request: a listing of one of the range's months, a GET
+ * of a key it admits, or one of its fundingHistory reads; with --books, only
+ * a listing of a needed key's hour folder and a GET of a needed key. Anything
  * else, /exchange among it, ends the run.
  */
-function checkRequest(url, method, body, sizingOnly, books = null) {
+function checkRequest(url, method, body, range, books = null) {
   let ok = false;
   if (method === "POST") {
     ok =
       books === null &&
       url === INFO &&
-      fundingWindows(sizingOnly).some((w) =>
+      range.windows.some((w) =>
         COINS.some((coin) => fundingBody(coin, w) === body),
       );
   } else if (
@@ -279,7 +330,7 @@ function checkRequest(url, method, body, sizingOnly, books = null) {
     ok =
       u.hash === "" &&
       (u.pathname === "/"
-        ? listingOk(u.searchParams, sizingOnly, books)
+        ? listingOk(u.searchParams, range, books)
         : u.search === "" &&
           u.pathname.startsWith(`/${ROOT}`) &&
           books.has(u.pathname.slice(1 + ROOT.length)));
@@ -292,15 +343,15 @@ function checkRequest(url, method, body, sizingOnly, books = null) {
     ok =
       u.hash === "" &&
       (u.pathname === "/"
-        ? listingOk(u.searchParams, sizingOnly, null)
+        ? listingOk(u.searchParams, range, null)
         : u.search === "" &&
-          PARTS.some(
+          range.parts.some(
             (p) =>
               u.pathname.startsWith(`/${ROOT}${p.dir}`) &&
               admitted(
                 p,
                 u.pathname.slice(1 + ROOT.length + p.dir.length),
-                sizingOnly,
+                range,
               ),
           ));
   }
@@ -831,7 +882,7 @@ class Fetcher {
     log,
     files,
     store,
-    sizingOnly,
+    range,
     rate,
     fullRate,
     watch,
@@ -843,7 +894,7 @@ class Fetcher {
     this.log = log;
     this.files = files;
     this.store = store;
-    this.sizingOnly = sizingOnly;
+    this.range = range;
     this.books = books;
     this.watch = watch;
     this.bucket = new Bucket(rate, clock.now());
@@ -1022,7 +1073,7 @@ class Fetcher {
 
   /** One HTTP exchange: "ok" (HTTP 200, its bytes counted and hashed), "missing", "long", "error" or "interrupted"; an abort throws. */
   async attempt(spec) {
-    checkRequest(spec.url, spec.method, spec.body, this.sizingOnly, this.books);
+    checkRequest(spec.url, spec.method, spec.body, this.range, this.books);
     const ac = new AbortController();
     let unwatch = () => {};
     const watchIdle = () => {
@@ -1253,11 +1304,11 @@ class Fetcher {
 }
 
 /** The key plan from the listings (validated, guarded, each key once), then the funding reads. */
-async function makePlan(fetcher, sizingOnly, log) {
+async function makePlan(fetcher, range, log) {
   const items = [];
-  for (const part of PARTS) {
+  for (const part of range.parts) {
     const keys = new Map();
-    for (const month of part.months.filter((m) => monthOk(m, sizingOnly))) {
+    for (const month of part.months) {
       let token = null;
       do {
         const page = await fetcher.listing(part, month, token);
@@ -1267,7 +1318,7 @@ async function makePlan(fetcher, sizingOnly, log) {
           const time = keyTime(part, name);
           if (time === null)
             log("dropped", { key: e.key, why: "not the part's shape" });
-          else if (admitted(part, name, sizingOnly)) {
+          else if (admitted(part, name, range)) {
             keys.set(e.key, {
               kind: "file",
               part: part.name,
@@ -1290,7 +1341,7 @@ async function makePlan(fetcher, sizingOnly, log) {
     }
     items.push(...[...keys.values()].sort((a, b) => a.time - b.time));
   }
-  for (const w of fundingWindows(sizingOnly)) {
+  for (const w of range.windows) {
     for (const coin of COINS) {
       items.push({
         kind: "funding",
@@ -1345,12 +1396,10 @@ async function makeBooksPlan(fetcher, books) {
 }
 
 /** What --plan prints: each part's files and bytes, what is in the store, the days short of 24 hour files, the cap and the floor. */
-function planText(items, manifest, cap, disk, sizingOnly) {
-  const lines = [
-    `WAVE-H's download: ${sizingOnly ? "the sizing months only" : "the full plan"}`,
-  ];
+function planText(items, manifest, cap, disk, range) {
+  const lines = [range.title];
   let left = 0;
-  for (const name of [...PARTS.map((p) => p.name), "funding"]) {
+  for (const name of [...range.parts.map((p) => p.name), "funding"]) {
     const mine = items.filter((i) => i.part === name);
     const todo = mine.filter((i) => !manifest.lines.has(i.key));
     const bytes = todo.reduce((s, i) => s + i.max, 0);
@@ -1359,7 +1408,7 @@ function planText(items, manifest, cap, disk, sizingOnly) {
     let line = `${name}: ${mine.length} ${name === "funding" ? "reads (at most)" : "files"} ${gb(total)}; in the store ${mine.length - todo.length}; to fetch ${todo.length}, ${gb(bytes)}`;
     if (name !== "funding" && mine.length > 0) {
       line += `; ${mine[0].key} to ${mine.at(-1).key}; ${mine.filter((i) => i.etag.includes("-")).length} multipart`;
-      if (PARTS.find((p) => p.name === name).hourly) {
+      if (range.parts.find((p) => p.name === name).hourly) {
         const perDay = new Map();
         for (const i of mine) {
           const day = Math.floor(i.time / DAY) * DAY;
@@ -1386,8 +1435,13 @@ function planText(items, manifest, cap, disk, sizingOnly) {
   return `${lines.join("\n")}\n`;
 }
 
+/** The range a run's options name. */
+const rangeOf = (opts) =>
+  opts.fresh ? FRESH : opts.sizingOnly ? SIZING : WAVEH;
+
 /** The run: the lock, the plan from the listings, then every planned item not in the manifest. */
 async function run(opts, deps) {
+  const range = rangeOf(opts);
   const files = storeFiles(opts.store);
   fs.mkdirSync(files.logDir, { recursive: true });
   const log = makeLog(files.logDir, deps.clock);
@@ -1403,9 +1457,7 @@ async function run(opts, deps) {
       throw new Stop(0, "the stop file was there at the start");
     if (!opts.plan) removeParts(opts.store, log);
     const books =
-      (opts.books ?? null) === null
-        ? null
-        : readBooks(opts.books, opts.sizingOnly);
+      (opts.books ?? null) === null ? null : readBooks(opts.books, range);
     const manifest =
       books === null
         ? new Manifest(files.manifest, log)
@@ -1417,7 +1469,7 @@ async function run(opts, deps) {
       log,
       files,
       store: opts.store,
-      sizingOnly: opts.sizingOnly,
+      range,
       rate: Math.min(readRate(files.rate), opts.rate ?? MAX_RATE),
       fullRate: opts.rate ?? MAX_RATE,
       watch: new Watch(opts.heartbeat, log),
@@ -1426,15 +1478,9 @@ async function run(opts, deps) {
     fetcher.start();
     if (books !== null)
       return await runBooks(fetcher, books, manifest, opts, deps, log);
-    const items = await makePlan(fetcher, opts.sizingOnly, log);
+    const items = await makePlan(fetcher, range, log);
     const cap = Math.ceil(items.reduce((s, i) => s + i.max, 0) * CAP);
-    const text = planText(
-      items,
-      manifest,
-      cap,
-      deps.statfs(opts.store),
-      opts.sizingOnly,
-    );
+    const text = planText(items, manifest, cap, deps.statfs(opts.store), range);
     log("plan", { text });
     if (opts.plan) {
       deps.out(text);
@@ -1481,7 +1527,7 @@ async function runBooks(fetcher, books, manifest, opts, deps, log) {
   const { items, missing } = await makeBooksPlan(fetcher, books);
   const cap = Math.ceil(items.reduce((s, i) => s + i.max, 0) * CAP);
   const todo = items.filter((i) => !manifest.lines.has(i.key));
-  const text = `WAVE-H's book files: ${books.size} needed; listed ${items.length}, ${gb(items.reduce((s, i) => s + i.max, 0))}; in the store ${items.length - todo.length}; to fetch ${todo.length}, ${gb(todo.reduce((s, i) => s + i.max, 0))}; not in their hour folder's listing ${missing.length}\n`;
+  const text = `${fetcher.range.folder}'s book files: ${books.size} needed; listed ${items.length}, ${gb(items.reduce((s, i) => s + i.max, 0))}; in the store ${items.length - todo.length}; to fetch ${todo.length}, ${gb(todo.reduce((s, i) => s + i.max, 0))}; not in their hour folder's listing ${missing.length}\n`;
   log("plan", { text });
   if (opts.plan) {
     deps.out(text);
@@ -1515,6 +1561,7 @@ function parseArgs(argv) {
     store: null,
     heartbeat: null,
     sizingOnly: false,
+    fresh: false,
     plan: false,
     rate: null,
     books: null,
@@ -1522,6 +1569,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--sizing-only") opts.sizingOnly = true;
+    else if (arg === "--fresh") opts.fresh = true;
     else if (arg === "--plan") opts.plan = true;
     else if (
       arg === "--store" ||
@@ -1547,6 +1595,8 @@ function parseArgs(argv) {
   }
   if (opts.store === null || opts.heartbeat === null)
     throw new Settings("--store and --heartbeat are needed");
+  if (opts.fresh && opts.sizingOnly)
+    throw new Settings("--fresh and --sizing-only name two ranges");
   return opts;
 }
 
@@ -1587,12 +1637,16 @@ module.exports = {
   DATA_END,
   FIRST,
   FLOOR,
+  FRESH,
+  FRESH_END,
   FUNDING_MAX,
   INFO,
   MAX_RATE,
   PARTS,
   ROOT,
   SEAL,
+  SIZING,
+  WAVEH,
   Bucket,
   Fetcher,
   Manifest,

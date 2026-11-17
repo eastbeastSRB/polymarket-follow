@@ -16,10 +16,19 @@ import { Heartbeat } from "../src/health/heartbeat.js";
 
 type Part = { name: string; dir: string; months: string[]; hourly: boolean };
 type Window = { start: number; end: number };
+type Range = {
+  title: string;
+  folder: string;
+  parts: Part[];
+  hours: [number, number];
+  days: [number, number];
+  windows: Window[];
+};
 type Opts = {
   store: string;
   heartbeat: string;
   sizingOnly: boolean;
+  fresh?: boolean;
   plan: boolean;
   rate: number | null;
   books?: string | null;
@@ -41,10 +50,14 @@ type Tool = {
   DATA_END: number;
   FIRST: number;
   FLOOR: number;
+  FRESH: Range;
+  FRESH_END: number;
   INFO: string;
   PARTS: Part[];
   ROOT: string;
   SEAL: number;
+  SIZING: Range;
+  WAVEH: Range;
   Bucket: new (
     rate: number,
     now: number,
@@ -52,16 +65,16 @@ type Tool = {
     take: (n: number, now: number) => number;
     setRate: (rate: number) => void;
   };
-  admitted: (part: Part, name: string, sizingOnly: boolean) => boolean;
+  admitted: (part: Part, name: string, range: Range) => boolean;
   checkRequest: (
     url: string,
     method: string,
     body: string | undefined,
-    sizingOnly: boolean,
+    range: Range,
     books?: Set<string> | null,
   ) => void;
   bookTime: (key: string) => number | null;
-  readBooks: (file: string, sizingOnly: boolean) => Set<string>;
+  readBooks: (file: string, range: Range) => Set<string>;
   fundingBody: (coin: string, w: Window) => string;
   fundingWindows: (sizingOnly: boolean) => Window[];
   judge: (beat: unknown) => { conditions: string[] } | null;
@@ -686,8 +699,8 @@ describe("the guards", () => {
       expect([
         part.dir,
         name,
-        tool.admitted(part, name, false),
-        tool.admitted(part, name, true),
+        tool.admitted(part, name, tool.WAVEH),
+        tool.admitted(part, name, tool.SIZING),
       ]).toEqual([part.dir, name, full, sizing]);
     }
   });
@@ -703,7 +716,7 @@ describe("the guards", () => {
         sizing: boolean,
       ) =>
       () =>
-        tool.checkRequest(url, method, body, sizing);
+        tool.checkRequest(url, method, body, sizing ? tool.SIZING : tool.WAVEH);
     for (const [url, method, body, sizing] of [
       [urlOf("node_fills/hourly/20250607/0.lz4"), "GET", undefined, true],
       [
@@ -2089,15 +2102,19 @@ describe("the runner", () => {
     expect(manifestOf(w.store)).toEqual([]);
   }, 60_000);
 
-  it("takes --store and --heartbeat, --sizing-only, --plan and a --rate from 1 to 2000000", () => {
+  it("takes --store and --heartbeat, --sizing-only or --fresh, --plan and a --rate from 1 to 2000000", () => {
     expect(tool.parseArgs(["--store", "s", "--heartbeat", "h"])).toEqual({
       store: path.resolve("s"),
       heartbeat: path.resolve("h"),
       sizingOnly: false,
+      fresh: false,
       plan: false,
       rate: null,
       books: null,
     });
+    expect(
+      tool.parseArgs(["--fresh", "--store", "s", "--heartbeat", "h"]),
+    ).toMatchObject({ sizingOnly: false, fresh: true });
     expect(
       tool.parseArgs(["--store", "s", "--heartbeat", "h", "--books", "b"])
         .books,
@@ -2117,10 +2134,21 @@ describe("the runner", () => {
       store: path.resolve("s"),
       heartbeat: path.resolve("h"),
       sizingOnly: true,
+      fresh: false,
       plan: true,
       rate: 500_000,
       books: null,
     });
+    expect(() =>
+      tool.parseArgs([
+        "--fresh",
+        "--sizing-only",
+        "--store",
+        "s",
+        "--heartbeat",
+        "h",
+      ]),
+    ).toThrow("--fresh and --sizing-only name two ranges");
     for (const argv of [
       [],
       ["--store", "s"],
@@ -2149,13 +2177,12 @@ describe("the book files (--books)", () => {
 
   it("reads only book files of the 38 coins and the plan's dates, before the seal with --sizing-only", () => {
     const root = fs.mkdtempSync(path.join(tmpdir(), "waveh-books-"));
-    expect([...tool.readBooks(listFile(root, [SOL, KPEPE]), true)]).toEqual([
-      SOL,
-      KPEPE,
-    ]);
+    expect([
+      ...tool.readBooks(listFile(root, [SOL, KPEPE]), tool.SIZING),
+    ]).toEqual([SOL, KPEPE]);
     expect(tool.bookTime(SOL)).toBe(Date.parse("2025-07-15T03:00:00Z"));
     const sealed = "market_data/20250801/0/l2Book/SOL.lz4";
-    expect([...tool.readBooks(listFile(root, [sealed]), false)]).toEqual([
+    expect([...tool.readBooks(listFile(root, [sealed]), tool.WAVEH)]).toEqual([
       sealed,
     ]);
     for (const bad of [
@@ -2166,9 +2193,10 @@ describe("the book files (--books)", () => {
       "market_data/20250715/3/l2Book/SOL.lz4.part",
       "node_fills/hourly/20250715/3.lz4",
     ])
-      expect(() => tool.readBooks(listFile(root, [bad]), true), bad).toThrow(
-        "--books",
-      );
+      expect(
+        () => tool.readBooks(listFile(root, [bad]), tool.SIZING),
+        bad,
+      ).toThrow("--books");
     fs.rmSync(root, { recursive: true, force: true });
   });
 
@@ -2177,7 +2205,7 @@ describe("the book files (--books)", () => {
     const ok =
       (url: string, method = "GET", body?: string) =>
       () =>
-        tool.checkRequest(url, method, body, true, books);
+        tool.checkRequest(url, method, body, tool.SIZING, books);
     expect(ok(listingUrlOf("market_data/20250715/3/l2Book/"))).not.toThrow();
     expect(ok(urlOf(SOL))).not.toThrow();
     expect(ok(urlOf(KPEPE))).not.toThrow();
@@ -2196,9 +2224,9 @@ describe("the book files (--books)", () => {
     ])
       expect(refused).toThrow("outside the guard");
     // Without --books, no book file passes the main plan's guard.
-    expect(() => tool.checkRequest(urlOf(SOL), "GET", undefined, true)).toThrow(
-      "outside the guard",
-    );
+    expect(() =>
+      tool.checkRequest(urlOf(SOL), "GET", undefined, tool.SIZING),
+    ).toThrow("outside the guard");
   });
 
   it("fetches each listed needed key once, checked, and writes a key its folder lacks as missing", async () => {
@@ -2311,4 +2339,298 @@ describe("the book files (--books)", () => {
       .map((l) => JSON.parse(l) as { key: string; problem: string });
     expect(problems.map((p) => [p.key, p.problem])).toEqual([[SOL, "bad"]]);
   });
+});
+
+describe("the FRESH range (--fresh)", () => {
+  const DAY = 24 * 60 * MINUTE;
+  const FRESH_KEYS = [
+    "node_fills_by_block/hourly/20260529/2.lz4",
+    "node_fills_by_block/hourly/20260815/7.lz4",
+    "node_fills_by_block/hourly/20261115/23.lz4",
+    "asset_ctxs/20260529.csv.lz4",
+    "asset_ctxs/20261115.csv.lz4",
+  ];
+  /** FRESH's world: its five keys, and six beside them it never asks for. */
+  function freshWorld(server: FakeServer): void {
+    FRESH_KEYS.forEach((key, i) => server.put(key, bytes(20_000, 40 + i)));
+    for (const key of [
+      "node_fills_by_block/hourly/20260529/1.lz4",
+      "node_fills_by_block/hourly/20261116/0.lz4",
+      "node_fills_by_block/hourly/20260430/5.lz4",
+      "asset_ctxs/20260528.csv.lz4",
+      "asset_ctxs/20261116.csv.lz4",
+      "node_fills/hourly/20260601/0.lz4",
+    ])
+      server.put(key, bytes(1_000, 50));
+  }
+  const FRESH_RUN = { fresh: true, sizingOnly: false };
+  const BOOK = "market_data/20260815/7/l2Book/SOL.lz4";
+
+  it("admits from DATA END's next hour (its days from 2026-05-29) to before 2026-11-16, in its two parts only", () => {
+    const F = tool.FRESH;
+    expect(tool.FRESH_END).toBe(Date.parse("2026-11-16T00:00:00.000Z"));
+    expect(
+      F.parts.map((p) => [
+        p.name,
+        p.dir,
+        p.hourly,
+        p.months[0],
+        p.months.at(-1),
+        p.months.length,
+      ]),
+    ).toEqual([
+      [
+        "node_fills_by_block",
+        "node_fills_by_block/hourly/",
+        true,
+        "202605",
+        "202611",
+        7,
+      ],
+      ["asset_ctxs", "asset_ctxs/", false, "202605", "202611", 7],
+    ]);
+    expect([F.title, F.folder]).toEqual([
+      "FRESH's download: the months after WAVE-H's data",
+      "FRESH",
+    ]);
+    expect(F.hours.map(iso)).toEqual([
+      "2026-05-29T02:00:00.000Z",
+      "2026-11-16T00:00:00.000Z",
+    ]);
+    expect(F.days.map(iso)).toEqual([
+      "2026-05-29T00:00:00.000Z",
+      "2026-11-16T00:00:00.000Z",
+    ]);
+    const [byBlock, ctxs] = F.parts as [Part, Part];
+    for (const [part, name, fresh, waveh] of [
+      [byBlock, "20260529/1.lz4", false, true],
+      [byBlock, "20260529/2.lz4", true, false],
+      [byBlock, "20260815/7.lz4", true, false],
+      [byBlock, "20261115/23.lz4", true, false],
+      [byBlock, "20261116/0.lz4", false, false],
+      [ctxs, "20260528.csv.lz4", false, true],
+      [ctxs, "20260529.csv.lz4", true, true],
+      [ctxs, "20261115.csv.lz4", true, false],
+      [ctxs, "20261116.csv.lz4", false, false],
+    ] as const) {
+      expect([
+        name,
+        tool.admitted(part, name, tool.FRESH),
+        tool.admitted(part, name, tool.WAVEH),
+      ]).toEqual([name, fresh, waveh]);
+    }
+  });
+
+  it("lays its funding windows on WAVE-H's grid: 20 days from DATA END, the last cut at 2026-11-16, 342 reads; WAVE-H's own unchanged", () => {
+    const w = tool.FRESH.windows;
+    expect(w.map((x) => iso(x.start).slice(0, 13))).toEqual([
+      "2026-05-29T01",
+      "2026-06-18T01",
+      "2026-07-08T01",
+      "2026-07-28T01",
+      "2026-08-17T01",
+      "2026-09-06T01",
+      "2026-09-26T01",
+      "2026-10-16T01",
+      "2026-11-05T01",
+    ]);
+    expect(w[0]?.start).toBe(tool.DATA_END);
+    expect(w.at(-1)?.end).toBe(tool.FRESH_END);
+    w.forEach((x, i) => {
+      if (i > 0) expect(x.start).toBe(w[i - 1]?.end);
+      expect(x.end - x.start).toBeLessThanOrEqual(20 * DAY);
+    });
+    expect(tool.COINS.length * w.length).toBe(342);
+    expect(tool.WAVEH.windows).toEqual(tool.fundingWindows(false));
+    expect(tool.SIZING.windows).toEqual(tool.fundingWindows(true));
+    expect(tool.WAVEH.windows.at(-1)?.end).toBe(w[0]?.start);
+  });
+
+  it("refuses across the ranges both ways: WAVE-H's months, keys and windows under --fresh, FRESH's without it", () => {
+    const check =
+      (url: string, method: string, body: string | undefined, range: Range) =>
+      () =>
+        tool.checkRequest(url, method, body, range);
+    const fresh = tool.FRESH.windows[0] as Window;
+    const waveh = tool.WAVEH.windows.at(-1) as Window;
+    // FRESH's requests, each with whether WAVE-H's full plan makes it too (the month 202605, the day 2026-05-29).
+    const freshOk: [string, string, string | undefined, boolean][] = [
+      [
+        listingUrlOf("node_fills_by_block/hourly/202605"),
+        "GET",
+        undefined,
+        true,
+      ],
+      [
+        listingUrlOf("node_fills_by_block/hourly/202606"),
+        "GET",
+        undefined,
+        false,
+      ],
+      [listingUrlOf("asset_ctxs/202611"), "GET", undefined, false],
+      [
+        urlOf("node_fills_by_block/hourly/20260529/2.lz4"),
+        "GET",
+        undefined,
+        false,
+      ],
+      [
+        urlOf("node_fills_by_block/hourly/20261115/23.lz4"),
+        "GET",
+        undefined,
+        false,
+      ],
+      [urlOf("asset_ctxs/20260529.csv.lz4"), "GET", undefined, true],
+      [urlOf("asset_ctxs/20261115.csv.lz4"), "GET", undefined, false],
+      [tool.INFO, "POST", tool.fundingBody("MORPHO", fresh), false],
+    ];
+    for (const [url, method, body, waveh] of freshOk) {
+      expect(check(url, method, body, tool.FRESH), url).not.toThrow();
+      expect(check(url, method, body, tool.SIZING), url).toThrow(
+        /outside the guard/,
+      );
+      if (waveh)
+        expect(check(url, method, body, tool.WAVEH), url).not.toThrow();
+      else
+        expect(check(url, method, body, tool.WAVEH), url).toThrow(
+          /outside the guard/,
+        );
+    }
+    for (const [url, method, body] of [
+      [listingUrlOf("node_fills_by_block/hourly/202604"), "GET", undefined],
+      [listingUrlOf("node_fills_by_block/hourly/202612"), "GET", undefined],
+      [listingUrlOf("asset_ctxs/202612"), "GET", undefined],
+      [listingUrlOf("node_fills/hourly/202606"), "GET", undefined],
+      [urlOf("node_fills_by_block/hourly/20260529/1.lz4"), "GET", undefined],
+      [urlOf("node_fills_by_block/hourly/20261116/0.lz4"), "GET", undefined],
+      [urlOf("asset_ctxs/20260528.csv.lz4"), "GET", undefined],
+      [urlOf("asset_ctxs/20261116.csv.lz4"), "GET", undefined],
+      [urlOf("node_fills/hourly/20260601/0.lz4"), "GET", undefined],
+      [urlOf(BOOK), "GET", undefined],
+      [tool.INFO, "POST", tool.fundingBody("SOL", waveh)],
+      [tool.INFO, "POST", tool.fundingBody("BTC", fresh)],
+    ] as const) {
+      expect(check(url, method, body, tool.FRESH), url).toThrow(
+        /outside the guard/,
+      );
+    }
+  });
+
+  it("downloads only FRESH's months and keys: 14 listings, its keys in time order, 342 reads; in the store only the manifest and the pid file read", async () => {
+    const w = setup();
+    freshWorld(w.server);
+    expect(await w.run({ ...FRESH_RUN, plan: true })).toBe(0);
+    const plan = w.out.join("").split("\n");
+    expect(plan[0]).toBe("FRESH's download: the months after WAVE-H's data");
+    expect(plan.slice(1, 4).map((l) => l.slice(0, l.indexOf(";")))).toEqual([
+      "node_fills_by_block: 3 files 60000 B (0.00 GB)",
+      "asset_ctxs: 2 files 40000 B (0.00 GB)",
+      "funding: 342 reads (at most) 89653248 B (0.09 GB)",
+    ]);
+    const planCalls = w.server.calls.length;
+    expect(planCalls).toBe(14);
+
+    const reads: { name: string; file: string; flags: unknown }[] = [];
+    const record = (name: string, args: unknown[]) => {
+      reads.push({ name, file: String(args[0]), flags: args[1] });
+    };
+    recordFs(
+      fs,
+      ["readFileSync", "openSync", "readSync", "createReadStream", "readFile"],
+      record,
+    );
+    expect(await w.run(FRESH_RUN)).toBe(0);
+    const calls = w.server.calls.slice(planCalls);
+    const listed = calls
+      .filter((c) => c.method === "GET" && new URL(c.url).pathname === "/")
+      .map((c) =>
+        new URL(c.url).searchParams.get("prefix")?.slice(tool.ROOT.length),
+      );
+    expect(listed).toEqual(
+      ["node_fills_by_block/hourly/", "asset_ctxs/"].flatMap((dir) =>
+        [
+          "202605",
+          "202606",
+          "202607",
+          "202608",
+          "202609",
+          "202610",
+          "202611",
+        ].map((m) => dir + m),
+      ),
+    );
+    expect(
+      calls
+        .filter((c) => c.method === "GET" && new URL(c.url).pathname !== "/")
+        .map((c) => c.url.slice(urlOf("").length)),
+    ).toEqual(FRESH_KEYS);
+    const posts = calls.filter((c) => c.method === "POST");
+    expect(new Set(posts.map((c) => c.body))).toEqual(
+      new Set(
+        tool.FRESH.windows.flatMap((win) =>
+          tool.COINS.map((coin) => tool.fundingBody(coin, win)),
+        ),
+      ),
+    );
+    expect(posts).toHaveLength(342);
+    const manifest = manifestOf(w.store);
+    expect(fileKeysOf(w.store)).toEqual(FRESH_KEYS);
+    expect(manifest).toHaveLength(FRESH_KEYS.length + 342);
+    for (const key of FRESH_KEYS) {
+      const body = w.server.objects.get(tool.ROOT + key) ?? Buffer.alloc(0);
+      expect(manifest.find((l) => l.key === key)).toMatchObject({
+        bytes: body.length,
+        md5: md5(body),
+        sha256: sha256(body),
+      });
+    }
+    expect(partsIn(w.store)).toEqual([]);
+    expect(problemsOf(w.store)).toEqual([]);
+    const pidFile = path.join("fetch", "waveh-fetch.pid");
+    expect(
+      new Set(
+        reads
+          .filter(
+            (c) =>
+              c.file.startsWith(w.store) &&
+              !(c.name === "openSync" && ["w", "wx"].includes(String(c.flags))),
+          )
+          .map((c) => `${c.name} ${path.relative(w.store, c.file)}`),
+      ),
+    ).toEqual(
+      new Set(["readFileSync manifest.jsonl", `readFileSync ${pidFile}`]),
+    );
+  }, 60_000);
+
+  it("takes --books of its own hours only, and fetches them into books.jsonl", async () => {
+    const w = setup();
+    const file = (keys: string[]) => {
+      const f = path.join(w.root, "books-needed.txt");
+      fs.writeFileSync(f, `${keys.join("\n")}\n`);
+      return f;
+    };
+    expect([...tool.readBooks(file([BOOK]), tool.FRESH)]).toEqual([BOOK]);
+    for (const [key, range] of [
+      [BOOK, tool.WAVEH],
+      ["market_data/20250715/3/l2Book/SOL.lz4", tool.FRESH],
+      ["market_data/20260529/1/l2Book/SOL.lz4", tool.FRESH],
+      ["market_data/20261116/0/l2Book/SOL.lz4", tool.FRESH],
+    ] as const)
+      expect(() => tool.readBooks(file([key]), range), key).toThrow("--books");
+    expect([
+      ...tool.readBooks(
+        file(["market_data/20260529/2/l2Book/kPEPE.lz4"]),
+        tool.FRESH,
+      ),
+    ]).toHaveLength(1);
+    w.server.put(BOOK, bytes(20_000, 60));
+    expect(await w.run({ ...FRESH_RUN, books: file([BOOK]) })).toBe(0);
+    expect(w.server.calls.map((c) => c.url)).toEqual([
+      listingUrlOf("market_data/20260815/7/l2Book/"),
+      urlOf(BOOK),
+    ]);
+    expect(
+      jsonLines<ManifestLine>(path.join(w.store, "books.jsonl")),
+    ).toMatchObject([{ key: BOOK, bytes: 20_000 }]);
+  }, 60_000);
 });
