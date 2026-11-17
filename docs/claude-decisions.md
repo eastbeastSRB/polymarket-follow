@@ -1,5 +1,40 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (the owner — the fresh months downloaded and sealed; the review
+under way): **HYPERLIQUID'S MONTHS AFTER WAVE-H'S DATA ARE DOWNLOADED INTO
+THEIR OWN STORE AND KEPT UNOPENED, FOR ONE REAL TEST OF A SHARPENED RULE.**
+
+**What:**
+- **The owner's go** (about 16:55Z): "start recomputation now"; then (about
+  17:00Z) "start the download of new months then".
+- **WAVE-H-LOOK-REVIEW** (Sonnet 5.5, fresh): H15's "Then", that is, the
+  look's report and a Final review that recomputes WAVE-H with independent
+  code. Started 16:52Z.
+- **FRESH-FETCH** (Opus 5.5) extends `tools/waveh-fetch.cjs`:
+  - **the range:** from WAVE-H's DATA END to the archive's latest complete
+    day (about 5.5 months, about 100 GB);
+  - **the store:** its own, `F:\polymarket-follow-research\FRESH\store\`;
+  - **the guards:** the same as WAVE-H's download (2 MB/s, the windows, the
+    collector watch, the hashes, the floor and a cap);
+  - **three fixes** the last nights showed: the `--books` cap counts only
+    its run's keys; a fresh reading at a pause's end; and an automatic step
+    back to full rate after 30 clean minutes, its exact rule set by the
+    supervisor.
+
+  It plans first; the supervisor starts the download.
+
+**Why:** the owner asked how to sharpen the wave (the "polishing").
+- The 10 months already seen are the practice ground, explored freely.
+- A rule chosen there is proved only on data no rule has seen: one frozen
+  test on these fresh months. After that test they join the practice pool,
+  and a later version waits for newer months or for MARKET-1's looks.
+- More history cannot be had. The archive's fills begin on 2025-05-25, and
+  everything since is either the 10 months or these about 5.5. Each new
+  month adds one.
+
+**The fresh months stay unopened** until the sharpened rule is frozen: no
+file of their store is parsed, and no count is taken from them.
+
 2026-11-17 (WAVE-H — THE ONE LOOK'S RESULT): **WAVE-H IS NOT SETTLED. On
 1,289 priced positions it nets +82.6 bps a position, with a two-way SE of
 40.9: the band at z 2.58 runs from −23.0 to +188.1.**
