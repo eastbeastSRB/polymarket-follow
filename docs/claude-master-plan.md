@@ -366,6 +366,13 @@ review, the supervisor re-computing on its own path what decides.
      entries and exits, size, profit, fees, funding, hold, instrument and
      session. It is possibly the separate on-chain project of decisions
      2026-11-13.
+  4. **The paper experiment's rules on Hyperliquid's history** (the owner,
+     2026-11-17), as WAVE-H did for MARKET-1: copying directional,
+     slow-holding traders, tested once on the 10 months. The months have
+     answered only the wave's question, so for this question they are
+     still unseen, provided its rules are frozen before any copy is priced.
+     It needs the paper kit's events, cycles and labels mapped onto
+     Hyperliquid's fills. It builds on the engine's extraction (3).
 - ⏳ **The owner's own execution venue and costs** — where the owner acts on what the tool shows and what a round trip costs there (the owner will explain and show; decisions 2026-11-10, round 2's rules and the collector approved). Until then every table uses Polymarket Perps' measured taker costs. Trigger: the owner's word.
 - 🅿️ **Prediction-market traders** (the Polymarket Data API; polymarket-lab's
   external-apis holds verified facts about it, readable as a template; its
