@@ -16,11 +16,11 @@ import { PACKAGE_ROOT } from "../waveh/gate.js";
 import { isoDay } from "../waveh/instants.js";
 import { formatOf, keyDate } from "../waveh/keys.js";
 import { FAIL_LEAST, FAIL_SHARE } from "../waveh/pass.js";
-import { writeWhole } from "../waveh/run.js";
 import { StoreError } from "../waveh/store.js";
 import { partFile, partOf, readPartHeader } from "./part.js";
 import { scanFill } from "./scan.js";
 import { readHeld } from "./held.js";
+import { writeUnflushed } from "./run.js";
 import { SealedError } from "./seal.js";
 import { LiqWriter, Names, TakerWriter } from "./writers.js";
 
@@ -108,7 +108,7 @@ export function extractFile(task: Task): Done {
     users,
   });
   const memory = memoryNow();
-  writeWhole(partFile(task.parts, task.index), part);
+  writeUnflushed(partFile(task.parts, task.index), part);
   return {
     index: task.index,
     key: task.key,

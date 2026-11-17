@@ -20,6 +20,7 @@ import { StoreError } from "../waveh/store.js";
 import type { Contexts, Funding, Grid } from "./ctxs.js";
 import { CONTEXT } from "./ctxs.js";
 import type { FileTask } from "./pass.js";
+import { writeUnflushed } from "./run.js";
 import {
   partFile,
   readPart,
@@ -99,7 +100,7 @@ const LIQ_FILES: readonly (readonly [string, string])[] = [
 type Typed = Float64Array | Uint32Array | Uint16Array | Uint8Array | Int8Array;
 const raw = (a: Typed) => Buffer.from(a.buffer, a.byteOffset, a.byteLength);
 
-/** Writes one partition's columns, whole, each with its size and SHA-256. */
+/** Writes one partition's columns, whole and unflushed (the manifest holds each to its size and SHA-256). */
 function writePartition(
   dir: string,
   table: Table,
@@ -113,7 +114,7 @@ function writePartition(
   const files: Record<string, StoredFile> = {};
   for (const [file, values] of columns) {
     const b = raw(values);
-    writeWhole(path.join(dir, ...rel.split("/"), file), b);
+    writeUnflushed(path.join(dir, ...rel.split("/"), file), b);
     files[file] = { bytes: b.length, sha256: sha256(b) };
   }
   return { table, coin, month, start, rows, files };

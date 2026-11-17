@@ -2,13 +2,21 @@
  * How the polishing's program runs (the polishing plan 4.6; decisions
  * 2026-11-17, the plan approved, Q9): its settings, with no defaults; its
  * exit codes; the code's fingerprint (the hashes of `dist/polish`), which a
- * part and the manifest name.
+ * part and the manifest name; its bulk writes.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { FrozenDiffer } from "../waveh/run.js";
+import { FrozenDiffer, RENAME_PAUSE_MS, RENAME_TRIES } from "../waveh/run.js";
 import { StoreError } from "../waveh/store.js";
 import { SealedError } from "./seal.js";
 
@@ -57,6 +65,36 @@ export const ExtractSettings = z
       path: ["ANALYZER_ROOT"],
     },
   );
+
+const pause = (ms: number) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+/**
+ * A part or a store column, written as WAVE-H's `writeWhole` writes (to
+ * `<file>.tmp`, then renamed over the file, a refused rename tried again)
+ * but not flushed: on F:, a hard disk, the flushes cost about 13% of the
+ * whole run, and a hash already guards each such file (the part's payload
+ * SHA-256, the manifest's of every column), so a torn one is refused, never
+ * read (decisions 2026-11-18, EXTRACT-BUILD's technical calls, the fsync).
+ */
+export function writeUnflushed(
+  file: string,
+  bytes: Buffer,
+  tries = RENAME_TRIES,
+  pauseMs = RENAME_PAUSE_MS,
+): void {
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(`${file}.tmp`, bytes);
+  for (let i = 1; ; i++) {
+    try {
+      renameSync(`${file}.tmp`, file);
+      return;
+    } catch (err) {
+      if (i >= tries) throw err;
+      pause(pauseMs);
+    }
+  }
+}
 
 /** The compiled program's files, `dist/polish.js` and `dist/polish/`: their paths and hashes, hashed again. */
 export function fingerprintOf(packageRoot: string): string {

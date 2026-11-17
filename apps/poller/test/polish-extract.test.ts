@@ -5,7 +5,13 @@
  * synthetic store, and the built program's refusals.
  */
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -16,6 +22,7 @@ import {
   GateFailed,
   exitOf,
   fingerprintOf,
+  writeUnflushed,
 } from "../src/polish/run.js";
 import { SealedError } from "../src/polish/seal.js";
 import { openStore } from "../src/polish/store.js";
@@ -24,7 +31,7 @@ import { loadCoins } from "../src/waveh/coins.js";
 import { PACKAGE_ROOT } from "../src/waveh/gate.js";
 import { DATA_END } from "../src/waveh/instants.js";
 import { ctxsKey, fundingKey } from "../src/waveh/keys.js";
-import { FrozenDiffer } from "../src/waveh/run.js";
+import { FrozenDiffer, RENAME_TRIES } from "../src/waveh/run.js";
 import { StoreError, manifestList } from "../src/waveh/store.js";
 import { addr, trade } from "./polish-world.js";
 import {
@@ -124,6 +131,28 @@ describe("the settings, the exits, the fingerprint", () => {
     expect(exitOf(new GateFailed("x")).code).toBe(6);
     expect(exitOf(new Error("x")).code).toBe(1);
   });
+
+  it("writes a part or a column whole without its flush, tries a refused rename again, and gives up after its tries", () => {
+    const at = tmp("write");
+    const file = path.join(at, "parts", "7.part");
+    writeUnflushed(file, Buffer.from("one"));
+    writeUnflushed(file, Buffer.from("two"));
+    expect(readFileSync(file, "utf8")).toBe("two");
+    expect(readdirSync(path.dirname(file))).toEqual(["7.part"]);
+    // A rename onto a folder is refused every time: 10 tries, 9 pauses between.
+    const folder = path.join(at, "folder");
+    mkdirSync(path.join(folder, "x"), { recursive: true });
+    const t0 = Date.now();
+    expect(() =>
+      writeUnflushed(folder, Buffer.from("three"), RENAME_TRIES, 500),
+    ).toThrow(/EPERM|EISDIR|ENOTEMPTY/);
+    const waited = Date.now() - t0;
+    expect(waited).toBeGreaterThanOrEqual(9 * 500);
+    expect(waited).toBeLessThan(10 * 500);
+    expect(() => writeUnflushed(folder, Buffer.from("four"), 1)).toThrow(
+      /EPERM|EISDIR|ENOTEMPTY/,
+    );
+  }, 30_000);
 
   it("names the code by its compiled files, and changes when one does", () => {
     const root = tmp("pkg");
