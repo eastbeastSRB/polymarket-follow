@@ -186,6 +186,13 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   in summer time lands an hour earlier in UTC; compute the trigger from the
   UTC instant (`Get-DailyUtcStart` in `tools/task-access.ps1`, used by the
   paper and backup tasks since 2026-11-12).
+- **A long run gets a generous heap ceiling from its start** (the owner,
+  2026-11-17): size it from a measured peak with a wide margin, never from
+  an estimate made on a smaller sample. This PC has 31.9 GB of RAM. WAVE-H's
+  step 1 died at an 8 GB ceiling after 7 hours (its live data was above 8
+  GB, against the rehearsal's estimate of 2.8–4 GB); it then ran at 16 GB
+  (a 9.3 GB peak) and step 2 at 20 GB (about 17 GB in use). A ceiling costs
+  nothing until it is used.
 - **Use absolute paths;** batched shell calls share one working directory.
 - **Run checks with `< /dev/null`, to a file, under `timeout`;** stop a server
   by its port, never by a process name.

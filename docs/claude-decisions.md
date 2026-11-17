@@ -1,5 +1,45 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (the owner — the polishing plan, on the supervisor's
+recommendations, after its fresh review): **THE PLAN'S EIGHT QUESTIONS ARE
+ANSWERED AS RECOMMENDED; A FRESH REVIEW READS IT FIRST; NO RUN MAY HIT A
+MEMORY LIMIT AGAIN.**
+
+**What:** the owner, at about 20:55Z: "if those are your recommendation,
+let's proceed like that … let's try to not have problem with limits again,
+so give more GB if needed for all which will come … let's proceed then with
+independent review of polishing plan."
+
+**The answers** to the questions of `docs/reviews/wave-polish-plan-2026-11-17.md`
+(`cdaf9f5`) are the ones its planner and the supervisor recommend. Each
+holds unless the fresh review changes it, and then it comes back to the
+owner.
+1. The plan is approved after its fresh review.
+2. The exam's deciding days exclude MARKET-FIND's discovery window
+   (2026-08-31 → 2026-11-07), which is printed apart.
+3. Two looks, each at z 2.81: look 1 on FRESH's clean days; look 2 around
+   2027-02-08, with a FRESH-2 download.
+4. z as WAVE-H's, and the owner's δ = +50 bps a position for every hold.
+5. The deciding line pools every slice, with slice 0 printed beside; 20
+   slices are the fallback if the book download passes about 60 GB.
+6. Features from any venue may enter the rule, each tagged with the
+   venues where it can be seen.
+7. MARKET-1's second arm comes as one arm after the polishing's freeze,
+   with the polished rule. It is no longer about 2026-11-20.
+8. The store has no new dependency, under
+   `F:\polymarket-follow-research\ANALYZER\`.
+
+**The fresh review:** WAVE-POLISH-PLAN-REVIEW (Sonnet 5.5, fresh), started
+20:59Z. It covers the choice rule's arithmetic, leakage, the discovery
+window, the exam's error and power, the extraction, the owner's points and
+simplicity.
+
+**Memory, a standing rule from the owner:** every long run gets a generous
+heap ceiling from its start, sized from what was measured with a wide
+margin, never from an estimate on a smaller sample. The PC has 31.9 GB of
+RAM. A ceiling costs nothing until it is used, and a run that dies at its
+ceiling costs hours.
+
 2026-11-17 (the supervisor — FRESH-FETCH verified; the fresh months'
 download started): **THE DOWNLOAD RUNS, STARTED 18:23:01Z; ITS FILES ARE
 NEVER OPENED UNTIL A SHARPENED RULE IS FROZEN.**
