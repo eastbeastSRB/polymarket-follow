@@ -103,7 +103,12 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **A test of the compiled imports keeps a freeze list exact:** it fails when
   the program reaches a file the list leaves out (WAVE-H-BUILD, 2026-11-14).
 - **Check that a break changes the value the test expects:** b66 survived
-  because 6/144 happens to equal 4/96 (WAVE-H-FIX, 2026-11-16).
+  because 6/144 happens to equal 4/96 (WAVE-H-FIX, 2026-11-16). A break can
+  be equivalent on the real inputs (a grid's `<=` that no real grid
+  reaches): test the helper directly on an input that is an exact multiple.
+  **A test of one reset rule can be masked by another reset in the same
+  run:** give each reset its own observable effect, such as the time of the
+  step it delays (FRESH-FETCH, 2026-11-17).
 - **A write failure without mocks, on Windows:** opening a folder for
   writing fails at once with EISDIR; renaming onto a non-empty folder fails
   with EPERM every time. **A retry count tested by elapsed time** needs pauses
@@ -226,7 +231,13 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   they hide test fakes. **A leftover test process that inherited a tool's
   handle keeps a background run from ending:** stop every test process after
   each case and give each run a time limit (COLLECTOR-BUILD, 2026-11-11).
-- **Windows PowerShell 5.1 traps:** `Set-Content -Encoding UTF8` writes a
+- **Windows PowerShell 5.1 traps:** `$ErrorActionPreference = 'Stop'` turns
+  a native command's stderr into a terminating NativeCommandError, so a
+  script stops halfway and can leave what it started running (FRESH-FETCH,
+  2026-11-17); `Get-Date -Format u` prints local time with a `Z` (the
+  supervisor, 2026-11-16; read UTC from `date -u`); a variable inside a
+  single-quoted string is not expanded (`'--x=$n'` passes `$n` literally);
+  `Set-Content -Encoding UTF8` writes a
   BOM — use `[IO.File]::WriteAllText` with `UTF8Encoding($false)`;
   `(Get-Content f)[-1]` on a one-line file is its last character — wrap it in
   `@()`; `Get-Content -Raw` of an empty file is `$null`; with

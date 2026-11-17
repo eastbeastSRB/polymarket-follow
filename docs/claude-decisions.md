@@ -1,5 +1,40 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-17 (the supervisor — FRESH-FETCH verified; the fresh months'
+download started): **THE DOWNLOAD RUNS, STARTED 18:23:01Z; ITS FILES ARE
+NEVER OPENED UNTIL A SHARPENED RULE IS FROZEN.**
+
+**Verified on the supervisor's path (18:22Z):**
+- FRESH-FETCH's 11 commits (`54f77fb` … `0ec6296`) changed only the tool,
+  its tests and the docs;
+- all three freezes verify: the paper experiment's 61, MARKET-1's 64 and
+  WAVE-H's 74;
+- the access scan finds no read of WAVE-H's store data (only its manifest
+  and book list) and nothing outside its bounds;
+- its context peaked at 501k.
+
+**The plan step** (`--fresh --plan`, 14 listings, 18:22Z) equals its build
+report, file for file:
+
+| Part | Files | Bytes |
+|---|---|---|
+| Fill files, 2026-05-29 02h → 2026-11-15 23h | 4,102 (351 multipart) | 159.88 GB |
+| Day files, 2026-05-29 → 2026-11-15 | 170 (2026-07-08 absent) | 1.38 GB |
+| Funding reads | 342 | — |
+| **In all** | | **161.34 GB**, cap 164.57 GB |
+
+F: has 1,338.7 GiB free.
+
+**The start:** `tools\waveh-fetch-start.ps1 -Fresh` at 18:23:01Z, pid 18836,
+Idle. Its first reading had the audit at 88/90 and the clock at 114 ms. It
+fetched at 2 MB/s from 18:23:34Z. The supervisor's watch checks it every 10
+minutes.
+
+**Code-rules** gained FRESH-FETCH's gotchas: a reset masked by another; a
+break equivalent on the real inputs; PowerShell 5.1's NativeCommandError
+under `Stop`. It also gained the supervisor's own: `Get-Date -Format u`
+prints local time with a `Z`, and single quotes do not expand a variable.
+
 2026-11-17 (FRESH-FETCH's technical calls — the download of the months
 after WAVE-H's data, built): **THE DOWNLOAD TOOL TAKES FRESH'S RANGE INTO ITS
 OWN STORE, WITH EVERY GUARD OF THE FIRST DOWNLOAD AND THE THREE FIXES THE
