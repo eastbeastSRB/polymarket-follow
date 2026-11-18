@@ -97,6 +97,15 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   file-level `afterEach` cleanup deletes a store a `beforeAll` shares. Gate
   every commit on `pnpm verify`'s exit code in the same command: `f77fa89`
   went in red when a test timed out under load (WAVE-H-BUILD, 2026-11-14).
+- **A test run keeps its temporary folders in one folder, removed at its
+  end:** `apps/poller/test/temp-root.ts` (vitest's `globalSetup`) points
+  `TEMP`, `TMP` and `TMPDIR` at `%TEMP%\polymarket-follow-tests-XXXXXX` and
+  removes it when the run ends. It sweeps such folders 6 h old or more:
+  real folders only, never a link. A test makes its folders with
+  `mkdtempSync(path.join(tmpdir(), …))` and need not remove them. A run
+  needs about 3.1 GB free on C: while it runs. Before this, the tests left
+  about 43,500 folders (13.6 GB) in the owner's `%TEMP%` in a week
+  (TEST-TEMP, 2026-11-18).
 - **A test that spawns a process or the built program gets an explicit 60 s
   limit:** a test spawning `dist/polish.js` seven times passed alone and
   timed out at 5.09 s under the full suite's load in the supervisor's
