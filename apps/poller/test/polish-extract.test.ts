@@ -315,10 +315,19 @@ describe("the built program", () => {
         entry,
       ).toEqual([]);
     }
-    expect([...closureOf("dist/polish.js")]).toContain("dist/polish/pass.js");
+    // The launcher imports nothing of ours; it starts the program, which is the rest.
+    expect([...closureOf("dist/polish.js")]).toEqual(["dist/polish.js"]);
+    expect(readFileSync(program, "utf8")).toContain('"./polish/main.js"');
+    expect([...closureOf("dist/polish/main.js")]).toContain(
+      "dist/polish/pass.js",
+    );
   });
-  const runIt = (args: string[], env: Record<string, string>) =>
-    spawnSync(process.execPath, [program, ...args], {
+  const runIt = (
+    args: string[],
+    env: Record<string, string>,
+    flags: string[] = [],
+  ) =>
+    spawnSync(process.execPath, [...flags, program, ...args], {
       env: {
         ...process.env,
         WAVEH_STORE: "",
@@ -355,6 +364,38 @@ describe("the built program", () => {
       expect(r.status, why).toBe(2);
       expect(r.stderr, why).toContain(why);
     }
+  }, 60_000);
+
+  it("refuses a heap flag, which would beat every worker's ceiling, and runs the program with its own 16 GB (exit 2, then 5)", () => {
+    const ok = {
+      WAVEH_STORE: "F:\\x\\WAVE-H\\store",
+      ANALYZER_ROOT: tmp("root"),
+    };
+    const why = "a heap flag overrides every worker's ceiling";
+    for (const [env, flags] of [
+      [ok, ["--max-old-space-size=8192"]],
+      [ok, ["--max_old_space_size=8192"]],
+      [{ ...ok, NODE_OPTIONS: "--max-old-space-size=8192" }, []],
+    ] as const) {
+      const r = runIt(["explore"], env, [...flags]);
+      expect(r.status, JSON.stringify(flags)).toBe(2);
+      expect(r.stderr).toContain(why);
+    }
+    expect(readdirSync(ok.ANALYZER_ROOT)).toEqual([]);
+    // No store there: not ready, after the start line names the program's ceiling.
+    const r = runIt(["explore"], ok);
+    expect(r.status, r.stderr).toBe(5);
+    const [logFile] = readdirSync(path.join(ok.ANALYZER_ROOT, "logs"));
+    const start = readFileSync(
+      path.join(ok.ANALYZER_ROOT, "logs", logFile!),
+      "utf8",
+    )
+      .split("\n")
+      .filter((l) => l !== "")
+      .map((l) => JSON.parse(l) as { msg: string; heapLimitMB?: number })
+      .find((l) => l.msg === "start explore")!;
+    expect(start.heapLimitMB).toBeGreaterThanOrEqual(16_384);
+    expect(start.heapLimitMB).toBeLessThan(16_384 + 512);
   }, 60_000);
 
   it("refuses a sealed folder in its settings, by name or through a junction, before it opens or makes anything, its log's folder too (exit 5)", () => {

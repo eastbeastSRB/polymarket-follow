@@ -1,7 +1,8 @@
 /**
  * The pass (the polishing plan 4.2; decisions 2026-11-17, the plan approved,
  * F3): every fill file of the range into its part, by a pool of worker
- * threads, a file at a time, each worker with a 4 GB old-generation ceiling.
+ * threads, a file at a time, each worker with a 4 GB old-generation ceiling
+ * (which holds because no heap flag is given: polish.ts refuses one).
  * A file is read only when it is not sealed and its SHA-256 equals its
  * list's line. A part this code already wrote for the same input is not
  * redone, so a stopped pass resumes. WAVE-H's day rule stops it: a UTC day
@@ -11,6 +12,7 @@
  */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { getHeapStatistics } from "node:v8";
 import { Worker } from "node:worker_threads";
 import { PACKAGE_ROOT } from "../waveh/gate.js";
 import { isoDay } from "../waveh/instants.js";
@@ -44,11 +46,13 @@ export type Task = FileTask & {
   small: readonly string[];
 };
 
+/** A thread's memory, and its heap's ceiling (`heapLimit`, V8's `heap_size_limit`). */
 export type Memory = {
   rss: number;
   heapUsed: number;
   external: number;
   arrayBuffers: number;
+  heapLimit: number;
 };
 const memoryNow = (): Memory => {
   const m = process.memoryUsage();
@@ -57,6 +61,7 @@ const memoryNow = (): Memory => {
     heapUsed: m.heapUsed,
     external: m.external,
     arrayBuffers: m.arrayBuffers,
+    heapLimit: getHeapStatistics().heap_size_limit,
   };
 };
 const higher = (a: Memory, b: Memory): Memory => ({
@@ -64,8 +69,15 @@ const higher = (a: Memory, b: Memory): Memory => ({
   heapUsed: Math.max(a.heapUsed, b.heapUsed),
   external: Math.max(a.external, b.external),
   arrayBuffers: Math.max(a.arrayBuffers, b.arrayBuffers),
+  heapLimit: Math.max(a.heapLimit, b.heapLimit),
 });
-const NO_MEMORY: Memory = { rss: 0, heapUsed: 0, external: 0, arrayBuffers: 0 };
+const NO_MEMORY: Memory = {
+  rss: 0,
+  heapUsed: 0,
+  external: 0,
+  arrayBuffers: 0,
+  heapLimit: 0,
+};
 
 /** The scan's own counters, which G0 reads too: records a writer refused, records misread, the slow path's lines and records. */
 export type Counters = {

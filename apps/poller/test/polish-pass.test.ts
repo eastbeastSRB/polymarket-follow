@@ -433,6 +433,11 @@ describe("the pass", () => {
       expect(got.peaks.workers.length).toBe(2);
       for (const m of [got.peaks.main, ...got.peaks.workers])
         expect(m.heapUsed).toBeGreaterThan(0);
+      // Each worker's own 4 GB ceiling (and a young generation's few MB), whatever the thread that starts it has.
+      for (const m of got.peaks.workers) {
+        expect(m.heapLimit / 2 ** 20).toBeGreaterThanOrEqual(4096);
+        expect(m.heapLimit / 2 ** 20).toBeLessThan(4096 + 512);
+      }
       const bad = tasks.map((t, i) =>
         i === 2 ? { ...t, sha256: "1".repeat(64) } : t,
       );

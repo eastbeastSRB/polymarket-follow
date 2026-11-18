@@ -7,6 +7,7 @@
  * file; the peaks and each step's seconds go into the manifest.
  */
 import path from "node:path";
+import { getHeapStatistics } from "node:v8";
 import { ctxsKey, fundingKey } from "../waveh/keys.js";
 import { StoreError, type DataList } from "../waveh/store.js";
 import { readContexts, readFunding } from "./ctxs.js";
@@ -19,11 +20,14 @@ import type { Manifest } from "./store.js";
 export const PARTS = "parts";
 export const STORE = "store";
 
-/** The highest of every `process.memoryUsage()` field, sampled every `ms` until stopped; `peak` is kept up to date. */
+/** The highest of every `process.memoryUsage()` field and of the heap's ceiling (`heapLimit`), sampled every `ms` until stopped; `peak` is kept up to date. */
 export function peakWatch(ms = 5_000) {
   const peak: Record<string, number> = {};
   const sample = () => {
-    const m: Record<string, number> = { ...process.memoryUsage() };
+    const m: Record<string, number> = {
+      ...process.memoryUsage(),
+      heapLimit: getHeapStatistics().heap_size_limit,
+    };
     for (const [k, v] of Object.entries(m)) peak[k] = Math.max(peak[k] ?? 0, v);
   };
   sample();
