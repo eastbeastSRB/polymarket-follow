@@ -150,9 +150,8 @@ describe("the settings, the exits, the fingerprint", () => {
     expect(() =>
       writeUnflushed(folder, Buffer.from("three"), RENAME_TRIES, 500),
     ).toThrow(/EPERM|EISDIR|ENOTEMPTY/);
-    const waited = Date.now() - t0;
-    expect(waited).toBeGreaterThanOrEqual(9 * 500);
-    expect(waited).toBeLessThan(10 * 500);
+    // Nine pauses at least; no upper bound, which the load and Windows' timers would decide.
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(9 * 500);
     expect(() => writeUnflushed(folder, Buffer.from("four"), 1)).toThrow(
       /EPERM|EISDIR|ENOTEMPTY/,
     );

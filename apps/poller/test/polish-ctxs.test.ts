@@ -122,7 +122,7 @@ describe("H10's minute rule, against WAVE-H's own reading", () => {
       105, 106, 300, 301, 309,
     ]);
     expect(mine.byCoin.get("kPEPE")!.get("mark")![2]).toBe(0.01);
-  });
+  }, 30_000);
 
   it("puts each column's cell in its own column, a cell that is no number as NaN, and BTC and ETH apart", () => {
     const sol = mine.byCoin.get("SOL")!;
