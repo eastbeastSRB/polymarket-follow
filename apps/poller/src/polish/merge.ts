@@ -557,6 +557,8 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
           ]),
         );
       }
+      // The coin's month written: its rows are freed before the next coin's.
+      takers.delete(coin);
     }
     o.log("month", {
       month,
