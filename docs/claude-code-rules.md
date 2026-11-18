@@ -135,6 +135,26 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   own** (`cmd /c rmdir <link>`, no `/s`). The copy is then a plain folder,
   and a later cleanup cannot follow it into the repository's `node_modules`
   (EXTRACT-FIX-2, 2026-11-18).
+- **A test of a size or a difference needs data that can show it:**
+  - a one-level book or tape makes a walk's price independent of the
+    walked size, so put a level boundary at the walked size;
+  - evenly spaced values give every window the same error, so use uneven
+    ones (for example k²/10).
+
+  **A wiring constant that only the built program reaches** is named once
+  in a module, pinned by a unit test and passed by name (`CUTS_FILE`)
+  (POLISH-EXPLORE-3, 2026-11-18).
+- **Waiting and priority in this harness:**
+  - It refuses a bare `sleep`. Wait with a bounded loop under its 180 s
+    limit: `timeout 170 bash -c 'until grep -q done f; do sleep 5; done'`.
+  - Start a below-normal run from PowerShell: WMI `Win32_Process.Create`
+    with `PriorityClass` 16384, or `Start-Process cmd.exe '/c start ""
+    /belownormal /b /wait …'`. From Git Bash, `cmd //c start` opens an
+    interactive shell instead.
+  - vitest's console output does not reach a redirected file: write a
+    value a test computes to a file from a scratch copy's test.
+
+  (POLISH-EXPLORE-3 and the supervisor, 2026-11-18.)
 - **vitest does not typecheck:** a scratch copy's or a quick run's `vitest
   run` passes code tsc rejects. Run tsc first (`pnpm test` does). A script
   that rewrites imports must write them in Prettier's form, or
