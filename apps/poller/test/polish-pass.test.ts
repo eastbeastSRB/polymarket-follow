@@ -241,6 +241,24 @@ describe("the pass", () => {
     await expect(pass(w2.store, parts(), w2.tasks)).rejects.toThrow(
       "2025-06-11: 30 of 2030 records fail WAVE-H's schema",
     );
+    // Exactly 10, above 1%: the least that stops; 9 above 1% does not.
+    const few = (n: number) =>
+      world(
+        new Map([
+          [
+            fillKey(t),
+            `${good.split("\n").slice(0, 500).join("\n")}\n${bad.split("\n").slice(0, n).join("\n")}\n`,
+          ],
+        ]),
+      );
+    const ten = few(10);
+    await expect(pass(ten.store, parts(), ten.tasks)).rejects.toThrow(
+      "2025-06-11: 10 of 510 records fail WAVE-H's schema",
+    );
+    const nine = few(9);
+    await expect(pass(nine.store, parts(), nine.tasks)).resolves.toMatchObject({
+      failed: 9,
+    });
   });
 
   it.runIf(existsSync(WORKER_FILE))(

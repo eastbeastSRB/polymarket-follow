@@ -310,6 +310,96 @@ describe("the scanner, on every case a file's text can hold", () => {
   });
 });
 
+describe("the scanner at its edges", () => {
+  const [A, B] = [1, 2].map(addr) as [string, string];
+  const end = T + H;
+
+  it("keeps a record stamped before the end and counts one stamped at it late by its text, on the slow path too", () => {
+    // A fill whose first key is not `coin` goes the slow path.
+    const slow = (time: number, tid: number) =>
+      `["${A}",{"px":"151","coin":"SOL","sz":"1.0","side":"B","time":${time},"startPosition":"0.0","dir":"Open Long","closedPnl":"0.0","hash":"0x00","oid":7,"crossed":true,"fee":"0.0068","tid":${tid},"feeToken":"USDC"}]`;
+    const r = run(
+      `${[
+        ...trade(A, B, { coin: "SOL", side: "B", time: end - 1, tid: 1 }),
+        ...trade(A, B, { coin: "SOL", side: "B", time: end, tid: 2 }),
+        // At the end and failing the schema: late, read by its text only.
+        ...trade(A, B, { coin: "SOL", side: "B", time: end, px: "x", tid: 9 }),
+        slow(end - 1, 3),
+        slow(end, 4),
+      ].join("\n")}\n`,
+      "node_fills",
+      end,
+    );
+    expect(r.scan).toMatchObject({
+      records: 8,
+      failed: 0,
+      late: 5,
+      slowRecords: 2,
+    });
+    expect(r.taker.coins.get("SOL")!.time).toEqual([end - 1, end - 1]);
+    expect(r.taker.coins.get("SOL")!.tid).toEqual([1, 0, 3, 0]);
+  });
+
+  it("counts a stretch of exactly 60 s with no record as a hole", () => {
+    const r = run(
+      `${[
+        ...trade(A, B, { coin: "SOL", side: "B", time: T, tid: 1 }),
+        ...trade(A, B, { coin: "SOL", side: "B", time: T + 60_000, tid: 2 }),
+        ...trade(A, B, { coin: "SOL", side: "B", time: T + 119_999, tid: 3 }),
+      ].join("\n")}\n`,
+      "node_fills",
+      end,
+    );
+    expect(r.scan.times).toEqual({
+      first: T,
+      max: T + 119_999,
+      holes: [[T, T + 60_000]],
+    });
+  });
+
+  it("counts a record whose parse disagrees with its text as misread, the parse standing", () => {
+    // Two `coin` keys: the text reads the first, JSON.parse keeps the last.
+    const twice = record(A, {
+      coin: "SOL",
+      side: "B",
+      time: T,
+      crossed: true,
+      tid: 5,
+    }).replace(/}]$/, ',"coin":"BTC"}]');
+    const r = run(`${twice}\n`, "node_fills", end);
+    expect(r.scan).toMatchObject({ records: 1, misread: 1 });
+    expect([...r.taker.coins.keys()]).toEqual(["BTC"]);
+  });
+
+  it("leaves a taker with a builder fee out of H14's rate, and marks a liquidation naming no account", () => {
+    const r = run(
+      `${[
+        ...trade(A, B, { coin: "SOL", side: "B", time: T, tid: 1 }),
+        ...trade(A, B, {
+          coin: "SOL",
+          side: "B",
+          time: T + 1,
+          fee: "1.0",
+          builderFee: "0.1",
+          tid: 2,
+        }),
+        record(A, {
+          coin: "SOL",
+          side: "A",
+          time: T + 2,
+          crossed: true,
+          tid: 3,
+          liquidation: { markPx: "150", method: "market" },
+        }),
+      ].join("\n")}\n`,
+      "node_fills",
+      end,
+    );
+    expect([...r.taker.topTaker]).toEqual([["2025-09", 0.009 / (100.5 * 2)]]);
+    expect(r.liq.rows.liqUser).toEqual([NONE]);
+  });
+});
+
 describe("u64Of", () => {
   it("splits digits into a u64's halves, exact beyond 2^53, refusing 2^64", () => {
     expect(u64Of("0")).toEqual([0, 0]);

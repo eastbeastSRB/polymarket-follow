@@ -31,9 +31,15 @@ import {
   type Library,
   type Step1,
 } from "../src/polish/gates.js";
-import { Tape, marketsFrom, minutePrice } from "../src/polish/legs.js";
+import {
+  Tape,
+  fundingOf,
+  marketsFrom,
+  minuteColumn,
+  minutePrice,
+} from "../src/polish/legs.js";
 import { WAVEH_RANGE, type Range } from "../src/polish/range.js";
-import { openStore, type Manifest } from "../src/polish/store.js";
+import { Store, openStore, type Manifest } from "../src/polish/store.js";
 import { fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
@@ -145,7 +151,42 @@ function world() {
         sz: "0.5",
         tid: 21,
       }),
+      // A BTC backstop: the account's own leg a maker's, the vault's a taker's.
+      record(addr(41), {
+        coin: "BTC",
+        side: "A",
+        time: W1 + 2_000,
+        px: "64000",
+        sz: "0.1",
+        startPosition: "0.1",
+        crossed: false,
+        tid: 22,
+        liquidation: {
+          liquidatedUser: addr(41),
+          markPx: "64000",
+          method: "backstop",
+        },
+      }),
+      record(addr(42), {
+        coin: "BTC",
+        side: "B",
+        time: W1 + 2_000,
+        px: "64000",
+        sz: "0.1",
+        crossed: true,
+        tid: 22,
+        liquidation: {
+          liquidatedUser: addr(41),
+          markPx: "64000",
+          method: "backstop",
+        },
+      }),
     ].join("\n"),
+  );
+  // A trade at the very start of the day after W's: that day's, not W's.
+  files.set(
+    fillKey(dayStart(W) + DAY_MS, "node_fills_by_block"),
+    block(10, taker("SOL", "B", dayStart(W) + DAY_MS, "100", "1", 23)),
   );
   files.set(
     fillKey(W3, "node_fills_by_block"),
@@ -187,12 +228,23 @@ function world() {
     ["kPEPE", [W3, W3 + DAY_MS, W3 + 2 * DAY_MS]],
     ["BTC", [W1]],
   ];
+  // ETH on W's day: a row of it in the day before's file, and one stamp twice (the first stands).
+  const extra = new Map([
+    [dayStart(W) - DAY_MS, [ctxsRow("ETH", dayStart(W) + 30_000, 2500)]],
+    [
+      dayStart(W),
+      [2501, 2502].map((mark) =>
+        ctxsRow("ETH", dayStart(W) + 5 * MINUTE_MS, mark),
+      ),
+    ],
+  ]);
   for (let d = Date.parse("2025-05-25T00:00:00Z"); d < DATA_END; d += DAY_MS) {
     const rows = [CTXS_HEAD];
     for (const [coin, days] of marked)
       if (days.some((t) => dayStart(t) === d))
         for (let m = 0; m < 1_440; m++)
           rows.push(ctxsRow(coin, d + m * MINUTE_MS, 100));
+    rows.push(...(extra.get(d) ?? []));
     files.set(`asset_ctxs/${dayOf(d)}.csv.lz4`, rows.join("\n"));
   }
   const rows = [];
@@ -365,10 +417,21 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       }
     ).days;
     expect(days.map((d) => [d.day, d.tapeRows, d.liqRows])).toEqual([
-      ["2025-06-10", 2, 4],
+      ["2025-06-10", 2, 6],
       ["2025-07-31", 4, 8],
       ["2025-08-01", 1, 2],
       ["2025-09-10", 5, 4],
+    ]);
+  });
+
+  it("reads the settled funding as WAVE-H's rows, each at its nominal hour", () => {
+    const rows = fundingOf(o.store, "SOL");
+    expect(rows).toHaveLength(2 * 72);
+    expect(rows[0]).toEqual([dayStart(W1), 0.00001, dayStart(W1) + 17]);
+    expect(rows.at(-1)).toEqual([
+      dayStart(W) + 3 * DAY_MS - HOUR_MS,
+      0.00001,
+      dayStart(W) + 3 * DAY_MS - HOUR_MS + 17,
     ]);
   });
 
@@ -420,6 +483,10 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       g2({ ...o, expect: { ...o.expect, everySlice: 2 } }, lib, step1).result
         .differ,
     ).toEqual(["everySlice"]);
+    expect(
+      g2({ ...o, sizing: { ...o.sizing, counted: 5 } }, lib, step1).result
+        .differ,
+    ).toEqual(["sizingCounted"]);
   });
 
   it("G3 fails on a price beyond 0.01 bps, on a leg's tid, on a line missing; passes a price within", () => {
@@ -477,6 +544,21 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       problems: 1,
       first: [`SOL ${new Date(W + ENTRY).toISOString()}`],
     });
+    // The first settlement read at the minute before its hour: no mark there, and no trade.
+    const h = hourOf(W + ENTRY) + HOUR_MS;
+    const before = mk.marks.slice();
+    const m = (h - 1 - mk.start - ((h - 1 - mk.start) % MINUTE_MS)) / MINUTE_MS;
+    before.fill(NaN, m - 5, m + 1);
+    expect(
+      g4(
+        o,
+        {
+          ...lib,
+          markets: new Map(lib.markets).set(sol, { ...mk, marks: before }),
+        },
+        wave,
+      ),
+    ).toMatchObject({ pass: true, unmarked: 1, problems: 0 });
   });
 
   it("G5 fails on a file whose takers and makers differ", () => {
@@ -489,6 +571,33 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       pass: false,
       first: [`${f.key} ${coin}: ${takers} takers, ${makers + 1} makers`],
     });
+    f.pairs[0]![1] = takers + 2;
+    expect(g5(o, { ...lib, files })).toMatchObject({
+      pass: false,
+      first: [`${f.key} ${coin}: ${takers + 2} takers, ${makers + 1} makers`],
+    });
+  });
+
+  it("writes gates.json with passed false when a gate fails", async () => {
+    const look = tmp("look");
+    const broken = structuredClone(step1);
+    (broken.counts as { late: number }).late += 1;
+    writeFileSync(path.join(look, "step1.json"), JSON.stringify(broken));
+    writeFileSync(
+      path.join(look, "positions.jsonl.gz"),
+      readFileSync(path.join(root, "look", "positions.jsonl.gz")),
+    );
+    const dir = tmp("gates");
+    const r = await runGates({ ...o, look }, dir);
+    expect(r.passed).toBe(false);
+    expect(
+      Object.entries(r.gates)
+        .filter(([, g]) => !g.pass)
+        .map(([k]) => k),
+    ).toEqual(["G1"]);
+    expect(
+      JSON.parse(readFileSync(path.join(dir, "gates.json"), "utf8")),
+    ).toMatchObject({ passed: false });
   });
 
   it("explore opens only a whole store whose gates passed on its manifest, and loads its counted fills", () => {
@@ -557,11 +666,12 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       }
       return p;
     };
-    // SOL's last taker of 2025-09 dropped: every column one row shorter.
-    const p = rewrite("tape", "SOL", "2025-09", (_, b) =>
-      b.subarray(0, b.length - b.length / 4),
-    );
-    expect(p.rows).toBe(4);
+    // SOL's fourth taker of 2025-09 (W's day; the fifth is the next day's) dropped from every column.
+    const p = rewrite("tape", "SOL", "2025-09", (_, b) => {
+      const w = b.length / 5;
+      return Buffer.concat([b.subarray(0, 3 * w), b.subarray(4 * w)]);
+    });
+    expect(p.rows).toBe(5);
     p.rows -= 1;
     // kPEPE's oracle at 2025-08-01 00:30 changed.
     rewrite("minute", "kPEPE", "2025-08", (file, b) => {
@@ -675,6 +785,7 @@ describe("the tape and the minute price", { timeout: 60_000 }, () => {
     const tids = (x: number, buy: boolean) =>
       tape.at("SOL", buy, x).map((t) => t.tid);
     expect(tids(E - 35_000, true)).toEqual(["1", "4"]);
+    expect(tids(E - 30_000, true)).toEqual(["1", "4"]);
     expect(tids(E - 35_000, false)).toEqual(["2"]);
     expect(tids(E - 29_999, true)).toEqual(["4"]);
     expect(tids(E - 50_000, true)).toEqual(["1"]);
@@ -688,6 +799,7 @@ describe("the tape and the minute price", { timeout: 60_000 }, () => {
     expect(tape.last("SOL", E - MINUTE_MS, E)).toBe(11);
     expect(tape.last("SOL", E - MINUTE_MS, E - 20_000)).toBe(10);
     expect(tape.last("SOL", E - 25_000, E - 15_000)).toBe(11);
+    expect(tape.last("SOL", E - 20_000, E - 19_999)).toBe(11);
     expect(tape.last("SOL", E - 15_000, E)).toBe(null);
     const kit = await loadResearch();
     const { markets } = marketsFrom(s, kit, coins);
@@ -702,5 +814,21 @@ describe("the tape and the minute price", { timeout: 60_000 }, () => {
     const marks = mk.marks.slice();
     marks[(E - D) / MINUTE_MS - 3] = 99;
     expect(minutePrice(kit, { ...mk, marks }, tape, E - 1)).toBe(99);
+    // The grid read whole: a month's minutes not following the month before are refused.
+    const shifted = new Store(
+      s.dir,
+      {
+        ...s.manifest,
+        partitions: s.manifest.partitions.map((p) =>
+          p.table === "minute" && p.month === "2025-07"
+            ? { ...p, start: p.start + MINUTE_MS }
+            : p,
+        ),
+      },
+      s.id,
+    );
+    expect(() => minuteColumn(shifted, "SOL", "mark")).toThrow(
+      "minute/SOL/2025-07 does not follow its month before",
+    );
   });
 });

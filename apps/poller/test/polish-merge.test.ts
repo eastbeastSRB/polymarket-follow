@@ -116,6 +116,7 @@ function world(extra: string[] = []) {
           time: H0 + 15 * MIN,
           px: "0.02",
           sz: "1000",
+          startPosition: "-500.0",
           crossed: true,
           tid: 4,
           liquidation: liqOf(addr(8), "backstop"),
@@ -342,6 +343,44 @@ describe("the merge", { timeout: 60_000 }, () => {
       "SOL",
       "SOL",
     ]);
+  });
+
+  it("keeps the first file's record of one (time, user, tid) even where a later one differs, and counts in the liq bars only an account's own reducing leg", async () => {
+    const { dir } = await build([
+      // The H0 file's first trade again, another price: the first file's stands.
+      record(addr(4), {
+        coin: "SOL",
+        side: "B",
+        time: H0 + 10 * MIN,
+        px: "999",
+        sz: "2",
+        crossed: true,
+        tid: 1,
+      }),
+      // An own crossed leg from a flat position: not reducing, so not counted.
+      record(addr(11), {
+        coin: "SOL",
+        side: "A",
+        time: H0 + 30 * MIN,
+        px: "140",
+        sz: "3",
+        startPosition: "0.0",
+        crossed: true,
+        tid: 31,
+        liquidation: liqOf(addr(11)),
+      }),
+    ]);
+    const s = openStore(dir);
+    const tape = s.partition("tape", "SOL", "2025-06");
+    expect([...s.column(tape, "px")]).not.toContain(999);
+    expect(s.manifest.counts.merge.tape!.duplicates).toBe(2);
+    const col = (coin: string, name: string) =>
+      s.column(s.partition("minute", coin, "2025-06"), name);
+    expect(col("SOL", "buyNtl")[23 * 60 + 10]).toBe(300);
+    expect(col("SOL", "liqSellNtl")[23 * 60 + 30]).toBe(0);
+    // The backstop: the account's own maker leg counts; the vault's reducing taker leg does not.
+    expect(col("kPEPE", "liqSellNtl")[23 * 60 + 15]).toBe(20);
+    expect(col("kPEPE", "liqBuyNtl")[23 * 60 + 15]).toBe(0);
   });
 
   it("makes the minute bars from the takers and the counted fills, and places the contexts and funding", async () => {

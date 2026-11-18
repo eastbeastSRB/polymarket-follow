@@ -81,7 +81,8 @@ function days() {
   ];
   const d3 = [
     row("SOL", D0 + 2 * DAY + 11 * 3_600_000),
-    row("SOL", D0 + 2 * DAY + 13 * 3_600_000), // at or after the end: late
+    row("SOL", D0 + 2 * DAY + 12 * 3_600_000), // at the end: late
+    row("SOL", D0 + 2 * DAY + 13 * 3_600_000), // after it: late
   ];
   return [d1, d2, d3].map((rows) => `${CTXS_HEAD}\n${rows.join("\n")}\n`);
 }
@@ -107,7 +108,7 @@ describe("H10's minute rule, against WAVE-H's own reading", () => {
       late: 0,
       twice: 3,
     });
-    expect(counts[2]![1]).toMatchObject({ rows: 2, late: 1 });
+    expect(counts[2]![1]).toMatchObject({ rows: 3, late: 2 });
     for (const c of coins.list) {
       expect(mine.byCoin.get(c.name)!.get("mark"), c.name).toEqual(
         theirs.byCoin.get(c.name),
