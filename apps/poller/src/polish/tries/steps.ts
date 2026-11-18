@@ -16,6 +16,7 @@ import { isDeepStrictEqual } from "node:util";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
 import { ENTRY_DELAY_MS, HOLD_MS } from "../../market1/price.js";
+import { DAY_MS } from "../../schedule.js";
 import type { Item } from "../../market1/stats.js";
 import type { Research } from "../../paper/research.js";
 import type { Coins } from "../../waveh/coins.js";
@@ -28,10 +29,17 @@ import { Step1 } from "../gates.js";
 import { GATES, GATES_FILE } from "../library.js";
 import { GateFailed } from "../run.js";
 import type { Store } from "../store.js";
-import { FAMILIES, adoptedOf, refusedFor, type TryOnE } from "./choice.js";
+import {
+  FAMILIES,
+  adoptedOf,
+  chooseOnC,
+  refusedFor,
+  type CheckOnC,
+  type TryOnE,
+} from "./choice.js";
 import { checkPrices, dataFrom, type Data } from "./data.js";
 import { cutsOf, featuresOf } from "./features.js";
-import { E, inPart, positionOf, type Entry } from "./parts.js";
+import { C, E, STOP_MS, inPart, positionOf, type Entry } from "./parts.js";
 import {
   B0,
   entriesAt,
@@ -42,8 +50,17 @@ import {
   stopExit,
   tryNamed,
   unpricedOf,
+  type Rule,
 } from "./rules.js";
-import { E_FLOORS, floorsOf, gainFloor, statOf } from "./stats.js";
+import {
+  C_FLOORS,
+  E_FLOORS,
+  dTest,
+  floorsOf,
+  footprintOk,
+  gainFloor,
+  statOf,
+} from "./stats.js";
 import {
   drySweep,
   grossOnMarks,
@@ -55,7 +72,7 @@ import { CutsFile, TRIES, keeps } from "./trylog.js";
 
 /** The steps' folder in the analyzer's folder of the range. */
 export const EXPLORE = "explore";
-export const STEPS = ["features", "e", "choice"] as const;
+export const STEPS = ["features", "e", "choice", "c"] as const;
 export type StepName = (typeof STEPS)[number];
 
 /** The look's EVERY SLICE pooled line on marks (WAVE-H's report.json, 2026-11-17): what B0 over TEST must reproduce. */
@@ -747,6 +764,155 @@ export async function choiceStep(o: StepInput) {
   return { sha: writeOutput(o, "choice.json", value), out: value };
 }
 
+/** What the C step reads of `choice.json`. */
+export const ChoiceFile = z.object({
+  adopted: z.array(z.object({ name: z.string() }).loose()),
+  rule: z.object({
+    name: z.string(),
+    M2: z.boolean(),
+    delay: z.number(),
+    hold: z.number(),
+    target: z.boolean(),
+    filters: z.array(z.string()),
+  }),
+  N: z.object({ k: Num }).loose().nullable(),
+});
+export type ChoiceFile = z.infer<typeof ChoiceFile>;
+
+/** C's entry days: from its start to 50 hours before its end, 146 (F2's footprint windows start on days 0 to 46). */
+export const C_DAYS = Math.ceil((C.end - STOP_MS - C.start) / DAY_MS);
+
+/**
+ * The check's numbers (POLISH-EXPLORE's plan 5.4; decisions 2026-11-18,
+ * "POLISH-EXPLORE's plan approved", 3): B0 on C first (its m, SE and z,
+ * deciding nothing, exempt from the floors); then at most two evaluations,
+ * each placed, priced and computed only when its turn comes: N, then, when
+ * N fails and more than one change was adopted, the adopted change with the
+ * largest t on E alone. Each: the D-test against B0 with k from E (C's own
+ * k beside), F2's floors and the 100-day footprint, its share left out
+ * (Q13, a print). B0 goes when none passes.
+ */
+export async function cOf(
+  d: Data,
+  o: {
+    M: number;
+    cuts: CutsFile["cuts"];
+    e: EFile;
+    choice: ChoiceFile;
+    pace: () => Promise<void>;
+  },
+) {
+  const b = o.e.calibration.rebasedBy;
+  const lines: string[] = [];
+  const on = async (rule: Rule, group: string) => {
+    const p = place(d, rule, C, o.M, o.cuts);
+    const nets = await priceAll(d, p.specs, o.pace);
+    lines.push(...positionLines(d, group, p.entries, p.specs, nets));
+    return { p, nets, items: itemsOf(p.entries, nets, b) };
+  };
+  const b0 = await on(B0, "B0");
+  const b0Stat = statOf(d.kit, b0.items);
+  const seB0 = o.e.b0.stat?.se ?? null;
+  const evaluate = async (
+    name: string,
+  ): Promise<CheckOnC & Record<string, unknown>> => {
+    const rule =
+      name === "N" ? (o.choice.rule as Rule) : ruleOf(name, [tryNamed(name)]);
+    const seE = o.e.tries.find((t) => t.name === name)?.stat?.se ?? null;
+    const k =
+      name === "N"
+        ? (o.choice.N?.k ?? null)
+        : seE !== null && seB0
+          ? seE / seB0
+          : null;
+    const r = await on(rule, name);
+    const stat = statOf(d.kit, r.items);
+    const test = k === null ? null : dTest(r.items, b0.items, k);
+    const left = Object.values(r.p.left).reduce((s, x) => s + x, 0);
+    return {
+      rule: name,
+      t: test?.t ?? null,
+      floors: {
+        ...(stat === null
+          ? { mean: false, days: false, coins: false }
+          : floorsOf(stat, C_FLOORS)),
+        footprint: footprintOk(r.items, C.start, C_DAYS),
+      },
+      definition: rule,
+      positions: r.p.specs.length,
+      priced: r.items.length,
+      left: r.p.left,
+      leftShare: left / (left + r.p.specs.length || 1),
+      unpriced: unpricedOf(r.nets),
+      stat,
+      test,
+      ownK: stat?.se != null && b0Stat?.se ? stat.se / b0Stat.se : null,
+    };
+  };
+  const adopted = triesOnE(o.e).filter((t) =>
+    o.choice.adopted.some((a) => a.name === t.name),
+  );
+  adopted.sort(
+    (x, y) => (y.t ?? -Infinity) - (x.t ?? -Infinity) || x.order - y.order,
+  );
+  const { goes, evaluations } = await chooseOnC(adopted, evaluate);
+  const rule =
+    goes === "B0"
+      ? B0
+      : goes === "N"
+        ? (o.choice.rule as Rule)
+        : ruleOf(goes, [tryNamed(goes)]);
+  return {
+    out: {
+      b0: {
+        print: "B0 on C: decides nothing, exempt from the floors (F2)",
+        positions: b0.p.specs.length,
+        priced: b0.items.length,
+        unpriced: unpricedOf(b0.nets),
+        stat: b0Stat,
+      },
+      evaluations,
+      goes,
+      rule,
+    },
+    lines,
+  };
+}
+
+/** Run 4, `c`: choice.json held to this identity and naming the current e.json; `cOf`; `c-positions.jsonl.gz`, then `c.json`. */
+export async function cStep(o: StepInput) {
+  const m = meter(o.log);
+  const { store, identity } = identityOf(o);
+  const e = readOutput(o, "e.json", identity);
+  const choice = readOutput(o, "choice.json", identity);
+  if ((choice.value.inputs as { e?: string } | undefined)?.e !== e.sha)
+    throw new StoreError(
+      `${EXPLORE}\\choice.json is not of the current e.json`,
+    );
+  const features = readOutput(o, "features.json", identity);
+  const cuts = readCuts(o, features);
+  const d = dataFrom(store, o.coins, o.kit);
+  m.phase("data");
+  const { out, lines } = await cOf(d, {
+    M: identity.M,
+    cuts: cuts.cuts,
+    e: EFile.parse(e.value),
+    choice: ChoiceFile.parse(choice.value),
+    pace: o.pace,
+  });
+  m.phase("C");
+  writePositions(o, "c-positions.jsonl.gz", lines);
+  const value = {
+    step: "c",
+    identity,
+    inputs: { e: e.sha, choice: choice.sha, cuts: cuts.sha },
+    ...out,
+    ...m.done(),
+    written: new Date().toISOString(),
+  };
+  return { sha: writeOutput(o, "c.json", value), out: value };
+}
+
 /** Runs one step by its name. */
 export async function runStep(step: StepName, o: StepInput) {
   switch (step) {
@@ -756,5 +922,7 @@ export async function runStep(step: StepName, o: StepInput) {
       return eStep(o);
     case "choice":
       return choiceStep(o);
+    case "c":
+      return cStep(o);
   }
 }

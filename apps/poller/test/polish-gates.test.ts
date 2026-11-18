@@ -58,6 +58,7 @@ import {
 import { WIDTH, type ColumnType } from "../src/polish/tables.js";
 import { checkPrices, dataFrom, levelsAt } from "../src/polish/tries/data.js";
 import {
+  cStep,
   choiceStep,
   eStep,
   featuresStep,
@@ -1266,6 +1267,45 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       gunzipSync(readFileSync(path.join(dir, "choice-positions.jsonl.gz")))
         .length,
     ).toBe(0);
+  });
+
+  it("the exploration's c step on this store: choice.json of the current e.json, B0 on C first, nothing evaluated, B0 goes", async () => {
+    const dir = path.join(analyzer, "explore");
+    const input: StepInput = {
+      root: analyzer,
+      look: path.join(root, "look"),
+      coins,
+      kit: o.kit,
+      code: "f".repeat(64),
+      cutsFile: path.join(dir, "cuts.json"),
+      expect: { everySlice: { positions: 0, mean: 0, se: null } },
+      pace: noPace,
+      log: () => {},
+    };
+    const choiceFile = path.join(dir, "choice.json");
+    const text = readFileSync(choiceFile, "utf8");
+    const c = JSON.parse(text) as { inputs: object };
+    writeFileSync(
+      choiceFile,
+      JSON.stringify({ ...c, inputs: { ...c.inputs, e: "0".repeat(64) } }),
+    );
+    await expect(cStep(input)).rejects.toThrow(
+      "explore\\choice.json is not of the current e.json",
+    );
+    writeFileSync(choiceFile, text);
+    const { sha: cSha, out } = await cStep(input);
+    expect(sha(readFileSync(path.join(dir, "c.json")))).toBe(cSha);
+    expect(out).toMatchObject({
+      step: "c",
+      inputs: {
+        e: sha(readFileSync(path.join(dir, "e.json"))),
+        choice: sha(readFileSync(choiceFile)),
+      },
+      b0: { positions: 0, priced: 0, stat: null },
+      evaluations: [],
+      goes: "B0",
+      rule: { name: "B0" },
+    });
   });
 
   it("G6 waits on its pace before each raw file it reads", async () => {

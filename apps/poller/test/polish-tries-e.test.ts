@@ -13,10 +13,12 @@ import { loadResearch, type Research } from "../src/paper/research.js";
 import { GateFailed } from "../src/polish/run.js";
 import { adoptedOf } from "../src/polish/tries/choice.js";
 import { cutsOf, featuresOf } from "../src/polish/tries/features.js";
-import { E, inPart } from "../src/polish/tries/parts.js";
+import { C, E, inPart } from "../src/polish/tries/parts.js";
 import { entriesAt, ruleOf, tryNamed } from "../src/polish/tries/rules.js";
 import {
+  ChoiceFile,
   EFile,
+  cOf,
   choiceOf,
   eOf,
   type Expected,
@@ -251,6 +253,92 @@ describe(
         rule: { name: "B0" },
         N: null,
         lines: [],
+      });
+    });
+
+    it("the check: B0 on C first; N evaluated, passing with every F2 floor and the footprint, goes to FRESH alone; N failing, S1 (the larger t) next; without the edge B0 goes, nothing evaluated", async () => {
+      const i = inputsOf(w);
+      const { out } = await run(w, i, 20);
+      const e = EFile.parse(JSON.parse(JSON.stringify(out)));
+      const pace = () => Promise.resolve();
+      const ch = await choiceOf(w, { M: 1, cuts: i.cuts, e, pace });
+      const choice = ChoiceFile.parse(JSON.parse(JSON.stringify(ch)));
+      const r = await cOf(w, { M: 1, cuts: i.cuts, e, choice, pace });
+      const { slices, all } = entriesAt(w, 1);
+      const onC = all.filter((x) => inPart(C, x.fill.t));
+      const ref = onC.map((x) =>
+        netOf(
+          w,
+          x.fill.iid,
+          x.fill.side === 1 ? -1 : 1,
+          x.fill.t + ENTRY_DELAY_MS,
+        ),
+      );
+      const b = out.calibration.rebasedBy;
+      expect(r.out.b0).toMatchObject({
+        positions: onC.length,
+        priced: onC.length,
+      });
+      expect(r.out.b0.stat!.mean).toBeCloseTo(mean(ref) - b, 9);
+      // N on C: C's forced sells whose 7-day range is below R4's E cut.
+      const f = featuresOf(w, {
+        entries: onC,
+        slices,
+        all,
+        delay: ENTRY_DELAY_MS,
+      });
+      const r4 = TRIES.find((t) => t.name === "R4")!;
+      const kept = ref.filter(
+        (_, k) =>
+          onC[k]!.fill.side === -1 &&
+          keeps(r4, f.get("R4")![k]!, i.cuts.R4.value) === true,
+      );
+      expect(r.out.goes).toBe("N");
+      expect(r.out.rule).toEqual(ch.rule);
+      expect(r.out.evaluations).toHaveLength(1);
+      expect(r.out.evaluations[0]).toMatchObject({
+        rule: "N",
+        positions: kept.length,
+        floors: { mean: true, days: true, coins: true, footprint: true },
+      });
+      const n = r.out.evaluations[0] as unknown as {
+        t: number;
+        stat: { mean: number };
+        test: { k: number };
+      };
+      expect(n.t).toBeGreaterThan(1);
+      expect(n.test.k).toBe(ch.N!.k);
+      expect(n.stat.mean).toBeCloseTo(mean(kept) - b, 9);
+      // N made to fail (W5 is unknown everywhere): the adopted change with the larger t, S1, is next, and goes.
+      const failing = ChoiceFile.parse({
+        ...choice,
+        rule: ruleOf("N", [tryNamed("S1"), tryNamed("R4"), tryNamed("W5")]),
+      });
+      const s = await cOf(w, { M: 1, cuts: i.cuts, e, choice: failing, pace });
+      expect(
+        s.out.evaluations.map((x) => [x.rule, x.floors.footprint]),
+      ).toEqual([
+        ["N", false],
+        ["S1", true],
+      ]);
+      expect(s.out.goes).toBe("S1");
+      expect(s.out.rule).toEqual(ruleOf("S1", [tryNamed("S1")]));
+      // Without the edge: nothing adopted, B0 goes, no evaluation.
+      const fl = inputsOf(flat);
+      const none = await run(flat, fl, 5);
+      const ne = EFile.parse(JSON.parse(JSON.stringify(none.out)));
+      const nc = await choiceOf(flat, { M: 1, cuts: fl.cuts, e: ne, pace });
+      const z = await cOf(flat, {
+        M: 1,
+        cuts: fl.cuts,
+        e: ne,
+        choice: ChoiceFile.parse(JSON.parse(JSON.stringify(nc))),
+        pace,
+      });
+      expect(z.out).toMatchObject({
+        goes: "B0",
+        evaluations: [],
+        rule: { name: "B0" },
       });
     });
   },
