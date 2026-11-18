@@ -14,8 +14,14 @@ import { GateFailed } from "../src/polish/run.js";
 import { adoptedOf } from "../src/polish/tries/choice.js";
 import { cutsOf, featuresOf } from "../src/polish/tries/features.js";
 import { E, inPart } from "../src/polish/tries/parts.js";
-import { entriesAt } from "../src/polish/tries/rules.js";
-import { eOf, type Expected } from "../src/polish/tries/steps.js";
+import { entriesAt, ruleOf, tryNamed } from "../src/polish/tries/rules.js";
+import {
+  EFile,
+  choiceOf,
+  eOf,
+  type Expected,
+} from "../src/polish/tries/steps.js";
+import { TRIES, keeps } from "../src/polish/tries/trylog.js";
 import { coinName } from "../src/waveh/coins.js";
 import { DATA_END, TEST_END, TEST_START } from "../src/waveh/instants.js";
 import { waveSpots } from "../src/waveh/positions.js";
@@ -35,11 +41,15 @@ beforeAll(async () => {
 function inputsOf(x: World) {
   const { slices, all } = entriesAt(x, 1);
   const entries = all.filter((e) => inPart(E, e.fill.t));
-  const cuts = JSON.parse(
-    JSON.stringify(
-      cutsOf(x, featuresOf(x, { entries, slices, all, delay: ENTRY_DELAY_MS })),
-    ),
-  ) as Parameters<typeof eOf>[1]["cuts"];
+  const features = featuresOf(x, {
+    entries,
+    slices,
+    all,
+    delay: ENTRY_DELAY_MS,
+  });
+  const cuts = JSON.parse(JSON.stringify(cutsOf(x, features))) as Parameters<
+    typeof eOf
+  >[1]["cuts"];
   const markets = new Map(
     [...x.prices].map(([iid, pc]) => [
       iid,
@@ -82,7 +92,7 @@ function inputsOf(x: World) {
       e.fill.t + ENTRY_DELAY_MS,
     ),
   }));
-  return { entries, cuts, expect, ref };
+  return { entries, features, cuts, expect, ref };
 }
 
 const mean = (xs: readonly number[]) =>
@@ -195,6 +205,53 @@ describe(
       await expect(run(w, i, 5, { cuts })).rejects.toThrow(
         "the features' cuts on E are not polish/cuts.json's",
       );
+    });
+
+    it("the choice: S1 and R4 adopted, the larger t first; N, B0 with both, placed and priced on E as H9 written out, its k for C; without the edge N is B0 and nothing is priced", async () => {
+      const i = inputsOf(w);
+      const { out } = await run(w, i, 20);
+      const e = EFile.parse(JSON.parse(JSON.stringify(out)));
+      const c = await choiceOf(w, {
+        M: 1,
+        cuts: i.cuts,
+        e,
+        pace: () => Promise.resolve(),
+      });
+      expect(c.adopted.map((a) => a.name)).toEqual(["S1", "R4"]);
+      expect(c.rule).toEqual(ruleOf("N", [tryNamed("S1"), tryNamed("R4")]));
+      // N's positions: B0's E entries of forced sells whose 7-day range is below R4's E median.
+      const r4 = TRIES.find((t) => t.name === "R4")!;
+      const kept = i.ref.filter(
+        (r, k) =>
+          r.e.fill.side === -1 &&
+          keeps(r4, i.features.get("R4")![k]!, i.cuts.R4.value) === true,
+      );
+      expect(c.N).toMatchObject({
+        positions: kept.length,
+        priced: kept.length,
+        unpriced: {},
+      });
+      expect(c.N!.stat!.mean).toBeCloseTo(
+        mean(kept.map((r) => r.net)) - out.calibration.rebasedBy,
+        9,
+      );
+      expect(c.N!.k).toBeCloseTo(c.N!.stat!.se! / out.b0.stat!.se!, 12);
+      expect(c.lines).toHaveLength(kept.length);
+      const f = inputsOf(flat);
+      const none = await run(flat, f, 5);
+      expect(
+        await choiceOf(flat, {
+          M: 1,
+          cuts: f.cuts,
+          e: EFile.parse(JSON.parse(JSON.stringify(none.out))),
+          pace: () => Promise.reject(new Error("nothing is priced")),
+        }),
+      ).toMatchObject({
+        adopted: [],
+        rule: { name: "B0" },
+        N: null,
+        lines: [],
+      });
     });
   },
 );

@@ -58,6 +58,7 @@ import {
 import { WIDTH, type ColumnType } from "../src/polish/tables.js";
 import { checkPrices, dataFrom, levelsAt } from "../src/polish/tries/data.js";
 import {
+  choiceStep,
   eStep,
   featuresStep,
   identityOf,
@@ -1234,6 +1235,37 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       "no trade at the entry",
       "no trade at the exit",
     ]);
+  });
+
+  it("the exploration's choice step on this store: e.json held to the identity, nothing adopted, N is B0 and nothing is priced", async () => {
+    const dir = path.join(analyzer, "explore");
+    const input: StepInput = {
+      root: analyzer,
+      look: path.join(root, "look"),
+      coins,
+      kit: o.kit,
+      code: "f".repeat(64),
+      cutsFile: path.join(dir, "cuts.json"),
+      expect: { everySlice: { positions: 0, mean: 0, se: null } },
+      pace: noPace,
+      log: () => {},
+    };
+    await expect(
+      choiceStep({ ...input, code: "e".repeat(64) }),
+    ).rejects.toThrow("explore\\e.json is of another store, code or look");
+    const { sha: choiceSha, out } = await choiceStep(input);
+    expect(sha(readFileSync(path.join(dir, "choice.json")))).toBe(choiceSha);
+    expect(out).toMatchObject({
+      step: "choice",
+      inputs: { e: sha(readFileSync(path.join(dir, "e.json"))) },
+      adopted: [],
+      rule: { name: "B0", filters: [] },
+      N: null,
+    });
+    expect(
+      gunzipSync(readFileSync(path.join(dir, "choice-positions.jsonl.gz")))
+        .length,
+    ).toBe(0);
   });
 
   it("G6 waits on its pace before each raw file it reads", async () => {

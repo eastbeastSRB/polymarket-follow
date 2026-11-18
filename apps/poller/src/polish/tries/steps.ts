@@ -28,17 +28,19 @@ import { Step1 } from "../gates.js";
 import { GATES, GATES_FILE } from "../library.js";
 import { GateFailed } from "../run.js";
 import type { Store } from "../store.js";
-import { refusedFor, type TryOnE } from "./choice.js";
+import { FAMILIES, adoptedOf, refusedFor, type TryOnE } from "./choice.js";
 import { checkPrices, dataFrom, type Data } from "./data.js";
 import { cutsOf, featuresOf } from "./features.js";
 import { E, inPart, positionOf, type Entry } from "./parts.js";
 import {
+  B0,
   entriesAt,
   itemsOf,
   judged,
   place,
   ruleOf,
   stopExit,
+  tryNamed,
   unpricedOf,
 } from "./rules.js";
 import { E_FLOORS, floorsOf, gainFloor, statOf } from "./stats.js";
@@ -53,7 +55,7 @@ import { CutsFile, TRIES, keeps } from "./trylog.js";
 
 /** The steps' folder in the analyzer's folder of the range. */
 export const EXPLORE = "explore";
-export const STEPS = ["features", "e"] as const;
+export const STEPS = ["features", "e", "choice"] as const;
 export type StepName = (typeof STEPS)[number];
 
 /** The look's EVERY SLICE pooled line on marks (WAVE-H's report.json, 2026-11-17): what B0 over TEST must reproduce. */
@@ -386,6 +388,42 @@ export function reproductionOf(
   };
 }
 
+/** A group's positions as lines (its entry, legs, net and gross on marks; B0's on E with its features), for the steps' positions files and the Final review's recomputation. */
+function positionLines(
+  d: Data,
+  group: string,
+  entries: readonly Entry[],
+  specs: readonly Spec[],
+  nets: readonly Net[],
+  features?: ReadonlyMap<string, Float64Array>,
+): string[] {
+  const names = new Map(d.coins.list.map((c) => [c.assetId, c.name]));
+  return specs.map((sp, i) => {
+    const e = entries[i]!;
+    const om = grossOnMarks(d, sp, names.get(sp.iid)!);
+    return JSON.stringify({
+      group,
+      slice: e.slice,
+      t: e.fill.t,
+      iid: sp.iid,
+      tid: e.fill.tid,
+      dir: sp.dir,
+      xIn: sp.xIn,
+      xOut: sp.xOut,
+      ...nets[i]!,
+      onMarks: Number.isNaN(om) ? null : om,
+      ...(features === undefined
+        ? {}
+        : Object.fromEntries(
+            [...features].map(([k, v]) => [
+              k,
+              Number.isNaN(v[i]!) ? null : v[i]!,
+            ]),
+          )),
+    });
+  });
+}
+
 /** A group of positions the E step prices: its entries, their specs, those left out by reason. */
 type Group = {
   name: string;
@@ -526,32 +564,16 @@ export async function eOf(
   });
   o.phase("tries");
   const x2Items = itemsOf(x2.entries, nets.get("X2")!, b);
-  const lines: string[] = [];
-  for (const g of groups)
-    g.specs.forEach((sp, i) => {
-      const fv =
-        g.name === "B0"
-          ? Object.fromEntries(
-              [...f].map(([k, v]) => [k, Number.isNaN(v[i]!) ? null : v[i]!]),
-            )
-          : {};
-      const om = grossOnMarks(d, sp, names.get(sp.iid)!);
-      lines.push(
-        JSON.stringify({
-          group: g.name,
-          slice: g.entries[i]!.slice,
-          t: g.entries[i]!.fill.t,
-          iid: sp.iid,
-          tid: g.entries[i]!.fill.tid,
-          dir: sp.dir,
-          xIn: sp.xIn,
-          xOut: sp.xOut,
-          ...nets.get(g.name)![i]!,
-          onMarks: Number.isNaN(om) ? null : om,
-          ...fv,
-        }),
-      );
-    });
+  const lines = groups.flatMap((g) =>
+    positionLines(
+      d,
+      g.name,
+      g.entries,
+      g.specs,
+      nets.get(g.name)!,
+      g.name === "B0" ? f : undefined,
+    ),
+  );
   return {
     out: {
       reproduction,
@@ -605,6 +627,126 @@ export async function eStep(o: StepInput) {
   return { sha: writeOutput(o, "e.json", value), out: value };
 }
 
+const Num = z.number().nullable();
+const StatOut = z
+  .object({ n: z.number(), mean: z.number(), se: Num })
+  .loose()
+  .nullable();
+/** What the choice and C steps read of `e.json` (our own file: one that does not parse throws). */
+export const EFile = z.object({
+  calibration: z.object({ rebasedBy: z.number() }).loose(),
+  b0: z.object({ stat: StatOut }).loose(),
+  gain: z.number(),
+  tries: z.array(
+    z
+      .object({
+        name: z.string(),
+        family: z.enum(FAMILIES),
+        order: z.number(),
+        adoptable: z.boolean(),
+        d: Num,
+        t: Num,
+        floors: z.object({
+          mean: z.boolean(),
+          days: z.boolean(),
+          coins: z.boolean(),
+        }),
+        stat: StatOut,
+      })
+      .loose(),
+  ),
+});
+export type EFile = z.infer<typeof EFile>;
+
+/** e.json's tries as the choice rule reads them (a D-test without a value is NaN, never adopted). */
+export const triesOnE = (e: EFile): TryOnE[] =>
+  e.tries.map((t) => ({
+    name: t.name,
+    family: t.family,
+    order: t.order,
+    adoptable: t.adoptable,
+    d: t.d ?? NaN,
+    t: t.t,
+    floors: t.floors,
+  }));
+
+/**
+ * The choice's numbers (POLISH-EXPLORE's plan 5.3): the changes adopted on
+ * E, largest t first; N, B0 with them together, placed and priced on E in
+ * its own sweep, its numbers printed (they test nothing) with its k for C
+ * (SE_N ÷ SE_B0 on E). Nothing adopted: N is B0, and nothing is priced.
+ */
+export async function choiceOf(
+  d: Data,
+  o: {
+    M: number;
+    cuts: CutsFile["cuts"];
+    e: EFile;
+    pace: () => Promise<void>;
+  },
+) {
+  const adopted = adoptedOf(triesOnE(o.e), o.e.gain);
+  if (adopted.length === 0)
+    return { adopted: [], rule: B0, N: null, lines: [] as string[] };
+  const rule = ruleOf(
+    "N",
+    adopted.map((t) => tryNamed(t.name)),
+  );
+  const p = place(d, rule, E, o.M, o.cuts);
+  const nets = await priceAll(d, p.specs, o.pace);
+  const items = itemsOf(p.entries, nets, o.e.calibration.rebasedBy);
+  const stat = statOf(d.kit, items);
+  const seB0 = o.e.b0.stat?.se ?? null;
+  return {
+    adopted: adopted.map((t) => ({
+      name: t.name,
+      family: t.family,
+      t: t.t,
+      d: t.d,
+    })),
+    rule,
+    N: {
+      positions: p.specs.length,
+      priced: items.length,
+      left: p.left,
+      unpriced: unpricedOf(nets),
+      stat,
+      /** k for N's D-test on C: SE_N ÷ SE_B0, both on E. */
+      k: stat?.se != null && seB0 ? stat.se / seB0 : null,
+    },
+    lines: positionLines(d, "N", p.entries, p.specs, nets),
+  };
+}
+
+/** Run 3, `choice`: e.json held to this identity; `choiceOf`; `choice-positions.jsonl.gz`, then `choice.json`. */
+export async function choiceStep(o: StepInput) {
+  const m = meter(o.log);
+  const { store, identity } = identityOf(o);
+  const e = readOutput(o, "e.json", identity);
+  const features = readOutput(o, "features.json", identity);
+  const cuts = readCuts(o, features);
+  const d = dataFrom(store, o.coins, o.kit);
+  m.phase("data");
+  const { lines, ...out } = await choiceOf(d, {
+    M: identity.M,
+    cuts: cuts.cuts,
+    e: EFile.parse(e.value),
+    pace: o.pace,
+  });
+  m.phase("N on E");
+  writePositions(o, "choice-positions.jsonl.gz", lines);
+  const value = {
+    step: "choice",
+    identity,
+    inputs: { e: e.sha, cuts: cuts.sha },
+    ...out,
+    note: "N's numbers on E test nothing; N's only test is C (F5)",
+    ...m.done(),
+    written: new Date().toISOString(),
+  };
+  return { sha: writeOutput(o, "choice.json", value), out: value };
+}
+
 /** Runs one step by its name. */
 export async function runStep(step: StepName, o: StepInput) {
   switch (step) {
@@ -612,5 +754,7 @@ export async function runStep(step: StepName, o: StepInput) {
       return featuresStep(o);
     case "e":
       return eStep(o);
+    case "choice":
+      return choiceStep(o);
   }
 }
