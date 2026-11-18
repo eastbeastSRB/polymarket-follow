@@ -41,7 +41,12 @@ import {
   type Library,
 } from "../src/polish/library.js";
 import { WAVEH_RANGE, type Range } from "../src/polish/range.js";
-import { Store, openStore, type Manifest } from "../src/polish/store.js";
+import {
+  Store,
+  openStore,
+  type FileCounts,
+  type Manifest,
+} from "../src/polish/store.js";
 import { fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
@@ -458,6 +463,157 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     } finally {
       writeFileSync(file, Buffer.alloc(0));
     }
+  });
+
+  it("G0 names the scan's counters, fails on a record refused or misread, and holds every table's rows in to its rows out", () => {
+    expect(g0(o, step1)).toMatchObject({
+      pass: true,
+      counters: { refused: 0, misread: 0, slowLines: 0, slowRecords: 0 },
+    });
+    const withFiles = (edit: (ls: FileCounts[]) => void) => {
+      const lines = structuredClone(lib.files);
+      edit(lines);
+      const store = new Store(o.store.dir, o.store.manifest, o.store.id);
+      store.files = () => lines;
+      return g0({ ...o, store }, step1).first;
+    };
+    const withManifest = (edit: (m: Manifest) => void) => {
+      const m = structuredClone(o.store.manifest);
+      edit(m);
+      return g0({ ...o, store: new Store(o.store.dir, m, o.store.id) }, step1)
+        .first;
+    };
+    const busy = lib.files.findIndex((f) => f.takerRows > 0 && f.liqRows > 0);
+    expect(withFiles((ls) => (ls[busy]!.refused = 2))).toEqual([
+      "files.jsonl: 2 records a writer refused",
+    ]);
+    expect(withFiles((ls) => (ls[busy]!.misread = 1))).toEqual([
+      "files.jsonl: 1 records misread",
+    ]);
+    expect(
+      withFiles((ls) => {
+        ls[busy]!.slowLines = 3;
+        ls[busy]!.slowRecords = 4;
+      }),
+    ).toEqual([]);
+    const { tape, bars, liq } = o.store.manifest.counts.merge as Record<
+      "tape" | "bars" | "liq",
+      { in: number; out: number; duplicates: number }
+    >;
+    expect(tape.in + bars.in).toBeGreaterThan(0);
+    expect(liq.in).toBeGreaterThan(0);
+    expect(withFiles((ls) => (ls[busy]!.takerRows += 1))).toEqual([
+      `the parts' taker rows, as the merge's tape and bars in: ${tape.in + bars.in + 1}, not ${tape.in + bars.in}`,
+    ]);
+    expect(withFiles((ls) => (ls[busy]!.liqRows -= 1))).toEqual([
+      `the parts' liq rows, as the merge's liq in: ${liq.in - 1}, not ${liq.in}`,
+    ]);
+    expect(withManifest((m) => (m.counts.merge.tape!.duplicates += 1))).toEqual(
+      [`tape in, as its out and duplicates: ${tape.in}, not ${tape.in + 1}`],
+    );
+    expect(withManifest((m) => (m.counts.merge.bars!.in += 1))).toEqual([
+      `the parts' taker rows, as the merge's tape and bars in: ${tape.in + bars.in}, not ${tape.in + bars.in + 1}`,
+      `bars in, as its out and duplicates: ${bars.in + 1}, not ${bars.in}`,
+    ]);
+    expect(withManifest((m) => (m.counts.merge.liq!.out -= 1))).toEqual([
+      `liq in, as its out and duplicates: ${liq.in}, not ${liq.in - 1}`,
+      `the liq partitions' rows, as the merge's liq out: ${liq.out}, not ${liq.out - 1}`,
+    ]);
+    expect(withManifest((m) => (m.counts.merge.tape!.out += 1))).toEqual([
+      `tape in, as its out and duplicates: ${tape.in}, not ${tape.in + 1}`,
+      `the tape partitions' rows, as the merge's tape out: ${tape.out}, not ${tape.out + 1}`,
+    ]);
+    expect(withManifest((m) => delete m.counts.merge.bars)).toEqual([
+      "the manifest has no merge counts of tape, bars and liq",
+    ]);
+  });
+
+  it("G0 fails on a store some of whose records a writer refused, every stored row conserved (EXTRACT-REVIEW's refused-demo)", async () => {
+    const D = Date.parse("2025-07-05T00:00:00Z");
+    const fills = [fillKey(D + 12 * HOUR_MS), fillKey(D + 13 * HOUR_MS)];
+    // An ETH liquidation without `dir`, and a SOL taker whose tid is 2^64: no writer stores either.
+    const noDir = record(addr(7), {
+      coin: "ETH",
+      side: "A",
+      time: D + 12 * HOUR_MS + 3_000,
+      startPosition: "1.0",
+      crossed: true,
+      tid: 31,
+      liquidation: {
+        liquidatedUser: addr(7),
+        markPx: "2500",
+        method: "market",
+      },
+    }).replace('"dir":"Open Long",', "");
+    const files = new Map<string, string>([
+      [
+        fills[0]!,
+        [
+          ...taker("SOL", "B", D + 12 * HOUR_MS + 1_000, "150", "1", 30),
+          ...trade(addr(3), addr(2), {
+            coin: "SOL",
+            side: "A",
+            time: D + 12 * HOUR_MS + 2_000,
+            tid: "18446744073709551616",
+          }),
+          noDir,
+        ].join("\n"),
+      ],
+      [
+        fills[1]!,
+        taker("SOL", "A", D + 13 * HOUR_MS, "151", "2", 32).join("\n"),
+      ],
+      [ctxsKey(D), `${CTXS_HEAD}\n`],
+      ...coins.list.map(
+        (c) => [fundingKey(c.name, D), "[]"] as [string, string],
+      ),
+    ]);
+    const made = makeStore(files, false);
+    const listText = readFileSync(path.join(made.store, "manifest.jsonl"));
+    const list = manifestList(listText.toString("utf8"));
+    const range: Range = {
+      name: "WAVE-H",
+      partial: null,
+      fill: fills,
+      days: [D],
+      fundingStarts: [D],
+      end: D + DAY_MS,
+      grid: { start: D, minutes: 1440 },
+      months: ["2025-07"],
+    };
+    const root = tmp("refused");
+    await extract({
+      store: made.store,
+      root,
+      list,
+      listName: "manifest.jsonl",
+      listSha256: sha(listText),
+      range,
+      workers: 0,
+      code: o.code,
+      wavehFrozen: o.wavehFrozen,
+      forty,
+      small,
+      pace: noPace,
+      log: () => {},
+    });
+    const store = openStore(path.join(root, "store"));
+    expect(
+      store.files().map((f) => [f.refused, f.takerRows, f.liqRows]),
+    ).toEqual([
+      [2, 2, 0],
+      [0, 1, 0],
+    ]);
+    expect(
+      g0(
+        { ...o, store, list, listSha256: sha(listText), fill: fills },
+        { ...step1, dataSha256: sha(listText) },
+      ),
+    ).toMatchObject({
+      pass: false,
+      counters: { refused: 2, misread: 0 },
+      first: ["files.jsonl: 2 records a writer refused"],
+    });
   });
 
   it("G1 fails on a count, naming the field and the day", () => {

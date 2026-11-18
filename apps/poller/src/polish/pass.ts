@@ -67,6 +67,20 @@ const higher = (a: Memory, b: Memory): Memory => ({
 });
 const NO_MEMORY: Memory = { rss: 0, heapUsed: 0, external: 0, arrayBuffers: 0 };
 
+/** The scan's own counters, which G0 reads too: records a writer refused, records misread, the slow path's lines and records. */
+export type Counters = {
+  refused: number;
+  misread: number;
+  slowLines: number;
+  slowRecords: number;
+};
+const countersOf = (s: Counters): Counters => ({
+  refused: s.refused,
+  misread: s.misread,
+  slowLines: s.slowLines,
+  slowRecords: s.slowRecords,
+});
+
 export type Done = {
   index: number;
   key: string;
@@ -74,6 +88,7 @@ export type Done = {
   decoded: number;
   records: number;
   failed: number;
+  counters: Counters;
   /** The thread's memory with the file's part built, before it is written. */
   memory: Memory;
 };
@@ -116,6 +131,7 @@ export function extractFile(task: Task): Done {
     decoded: scan.decoded,
     records: scan.records,
     failed: scan.failed,
+    counters: countersOf(scan),
     memory,
   };
 }
@@ -156,6 +172,8 @@ export type PassSummary = {
   decoded: number;
   records: number;
   failed: number;
+  /** The scan's counters over every file of the range, a resumed part's from its header. */
+  counters: Counters;
   seconds: number;
   peaks: { main: Memory; workers: Memory[] };
 };
@@ -191,6 +209,18 @@ export async function runPass(o: {
         `${day}: ${d.failed} of ${d.records + d.failed} records fail WAVE-H's schema`,
       );
   };
+  const counters: Counters = {
+    refused: 0,
+    misread: 0,
+    slowLines: 0,
+    slowRecords: 0,
+  };
+  const count = (c: Counters) => {
+    counters.refused += c.refused;
+    counters.misread += c.misread;
+    counters.slowLines += c.slowLines;
+    counters.slowRecords += c.slowRecords;
+  };
   const todo: FileTask[] = [];
   let skipped = 0;
   for (const f of o.files) {
@@ -202,6 +232,7 @@ export async function runPass(o: {
       h.header.code === o.code
     ) {
       skipped += 1;
+      count(h.header.scan);
       tally(f.key, h.header.scan.records, h.header.scan.failed);
     } else todo.push(f);
   }
@@ -221,6 +252,7 @@ export async function runPass(o: {
     sum.decoded += d.decoded;
     sum.records += d.records;
     sum.failed += d.failed;
+    count(d.counters);
     main = higher(main, memoryNow());
     peakOf[worker] = higher(peakOf[worker] ?? NO_MEMORY, d.memory);
     tally(d.key, d.records, d.failed);
@@ -264,6 +296,7 @@ export async function runPass(o: {
     skipped,
     extracted: done,
     ...sum,
+    counters,
     seconds: Math.round((Date.now() - t0) / 1000),
     peaks: { main, workers: peakOf },
   };

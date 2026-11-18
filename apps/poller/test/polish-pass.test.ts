@@ -183,6 +183,28 @@ describe("the pass", () => {
     expect(other).toMatchObject({ skipped: 0, extracted: 3 });
   });
 
+  it("names the scan's counters over every file of the range, a resumed part's from its header", async () => {
+    const t = Date.parse("2025-06-12T10:00:00Z");
+    // A taker whose tid is 2^64 (refused), and a record whose fill does not open with its coin (the slow path).
+    const odd = [
+      ...trade(addr(1), addr(2), {
+        coin: "SOL",
+        side: "B",
+        time: t,
+        tid: "18446744073709551616",
+      }),
+      `["${addr(4)}",{"px":"151","coin":"SOL","sz":"1.0","side":"B","time":${t + 1},"startPosition":"0.0","dir":"Open Long","closedPnl":"0.0","hash":"0x00","oid":7,"crossed":true,"fee":"0.0068","tid":5,"feeToken":"USDC"}]`,
+    ];
+    const { store, tasks } = world(
+      new Map([[fillKey(t), `${odd.join("\n")}\n`]]),
+    );
+    const dir = parts();
+    const want = { refused: 1, misread: 0, slowLines: 0, slowRecords: 1 };
+    expect((await pass(store, dir, tasks)).counters).toEqual(want);
+    const again = await pass(store, dir, tasks);
+    expect(again).toMatchObject({ skipped: 4, extracted: 0, counters: want });
+  });
+
   it("refuses a part that is not whole or whose payload differs, and redoes it", async () => {
     const { store, tasks } = world();
     const dir = parts();

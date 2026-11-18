@@ -54,6 +54,7 @@ import {
   type Library,
 } from "./library.js";
 import { monthsOf } from "./merge.js";
+import type { Counters } from "./pass.js";
 import {
   FILES_FILE,
   NAMES_FILE,
@@ -61,7 +62,9 @@ import {
   USERS_FILE,
   partitionDir,
   type FileCounts,
+  type Manifest,
   type Store,
+  type Table,
 } from "./store.js";
 import { WIDTH, type ColumnType } from "./tables.js";
 
@@ -151,7 +154,58 @@ const listed = (problems: readonly string[]) => ({
 });
 const sha256Of = (file: string) => sha256(readFileSync(file));
 
-/** G0: every file the manifest names, whole; the inputs WAVE-H's list's, one line a fill file; the partitions every table needs. */
+/** The scan's counters summed over the input files (G0 refuses any refused or misread record; the slow path's are printed). */
+function countersOf(lines: readonly FileCounts[]): Counters {
+  const sum = (k: keyof Counters) => lines.reduce((s, f) => s + f[k], 0);
+  return {
+    refused: sum("refused"),
+    misread: sum("misread"),
+    slowLines: sum("slowLines"),
+    slowRecords: sum("slowRecords"),
+  };
+}
+
+/** Rows in = rows out + duplicates dropped, by table: the parts' rows (`files.jsonl`) against the merge's counts and the partitions' rows (the manifest). */
+function conservation(m: Manifest, lines: readonly FileCounts[]): string[] {
+  const { tape, bars, liq } = m.counts.merge;
+  if (tape === undefined || bars === undefined || liq === undefined)
+    return ["the manifest has no merge counts of tape, bars and liq"];
+  const problems: string[] = [];
+  const check = (what: string, a: number, b: number) => {
+    if (a !== b) problems.push(`${what}: ${a}, not ${b}`);
+  };
+  const parts = (k: "takerRows" | "liqRows") =>
+    lines.reduce((s, f) => s + f[k], 0);
+  const rows = (table: Table) =>
+    m.partitions
+      .filter((p) => p.table === table)
+      .reduce((s, p) => s + p.rows, 0);
+  check(
+    "the parts' taker rows, as the merge's tape and bars in",
+    parts("takerRows"),
+    tape.in + bars.in,
+  );
+  check("the parts' liq rows, as the merge's liq in", parts("liqRows"), liq.in);
+  for (const [name, t] of [
+    ["tape", tape],
+    ["bars", bars],
+    ["liq", liq],
+  ] as const)
+    check(`${name} in, as its out and duplicates`, t.in, t.out + t.duplicates);
+  check(
+    "the tape partitions' rows, as the merge's tape out",
+    rows("tape"),
+    tape.out,
+  );
+  check(
+    "the liq partitions' rows, as the merge's liq out",
+    rows("liq"),
+    liq.out,
+  );
+  return problems;
+}
+
+/** G0: every file the manifest names, whole; the inputs WAVE-H's list's, one line a fill file; the partitions every table needs; no record refused or misread; every row conserved. */
 export function g0(o: GatesInput, step1: Step1): GateResult {
   const m = o.store.manifest;
   const problems: string[] = [];
@@ -214,8 +268,15 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
     if (f.index !== i || f.key !== o.fill[i] || f.sha256 !== o.list.get(f.key))
       problems.push(`files.jsonl line ${i + 1} is not ${o.fill[i]} as listed`);
   });
+  const counters = countersOf(lines);
+  if (counters.refused !== 0)
+    problems.push(`files.jsonl: ${counters.refused} records a writer refused`);
+  if (counters.misread !== 0)
+    problems.push(`files.jsonl: ${counters.misread} records misread`);
+  problems.push(...conservation(m, lines));
   return {
     pass: problems.length === 0,
+    counters,
     files,
     bytes,
     partitions: m.partitions.length,

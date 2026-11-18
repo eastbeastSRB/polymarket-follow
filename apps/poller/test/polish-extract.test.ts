@@ -204,7 +204,11 @@ describe("extract, end to end", { timeout: 60_000 }, () => {
     };
     return { store, list, range };
   }
-  const run = (w: ReturnType<typeof world>, root: string) =>
+  const run = (
+    w: ReturnType<typeof world>,
+    root: string,
+    log: (event: string, fields: object) => void = () => {},
+  ) =>
     extract({
       store: w.store,
       root,
@@ -218,13 +222,21 @@ describe("extract, end to end", { timeout: 60_000 }, () => {
       forty: [...fortyOf(coins)],
       small: coins.list.map((c) => c.name),
       pace: () => Promise.resolve(),
-      log: () => {},
+      log,
     });
 
   it("writes the parts and the store, its manifest naming the inputs, the code and the peaks", async () => {
     const w = world();
     const root = tmp("root");
-    const m = await run(w, root);
+    const events: [string, object][] = [];
+    const m = await run(w, root, (event, fields) =>
+      events.push([event, fields]),
+    );
+    // The pass's end names the scan's counters.
+    expect(events.find(([e]) => e === "pass done")?.[1]).toMatchObject({
+      files: 2,
+      counters: { refused: 0, misread: 0, slowLines: 0, slowRecords: 0 },
+    });
     const s = openStore(path.join(root, "store"));
     expect(s.manifest).toEqual(m);
     expect(m).toMatchObject({
