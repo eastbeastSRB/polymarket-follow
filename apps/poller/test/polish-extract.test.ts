@@ -276,6 +276,44 @@ describe("extract, end to end", { timeout: 60_000 }, () => {
     expect(existsSync(fine)).toBe(false);
   });
 
+  it("removes the .tmp files a crash left in the parts and the store, and nothing else", async () => {
+    const w = world();
+    const root = tmp("root");
+    await run(w, root);
+    const left = [
+      path.join(root, "parts", "1.part.tmp"),
+      path.join(root, "store", "tape", "SOL", "2025-06", "px.f64.tmp"),
+      path.join(root, "store", "manifest.json.tmp"),
+    ];
+    const kept = path.join(root, "parts", "notes.txt");
+    for (const f of [...left, kept]) writeFileSync(f, "x");
+    const events: [string, object][] = [];
+    await run(w, root, (event, fields) => events.push([event, fields]));
+    expect(left.filter((f) => existsSync(f))).toEqual([]);
+    expect(existsSync(kept)).toBe(true);
+    expect(events.find(([e]) => e === "leftovers removed")?.[1]).toEqual({
+      tmp: 3,
+    });
+    expect(openStore(path.join(root, "store")).manifest.partial).toBe(null);
+  });
+
+  it("refuses a timing run into a root that holds a store, writing nothing", async () => {
+    const w = world();
+    const root = tmp("root");
+    await run(w, root);
+    const manifest = readFileSync(path.join(root, "store", "manifest.json"));
+    await expect(
+      run({ ...w, range: { ...w.range, partial: "2025-06-10" } }, root),
+    ).rejects.toThrow(
+      new StoreError(
+        `${root} holds a store: a timing run (--day 2025-06-10) needs a root of its own`,
+      ),
+    );
+    expect(
+      readFileSync(path.join(root, "store", "manifest.json")).equals(manifest),
+    ).toBe(true);
+  });
+
   it("stops before reading anything when the list lacks a file the range needs", async () => {
     const w = world();
     const list = new Map(w.list);

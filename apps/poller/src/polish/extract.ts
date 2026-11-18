@@ -4,8 +4,11 @@
  * before any is read; then the range's fill files through the pass into
  * parts, its days of contexts and its funding windows, and the merge into
  * the store under `<root>\store`. Memory is sampled every 5 s and on every
- * file; the peaks and each step's seconds go into the manifest.
+ * file; the peaks and each step's seconds go into the manifest. A timing
+ * run (`--day`) needs a root without a store; the `.tmp` files a crash left
+ * in `parts\` and `store\` are removed first.
  */
+import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { getHeapStatistics } from "node:v8";
 import { ctxsKey, fundingKey } from "../waveh/keys.js";
@@ -15,10 +18,27 @@ import { merge } from "./merge.js";
 import { runPass } from "./pass.js";
 import type { Range } from "./range.js";
 import { checkPath } from "./seal.js";
-import type { Manifest } from "./store.js";
+import { MANIFEST, type Manifest } from "./store.js";
 
 export const PARTS = "parts";
 export const STORE = "store";
+
+/** Deletes the `.tmp` files under these folders: a file written whole is renamed from its `.tmp`, so one left is a crash's. Only files; no link is followed. */
+function removeLeftovers(dirs: readonly string[]): number {
+  let n = 0;
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.isFile() && e.name.endsWith(".tmp")) {
+        unlinkSync(p);
+        n += 1;
+      }
+    }
+  };
+  for (const d of dirs) if (existsSync(d)) walk(d);
+  return n;
+}
 
 /** The highest of every `process.memoryUsage()` field and of the heap's ceiling (`heapLimit`), sampled every `ms` until stopped; `peak` is kept up to date. */
 export function peakWatch(ms = 5_000) {
@@ -62,6 +82,10 @@ export async function extract(o: {
   checkPath(o.store);
   checkPath(o.root);
   const r = o.range;
+  if (r.partial !== null && existsSync(path.join(o.root, STORE, MANIFEST)))
+    throw new StoreError(
+      `${o.root} holds a store: a timing run (--day ${r.partial}) needs a root of its own`,
+    );
   const keys = [
     ...r.fill,
     ...r.days.map(ctxsKey),
@@ -72,6 +96,11 @@ export async function extract(o: {
     throw new StoreError(
       `${absent.length} files of ${r.name} are not in the list, the first ${absent[0]}`,
     );
+  const removed = removeLeftovers([
+    path.join(o.root, PARTS),
+    path.join(o.root, STORE),
+  ]);
+  if (removed > 0) o.log("leftovers removed", { tmp: removed });
   const watch = peakWatch();
   const seconds: Record<string, number> = {};
   let t = Date.now();
