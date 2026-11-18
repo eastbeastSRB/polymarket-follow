@@ -118,6 +118,14 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   (`beforeAll`, `afterAll`) need explicit limits:** under the full suite's
   load WAVE-H's rehearse hooks passed vitest's 10 s default (EXTRACT-FIX,
   2026-11-18).
+- **When a requirement is about a line's position, test the position:** a
+  test that finds the start line by its message still passes when another
+  line comes first; read the first line (EXTRACT-FIX-2, break H5,
+  2026-11-18).
+- **After the breaks, remove each junction link in a scratch copy on its
+  own** (`cmd /c rmdir <link>`, no `/s`). The copy is then a plain folder,
+  and a later cleanup cannot follow it into the repository's `node_modules`
+  (EXTRACT-FIX-2, 2026-11-18).
 - **typescript-eslint's `require-await` rejects an async stub with no
   `await`:** return `Promise.resolve()` from a plain function instead
   (EXTRACT-FIX, 2026-11-18).
