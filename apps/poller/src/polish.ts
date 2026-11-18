@@ -9,7 +9,7 @@
  *
  * This file only starts the program (`polish/main.js`, which has the
  * commands, settings and exit codes) in a worker thread whose heap ceiling
- * is 16 GB; each worker of its pass has 4 GB (F3). Every ceiling is a
+ * is 20 GB; each worker of its pass has 4 GB (F3). Every ceiling is a
  * worker's own, and V8's heap flag beats them all, so a heap flag on the
  * command line or in NODE_OPTIONS is refused, exit 2 (decisions 2026-11-18,
  * EXTRACT-REVIEW's findings, L5). The program's exit is the process's; a
@@ -17,8 +17,8 @@
  */
 import { Worker } from "node:worker_threads";
 
-/** The program's old-generation ceiling (F3: 16 GB for the extraction's main thread). */
-const PROGRAM_HEAP_MB = 16_384;
+/** The program's old-generation ceiling: 20 GB, F3's for the exam (decisions 2026-11-18, EXTRACT-FIX verified, 1: G6 alone held 8.9 GB of heap on 2025-10-10). */
+const PROGRAM_HEAP_MB = 20_480;
 const HEAP_FLAG = /^--max[-_](?:old[-_]space|heap)[-_]size/;
 
 const flags = [
@@ -27,7 +27,7 @@ const flags = [
 ].filter((a) => HEAP_FLAG.test(a));
 if (flags.length > 0) {
   process.stderr.write(
-    `polish: refused: ${flags.join(" ")}: a heap flag overrides every worker's ceiling (the program's 16 GB, a pass worker's 4 GB); run node dist/polish.js without one\n`,
+    `polish: refused: ${flags.join(" ")}: a heap flag overrides every worker's ceiling (the program's 20 GB, a pass worker's 4 GB); run node dist/polish.js without one\n`,
   );
   process.exit(2);
 }

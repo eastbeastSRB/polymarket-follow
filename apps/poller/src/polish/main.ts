@@ -1,6 +1,6 @@
 /**
  * The polishing's program, run by `dist/polish.js` in a worker thread of a
- * 16 GB heap (polish.ts, the launcher; decisions 2026-11-18, EXTRACT-REVIEW's
+ * 20 GB heap (polish.ts, the launcher; decisions 2026-11-18, EXTRACT-REVIEW's
  * findings, L5). `extract`: WAVE-H's ten months into the analyzer's store
  * (extract.ts), every file held to the frozen `waveh/data.sha256`; `--day`
  * one day of them, for a timing run. `gates`: the store's gates G0–G6

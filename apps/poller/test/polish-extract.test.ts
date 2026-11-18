@@ -403,7 +403,7 @@ describe("the built program", () => {
     }
   }, 60_000);
 
-  it("refuses a heap flag, which would beat every worker's ceiling, and runs the program with its own 16 GB (exit 2, then 5)", () => {
+  it("refuses a heap flag, which would beat every worker's ceiling, and runs the program with its own 20 GB, named in the log's first line (exit 2, then 5)", () => {
     const ok = {
       WAVEH_STORE: "F:\\x\\WAVE-H\\store",
       ANALYZER_ROOT: tmp("root"),
@@ -419,20 +419,20 @@ describe("the built program", () => {
       expect(r.stderr).toContain(why);
     }
     expect(readdirSync(ok.ANALYZER_ROOT)).toEqual([]);
-    // No store there: not ready, after the start line names the program's ceiling.
+    // No store there: not ready, after the log's first line, the start line, names the program's ceiling.
     const r = runIt(["explore"], ok);
     expect(r.status, r.stderr).toBe(5);
     const [logFile] = readdirSync(path.join(ok.ANALYZER_ROOT, "logs"));
-    const start = readFileSync(
+    const [start] = readFileSync(
       path.join(ok.ANALYZER_ROOT, "logs", logFile!),
       "utf8",
     )
       .split("\n")
       .filter((l) => l !== "")
-      .map((l) => JSON.parse(l) as { msg: string; heapLimitMB?: number })
-      .find((l) => l.msg === "start explore")!;
-    expect(start.heapLimitMB).toBeGreaterThanOrEqual(16_384);
-    expect(start.heapLimitMB).toBeLessThan(16_384 + 512);
+      .map((l) => JSON.parse(l) as { msg: string; heapLimitMB?: number });
+    expect(start!.msg).toBe("start explore");
+    expect(start!.heapLimitMB).toBeGreaterThanOrEqual(20_480);
+    expect(start!.heapLimitMB).toBeLessThan(20_480 + 512);
   }, 60_000);
 
   it("refuses a sealed folder in its settings, by name or through a junction, before it opens or makes anything, its log's folder too (exit 5)", () => {
