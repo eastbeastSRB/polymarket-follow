@@ -430,7 +430,7 @@ again.
 `test/waveh-reproduce.test.ts`, the pre-cut seed converted to Hyperliquid's
 shape (R8), run when `WAVEH_PRECUT` names a JSON file of `{seedDir, out?}`.
 
-## The analyzer: the polishing's store (built 2026-11-17/18 by EXTRACT-BUILD and EXTRACT-BUILD-2, its Final review's fixes by EXTRACT-FIX 2026-11-18; not frozen; not run on the 10 months yet)
+## The analyzer: the polishing's store (built 2026-11-17/18 by EXTRACT-BUILD and EXTRACT-BUILD-2, its Final review's fixes by EXTRACT-FIX 2026-11-18, the supervisor's two rulings after it by EXTRACT-FIX-2; not frozen; not run on the 10 months yet)
 
 **What it is.** A fifth entry point of the same package, `dist/polish.js`
 (`src/polish.ts`, `src/polish/`): the polishing plan's extraction
@@ -440,7 +440,9 @@ F3, F9 and F18; decisions 2026-11-17, "THE POLISHING PLAN APPROVED", and
 EXTRACT-FIX's calls). Run by hand from the repository's build, one run at
 a time, at idle priority, as `node dist\polish.js <command>` with no heap
 flag; it makes no network request. `polish.ts` is a launcher: it runs the
-program (`polish/main.ts`) in a worker thread of a 16 GB heap, whose pass
+program (`polish/main.ts`) in a worker thread of a 20 GB heap (decisions
+2026-11-18, EXTRACT-FIX verified, 1; the start line, a run's first in the
+log, names V8's limit, `heapLimitMB`: 20,672 on 2026-11-18), whose pass
 gives each of its workers 4 GB; every ceiling is a worker's own, and V8's
 `--max-old-space-size` beats them all, so a heap flag on the command line
 or in NODE_OPTIONS is refused (exit 2). Its commands: `extract [--workers
@@ -557,7 +559,11 @@ has a mark the minute price is it, by construction, and an instant without
 one fails unless the fallback gives none too; G5 each of the 40 coins'
 taker records paired with its maker by `tid` in its file, a trade a file
 boundary splits as one taker and one maker in two files next in the
-range's order (`straddled`), anything else failing, listed by file, coin
+range's order (`straddled`; the two 2025-07-27 08h files, 1506 and 1507,
+are next to each other), one record left alone in the range's first or
+last file, whose other half is in the hour outside the range, counted
+apart and every one listed (`edge`, `edges`; decisions 2026-11-18,
+EXTRACT-FIX verified, 2), anything else failing, listed by file, coin
 and `tid`, `day_ntl_vlm`'s ratios by coin and day printed beside; G6
 fifteen sample days (2025-05-31, 06-01, 06-15, 07-27, 08-15, 09-15, 10-10,
 11-15, 12-15, 2026-01-15, 02-15, 03-15, 04-15, 05-28 and 05-29, the hour

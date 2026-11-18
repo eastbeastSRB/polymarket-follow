@@ -1,5 +1,67 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (EXTRACT-FIX-2's technical calls — the supervisor's two rulings
+on EXTRACT-FIX's questions, built before any gate has run on the 10
+months): **THE PROGRAM'S HEAP CEILING IS 20 GB, NAMED IN THE LOG'S FIRST
+LINE; G5 ACCEPTS A RECORD LEFT ALONE ONLY IN THE RANGE'S FIRST OR LAST FILE,
+EVERY ONE LISTED; THE TWO 2025-07-27 08h FILES ARE NEXT TO EACH OTHER IN THE
+RANGE'S ORDER.**
+
+**What:** three commits, each with `pnpm verify` green in the same command
+and the three freezes verified after (61, 64, 74; no dependency or lock
+change; 610 + 5 tests in 64 files + 1 skipped):
+- `bde3794` the heap: the launcher's program worker gets a 20,480 MB old
+  generation; the pass workers keep 4,096. The start line, a run's first
+  line in the log, names V8's limit: `heapLimitMB` 20,672 on a synthetic
+  root. The test holds the log's first line to the start line and the
+  ceiling to at least 20,480 and under 20,992.
+- `76e8a57` G5's edges: a (coin, `tid`) left open in one file only, as one
+  record, in the range's first file (`node_fills/hourly/20250525/14.lz4`)
+  or its last (`node_fills_by_block/hourly/20260529/1.lz4`) is a trade
+  whose other half lies in the hour outside the range. G5 counts it as
+  `edge`, apart from `straddled`, and lists every one in `edges`, with no
+  cap, in the problems' form (file, coin, `tid`, taker or maker). Two
+  records of one `tid` at an edge fail, and so does a record whose other
+  half lies in the range but not in a file next to it. The count is not
+  bounded: a fault confined to an edge file would pass as edges, each one
+  listed.
+- these docs.
+
+**The 2025-07-27 08h adjacency (the ruling's question):** the range's order
+is `fillKeys`' (`waveh/keys.ts`: both formats in the hour they share,
+`node_fills` first). `node_fills/hourly/20250727/8.lz4` is file 1506 of
+8,845 and `node_fills_by_block/hourly/20250727/8.lz4` is 1507: next to each
+other. `node_fills_by_block` 09h is 1508. So a trade split between the two
+08h files is an ordinary straddle. A trade split from `node_fills` 08h to
+`node_fills_by_block` 09h is two files apart and fails G5. The G5 test pins
+the keys and both pairings. EXTRACT-BUILD's C3 found every trade of the
+40 coins on 2025-07-27 within one file.
+
+**Breaks:** 18 in two scratch copies of `76e8a57` (`git archive`;
+`node_modules` real folders of per-package junctions, each junction
+removed alone afterwards; tsc and vitest run directly, never pnpm; `dist`
+rebuilt for every heap break). The unbroken copies' target tests passed
+first. All 18 were killed by a test's assertion, none by a timeout or a
+syntax error:
+- the heap's 6: the ceiling 16,384 (16,576 is under 20,480) and 24,576
+  (24,768 is not under 20,992); the worker's limits dropped (4,288); the
+  start line's `heapLimitMB` renamed (the bound's matcher gets undefined); a
+  line before the start line; the pass workers' 8,192 (8,384);
+- G5's 12: edges never accepted, or only the last file's, or only the
+  first's; the second file's accepted; the last but one's accepted; two
+  records at an edge; a record whose other half is two files away; the
+  edges not listed; their count 0; the last file off by one; a straddle two
+  files apart; an edge counted as a straddle.
+
+Lists, harness and results: the supervisor folder's
+`workers\EXTRACT-FIX-2\breaks\`.
+
+**Next (the supervisor's order):** TEST-TEMP → EXTRACT-FIX-CHECK (fresh,
+Sonnet), now over these two changes too → the run when FRESH's download
+ends, with the command files in the supervisor folder's
+`workers\EXTRACT-FIX-2\run\` (the commands unchanged; their notes name the
+20 GB and G5's `edges`).
+
 2026-11-18 (the supervisor — EXTRACT-FIX verified; its two questions ruled
 before any gate has run on the 10 months): **EXTRACT-FIX IS ACCEPTED.
 EXTRACT-FIX-2 RAISES THE PROGRAM'S HEAP CEILING TO 20 GB AND FIXES G5'S

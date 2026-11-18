@@ -75,10 +75,11 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
    download has ended** (step 5): from `E:\coding\polymarket-follow\apps\poller`
    on a clean tree after `pnpm verify`, detached through WMI at idle
    priority (the `.cmd` files in the supervisor folder's
-   `workers\EXTRACT-FIX\run\`), outside 02:30–06:00Z and 10:25–11:15Z,
+   `workers\EXTRACT-FIX-2\run\`), outside 02:30–06:00Z and 10:25–11:15Z,
    starting at least 45 minutes before a window for `gates`, **with no heap
    flag** (`dist\polish.js` refuses one, exit 2; the program has its own
-   16 GB, each pass worker 4 GB):
+   20 GB, named in the log's first line as `heapLimitMB` 20,672, each pass
+   worker 4 GB):
    - `extract`: `WAVEH_STORE=F:\polymarket-follow-research\WAVE-H\store`,
      `ANALYZER_ROOT=F:\polymarket-follow-research\ANALYZER\WAVE-H`,
      `node dist\polish.js extract`: about 70 min, at most about 6 GB of
@@ -87,8 +88,11 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
      logs older than 30 days are pruned);
    - `gates`: the same two and
      `WAVEH_ROOT=F:\polymarket-follow-research\FIND-SLOTS\WAVE-H-BUILD-rehearsal`,
-     `node dist\polish.js gates`: about 40 (G6 about 5 min on 2025-10-10, about 10 GB of heap) min; `gates\gates.json`;
-     exit 6 when a gate fails;
+     `node dist\polish.js gates`: about 40 min (G6 about 5 min on
+     2025-10-10; the gates about 10 GB of the program's 20 GB of heap);
+     `gates\gates.json`, whose G5 lists in `edges` every record accepted
+     alone in the range's first or last file (`edge` counts them); exit 6
+     when a gate fails;
    - `explore`: the same, `node dist\polish.js explore`: a minute; it
      prints the store's identity and counts to its log and stops ("no try
      is defined");
