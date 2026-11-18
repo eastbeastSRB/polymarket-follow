@@ -470,6 +470,53 @@ describe("the merge", { timeout: 60_000 }, () => {
     ).toEqual([[], [["SOL", "60", -1]], [], []]);
   });
 
+  it("stops at one account's liquidation tid in two records of a month", async () => {
+    const liq = (time: number) =>
+      record(addr(8), {
+        coin: "SOL",
+        side: "B",
+        time,
+        crossed: false,
+        tid: 90,
+        liquidation: liqOf(addr(8)),
+      });
+    await expect(build([liq(H1 + MIN), liq(H1 + 2 * MIN)])).rejects.toThrow(
+      "liq 2025-07: one account's tid is in two records",
+    );
+  });
+
+  it("stops at a taker row of a month outside its minute grid", async () => {
+    await expect(
+      build(
+        trade(addr(6), addr(60), {
+          coin: "SOL",
+          side: "B",
+          time: Date.parse("2025-06-29T12:00:00Z"),
+          tid: 91,
+        }),
+      ),
+    ).rejects.toThrow("SOL 2025-06: a taker row outside the minute grid");
+  });
+
+  it("stops when liq's names outgrow their columns", async () => {
+    const dirs = Array.from({ length: 256 }, (_, i) =>
+      record(addr(8), {
+        coin: "SOL",
+        side: "B",
+        time: H1 + i,
+        dir: `d${i}`,
+        crossed: false,
+        tid: 1000 + i,
+        liquidation: liqOf(addr(8)),
+      }),
+    );
+    await expect(build(dirs)).rejects.toThrow(
+      "liq's names outgrow their columns",
+    );
+    // 253 more names, 255 in all, still fit.
+    await expect(build(dirs.slice(0, 253))).resolves.toBeDefined();
+  });
+
   it("stops at a tid in two taker records", async () => {
     await expect(
       build(

@@ -49,6 +49,7 @@ import {
   partitionDir,
   type FileCounts,
   type Manifest,
+  type Partition,
   type Table,
 } from "../src/polish/store.js";
 import { BACKSTOP, fortyOf } from "../src/polish/writers.js";
@@ -627,6 +628,50 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     });
   });
 
+  it("G0 fails on another WAVE-H freeze, users.bin's size, a partition missing, a column's bytes against its rows, files.jsonl's lines and their identity", () => {
+    const withManifest = (edit: (m: Manifest) => void) => {
+      const m = structuredClone(o.store.manifest);
+      edit(m);
+      return g0({ ...o, store: new Store(o.store.dir, m, o.store.id) }, step1)
+        .first;
+    };
+    const isSol = (table: string, month: string) => (p: Partition) =>
+      p.table === table && p.coin === "SOL" && p.month === month;
+    expect(g0({ ...o, wavehFrozen: "6".repeat(64) }, step1).first).toEqual([
+      "the store was made under another WAVE-H freeze",
+    ]);
+    expect(withManifest((m) => (m.dict.users.count += 1))).toEqual([
+      "users.bin is not 20 bytes an address",
+    ]);
+    expect(
+      withManifest(
+        (m) =>
+          (m.partitions = m.partitions.filter(
+            (p) => !isSol("funding", "2026-03")(p),
+          )),
+      ),
+    ).toEqual(["funding/SOL/2026-03: missing"]);
+    const f = o.store.manifest.partitions.find(isSol("funding", "2025-09"))!;
+    expect(f.rows).toBeGreaterThan(0);
+    expect(
+      withManifest(
+        (m) => (m.partitions.find(isSol("funding", "2025-09"))!.rows += 1),
+      ),
+    ).toEqual([
+      `funding/SOL/2025-09/time.f64: ${f.files["time.f64"]!.bytes} bytes for ${f.rows + 1} rows`,
+      `funding/SOL/2025-09/rate.f64: ${f.files["rate.f64"]!.bytes} bytes for ${f.rows + 1} rows`,
+    ]);
+    const n = o.fill.length;
+    expect(
+      g0({ ...o, fill: [...o.fill, "node_fills/hourly/20990101/0.lz4"] }, step1)
+        .first,
+    ).toEqual([`files.jsonl: ${n} lines, ${n + 1} files`]);
+    expect(
+      g0({ ...o, list: new Map(o.list).set(o.fill[0]!, "f".repeat(64)) }, step1)
+        .first,
+    ).toEqual([`files.jsonl line 1 is not ${o.fill[0]} as listed`]);
+  });
+
   it("G1 fails on a count, naming the field and the day", () => {
     expect(g1(o, lib, step1).pass).toBe(true);
     const broken = structuredClone(step1);
@@ -656,6 +701,26 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       g2({ ...o, sizing: { ...o.sizing, counted: 5 } }, lib, step1).result
         .differ,
     ).toEqual(["sizingCounted"]);
+    // M's scan, and slice 0's counts.
+    expect(o.sizing.scan.length).toBeGreaterThan(0);
+    expect(
+      g2(
+        {
+          ...o,
+          sizing: { ...o.sizing, scan: [...o.sizing.scan, o.sizing.scan[0]!] },
+        },
+        lib,
+        step1,
+      ).result.differ,
+    ).toEqual(["scan"]);
+    const slice0 = structuredClone(step1.counts.slice0) as {
+      backstopEntries: number;
+    };
+    slice0.backstopEntries += 1;
+    expect(
+      g2(o, lib, { ...step1, counts: { ...step1.counts, slice0 } }).result
+        .differ,
+    ).toEqual(["slice0"]);
   });
 
   it("G3 fails on a price beyond 1e-9 bps, on a leg's tid, on a line missing; passes a price within", () => {
