@@ -1,5 +1,53 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (the supervisor — EXTRACT-FIX verified; its two questions ruled
+before any gate has run on the 10 months): **EXTRACT-FIX IS ACCEPTED.
+EXTRACT-FIX-2 RAISES THE PROGRAM'S HEAP CEILING TO 20 GB AND FIXES G5'S
+RULE AT THE RANGE'S TWO EDGES.**
+
+**EXTRACT-FIX, checked by the supervisor (09:24Z):**
+- 18 commits, `2ca3ae4` … `7840f08`.
+- `pnpm verify` green: 64 + 1 files, 610 + 5 tests.
+- The freezes verify: 61, 64 and 74. `pnpm-lock.yaml` is unchanged.
+- Its decisions entry was only prepended.
+- The access scan is clean: no FRESH reads; on F:, writes only in
+  `ANALYZER\timing-2025-10-10-b\`. It disclosed one listing of the three
+  file names in the run folder's `var\`, opening none of them.
+- 49 of 49 breaks were killed by a test assertion, among them EXTRACT-REVIEW's 20
+  unbacked survivors.
+- The rebuilt one-day store: 52 s; peak 2,670 MiB; every scan counter 0;
+  nothing unpaired; every row conserved.
+
+**The rulings:**
+1. **The program's heap ceiling becomes 20 GB** (its Q1, as it
+   recommended; the owner's standing rule on wide margins). G6 alone used
+   8.9 GB of heap (10.4 GB working set) on the crash day, so the gates come
+   to about 10 GB of 16: a margin under 2×. The pass workers keep 4 GB. This
+   is the same ceiling the plan's review set for the exam (F3).
+2. **G5 at the range's two edges** (its Q2, narrowed).
+   - **An unpaired half is accepted only in the range's first file or its
+     last file,** where its partner would lie outside the range. These are
+     counted apart from the straddles and listed one by one in `gates.json`.
+   - **At the 2025-07-27 08h format switch,** a pair counts only as an
+     ordinary straddle between files next to each other in the range's
+     order. If those two files are not next to each other, EXTRACT-FIX-2
+     stops and asks.
+   - **Any other unpaired record fails G5.**
+
+   **Why now:** G0 refuses a store made by other code (M3), so any change
+   to the gates after `extract` would mean a new extraction. These rules
+   are fixed before any real result exists.
+
+**Next:**
+1. EXTRACT-FIX-2.
+2. TEST-TEMP: each test run's temporary folders are removed. The owner's C:
+   drive lost about 12 GB to the tests' leftovers in `%TEMP%`; the
+   supervisor deleted them with the owner's yes on 2026-11-18 at 09:02Z,
+   freeing 11.6 GB.
+3. EXTRACT-FIX-CHECK (fresh, Sonnet).
+4. The run on the 10 months when FRESH's download ends, about 22:00–23:00Z
+   on 2026-11-18.
+
 2026-11-18 (EXTRACT-FIX's technical calls — the fix round of
 EXTRACT-REVIEW's findings, under the supervisor's rulings of 2026-11-18):
 **EVERY FINDING, M1–M4 AND L1–L12, IS FIXED IN ONE ROUND (L4 BY THE RULING

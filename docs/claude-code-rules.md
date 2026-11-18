@@ -112,6 +112,15 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **Compare two implementations' floats in the same order, or compare
   instants rather than sums:** a sum in another order differs by rounding
   alone (EXTRACT-BUILD-2, G4 and G6, 2026-11-18).
+- **A break in code the built program runs needs `dist` rebuilt in the
+  scratch copy,** or the break tests the old build. `vitest -t` narrows a
+  heavy break's run (a gates break to about 100 s). **Heavy hooks
+  (`beforeAll`, `afterAll`) need explicit limits:** under the full suite's
+  load WAVE-H's rehearse hooks passed vitest's 10 s default (EXTRACT-FIX,
+  2026-11-18).
+- **typescript-eslint's `require-await` rejects an async stub with no
+  `await`:** return `Promise.resolve()` from a plain function instead
+  (EXTRACT-FIX, 2026-11-18).
 - **Drive a whole run with a fake clock that moves only when the run waits,**
   and bound it in fake time, so a run that never ends fails with a message
   (WAVE-H-FETCH, 2026-11-14).
@@ -290,6 +299,14 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   formatting alone. **The harness moves a foreground command to the
   background after about 180 s:** wait on the background task's notice
   (WAVE-H-FIX, 2026-11-16).
+- **V8's `--max-old-space-size` is process-wide and beats a worker's
+  `resourceLimits`:** a 4 GB worker reported a 16,576 MB ceiling under the
+  flag, and a worker's `execArgv` cannot carry it. To give threads different
+  ceilings, run the program itself in a worker with its own limit and pass
+  no heap flag (`dist/polish.js`'s launcher; EXTRACT-FIX, 2026-11-18).
+- **A seal checks the name before it resolves the real path:** a sealed name
+  is refused without being opened; then the real path (through junctions)
+  is checked again (EXTRACT-FIX, 2026-11-18).
 - **An fsync on F: (a hard disk) costs about 29 ms a small file** and about
   81 ms a part file. For many files whose content is held to a hash, write
   whole (`.tmp`, then rename) without the flush, and flush only the
