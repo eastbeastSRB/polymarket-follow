@@ -1,5 +1,81 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (the supervisor — EXTRACT-FIX-CHECK accepted, under the owner's
+go "continue with the plan"): **THE EXTRACTION IS READY TO RUN. IT RUNS ON
+THE 10 MONTHS FROM HEAD'S BUILD WITH NO CODE CHANGE, ONCE FRESH'S DOWNLOAD
+HAS ENDED.**
+
+**What:**
+- **The check:** `docs/reviews/extract-fix-check-2026-11-18.md` (`33cc2ad`;
+  Sonnet 5.5; code at `c8c091e`). Verdict "ready to run".
+  - Every finding of EXTRACT-REVIEW, and both later rulings, are fixed as
+    ruled. L5 is fixed otherwise, by the launcher.
+  - No high or medium finding, and no defect in the code.
+  - All 67 of the fixers' breaks were killed by a test assertion. Of its
+    own 48, 29 were killed; the 19 survivors are missing test pins (F1–F3)
+    or equivalent.
+  - **The review's two demonstrations now fail a gate:** a refused record on
+    an unsampled day fails G0; the six changed columns fail G6.
+  - **Its independent parse of 2025-10-10** against the rebuilt one-day
+    store found **0 differences**: 20,826,390 records, 4,712,980 tape rows,
+    788,904 liq rows, 540,000 bar cells, 600,000 context cells.
+  - The fixed code's column files are byte-identical to those the review
+    checked. The fixes changed what the checks say, not what the extraction
+    writes.
+  - The launcher: `heapLimitMB` 20,672. Every spelling of a heap flag exits
+    2. The pass workers run at 4,288 MB.
+  - `pnpm verify` green; freezes 61/64/74.
+- **Checked by the supervisor (11:51Z):**
+  - only its report committed; access clean (reads in the allowed folders
+    only, 0 FRESH);
+  - a read-only G6-day run on the one-day store, outside its brief, ran 55
+    s with no result. It stopped it at the supervisor's word and disclosed
+    it.
+  - Peak context 692k.
+
+**A constraint met during the check:**
+- Until 11:40Z, up to six parallel test runs saturated the C:/E: disk (228%
+  busy, queue 2.3) while F: and the CPU were idle. FRESH's download, at Idle
+  priority on purpose, fell from about 1.9 MB/s to about 0.15 MB/s from
+  about 10:00Z.
+- From 11:40Z, at most two runs at a time.
+- **The rule from now on:** while a download or a long run is going,
+  workers run at most two test or break runs at a time.
+
+**Its questions, ruled:**
+1. **Run extract, gates and explore from HEAD's build with no code change:
+   yes.**
+2. **F1–F3:** the missing pins on G6's liq columns, bars and contexts, G5's
+   straddle sum, the launcher's crash handler, the seal's "never resolved",
+   and `--max-heap-size`. Yes, as one test-only commit before
+   POLISH-EXPLORE, **after the run**: test files are outside `dist`, so the
+   fingerprint and the store stay valid, and no test load slows the
+   download now.
+3. **The tape's `side` and `user` in G6 (I1): not now.** It would change the
+   fingerprint and redo the pass. The bars, G2 and G3, and the real-day
+   parse cover them. It is a known limit, written down here.
+4. **If G0 is false on a refused or misread record, or G5 fails:**
+   - list every record with its `sum-files.cjs` and `g5-by-hand.cjs`;
+   - the supervisor rules on the list;
+   - **never a waiver in code.**
+
+   **`G5.edge`:** zero to a handful is expected. More means a look before
+   the store is trusted.
+5. **After the run, one day G6 does not sample is checked against an
+   independent parse:** yes, as a small read-only task, one run at a time,
+   at idle priority, outside the windows.
+
+**Next:**
+1. FRESH's "done" check: the counts 4,102 + 170 + 342, no `.part` files,
+   bytes equal to the manifest, the data never opened.
+2. `extract`, about 70 minutes.
+3. `gates`, about 40 minutes.
+4. `explore`.
+
+They run from `workers\EXTRACT-FIX-2\run\` (`start.ps1 -Cmd`), detached at
+idle priority, outside 02:30–06:00Z and 10:25–11:15Z. Then the independent
+day, the F1–F3 tests, and POLISH-EXPLORE.
+
 2026-11-18 (TEST-TEMP's technical calls — the supervisor measured about
 43,000 folders, about 8.9 GB, left in `%TEMP%` by `apps/poller`'s tests):
 **EVERY TEST RUN KEEPS ITS TEMPORARY FOLDERS IN ONE RUN FOLDER, REMOVED AT
