@@ -206,20 +206,23 @@ flowchart TD
   PL --> UI
 ```
 
-**How a round-2 idea earns a place in the app:**
+**How an idea earns a place in the app** (the road as it is run; brought in
+step 2026-11-18):
 
 ```mermaid
 flowchart LR
-  I["An idea<br/>(the list below)"] --> R["The hypothesis register<br/>its test written first · the owner approves"]
-  R --> F{"FIND<br/>on data up to 2026-11-07"}
+  I["An idea"] --> F{"FIND<br/>its test written first"}
   F -->|"nothing"| X["Recorded and dropped"]
-  F -->|"something"| C{"CONFIRM<br/>on data after 2026-11-07,<br/>never touched by the search"}
-  C -->|"fails"| X
-  C -->|"holds"| S["Account-level check<br/>drawdowns · losing streaks · sizing"]
-  S --> PP["A paper profile, live<br/>its rules frozen"]
-  PP --> V{"Forward verdict<br/>E at the bar"}
-  V -->|"not yet"| PP
-  V -->|"yes"| A["May join the app<br/>as measured evidence, never advice"]
+  F -->|"a lead (the wave)"| FW["Forward paper test, frozen<br/>MARKET-1 · looks 12-19, 02-06, 05-08"]
+  F -->|"a lead (the wave)"| H["History on another venue, frozen<br/>WAVE-H · one look"]
+  H --> PO["Polishing: one search<br/>explore months → check months"]
+  PO --> EX{"The exam, frozen<br/>FRESH: months no rule has seen"}
+  EX -->|"fails"| X
+  EX -->|"not settled"| L2["Look 2<br/>more unseen months"]
+  EX -->|"holds"| S["Account-level check<br/>drawdowns · sizing"]
+  FW --> V{"Forward verdict"}
+  S --> A["May join the app<br/>as measured evidence, never advice"]
+  V -->|"yes"| A
 ```
 
 **Method — for every item** (R1–R8's way of working, kept): **M1** a
@@ -243,15 +246,26 @@ review, the supervisor re-computing on its own path what decides.
   every doc and report and proposes ideas ranked by impact and testability,
   first blind, then merged with this list and DOCS-SWEEP's findings.
 
-**Phase 1 — the collector**
-- **C1** (points 1 and 2, the "tiny collector"): a Windows task, not a
+**Phase 1 — the collector** — 🔵 **built and recording around the clock since
+2026-11-10** (the table above, its row).
+- **C1** ✅ built (points 1 and 2, the "tiny collector"): a Windows task, not a
   subagent (a restart of the Claude app stops subagents), that keeps what can
   never be re-read — every board's top 1,000 each day (16 boards), best
   prices and books on a schedule — and **the universe**: every account ever
   seen on a board, kept and refreshed after it drops off; backups on E: and
   F: (decisions 2026-11-08, R6 accepted).
 
-**Phase 2 — research round 2** (each through the register, M1–M3)
+**Phase 2 — research round 2** (each through the register, M1–M3) — ✅
+**FIND done 2026-11-11: nothing passed** (the table above, its row).
+- **What came of it:** H9's liquidation waves gave the one lead, which
+  became MARKET-1 (forward), WAVE-H (history on Hyperliquid) and the
+  polishing.
+- **H2–H8 and H10:** tested as FIND's entries, or set aside by its results;
+  copying traders did not pay. The paper experiment tests slow traders
+  forward.
+- **Still dated:** D1 (after 2026-11-21) and D2 (after 2026-11-30).
+- **Not done:** H11 and H13 (on-chain, now its own project, when the owner
+  says).
 - **H1** Weak persistence: B2's confirm pair, weeks 9–12, rebuilt after
   2026-11-30 (lead 1; decisions 2026-11-09, R8 accepted, (3)) — the dated
   check **D2**.
