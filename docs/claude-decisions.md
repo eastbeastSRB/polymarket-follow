@@ -1,5 +1,52 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (TEST-TEMP's technical calls — the supervisor measured about
+43,000 folders, about 8.9 GB, left in `%TEMP%` by `apps/poller`'s tests):
+**EVERY TEST RUN KEEPS ITS TEMPORARY FOLDERS IN ONE RUN FOLDER, REMOVED AT
+ITS END.**
+
+**What:** `551f7bc`, test setup only (no test file and no code under `src/`
+changed):
+- vitest's `globalSetup`, `apps/poller/test/temp-root.ts`, named in
+  `apps/poller/vitest.config.ts`. Its `setup` makes
+  `polymarket-follow-tests-XXXXXX` under the real `tmpdir()` and points
+  `TEMP`, `TMP` and `TMPDIR` at it, so every test's
+  `mkdtempSync(path.join(tmpdir(), …))` lands inside it. Its teardown
+  removes it (`rmSync`, recursive, force, 10 retries).
+- `setup` first removes `polymarket-follow-tests-*` folders in the real
+  `tmpdir()` last changed 6 hours or more ago: the prefix matched exactly,
+  real folders only (by `lstat`; a link with that name is left alone). It
+  never removes a younger one: another session's run may be live.
+
+**Checked, not assumed:**
+- vitest 5.0.5's default pool (forks) builds each worker's environment as
+  a copy of `process.env` when it schedules the files, after the root
+  `globalSetup` has run; its teardown runs before the pool closes. A test
+  holds it: the worker's `tmpdir()` and the three variables are the run's
+  folder.
+- Node 24.13's `os.tmpdir()` reads `TEMP` (then `TMP`) at each call on
+  Windows (a scratch script).
+- `rmSync` removes a junction inside a folder as a link, never following
+  it. A test holds it: `setup`, a junction inside the run's folder to a
+  folder outside it, the teardown; the target's file is intact.
+
+**Tests:** `test/temp-root.test.ts`, 4. Ten breaks in a scratch copy, its
+`TEMP` the scratch's own (so no broken sweep could reach the real
+`%TEMP%`), all killed by an assertion: the age boundary, the prefix check
+dropped or matched anywhere, links swept, no age check, a teardown that
+removes nothing, `TMPDIR` not set, a `setup` that sweeps nothing, the clock
+in place of the given instant, a removal that follows links.
+
+**The effect, measured:** `pnpm verify` green in the commit's command
+(10:34–10:40Z; 65 files + 1 skipped, 614 + 5 tests). Top-level folders in
+the real `%TEMP%` with the tests' five prefixes: 2,175 before, 2,175 after
+(these are older leftovers, not removed here); `polymarket-follow-tests-*`:
+0 before, 0 after. The run's folder peaked at 3,109.5 MiB and 41,785 files
+(10:39:55Z), so a test run needs about 3.1 GB free on C: while it runs.
+
+The three freezes verify after each commit: 61 `d04d3cd8…`, 64
+`b9e17505…`, 74 `864990da…`.
+
 2026-11-18 (EXTRACT-FIX-2's technical calls — the supervisor's two rulings
 on EXTRACT-FIX's questions, built before any gate has run on the 10
 months): **THE PROGRAM'S HEAP CEILING IS 20 GB, NAMED IN THE LOG'S FIRST
