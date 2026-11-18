@@ -3,7 +3,7 @@
  * review's F9; decisions 2026-11-17, the plan approved, Q1 and Q5): G0 the
  * store whole; G1 WAVE-H's step-1 counts; G2 its positions; G3 its prices;
  * G4 the minute price's fallback changing none of them; G5 the tape
- * complete, each trade's taker and maker records in one file, with
+ * complete, each trade's taker record paired with its maker's, with
  * `day_ntl_vlm` printed beside; G6 sample days re-read by WAVE-H's own
  * readers. They reproduce numbers already seen: only slice 0's known
  * positions are priced. The result, `gates\gates.json`, names the manifest
@@ -627,12 +627,16 @@ export function g4(o: GatesInput, lib: Library, wave: readonly Outcome[]) {
 }
 
 /**
- * G5 (decisions 2026-11-18, EXTRACT-REVIEW's findings, Q4): each of the 40
- * coins' taker records has its maker record, one `tid` a trade, in its own
- * file; a trade a file boundary splits pairs across it, as one taker and one
- * maker of one coin and `tid` left open in two files next in the range's
- * order. Anything else left unpaired fails, listed by file, coin and `tid`;
- * no tolerance. `day_ntl_vlm` beside, deciding nothing.
+ * G5 (decisions 2026-11-18, EXTRACT-REVIEW's findings, Q4, and EXTRACT-FIX
+ * verified, 2): each of the 40 coins' taker records has its maker record,
+ * one `tid` a trade, in its own file; a trade a file boundary splits pairs
+ * across it, as one taker and one maker of one coin and `tid` left open in
+ * two files next in the range's order (2025-07-27 08h's two files are next
+ * to each other). One record left open alone in the range's first or last
+ * file is a trade whose other half lies in the hour outside the range:
+ * counted apart (`edge`) and every one listed. Anything else left unpaired
+ * fails, listed by file, coin and `tid`; no tolerance. `day_ntl_vlm`
+ * beside, deciding nothing.
  */
 export function g5(o: GatesInput, lib: Library): GateResult {
   const problems: string[] = [];
@@ -651,7 +655,11 @@ export function g5(o: GatesInput, lib: Library): GateResult {
       open.set(k, list);
     }
   }
+  const lineOf = (file: number, k: string, d: number) =>
+    `${lib.files[file]!.key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`;
+  const last = lib.files.length - 1;
   let straddled = 0;
+  const edges: string[] = [];
   for (const [k, list] of open) {
     const [a, b] = list;
     if (
@@ -663,10 +671,15 @@ export function g5(o: GatesInput, lib: Library): GateResult {
       straddled += 1;
       continue;
     }
-    for (const { file, d } of list)
-      problems.push(
-        `${lib.files[file]!.key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`,
-      );
+    if (
+      list.length === 1 &&
+      Math.abs(a!.d) === 1 &&
+      (a!.file === 0 || a!.file === last)
+    ) {
+      edges.push(lineOf(a!.file, k, a!.d));
+      continue;
+    }
+    for (const { file, d } of list) problems.push(lineOf(file, k, d));
   }
   // By coin and whole UTC day: the takers' notional (with the backstop's, and without) ÷ day_ntl_vlm at the next midnight.
   const m = o.store.manifest;
@@ -703,6 +716,8 @@ export function g5(o: GatesInput, lib: Library): GateResult {
     pass: problems.length === 0,
     totals,
     straddled,
+    edge: edges.length,
+    edges,
     ...listed(problems),
     dayNtlVlm: { columns: ["with the backstop", "without"], ratios },
   };

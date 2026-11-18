@@ -798,8 +798,14 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     ).toMatchObject({ pass: true, unmarked: 1, problems: 0 });
   });
 
-  it("G5 pairs a trade split across two files next in order, and fails on any record left unpaired, by file, coin and tid", () => {
-    expect(g5(o, lib)).toMatchObject({ pass: true, straddled: 0, problems: 0 });
+  it("G5 pairs a trade split across two files next in order, accepts a record left alone only in the range's first or last file, listing it, and fails on any other record left unpaired, by file, coin and tid", () => {
+    expect(g5(o, lib)).toMatchObject({
+      pass: true,
+      straddled: 0,
+      edge: 0,
+      edges: [],
+      problems: 0,
+    });
     expect(lib.files.every((f) => f.unpaired.length === 0)).toBe(true);
     const i = lib.files.findIndex((f) => f.pairs.length > 0);
     const g5With = (open: Record<number, [string, string, number][]>) => {
@@ -855,6 +861,66 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         [i + 2]: [["SOL", "77", 1]],
       }),
     ).toMatchObject({ pass: false, problems: 3 });
+    // A record alone in the range's first or last file: its other half is in the hour outside the range.
+    const last = lib.files.length - 1;
+    expect([key(0), key(last)]).toEqual([
+      "node_fills/hourly/20250525/14.lz4",
+      "node_fills_by_block/hourly/20260529/1.lz4",
+    ]);
+    expect(
+      g5With({ [0]: [["SOL", "77", -1]], [last]: [["ETH", "5", 1]] }),
+    ).toMatchObject({
+      pass: true,
+      straddled: 0,
+      edge: 2,
+      edges: [
+        `${key(0)} SOL 77: 1 maker unpaired`,
+        `${key(last)} ETH 5: 1 taker unpaired`,
+      ],
+      problems: 0,
+    });
+    // The same record in any other file fails: a middle one, the second, the last but one.
+    for (const at of [i, 1, last - 1])
+      expect(g5With({ [at]: [["SOL", "77", -1]] }), key(at)).toMatchObject({
+        pass: false,
+        edge: 0,
+        edges: [],
+        first: [`${key(at)} SOL 77: 1 maker unpaired`],
+      });
+    // At an edge: two records of one tid fail, and so does a record whose other half is two files away; one next to it is a straddle.
+    expect(g5With({ [0]: [["SOL", "77", 2]] })).toMatchObject({
+      pass: false,
+      edge: 0,
+      first: [`${key(0)} SOL 77: 2 takers unpaired`],
+    });
+    expect(
+      g5With({ [0]: [["SOL", "77", 1]], [2]: [["SOL", "77", -1]] }),
+    ).toMatchObject({
+      pass: false,
+      straddled: 0,
+      edge: 0,
+      first: [
+        `${key(0)} SOL 77: 1 taker unpaired`,
+        `${key(2)} SOL 77: 1 maker unpaired`,
+      ],
+    });
+    expect(
+      g5With({ [last - 1]: [["SOL", "77", 1]], [last]: [["SOL", "77", -1]] }),
+    ).toMatchObject({ pass: true, straddled: 1, edge: 0, problems: 0 });
+    // 2025-07-27 08h: node_fills' file and node_fills_by_block's are next to each other in the range's order.
+    const at08 = lib.files.findIndex(
+      (f) => f.key === "node_fills/hourly/20250727/8.lz4",
+    );
+    expect([key(at08 + 1), key(at08 + 2)]).toEqual([
+      "node_fills_by_block/hourly/20250727/8.lz4",
+      "node_fills_by_block/hourly/20250727/9.lz4",
+    ]);
+    expect(
+      g5With({ [at08]: [["SOL", "77", 1]], [at08 + 1]: [["SOL", "77", -1]] }),
+    ).toMatchObject({ pass: true, straddled: 1, edge: 0 });
+    expect(
+      g5With({ [at08]: [["SOL", "77", 1]], [at08 + 2]: [["SOL", "77", -1]] }),
+    ).toMatchObject({ pass: false, straddled: 0, edge: 0, problems: 2 });
   });
 
   it("refuses a sealed raw store or look before it reads anything", async () => {
