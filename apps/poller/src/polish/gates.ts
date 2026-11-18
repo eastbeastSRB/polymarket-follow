@@ -48,6 +48,7 @@ import { dayFromRaw, dayFromStore } from "./days.js";
 import { minuteColumn, minutePrice } from "./legs.js";
 import {
   GATES_FILE,
+  GATE_NAMES,
   libraryOf,
   positionsOf,
   type GatesFile,
@@ -215,6 +216,8 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
     problems.push("the store or the look was made from another list");
   if (m.code.wavehFrozen !== o.wavehFrozen)
     problems.push("the store was made under another WAVE-H freeze");
+  if (m.code.fingerprint !== o.code)
+    problems.push("the store was made by other code");
   let files = 0;
   let bytes = 0;
   const hold = (rel: string, want: { bytes: number; sha256: string }) => {
@@ -751,9 +754,7 @@ export async function runGates(
     },
     references,
     code: { fingerprint: o.code, wavehFrozen: o.wavehFrozen },
-    passed: ["G0", "G1", "G2", "G3", "G4", "G5", "G6"].every(
-      (g) => gates[g]?.pass === true,
-    ),
+    passed: GATE_NAMES.every((g) => gates[g]?.pass === true),
     gates,
     seconds: { ...seconds, all: Math.round((Date.now() - t0) / 1000) },
     written: new Date().toISOString(),

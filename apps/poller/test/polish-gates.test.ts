@@ -442,10 +442,17 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     ]);
   });
 
-  it("G0 fails on another list and on a column that differs from the manifest", () => {
-    expect(g0(o, step1).pass).toBe(true);
+  it("G0 fails on another list, on a store of other code and on a column that differs from the manifest", () => {
+    expect(g0(o, step1)).toMatchObject({
+      pass: true,
+      storeCode: "4".repeat(64),
+      thisCode: "4".repeat(64),
+    });
     expect(g0({ ...o, listSha256: "0".repeat(64) }, step1).first).toEqual([
       "the store or the look was made from another list",
+    ]);
+    expect(g0({ ...o, code: "7".repeat(64) }, step1).first).toEqual([
+      "the store was made by other code",
     ]);
     const file = path.join(
       analyzer,
@@ -762,13 +769,24 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     expect(() => trustedStore(analyzer)).toThrow("run gates first");
     const dir = path.join(analyzer, GATES);
     mkdirSync(dir, { recursive: true });
-    const gates = (passed: boolean, manifestSha256: string) =>
+    const every = (pass: (g: string) => boolean) =>
+      Object.fromEntries(
+        ["G0", "G1", "G2", "G3", "G4", "G5", "G6"].map((g) => [
+          g,
+          { pass: pass(g) },
+        ]),
+      );
+    const gates = (
+      passed: boolean,
+      manifestSha256: string,
+      each: Record<string, { pass: boolean }> = every(() => true),
+    ) =>
       writeFileSync(
         path.join(dir, GATES_FILE),
         JSON.stringify({
           store: { manifestSha256 },
           passed,
-          gates: {},
+          gates: each,
           written: "x",
         }),
       );
@@ -778,7 +796,26 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     );
     gates(false, o.store.id);
     expect(() => trustedStore(analyzer)).toThrow(
-      "the store's gates did not pass",
+      "the store's gates did not pass (gates.json: passed false)",
+    );
+    // passed alone is never enough: each of G0 to G6 must be there and pass.
+    gates(true, o.store.id, {});
+    expect(() => trustedStore(analyzer)).toThrow(
+      "the store's gates did not pass (gates.json: G0, G1, G2, G3, G4, G5, G6)",
+    );
+    gates(
+      true,
+      o.store.id,
+      every((g) => g !== "G3"),
+    );
+    expect(() => trustedStore(analyzer)).toThrow(
+      "the store's gates did not pass (gates.json: G3)",
+    );
+    const six = every(() => true);
+    delete six.G6;
+    gates(true, o.store.id, six);
+    expect(() => trustedStore(analyzer)).toThrow(
+      "the store's gates did not pass (gates.json: G6)",
     );
     gates(true, o.store.id);
     expect(explore(trustedStore(analyzer), coins)).toMatchObject({

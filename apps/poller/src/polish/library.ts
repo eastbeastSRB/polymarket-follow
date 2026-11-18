@@ -30,6 +30,8 @@ export const GatesFile = z.object({
   written: z.string(),
 });
 export type GatesFile = z.infer<typeof GatesFile>;
+/** The gates, each of which must pass for the store to be trusted. */
+export const GATE_NAMES = ["G0", "G1", "G2", "G3", "G4", "G5", "G6"] as const;
 /** The gates' folder in the analyzer's folder of the range, and their file. */
 export const GATES = "gates";
 export const GATES_FILE = "gates.json";

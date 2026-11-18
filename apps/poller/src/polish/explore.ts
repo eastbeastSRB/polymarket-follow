@@ -12,7 +12,7 @@ import type { Coins } from "../waveh/coins.js";
 import { StoreError } from "../waveh/store.js";
 import { countedFrom } from "./counted.js";
 import { STORE } from "./extract.js";
-import { GATES, GATES_FILE, GatesFile } from "./library.js";
+import { GATES, GATES_FILE, GATE_NAMES, GatesFile } from "./library.js";
 import { openStore, type Store } from "./store.js";
 
 /** The store under `root` (the analyzer's folder of the range), a whole range's; a timing run's is not ready. */
@@ -25,7 +25,7 @@ export function wholeStore(root: string): Store {
   return store;
 }
 
-/** The whole store under `root`, its gates passed on its manifest; else not ready. */
+/** The whole store under `root`, every one of its gates G0–G6 passed on its manifest; else not ready. */
 export function trustedStore(root: string): Store {
   const store = wholeStore(root);
   let text: string;
@@ -37,8 +37,11 @@ export function trustedStore(root: string): Store {
   const gates = GatesFile.parse(JSON.parse(text));
   if (gates.store.manifestSha256 !== store.id)
     throw new StoreError(`${GATES_FILE} is of another store`);
-  if (!gates.passed)
-    throw new StoreError(`the store's gates did not pass (${GATES_FILE})`);
+  const failed = GATE_NAMES.filter((g) => gates.gates[g]?.pass !== true);
+  if (!gates.passed || failed.length > 0)
+    throw new StoreError(
+      `the store's gates did not pass (${GATES_FILE}: ${failed.join(", ") || "passed false"})`,
+    );
   return store;
 }
 
