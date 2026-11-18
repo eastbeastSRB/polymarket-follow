@@ -5,11 +5,13 @@
  * (extract.ts), every file held to the frozen `waveh/data.sha256`; `--day`
  * one day of them, for a timing run. `gates`: the store's gates G0–G6
  * (gates.ts) into `<ANALYZER_ROOT>\gates\gates.json`. `explore`: its frame
- * (explore.ts), the store opened only when its gates passed. Settings, no
- * defaults: WAVEH_STORE (WAVE-H's raw store, read only), ANALYZER_ROOT (the
- * analyzer's folder of the range), and for `gates` WAVEH_ROOT (WAVE-H's
- * rehearsal and look, read only). Exit codes: 0 done, 1 a crash, 2 bad
- * settings, 4 WAVE-H's freeze does not verify, 5 not ready, 6 a gate failed.
+ * (explore.ts), the store opened only when its gates passed; `explore --step
+ * <name>` one of the exploration's steps (tries/steps.ts) into
+ * `<ANALYZER_ROOT>\explore\`. Settings, no defaults: WAVEH_STORE (WAVE-H's
+ * raw store, read only), ANALYZER_ROOT (the analyzer's folder of the range),
+ * and for `gates` and a step WAVEH_ROOT (WAVE-H's rehearsal and look, read
+ * only). Exit codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze
+ * does not verify, 5 not ready, 6 a gate or a step's check failed.
  * Every line goes to the log, `<ANALYZER_ROOT>\logs\polish-<day>.log`;
  * stderr says only why the program stopped before its log was open.
  */
@@ -33,6 +35,7 @@ import {
   fingerprintOf,
 } from "./run.js";
 import { checkPath } from "./seal.js";
+import { LOOK_EXPECTED, STEPS, runStep, type StepName } from "./tries/steps.js";
 import { fortyOf } from "./writers.js";
 import { WAVEH_DIR, loadCoins } from "../waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "../waveh/gate.js";
@@ -52,6 +55,7 @@ if (command !== "extract" && command !== "gates" && command !== "explore")
   refuse(`the command "${command ?? ""}": extract, gates or explore`);
 let workers = 6;
 let day: string | null = null;
+let step: StepName | null = null;
 for (let i = 0; i < options.length; i += 2) {
   const [flag, value] = [options[i], options[i + 1]];
   if (
@@ -66,13 +70,21 @@ for (let i = 0; i < options.length; i += 2) {
     /^\d{4}-\d\d-\d\d$/.test(value ?? "")
   )
     day = value!;
+  else if (
+    command === "explore" &&
+    flag === "--step" &&
+    step === null &&
+    STEPS.some((s) => s === value)
+  )
+    step = value as StepName;
   else refuse(`the option "${flag ?? ""} ${value ?? ""}"`);
 }
 const parsed = ExtractSettings.safeParse(process.env);
 if (!parsed.success) refuse(issues(parsed.error));
 const settings = parsed.data;
 const look = LookSettings.safeParse(process.env);
-if (command === "gates" && !look.success) refuse(issues(look.error));
+if ((command === "gates" || step !== null) && !look.success)
+  refuse(issues(look.error));
 let range = WAVEH_RANGE;
 if (day !== null) {
   try {
@@ -86,7 +98,7 @@ if (day !== null) {
 try {
   checkPath(settings.WAVEH_STORE);
   checkPath(settings.ANALYZER_ROOT);
-  if (command === "gates") checkPath(look.data!.WAVEH_ROOT);
+  if (command === "gates" || step !== null) checkPath(look.data!.WAVEH_ROOT);
 } catch (err) {
   process.stderr.write(`polish: not ready: ${(err as Error).message}\n`);
   process.exit(5);
@@ -179,6 +191,19 @@ try {
         `${failed.join(", ") || "a gate not run"}: see gates\\gates.json`,
       );
     log.info({ seconds: result.seconds }, "done: every gate passed");
+  } else if (step !== null) {
+    const r = await runStep(step, {
+      root: settings.ANALYZER_ROOT,
+      look: path.join(look.data!.WAVEH_ROOT, "look"),
+      coins,
+      kit: await loadResearch(),
+      code: fingerprint,
+      cutsFile: path.join(PACKAGE_ROOT, "polish", "cuts.json"),
+      expect: LOOK_EXPECTED,
+      pace,
+      log: (event, fields) => log.info(fields, event),
+    });
+    log.info({ step, sha256: r.sha }, `done: the ${step} step written`);
   } else {
     const frame = explore(trustedStore(settings.ANALYZER_ROOT), coins);
     log.info(frame, "explore: the store is trusted; no try is defined");

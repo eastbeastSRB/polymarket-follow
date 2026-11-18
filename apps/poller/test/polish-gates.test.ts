@@ -56,14 +56,21 @@ import {
   type Table,
 } from "../src/polish/store.js";
 import { WIDTH, type ColumnType } from "../src/polish/tables.js";
+import { checkPrices, dataFrom, levelsAt } from "../src/polish/tries/data.js";
+import {
+  featuresStep,
+  identityOf,
+  type StepInput,
+} from "../src/polish/tries/steps.js";
 import { BACKSTOP, fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
 import { bookKey, ctxsKey, fundingKey } from "../src/waveh/keys.js";
 import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
 import { look } from "../src/waveh/look.js";
+import { levelsOf } from "../src/waveh/price.js";
 import { SizingFile, rehearse } from "../src/waveh/rehearse.js";
-import { manifestList } from "../src/waveh/store.js";
+import { StoreError, manifestList } from "../src/waveh/store.js";
 import { addr, record, trade } from "./polish-world.js";
 import {
   CTXS_HEAD,
@@ -1050,6 +1057,98 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       "the store is a timing run's (2025-10-10)",
     );
     expect(() => trustedStore(timing)).toThrow("timing run's");
+  });
+
+  it("the exploration's features step on this store: its identity, the forced fills and every minute price checked, B0's E entries, the cuts and the dry sweep; gates of other code and another look refused", async () => {
+    const gatesDir = path.join(analyzer, GATES);
+    await runGates(o, gatesDir);
+    const input: StepInput = {
+      root: analyzer,
+      look: path.join(root, "look"),
+      coins,
+      kit: o.kit,
+      code: "f".repeat(64),
+      cutsFile: path.join(analyzer, "none.json"),
+      expect: { everySlice: { positions: 1, mean: 0, se: 0 } },
+      pace: noPace,
+      log: () => {},
+    };
+    const { sha: featuresSha, out } = await featuresStep(input);
+    const dir = path.join(analyzer, "explore");
+    expect(sha(readFileSync(path.join(dir, "features.json")))).toBe(
+      featuresSha,
+    );
+    expect(out.identity).toEqual({
+      store: o.store.id,
+      gates: sha(readFileSync(path.join(gatesDir, GATES_FILE))),
+      storeCode: "4".repeat(64),
+      gatesCode: "4".repeat(64),
+      code: "f".repeat(64),
+      look: {
+        step1: sha(readFileSync(path.join(root, "look", "step1.json"))),
+        positions: sha(
+          readFileSync(path.join(root, "look", "positions.jsonl.gz")),
+        ),
+      },
+      M: 1,
+    });
+    // Three waves, each entered at its second account's fill: all in E. Each entry's 13 legs (B0's two,
+    // D0's, D15's and D60's two each, the five holds' exits); one trade, the SOL wave's entry at W + 7 min.
+    // The minutes priced by a trade, no mark within 5 minutes: SOL's 2 minutes before W1's day (1),
+    // DOGE's at W (5), XRP's at TEST's start and 50 ms after it (6).
+    expect(out).toMatchObject({
+      counted: 6,
+      b0: { entries: 3, E: 3 },
+      prices: {
+        minutes: (38 * (DATA_END - WAVEH_RANGE.grid.start)) / MINUTE_MS,
+        byTrade: 12,
+      },
+      dry: { legs: 39, trades: 1, withoutTrade: 38 },
+    });
+    expect(
+      JSON.parse(readFileSync(path.join(dir, "cuts.json"), "utf8")),
+    ).toEqual({ features: featuresSha, cuts: out.cuts });
+    // The lean tape reader is WAVE-H's levelsOf of Tape.at.
+    for (const x of [W + ENTRY - MINUTE_MS, W + ENTRY + 100, W + ENTRY + 101])
+      for (const buy of [true, false])
+        expect(levelsAt(lib.tape, "SOL", buy, x)).toEqual(
+          levelsOf(lib.tape.at("SOL", buy, x)),
+        );
+    expect(levelsAt(lib.tape, "SOL", true, W + ENTRY + 100)).toEqual([
+      [101, 20],
+    ]);
+    // A price column off in one minute fails the check (the grid's first 2,000 minutes checked).
+    const d = dataFrom(o.store, coins, o.kit);
+    const pc = new Map(d.pc);
+    const sol = Float64Array.from(pc.get("SOL")!);
+    sol[1_000] = 1;
+    pc.set("SOL", sol);
+    expect(checkPrices(o.store, { ...d, minutes: 2_000 })).toEqual({
+      minutes: 38 * 2_000,
+      byTrade: 0,
+    });
+    expect(() => checkPrices(o.store, { ...d, pc, minutes: 2_000 })).toThrow(
+      "the minute price is not legs.ts minutePrice: SOL 2025-05-25T16:40:00.000Z",
+    );
+    // Gates of other code than the store's, or a look the gates did not read: not ready.
+    const gatesFile = path.join(gatesDir, GATES_FILE);
+    const text = readFileSync(gatesFile, "utf8");
+    const g = JSON.parse(text) as { code: object };
+    writeFileSync(
+      gatesFile,
+      JSON.stringify({
+        ...g,
+        code: { ...g.code, fingerprint: "7".repeat(64) },
+      }),
+    );
+    expect(() => identityOf(input)).toThrow(StoreError);
+    writeFileSync(gatesFile, text);
+    const other = tmp("look");
+    writeFileSync(path.join(other, "step1.json"), "{}");
+    expect(() => identityOf({ ...input, look: other })).toThrow(
+      "the look's step1.json is not the one the gates read",
+    );
+    expect(identityOf(input).identity).toEqual(out.identity);
   });
 
   it("G6 waits on its pace before each raw file it reads", async () => {
