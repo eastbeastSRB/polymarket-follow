@@ -20,12 +20,12 @@ import { DAY_MS } from "../../schedule.js";
 import type { Item } from "../../market1/stats.js";
 import type { Research } from "../../paper/research.js";
 import type { Coins } from "../../waveh/coins.js";
-import { PACKAGE_ROOT, sha256 } from "../../waveh/gate.js";
+import { PACKAGE_ROOT, sha256, type Gate } from "../../waveh/gate.js";
 import { DATA_END, TEST_END, TEST_START } from "../../waveh/instants.js";
 import { episodeSpots } from "../../waveh/positions.js";
 import { writeWhole } from "../../waveh/run.js";
 import { bySlice } from "../../waveh/slices.js";
-import { StoreError } from "../../waveh/store.js";
+import { StoreError, readBookList, type BookList } from "../../waveh/store.js";
 import { trustedStore } from "../explore.js";
 import { Step1 } from "../gates.js";
 import { GATES, GATES_FILE } from "../library.js";
@@ -52,6 +52,7 @@ import {
   projectionOf,
   signalOf,
 } from "./beside.js";
+import { bookPrints, heldBooks } from "./books.js";
 import { checkPrices, dataFrom, type Data } from "./data.js";
 import { cutsOf, featuresOf } from "./features.js";
 import { C, E, STOP_MS, inPart, positionOf, type Entry } from "./parts.js";
@@ -110,6 +111,10 @@ export type StepInput = {
   root: string;
   /** WAVE-H's look folder (`step1.json`, `positions.jsonl.gz`). */
   look: string;
+  /** WAVEH_STORE, WAVE-H's raw store, read only: its book list and slice 0's held book files, for the book prints beside. */
+  raw: string;
+  /** WAVE-H's gate (open: its freeze verified), through which a raw file is read. */
+  gate: Gate;
   coins: Coins;
   kit: Research;
   /** This program's fingerprint. */
@@ -124,7 +129,11 @@ export type StepInput = {
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
 /** What the steps read of `gates.json` beyond the library's `GatesFile`. */
 const GatesRefs = z.object({
-  references: z.object({ step1: SHA256, positions: SHA256 }),
+  references: z.object({
+    step1: SHA256,
+    positions: SHA256,
+    books: SHA256,
+  }),
   code: z.object({ fingerprint: SHA256 }),
 });
 
@@ -142,8 +151,12 @@ export type Identity = {
   M: number;
 };
 
-/** The trusted store and the step's identity; unequal fingerprints of the store and its gates, or a look other than the one the gates read, are refused (exit 5). */
-export function identityOf(o: StepInput): { store: Store; identity: Identity } {
+/** The trusted store and the step's identity, and the SHA-256 of the raw store's book list the gates read; unequal fingerprints of the store and its gates, or a look other than the one the gates read, are refused (exit 5). */
+export function identityOf(o: StepInput): {
+  store: Store;
+  identity: Identity;
+  books: string;
+} {
   const store = trustedStore(o.root);
   const gatesText = readFileSync(path.join(o.root, GATES, GATES_FILE));
   const refs = GatesRefs.parse(JSON.parse(gatesText.toString("utf8")));
@@ -162,10 +175,24 @@ export function identityOf(o: StepInput): { store: Store; identity: Identity } {
       storeCode: store.manifest.code.fingerprint,
       gatesCode: refs.code.fingerprint,
       code: o.code,
-      look: refs.references,
+      look: {
+        step1: refs.references.step1,
+        positions: refs.references.positions,
+      },
       M: Step1.parse(JSON.parse(step1.toString("utf8"))).M,
     },
+    books: refs.references.books,
   };
+}
+
+/** The raw store's book list (`books.jsonl`), held to the SHA-256 `gates.json` names (else not ready, exit 5). */
+function bookListOf(raw: string, want: string): BookList {
+  const bytes = readFileSync(path.join(raw, "books.jsonl"));
+  if (sha256(bytes) !== want)
+    throw new StoreError(
+      "the raw store's books.jsonl is not the one the gates read",
+    );
+  return readBookList(bytes.toString("utf8"));
 }
 
 /** A step's clock and memory: each phase's seconds, and the process's sizes at its end. */
@@ -964,9 +991,8 @@ export const PLACEBO = { seed: 20_261_118, draws: 10_000 };
  * on C; K; the book footprint at K slices; the placebo on E ∪ C for the
  * rule, B0 and B2 (all slices' no-wave episodes, on marks), and the exam's
  * z; the projection from C and from E and C pooled; the signal meter; the
- * error rates; the calibration on C. Not built here: the tape against the
- * book by delay and the $10,000 and $50,000 walks, which read the raw
- * store's book files (reported for the supervisor).
+ * error rates; the calibration on C. The two prints that read the raw
+ * store's books are `books.ts`'s, which the step adds.
  */
 export function besideOf(
   d: Data,
@@ -1060,17 +1086,13 @@ export function besideOf(
     signal: signalOf(o.e.tries),
     errorRates: ERROR_RATES,
     calibrationOnC: calibrationOnC(d, b0.C, o.book),
-    notBuilt: [
-      "the tape against the book by delay (10 s, 2, 5 and 15 minutes after t)",
-      "the cost of $10,000 and $50,000 walks on slice 0's held entry books",
-    ],
   };
 }
 
-/** Run 5, `beside`: c.json of the current choice.json and e.json; the positions files; `besideOf`; `beside.json`. */
-export function besideStep(o: StepInput) {
+/** Run 5, `beside`: c.json of the current choice.json and e.json; the positions files; `besideOf`; the book prints on B0's lines (slice 0's held books, `books.ts`); `beside.json`. */
+export async function besideStep(o: StepInput) {
   const m = meter(o.log);
-  const { store, identity } = identityOf(o);
+  const { store, identity, books } = identityOf(o);
   const e = readOutput(o, "e.json", identity);
   const choice = readOutput(o, "choice.json", identity);
   const c = readOutput(o, "c.json", identity);
@@ -1084,27 +1106,36 @@ export function besideStep(o: StepInput) {
     );
   const features = readOutput(o, "features.json", identity);
   const cuts = readCuts(o, features);
+  const list = bookListOf(o.raw, books);
   const d = dataFrom(store, o.coins, o.kit);
   m.phase("data");
+  const lines = {
+    e: readLines(o, "e-positions.jsonl.gz"),
+    choice: readLines(o, "choice-positions.jsonl.gz"),
+    c: readLines(o, "c-positions.jsonl.gz"),
+  };
   const out = besideOf(d, {
     M: identity.M,
     cuts: cuts.cuts,
     e: EFile.parse(e.value),
     c: cf,
-    lines: {
-      e: readLines(o, "e-positions.jsonl.gz"),
-      choice: readLines(o, "choice-positions.jsonl.gz"),
-      c: readLines(o, "c-positions.jsonl.gz"),
-    },
+    lines,
     book: bookNets(o.look, identity.look.positions),
     ...PLACEBO,
   });
   m.phase("beside");
+  const held = await bookPrints(
+    d,
+    lines,
+    heldBooks(o.raw, o.gate, list, o.pace),
+  );
+  m.phase("books");
   const value = {
     step: "beside",
     identity,
     inputs: { e: e.sha, choice: choice.sha, c: c.sha, cuts: cuts.sha },
     ...out,
+    books: held,
     ...m.done(),
     written: new Date().toISOString(),
   };

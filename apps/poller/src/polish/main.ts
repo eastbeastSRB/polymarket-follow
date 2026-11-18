@@ -201,6 +201,8 @@ try {
     const r = await runStep(step, {
       root: settings.ANALYZER_ROOT,
       look: path.join(look.data!.WAVEH_ROOT, "look"),
+      raw: settings.WAVEH_STORE,
+      gate: gateOf(freeze),
       coins,
       kit: await loadResearch(),
       code: fingerprint,

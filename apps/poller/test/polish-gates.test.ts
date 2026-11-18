@@ -1069,6 +1069,8 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     const input: StepInput = {
       root: analyzer,
       look: path.join(root, "look"),
+      raw: o.raw,
+      gate: o.gate,
       coins,
       kit: o.kit,
       code: "f".repeat(64),
@@ -1173,6 +1175,8 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     const input: StepInput = {
       root: analyzer,
       look: path.join(root, "look"),
+      raw: o.raw,
+      gate: o.gate,
       coins,
       kit: o.kit,
       code: "f".repeat(64),
@@ -1261,6 +1265,8 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     const input: StepInput = {
       root: analyzer,
       look: path.join(root, "look"),
+      raw: o.raw,
+      gate: o.gate,
       coins,
       kit: o.kit,
       code: "f".repeat(64),
@@ -1292,6 +1298,8 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     const input: StepInput = {
       root: analyzer,
       look: path.join(root, "look"),
+      raw: o.raw,
+      gate: o.gate,
       coins,
       kit: o.kit,
       code: "f".repeat(64),
@@ -1326,11 +1334,13 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     });
   });
 
-  it("the exploration's beside step on this store: c.json of the current choice and e, the prints for B0 going, no position priced", () => {
+  it("the exploration's beside step on this store: c.json of the current choice and e, the prints for B0 going, no position priced; the book prints on the look's held books", async () => {
     const dir = path.join(analyzer, "explore");
     const input: StepInput = {
       root: analyzer,
       look: path.join(root, "look"),
+      raw: o.raw,
+      gate: o.gate,
       coins,
       kit: o.kit,
       code: "f".repeat(64),
@@ -1346,7 +1356,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       cFile,
       JSON.stringify({ ...c, inputs: { ...c.inputs, choice: "0".repeat(64) } }),
     );
-    expect(() => besideStep(input)).toThrow(
+    await expect(besideStep(input)).rejects.toThrow(
       "explore\\c.json is not of the current choice.json and e.json",
     );
     writeFileSync(cFile, text);
@@ -1357,11 +1367,51 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       eFile,
       JSON.stringify({ ...(JSON.parse(eText) as object), written: "again" }),
     );
-    expect(() => besideStep(input)).toThrow(
+    await expect(besideStep(input)).rejects.toThrow(
       "explore\\c.json is not of the current choice.json and e.json",
     );
     writeFileSync(eFile, eText);
-    const { sha: bSha, out } = besideStep(input);
+    // A book list other than the one the gates read.
+    const listFile = path.join(o.raw, "books.jsonl");
+    const listText = readFileSync(listFile, "utf8");
+    writeFileSync(listFile, `${listText}\n`);
+    await expect(besideStep(input)).rejects.toThrow(
+      "the raw store's books.jsonl is not the one the gates read",
+    );
+    writeFileSync(listFile, listText);
+    let reads = 0;
+    const { sha: bSha, out } = await besideStep({
+      ...input,
+      pace: () => {
+        reads += 1;
+        return Promise.resolve();
+      },
+    });
+    // The look's held books through WAVE-H's readers: 3 slice-0 positions in E, one entry hour the archive lacks; each
+    // snapshot 2 s before x_in, so the 10 s legs find none yet and the 5 and 15 minute legs a stale one; no tape.
+    expect(reads).toBe(5);
+    expect(out.books.tapeAgainstBook.E).toMatchObject({
+      "10 s": {
+        compared: null,
+        notCompared: { "no snapshot": 2, "no book file": 1 },
+      },
+      "2 min": {
+        compared: null,
+        notCompared: { "no trade": 2, "no book file": 1 },
+      },
+      "5 min": { notCompared: { stale: 2, "no book file": 1 } },
+      "15 min": { notCompared: { stale: 2, "no book file": 1 } },
+      "2 min exit": { notCompared: { "no trade": 3 } },
+    });
+    // One level of 1,000 at 100.1 against a mid of 100: 10 bps at every size, none short.
+    expect(out.books.walks.E).toMatchObject({
+      positions: 3,
+      notWalked: { "no book file": 1 },
+    });
+    const big = out.books.walks.E.bySize["$50,000"]!;
+    expect(big).toMatchObject({ cost: { n: 2 }, extra: { n: 2 }, short: 0 });
+    expect(big.cost!.mean).toBeCloseTo(10, 9);
+    expect(out.books.walks.C.positions).toBe(0);
     expect(sha(readFileSync(path.join(dir, "beside.json")))).toBe(bSha);
     expect(out).toMatchObject({
       step: "beside",
