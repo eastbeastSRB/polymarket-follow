@@ -12,7 +12,7 @@ import type { Coins } from "../waveh/coins.js";
 import { StoreError } from "../waveh/store.js";
 import { countedFrom } from "./counted.js";
 import { STORE } from "./extract.js";
-import { GATES, GATES_FILE, GatesFile } from "./gates.js";
+import { GATES, GATES_FILE, GatesFile } from "./library.js";
 import { openStore, type Store } from "./store.js";
 
 /** The store under `root` (the analyzer's folder of the range), a whole range's; a timing run's is not ready. */

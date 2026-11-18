@@ -14,22 +14,19 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { gunzipSync } from "node:zlib";
 import { z } from "zod";
-import { byM4 } from "../market1/fills.js";
-import type { Market, Research } from "../paper/research.js";
+import type { Research } from "../paper/research.js";
 import { coinName, type Coins } from "../waveh/coins.js";
-import { minutesWithout, type Marks } from "../waveh/ctxs.js";
-import { parseLine, parseRecord, rawRecords } from "../waveh/fills.js";
+import { minutesWithout } from "../waveh/ctxs.js";
 import { sha256, type Gate } from "../waveh/gate.js";
 import {
   DATA_END,
   SIZING_DAYS,
-  SIZING_START,
   TEST_END,
   TEST_START,
   isoDay,
   monthOf,
 } from "../waveh/instants.js";
-import { ctxsKey, fillKeys, formatOf, keyDate } from "../waveh/keys.js";
+import { keyDate } from "../waveh/keys.js";
 import {
   LegPrint,
   booksOf,
@@ -45,16 +42,17 @@ import type { SizingFile } from "../waveh/rehearse.js";
 import { markAt, testMonths } from "../waveh/report.js";
 import { writeWhole } from "../waveh/run.js";
 import { bySlice, scanM } from "../waveh/slices.js";
+import { SHA256, readBookList, type DataList } from "../waveh/store.js";
+import { boundOf } from "./counted.js";
+import { dayFromRaw, dayFromStore } from "./days.js";
+import { minuteColumn, minutePrice } from "./legs.js";
 import {
-  SHA256,
-  linesOf,
-  readBookList,
-  readLz4,
-  type DataList,
-} from "../waveh/store.js";
-import { boundOf, countedFrom, digitsOf, type CountedSet } from "./counted.js";
-import { CONTEXT } from "./ctxs.js";
-import { Tape, marketsFrom, minuteColumn, minutePrice } from "./legs.js";
+  GATES_FILE,
+  libraryOf,
+  positionsOf,
+  type GatesFile,
+  type Library,
+} from "./library.js";
 import { monthsOf } from "./merge.js";
 import {
   FILES_FILE,
@@ -66,10 +64,8 @@ import {
   type Store,
 } from "./store.js";
 import { WIDTH, type ColumnType } from "./tables.js";
-import { LARGE_COINS } from "./writers.js";
 
 const MINUTE_MS = 60_000;
-const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 /** G3's tolerance on a position's bps (the plan: 0.01 bps; 0 expected). */
 export const BPS_TOLERANCE = 0.01;
@@ -120,17 +116,6 @@ const PositionLine = z.object({
 });
 
 export type GateResult = { pass: boolean } & Record<string, unknown>;
-
-export const GatesFile = z.object({
-  store: z.object({ manifestSha256: z.string().regex(SHA256) }),
-  passed: z.boolean(),
-  gates: z.record(z.string(), z.object({ pass: z.boolean() }).loose()),
-  written: z.string(),
-});
-export type GatesFile = z.infer<typeof GatesFile>;
-/** The gates' folder in the analyzer's folder of the range, and their file. */
-export const GATES = "gates";
-export const GATES_FILE = "gates.json";
 
 export type GatesInput = {
   store: Store;
@@ -238,23 +223,6 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
     storeCode: m.code.fingerprint,
     thisCode: o.code,
     ...listed(problems),
-  };
-}
-
-/** What the gates after G0 share: the input files' counts, the counted fills, the marks and markets, the tape. */
-export type Library = CountedSet & {
-  files: FileCounts[];
-  marks: Marks;
-  markets: Map<number, Market>;
-  tape: Tape;
-};
-
-export function libraryOf(o: GatesInput): Library {
-  return {
-    files: o.store.files(),
-    ...countedFrom(o.store, o.coins),
-    ...marketsFrom(o.store, o.kit, o.coins),
-    tape: new Tape(o.store),
   };
 }
 
@@ -380,17 +348,6 @@ export function g1(o: GatesInput, lib: Library, step1: Step1): GateResult {
     early: mine.early,
     sizingCoins: mine.sizingCoins.length,
   };
-}
-
-/** G2's positions, as WAVE-H's look finds them (look.ts `lookStep1`). */
-export function positionsOf(lib: Library, M: number) {
-  const slice0 = bySlice(lib.counted, M)[0]!;
-  const spots = waveSpots(0, slice0, TEST_START, TEST_END).filter(
-    (s) => s.xOut < DATA_END,
-  );
-  const sizing = waveSpots(0, slice0, SIZING_START, TEST_START);
-  const late = sizing.filter((s) => s.xOut >= TEST_START - HOUR_MS);
-  return { slice0, spots, sizing, late };
 }
 
 /** G2: M's scan against `sizing.json`; slice 0's positions, SIZING's and those left for the look, by `step1.json`'s SHA-256 and counts; the entries of every slice. */
@@ -651,246 +608,6 @@ export function g5(o: GatesInput, lib: Library): GateResult {
     ...listed(problems),
     dayNtlVlm: { columns: ["with the backstop", "without"], ratios },
   };
-}
-
-/** A sample day's numbers: the 38 coins' tape (rows, Σ tid mod 2^64, Σ px·sz); BTC's and ETH's bars (trades, buy, sell and the backstop's notional); liq (rows, Σ tid); the 40 coins' contexts (minutes, each column's sum and cells that are none). */
-type DayNumbers = {
-  tape: Record<string, [number, string, number]>;
-  bars: Record<string, [number, number, number, number]>;
-  liq: [number, string];
-  ctxs: Record<string, (number | string)[]>;
-};
-
-const U64 = 2n ** 64n;
-const tidSum = (tids: Iterable<bigint>) => {
-  let s = 0n;
-  for (const t of tids) s = (s + t) % U64;
-  return s.toString();
-};
-const total = (a: ArrayLike<number>) => {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) s += a[i]!;
-  return s;
-};
-/** A context column's day: the sum of its numbers and how many cells were none, as `<sum>|<none>`. */
-const columnSum = (values: readonly number[]) => {
-  let sum = 0;
-  let none = 0;
-  for (const v of values)
-    if (Number.isNaN(v)) none += 1;
-    else sum += v;
-  return `${sum}|${none}`;
-};
-
-/** A sample day from the store. */
-export function dayFromStore(o: GatesInput, day: number): DayNumbers {
-  const month = monthOf(day);
-  const end = day + DAY_MS;
-  const out: DayNumbers = { tape: {}, bars: {}, liq: [0, "0"], ctxs: {} };
-  const inDay = (time: Float64Array) => {
-    const rows: number[] = [];
-    for (let i = 0; i < time.length; i++)
-      if (time[i]! >= day && time[i]! < end) rows.push(i);
-    return rows;
-  };
-  for (const c of o.coins.list) {
-    const p = o.store.partition("tape", c.name, month);
-    const px = o.store.column(p, "px") as Float64Array;
-    const sz = o.store.column(p, "sz") as Float64Array;
-    const tid = o.store.column(p, "tid") as Uint32Array;
-    const rows = inDay(o.store.column(p, "time") as Float64Array);
-    let ntl = 0;
-    for (const i of rows) ntl += px[i]! * sz[i]!;
-    out.tape[c.name] = [
-      rows.length,
-      tidSum(rows.map((i) => BigInt(digitsOf(tid, i)))),
-      ntl,
-    ];
-  }
-  for (const coin of o.forty) {
-    const p = o.store.partition("minute", coin, month);
-    const off = (day - p.start) / MINUTE_MS;
-    const f64 = (name: string) =>
-      (o.store.column(p, name) as Float64Array).subarray(off, off + 1440);
-    if (LARGE_COINS.includes(coin))
-      out.bars[coin] = [
-        total(
-          (o.store.column(p, "trades") as Uint32Array).subarray(
-            off,
-            off + 1440,
-          ),
-        ),
-        total(f64("buyNtl")),
-        total(f64("sellNtl")),
-        total(f64("backstopNtl")),
-      ];
-    const mark = f64("mark");
-    const marked: number[] = [];
-    for (let k = 0; k < mark.length; k++)
-      if (!Number.isNaN(mark[k]!)) marked.push(k);
-    out.ctxs[coin] = [
-      marked.length,
-      ...CONTEXT.map(([name]) => {
-        const v = f64(name);
-        return columnSum(marked.map((k) => v[k]!));
-      }),
-    ];
-  }
-  const p = o.store.partition("liq", null, month);
-  const tid = o.store.column(p, "tid") as Uint32Array;
-  const rows = inDay(o.store.column(p, "time") as Float64Array);
-  out.liq = [rows.length, tidSum(rows.map((i) => BigInt(digitsOf(tid, i))))];
-  return out;
-}
-
-type Taken = {
-  t: number;
-  iid: number;
-  addr: string;
-  side: 1 | -1;
-  tid: string;
-  n: number;
-  backstop: boolean;
-};
-
-/**
- * A sample day re-read from WAVE-H's raw store by its own readers (lz4js,
- * `JSON.parse` of every line, its schema), independent of the pass: the
- * day's files and an hour's either side, each record of the day once by
- * account and `tid`; the takers summed in H8's order, as the store's.
- */
-export async function dayFromRaw(
-  o: GatesInput,
-  day: number,
-): Promise<{ numbers: DayNumbers; records: number; twice: number }> {
-  const end = Math.min(day + DAY_MS, DATA_END);
-  const forty = new Set(o.forty);
-  const seen = new Set<string>();
-  const takers = new Map<string, Taken[]>(o.forty.map((c) => [c, []]));
-  const liq: bigint[] = [];
-  let records = 0;
-  let twice = 0;
-  for (const key of fillKeys(day - HOUR_MS, day + DAY_MS + HOUR_MS)) {
-    await o.pace();
-    for (const line of linesOf(readLz4(o.gate, o.raw, o.list, key))) {
-      let raw: ReturnType<typeof rawRecords>;
-      try {
-        raw = rawRecords(formatOf(key), parseLine(line));
-      } catch {
-        raw = null;
-      }
-      for (const r of raw?.records ?? []) {
-        const rec = parseRecord(r);
-        if (rec === null) continue;
-        const f = rec.fill;
-        if (f.time < day || f.time >= end) continue;
-        records += 1;
-        const isLiq = f.liquidation !== undefined;
-        const isTaker = f.crossed && forty.has(f.coin);
-        if (!isLiq && !isTaker) continue;
-        const k = `${rec.user}|${f.tid}`;
-        if (seen.has(k)) {
-          twice += 1;
-          continue;
-        }
-        seen.add(k);
-        if (isLiq) liq.push(BigInt(f.tid));
-        if (isTaker)
-          takers.get(f.coin)!.push({
-            t: f.time,
-            iid: 0,
-            addr: rec.user,
-            side: f.side === "B" ? 1 : -1,
-            tid: f.tid,
-            n: Number(f.px) * Number(f.sz),
-            backstop: f.liquidation?.method === "backstop",
-          });
-      }
-    }
-  }
-  for (const list of takers.values()) list.sort(byM4);
-  const out: DayNumbers = {
-    tape: {},
-    bars: {},
-    liq: [liq.length, tidSum(liq)],
-    ctxs: ctxsFromRaw(o, day),
-  };
-  for (const c of o.coins.list) {
-    const list = takers.get(c.name)!;
-    out.tape[c.name] = [
-      list.length,
-      tidSum(list.map((r) => BigInt(r.tid))),
-      total(list.map((r) => r.n)),
-    ];
-  }
-  for (const coin of LARGE_COINS) {
-    const buy = new Float64Array(1440);
-    const sell = new Float64Array(1440);
-    const backstop = new Float64Array(1440);
-    let trades = 0;
-    for (const r of takers.get(coin)!) {
-      const k = Math.floor((r.t - day) / MINUTE_MS);
-      if (r.backstop) backstop[k] = backstop[k]! + r.n;
-      else {
-        trades += 1;
-        if (r.side > 0) buy[k] = buy[k]! + r.n;
-        else sell[k] = sell[k]! + r.n;
-      }
-    }
-    out.bars[coin] = [trades, total(buy), total(sell), total(backstop)];
-  }
-  return { numbers: out, records, twice };
-}
-
-const TIME = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
-
-/** The day's minutes of the 40 coins from the `asset_ctxs` files of the day and a day either side, in day order: each minute's row the latest stamped in (m, m + 1 min], the first of one stamp, a row whose time or mark fails not taken. */
-function ctxsFromRaw(o: GatesInput, day: number): DayNumbers["ctxs"] {
-  const rows = new Map<string, ({ t: number; values: number[] } | undefined)[]>(
-    o.forty.map((c) => [c, new Array<undefined>(1440).fill(undefined)]),
-  );
-  for (const d of [day - DAY_MS, day, day + DAY_MS]) {
-    if (d < o.store.manifest.minuteStart || d >= DATA_END) continue;
-    const lines = Buffer.from(readLz4(o.gate, o.raw, o.list, ctxsKey(d)))
-      .toString("utf8")
-      .split("\n");
-    const head = lines[0]!.split(",");
-    const [iTime, iCoin, iMark] = ["time", "coin", "mark_px"].map((c) =>
-      head.indexOf(c),
-    ) as [number, number, number];
-    const at = CONTEXT.map(([, csv]) => head.indexOf(csv));
-    for (const line of lines.slice(1)) {
-      const cells = line.split(",");
-      const minutes = rows.get(cells[iCoin] ?? "");
-      if (minutes === undefined || cells.length !== head.length) continue;
-      const mark = Number(cells[iMark]);
-      if (!TIME.test(cells[iTime]!) || !(mark > 0 && Number.isFinite(mark)))
-        continue;
-      const t = Date.parse(cells[iTime]!);
-      const k = Math.ceil((t - day) / MINUTE_MS) - 1;
-      if (t >= DATA_END || k < 0 || k >= 1440) continue;
-      if (minutes[k] !== undefined && t <= minutes[k].t) continue;
-      minutes[k] = {
-        t,
-        values: at.map((i) => {
-          const s = cells[i]!;
-          return s.length > 0 && Number.isFinite(Number(s)) ? Number(s) : NaN;
-        }),
-      };
-    }
-  }
-  return Object.fromEntries(
-    o.forty.map((coin) => {
-      const kept = rows.get(coin)!.filter((r) => r !== undefined);
-      return [
-        coin,
-        [
-          kept.length,
-          ...CONTEXT.map((_, j) => columnSum(kept.map((r) => r.values[j]!))),
-        ],
-      ];
-    }),
-  );
 }
 
 /** G6: each sample day's numbers from the store equal those re-read from the raw files. */

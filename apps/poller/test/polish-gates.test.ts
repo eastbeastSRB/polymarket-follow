@@ -16,8 +16,6 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { explore, trustedStore, wholeStore } from "../src/polish/explore.js";
 import { extract } from "../src/polish/extract.js";
 import {
-  GATES,
-  GATES_FILE,
   g0,
   g1,
   g2,
@@ -25,10 +23,8 @@ import {
   g4,
   g5,
   g6,
-  libraryOf,
   runGates,
   type GatesInput,
-  type Library,
   type Step1,
 } from "../src/polish/gates.js";
 import {
@@ -38,6 +34,12 @@ import {
   minuteColumn,
   minutePrice,
 } from "../src/polish/legs.js";
+import {
+  GATES,
+  GATES_FILE,
+  libraryOf,
+  type Library,
+} from "../src/polish/library.js";
 import { WAVEH_RANGE, type Range } from "../src/polish/range.js";
 import { Store, openStore, type Manifest } from "../src/polish/store.js";
 import { fortyOf } from "../src/polish/writers.js";

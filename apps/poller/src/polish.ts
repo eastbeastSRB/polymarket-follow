@@ -26,7 +26,8 @@ import { createLog } from "./log.js";
 import { loadResearch } from "./paper/research.js";
 import { explore, trustedStore, wholeStore } from "./polish/explore.js";
 import { extract } from "./polish/extract.js";
-import { GATES, WAVEH_EXPECTED, runGates } from "./polish/gates.js";
+import { WAVEH_EXPECTED, runGates } from "./polish/gates.js";
+import { GATES } from "./polish/library.js";
 import { WAVEH_RANGE, dayOf } from "./polish/range.js";
 import {
   ExtractSettings,
