@@ -1,5 +1,88 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (the supervisor — EXTRACT-REVIEW's findings, under the owner's
+night go): **"AFTER THESE FIXES": EVERY FINDING (M1–M4, L1–L12) IS FIXED IN
+ONE ROUND BEFORE THE RUN ON THE 10 MONTHS, BY A FRESH FIXER (EXTRACT-FIX);
+A FRESH FIX-CHECK FOLLOWS; THEN THE RUN.**
+
+**What:**
+- **The review:** `docs/reviews/extract-review-2026-11-18.md` (`1d63d13`;
+  Sonnet 5.5; HEAD `e62e9cd`). Verdict: "after these fixes", not a rework.
+  - No high findings. Four medium: M1 refused records unseen by any gate;
+    M2 columns and days no gate reads; M3 fingerprints printed, not
+    compared, and `trustedStore` trusting `passed` alone; M4 refusals
+    untested (20 of its 32 refusal breaks survive).
+  - Its independent check on real data found **0 differences**. It used
+    its own parse (WAVE-H-LOOK-REVIEW's decoder and `JSON.parse` of every
+    line) of 2025-10-10's 24 raw files and the hours either side, against
+    the one-day timing store:
+    - 19,127,562 records;
+    - the 38 coins' 4,712,980 tape rows, every field;
+    - liq's 788,904 rows, all 18 columns;
+    - 600,000 context cells and the 40 coins' 540,000 bar cells;
+    - the pairing, 6,406,737 = 6,406,737.
+- **Checked by the supervisor (06:10Z):**
+  - only its report committed; the tree clean;
+  - access clean: its seal probe ran on a synthetic tree in its scratchpad;
+    0 FRESH reads;
+  - M1 (`gates.ts` never reads `refused` or `misread`), the hard per-file
+    G5 and L1's 0.01 tolerance confirmed in the code.
+  - Its context peaked at 887k, so the later read of `gates.json` goes to
+    the fix-check.
+
+**The rulings (its seven questions, as it recommended):**
+1. **One fix round before the run (Q1).** Any change to `dist/polish*`
+   makes a new fingerprint and redoes the pass, so the run waits for the
+   round.
+2. **G6 widened now (Q2):** every column of liq, the bars and the
+   contexts. Three more sample days: a month's first day, a month's last
+   day, and the hour before DATA END.
+3. **The name `polish` stays (Q3).**
+4. **G5 is exact, across a file boundary (Q4, the supervisor's technical
+   call).** A taker and its maker share one `tid`, so a trade split
+   across two adjacent files of one coin pairs across them. Anything left
+   unpaired fails the gate. The gate lists every unpaired record by file,
+   coin and `tid`. No tolerance, no waiver in code. The fixer picks the
+   simplest exact form and records it in its entry.
+5. **No second fingerprint for the parts (Q5):** the round comes before
+   the run.
+6. **`gates.ts` is split before POLISH-EXPLORE (Q6),** as a pure move in
+   a commit of its own. The library POLISH-EXPLORE imports gets a file of
+   its own.
+7. **A fresh fix-check follows (Q7):** EXTRACT-FIX-CHECK, Sonnet. It
+   checks that:
+   - the 20 unbacked survivors now die;
+   - the new gates pass on the synthetic world and on a rebuilt one-day
+     store;
+   - the review's `indep2.cjs` finds 0 differences again.
+
+**And the lows, as the review proposed:**
+- L1: the tolerance is 1e-9 bps, the plan's, with the largest difference
+  printed.
+- L2: G4's fallback is tested.
+- L3: tests for slashes, `..`, UNC and a junction. The seal resolves the
+  real path before it refuses. The log folder is created after the seal.
+- L5: the workers' 4 GB ceiling really holds: they no longer inherit the
+  main process's heap flag.
+- L6: the two clocks are written down (contexts as of the minute's end,
+  bars over [m, m + 1 min)), with an accessor that cannot look ahead.
+- L7: finished coins' accumulators are freed.
+- L8: the timing-dependent tests are fixed.
+- L9: the unused exports, the repeated constants and the duplicate helpers
+  are removed.
+- L10: architecture is corrected.
+- L11: the `pace()` calls and `bytesOf`'s edges are tested.
+- L12: leftover `.tmp` files are cleaned; `--day` into a root that holds a
+  store is refused; G6's memory is measured.
+
+**Why:** the store is the base of the 38 tries and of the exam. A gap that
+no gate sees would bend every later result in silence. Fixing it now costs
+a few hours; FRESH's download ends around midnight 2026-11-18/19 in any
+case.
+
+**Next:** EXTRACT-FIX (Opus, max) → EXTRACT-FIX-CHECK (Sonnet, max) → the
+run (`extract`, `gates`, `explore`) when FRESH ends → POLISH-EXPLORE.
+
 2026-11-18 (EXTRACT-BUILD's technical calls — the polishing's extraction,
 built by EXTRACT-BUILD and its successor EXTRACT-BUILD-2): **THE ANALYZER'S
 FIRST PIECE IS BUILT: `dist/polish.js extract`, `gates` AND THE FRAME OF
