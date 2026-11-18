@@ -22,7 +22,9 @@ import type { Research } from "../../paper/research.js";
 import type { Coins } from "../../waveh/coins.js";
 import { sha256 } from "../../waveh/gate.js";
 import { DATA_END, TEST_END, TEST_START } from "../../waveh/instants.js";
+import { episodeSpots } from "../../waveh/positions.js";
 import { writeWhole } from "../../waveh/run.js";
+import { bySlice } from "../../waveh/slices.js";
 import { StoreError } from "../../waveh/store.js";
 import { trustedStore } from "../explore.js";
 import { Step1 } from "../gates.js";
@@ -37,6 +39,19 @@ import {
   type CheckOnC,
   type TryOnE,
 } from "./choice.js";
+import {
+  ERROR_RATES,
+  Line,
+  calibrationOnC,
+  examZ,
+  footprintOf,
+  kOf,
+  linesBeside,
+  linesOf,
+  placeboOf,
+  projectionOf,
+  signalOf,
+} from "./beside.js";
 import { checkPrices, dataFrom, type Data } from "./data.js";
 import { cutsOf, featuresOf } from "./features.js";
 import { C, E, STOP_MS, inPart, positionOf, type Entry } from "./parts.js";
@@ -72,7 +87,7 @@ import { CutsFile, TRIES, keeps } from "./trylog.js";
 
 /** The steps' folder in the analyzer's folder of the range. */
 export const EXPLORE = "explore";
-export const STEPS = ["features", "e", "choice", "c"] as const;
+export const STEPS = ["features", "e", "choice", "c", "beside"] as const;
 export type StepName = (typeof STEPS)[number];
 
 /** The look's EVERY SLICE pooled line on marks (WAVE-H's report.json, 2026-11-17): what B0 over TEST must reproduce. */
@@ -913,6 +928,187 @@ export async function cStep(o: StepInput) {
   return { sha: writeOutput(o, "c.json", value), out: value };
 }
 
+/** What the beside step reads of `c.json`. */
+export const CFile = z.object({
+  inputs: z.object({ choice: z.string() }).loose(),
+  b0: z.object({ stat: StatOut }).loose(),
+  evaluations: z.array(z.object({ rule: z.string(), stat: StatOut }).loose()),
+  goes: z.string(),
+  rule: ChoiceFile.shape.rule,
+});
+export type CFile = z.infer<typeof CFile>;
+
+/** A step's positions file, its lines parsed (our own file). */
+function readLines(o: StepInput, name: string): Line[] {
+  let bytes: Buffer;
+  try {
+    bytes = readFileSync(path.join(o.root, EXPLORE, name));
+  } catch {
+    throw new StoreError(`no ${EXPLORE}\\${name}: run its step first`);
+  }
+  return gunzipSync(bytes)
+    .toString("utf8")
+    .split("\n")
+    .filter((l) => l !== "")
+    .map((l) => Line.parse(JSON.parse(l)));
+}
+
+/** The placebo's seed (printed) and its draws a window length (F1). */
+export const PLACEBO = { seed: 20_261_118, draws: 10_000 };
+
+/**
+ * The prints beside (5.5–5.7 and 6; F1, F13, F17, F19), for the rule going
+ * to FRESH with B0 beside, from the steps' positions: 6.1's lines on E and
+ * on C; K; the book footprint at K slices; the placebo on E ∪ C for the
+ * rule, B0 and B2 (all slices' no-wave episodes, on marks), and the exam's
+ * z; the projection from C and from E and C pooled; the signal meter; the
+ * error rates; the calibration on C. Not built here: the tape against the
+ * book by delay and the $10,000 and $50,000 walks, which read the raw
+ * store's book files (reported for the supervisor).
+ */
+export function besideOf(
+  d: Data,
+  o: {
+    M: number;
+    cuts: CutsFile["cuts"];
+    e: EFile;
+    c: CFile;
+    lines: { e: readonly Line[]; choice: readonly Line[]; c: readonly Line[] };
+    book: ReadonlyMap<string, number>;
+    seed: number;
+    draws: number;
+  },
+) {
+  const b = o.e.calibration.rebasedBy;
+  const rule = linesOf(o.c.goes, o.lines, o.cuts);
+  const b0 = linesOf("B0", o.lines, o.cuts);
+  const both = (x: { E: Line[]; C: Line[] }) => [...x.E, ...x.C];
+  const span = { from: E.start, to: C.end - STOP_MS };
+  // B2: all slices' no-wave episodes in E and C, priced on marks.
+  const names = new Map(d.coins.list.map((c) => [c.assetId, c.name]));
+  const b2: Line[] = bySlice(d.counted, o.M).flatMap((fills, k) =>
+    episodeSpots(k, fills, span.from, span.to)
+      .filter((s) => s.alone)
+      .map((s) => {
+        const g = grossOnMarks(d, s, names.get(s.iid)!);
+        const x = Number.isNaN(g) ? null : g;
+        return {
+          group: "B2",
+          slice: k,
+          t: s.t,
+          iid: s.iid,
+          tid: "",
+          dir: s.dir,
+          xIn: s.xIn,
+          xOut: s.xOut,
+          net: x,
+          unpriced: x === null ? "no mark" : null,
+          onMarks: x,
+        };
+      }),
+  );
+  const draw = { seed: o.seed, draws: o.draws, ...span };
+  const placebo = {
+    seed: o.seed,
+    rule: placeboOf(d, both(rule), b, draw),
+    b0: placeboOf(d, both(b0), b, draw),
+    b2: placeboOf(d, b2, 0, draw),
+  };
+  const z = examZ(placebo.rule["100 days"]!.p9975);
+  const K = kOf(d, both(rule), b, o.c.rule.M2 ? 2 * o.M : o.M);
+  const chosen = o.c.goes !== "B0";
+  const onC = chosen
+    ? (o.c.evaluations.find((x) => x.rule === o.c.goes)?.stat ?? null)
+    : o.c.b0.stat;
+  const pooled = statOf(
+    d.kit,
+    both(rule).flatMap((l) =>
+      l.net === null ? [] : [{ t: l.t, iid: l.iid, x: l.net - b }],
+    ),
+  );
+  const errors = {
+    look1: placebo.rule["100 days"]!.errors.median,
+    look2: placebo.rule["182 days"]!.errors.median,
+  };
+  return {
+    goes: o.c.goes,
+    rule: o.c.rule,
+    rebasedBy: b,
+    lines: {
+      rule: {
+        E: linesBeside(d, rule.E, b, E),
+        C: linesBeside(d, rule.C, b, C),
+      },
+      b0: { E: linesBeside(d, b0.E, b, E), C: linesBeside(d, b0.C, b, C) },
+    },
+    K,
+    footprint: footprintOf(both(rule), K.K),
+    placebo,
+    examZ: z,
+    projection: {
+      fromC:
+        onC?.se == null
+          ? null
+          : projectionOf(onC.mean, onC.se, chosen, z, errors),
+      pooled:
+        pooled?.se == null
+          ? null
+          : projectionOf(pooled.mean, pooled.se, chosen, z, errors),
+    },
+    signal: signalOf(o.e.tries),
+    errorRates: ERROR_RATES,
+    calibrationOnC: calibrationOnC(d, b0.C, o.book),
+    notBuilt: [
+      "the tape against the book by delay (10 s, 2, 5 and 15 minutes after t)",
+      "the cost of $10,000 and $50,000 walks on slice 0's held entry books",
+    ],
+  };
+}
+
+/** Run 5, `beside`: c.json of the current choice.json and e.json; the positions files; `besideOf`; `beside.json`. */
+export function besideStep(o: StepInput) {
+  const m = meter(o.log);
+  const { store, identity } = identityOf(o);
+  const e = readOutput(o, "e.json", identity);
+  const choice = readOutput(o, "choice.json", identity);
+  const c = readOutput(o, "c.json", identity);
+  const cf = CFile.parse(c.value);
+  if (
+    cf.inputs.choice !== choice.sha ||
+    (choice.value.inputs as { e?: string } | undefined)?.e !== e.sha
+  )
+    throw new StoreError(
+      `${EXPLORE}\\c.json is not of the current choice.json and e.json`,
+    );
+  const features = readOutput(o, "features.json", identity);
+  const cuts = readCuts(o, features);
+  const d = dataFrom(store, o.coins, o.kit);
+  m.phase("data");
+  const out = besideOf(d, {
+    M: identity.M,
+    cuts: cuts.cuts,
+    e: EFile.parse(e.value),
+    c: cf,
+    lines: {
+      e: readLines(o, "e-positions.jsonl.gz"),
+      choice: readLines(o, "choice-positions.jsonl.gz"),
+      c: readLines(o, "c-positions.jsonl.gz"),
+    },
+    book: bookNets(o.look, identity.look.positions),
+    ...PLACEBO,
+  });
+  m.phase("beside");
+  const value = {
+    step: "beside",
+    identity,
+    inputs: { e: e.sha, choice: choice.sha, c: c.sha, cuts: cuts.sha },
+    ...out,
+    ...m.done(),
+    written: new Date().toISOString(),
+  };
+  return { sha: writeOutput(o, "beside.json", value), out: value };
+}
+
 /** Runs one step by its name. */
 export async function runStep(step: StepName, o: StepInput) {
   switch (step) {
@@ -924,5 +1120,7 @@ export async function runStep(step: StepName, o: StepInput) {
       return choiceStep(o);
     case "c":
       return cStep(o);
+    case "beside":
+      return besideStep(o);
   }
 }

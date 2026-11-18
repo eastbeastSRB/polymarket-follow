@@ -16,13 +16,16 @@ import { cutsOf, featuresOf } from "../src/polish/tries/features.js";
 import { C, E, inPart } from "../src/polish/tries/parts.js";
 import { entriesAt, ruleOf, tryNamed } from "../src/polish/tries/rules.js";
 import {
+  CFile,
   ChoiceFile,
   EFile,
+  besideOf,
   cOf,
   choiceOf,
   eOf,
   type Expected,
 } from "../src/polish/tries/steps.js";
+import { Line } from "../src/polish/tries/beside.js";
 import { TRIES, keeps } from "../src/polish/tries/trylog.js";
 import { coinName } from "../src/waveh/coins.js";
 import { DATA_END, TEST_END, TEST_START } from "../src/waveh/instants.js";
@@ -340,6 +343,77 @@ describe(
         evaluations: [],
         rule: { name: "B0" },
       });
+    });
+
+    it("the prints beside: 6.1's lines, K, the book footprint, the placebo and the exam's z, the projection, the signal meter, from the steps' positions", async () => {
+      const i = inputsOf(w);
+      const { out, lines: eLines } = await run(w, i, 20);
+      const e = EFile.parse(JSON.parse(JSON.stringify(out)));
+      const pace = () => Promise.resolve();
+      const ch = await choiceOf(w, { M: 1, cuts: i.cuts, e, pace });
+      const choice = ChoiceFile.parse(JSON.parse(JSON.stringify(ch)));
+      const r = await cOf(w, { M: 1, cuts: i.cuts, e, choice, pace });
+      const parse = (ls: readonly string[]) =>
+        ls.map((l) => Line.parse(JSON.parse(l)));
+      const c = CFile.parse(
+        JSON.parse(JSON.stringify({ inputs: { choice: "x" }, ...r.out })),
+      );
+      const lines = {
+        e: parse(eLines),
+        choice: parse(ch.lines),
+        c: parse(r.lines),
+      };
+      const o = {
+        M: 1,
+        cuts: i.cuts,
+        e,
+        c,
+        lines,
+        book: new Map<string, number>(),
+        seed: 5,
+        draws: 300,
+      };
+      const p = besideOf(w, o);
+      const n = r.out.evaluations[0] as unknown as {
+        stat: { mean: number; se: number };
+        positions: number;
+      };
+      expect(p.goes).toBe("N");
+      // The rule's C line is the C evaluation's; one position an episode here, and OWN for every one.
+      expect(p.lines.rule.C.all!.mean).toBeCloseTo(n.stat.mean, 12);
+      expect(p.lines.rule.C.eventLevel!.n).toBe(n.positions);
+      expect(p.lines.rule.C.own!.n).toBe(n.positions);
+      expect(Object.keys(p.lines.rule.C.sides)).toEqual(["forced sells"]);
+      expect(Object.keys(p.lines.rule.C.months)).toEqual([
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+      ]);
+      expect(p.lines.b0.E.all!.n).toBe(i.entries.length);
+      // M = 1: K is 1; each position needs its two legs' hour files, none within 10 s of an hour's start.
+      const rule = [...lines.choice, ...lines.c.filter((l) => l.group === "N")];
+      expect(p.K).toMatchObject({ K: 1, at: [{ K: 1, n: rule.length }] });
+      expect(p.footprint.files).toBe(2 * rule.length);
+      // The placebo: seeded, so the same twice; its z the exam's floor or above.
+      const window = p.placebo.rule["100 days"]!;
+      expect(window.draws).toBe(300);
+      expect(window.student).toBe(kit.stats.tCritical(0.005, 99));
+      expect(p.examZ).toBe(Math.max(2.81, window.p9975!));
+      expect(besideOf(w, o).placebo).toEqual(p.placebo);
+      expect(p.projection.fromC).toMatchObject({
+        mProj: n.stat.mean - n.stat.se,
+        beside: n.stat.mean,
+      });
+      const ts = out.tries
+        .filter((t) => t.adoptable && t.t !== null)
+        .map((t) => t.t!);
+      expect(p.signal.meanSquare).toBeCloseTo(
+        ts.reduce((s, t) => s + t * t, 0) / ts.length,
+        9,
+      );
+      expect(p.calibrationOnC).toMatchObject({ positions: 0, stat: null });
     });
   },
 );

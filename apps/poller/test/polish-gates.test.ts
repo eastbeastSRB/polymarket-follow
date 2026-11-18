@@ -58,6 +58,7 @@ import {
 import { WIDTH, type ColumnType } from "../src/polish/tables.js";
 import { checkPrices, dataFrom, levelsAt } from "../src/polish/tries/data.js";
 import {
+  besideStep,
   cStep,
   choiceStep,
   eStep,
@@ -1305,6 +1306,56 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       evaluations: [],
       goes: "B0",
       rule: { name: "B0" },
+    });
+  });
+
+  it("the exploration's beside step on this store: c.json of the current choice and e, the prints for B0 going, no position priced", () => {
+    const dir = path.join(analyzer, "explore");
+    const input: StepInput = {
+      root: analyzer,
+      look: path.join(root, "look"),
+      coins,
+      kit: o.kit,
+      code: "f".repeat(64),
+      cutsFile: path.join(dir, "cuts.json"),
+      expect: { everySlice: { positions: 0, mean: 0, se: null } },
+      pace: noPace,
+      log: () => {},
+    };
+    const cFile = path.join(dir, "c.json");
+    const text = readFileSync(cFile, "utf8");
+    const c = JSON.parse(text) as { inputs: object };
+    writeFileSync(
+      cFile,
+      JSON.stringify({ ...c, inputs: { ...c.inputs, choice: "0".repeat(64) } }),
+    );
+    expect(() => besideStep(input)).toThrow(
+      "explore\\c.json is not of the current choice.json and e.json",
+    );
+    writeFileSync(cFile, text);
+    const { sha: bSha, out } = besideStep(input);
+    expect(sha(readFileSync(path.join(dir, "beside.json")))).toBe(bSha);
+    expect(out).toMatchObject({
+      step: "beside",
+      inputs: { c: sha(readFileSync(cFile)) },
+      goes: "B0",
+      K: { K: 1, at: [{ K: 1, n: 0, se: null }] },
+      // Every position needs its legs' hour files, priced or not: 3 positions, 2 legs each, on 3 days.
+      footprint: {
+        files: 6,
+        days: 3,
+        perDay: 2,
+        freshGB: ((2 / (38 * 24)) * 506 * 100) / 1024,
+      },
+      examZ: 2.81,
+      projection: { fromC: null, pooled: null },
+      signal: { tries: 0, verdict: "no try has a t" },
+      calibrationOnC: { positions: 0, stat: null },
+    });
+    expect(out.placebo.seed).toBe(20_261_118);
+    expect(out.placebo.rule["100 days"]).toMatchObject({
+      draws: 0,
+      p9975: null,
     });
   });
 
