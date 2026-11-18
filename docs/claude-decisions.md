@@ -1,5 +1,145 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (EXTRACT-BUILD's technical calls — the polishing's extraction,
+built by EXTRACT-BUILD and its successor EXTRACT-BUILD-2): **THE ANALYZER'S
+FIRST PIECE IS BUILT: `dist/polish.js extract`, `gates` AND THE FRAME OF
+`explore`. ITS RUN ON THE 10 MONTHS WAITS FOR FRESH'S DOWNLOAD TO END; THE
+SUPERVISOR STARTS IT.**
+
+**What:** the extraction of the approved polishing plan (decisions
+2026-11-17, "THE POLISHING PLAN APPROVED"; plan section 4, review F3, F9,
+F18), on the plan EXTRACT-BUILD wrote and the supervisor approved at
+22:33Z (Q1–Q10, all as recommended; its `progress.md`, "THE PLAN"). Eleven
+commits, each with its tests, `pnpm verify` green in the same command, the
+three freezes verified after each (61, 64, 74; `pnpm-lock.yaml`
+unchanged, no new dependency):
+- EXTRACT-BUILD: `b40a3a4` the LZ4 decoder; `819b439` the scanner and its
+  two writers; `bb4eec7` the part file, the seal and the pool; `d7a4c4d`
+  the contexts and funding; `0813a1e` the merge and the store; `1f2b892`
+  the program and `extract`;
+- EXTRACT-BUILD-2: `9b0fce1` the parts and columns without fsync;
+  `5a5588f` the counted fills, the legs, the gates and `gates`; `161f01f`
+  the frame of `explore`; `f914b17` the breaks' survivors' tests; and these docs.
+
+What the program is: architecture, "The analyzer".
+
+**Q1, the build's call (G5): the hard completeness gate is the pairing,
+not `day_ntl_vlm`.** F9(a) asked for the tape's taker notional within 1% of
+`asset_ctxs`' `day_ntl_vlm` on every day. EXTRACT-BUILD's checks
+(`workers\EXTRACT-BUILD\check\`, read only, on WAVE-H's store held to its
+list) show it cannot pass on real data:
+- **2025-08-15** (`c1-vlm-20250815.txt`; 25 files, 696 MB): `day_ntl_vlm`
+  is a rolling 24-hour volume counted once a trade (both legs give 2.0
+  times it). At the next midnight it equals the day's taker notional within
+  0.3% for most of the 40 coins; BNB +0.83%; VVV +30.4% (a thin coin, about
+  $42 K a day).
+- **2025-10-10** (`c1-vlm-20251010.txt`, `c2-split-20251010.txt`; 1,602 MB):
+  the day's taker notional is 0.95 to 1.96 times `day_ntl_vlm` across the
+  40 coins (1.138 in all). The backstop's legs alone are up to 54% of a
+  coin's takers (ZRO); without them the ratio is 0.90 to 0.997.
+- Every trade of the 40 coins has exactly one taker record and one maker
+  record in the same file (C3: every file of 2025-06-15 and 2025-07-27, and
+  2025-10-10's 6,406,737 of each): an exact check needing no outside
+  number. So G5 is the pairing, every file and coin; `day_ntl_vlm`'s ratios
+  by coin and day (with the backstop's legs and without) are printed beside
+  and decide nothing. G1's records by day and G6's twelve sample days stand
+  beside it.
+
+**The other answers as built:** the tape keeps `user` and `tid` (Q2); liq
+gains `dir` and `file`, so H1's split is WAVE-H's own rule (Q3); the parts
+stay until EXTRACT-REVIEW closes, then the supervisor deletes `parts\`
+(Q4); 176,986 entries in all slices is a constant in `gates.ts` citing
+decisions 2026-11-17 (Q5); `explore` is a frame (Q6); the minute price is
+the kit's mark at the minute's end, else the last non-backstop trade in the
+5 minutes before it, else none (Q7); the timing ran during FRESH's download
+(Q8); the manifest names the code by its fingerprint, the run's entry names
+the commit (Q9); no start script (Q10).
+
+**The one-day timing** (2025-10-10, the heaviest day; `--day 2025-10-10
+--workers 6`, detached at idle priority, 16 GB heap, 2026-11-17
+23:40:53–23:42:14Z, into `ANALYZER\timing-2025-10-10\`; the collector's
+audit 89/90 before it). FRESH's download shares F:, so every figure is
+pessimistic.
+- The pass: 40 s; 24 files, 1,489.7 MB read, 8,037.7 MB decoded, 19,127,562
+  records, 0 failing; 37 MB/s read and 201 MB/s decoded over the wall, the
+  21h file (359 MB) alone on one worker for most of it; about 112 CPU-s.
+- The parts: 24 files, 322.2 MB. The store: 1,124 files, 265.6 MB (tape
+  179.1 MB, liq 75.7 MB with 788,904 rows, minute 8.9 MB); 85,636 users; 0
+  duplicates.
+- Contexts and funding 0 s (one day, no funding); the merge 40 s (about 8
+  CPU-s; the rest 1,124 small files' writes).
+- Memory: the process's peak working set 2,580 MiB in the pass with 6
+  workers (the OS's own peak); about 0.9 GB in the merge. Far below 20 GB,
+  so `--workers 6` stays and the caps stay.
+- **The whole run, scaled** (218.3 GB ÷ 1,489.7 MB = ×146.5): by bytes
+  alone the pass 98 min and the merge 98 min, but the day's pass waited on
+  its one big file and its merge on per-file writes, which scale by months
+  (×13), not bytes. By CPU: the pass about 46 min (6 workers; about 80 MB/s
+  read and 17 MB/s of parts written, which the disk carries); the parts
+  about 47 GB (×146.5; the crash day's liq share is high; the plan said 34
+  GB); the contexts about 3 min; the merge about 12 min of CPU, 9–10 min of
+  reads and writes. **About 70 min in all, about 6 GB of memory at most.**
+
+**The fsync call** (the supervisor's rule, given 2026-11-17 23:37Z: more
+than about 10% or 10 minutes → no fsync for the parts and columns). Measured
+on F: with the timing's files written again in four alternating rounds
+(scratchpad `fsync.mjs`): the store's 1,124 files took 0.51 and 0.72 s
+without fsync, 33.25 and 33.26 s with it (29.0 ms a file more); the 24
+parts 0.92 and 0.88 s without, 2.77 and 2.93 s with (81 ms a part more,
+their data's own flush included). Scaled: 14,564 store files × 29 ms = 7.0
+min in the merge, plus about 2 min in the pass (8,845 parts × 81 ms ÷ 6
+workers): **about 9 minutes of about 70, 13%. So the parts and the store's
+columns are written whole but not flushed** (`writeUnflushed`, `run.ts`:
+the `.tmp`, then renamed, a refused rename tried again as `writeWhole`);
+`users.bin`, `names.json`, `files.jsonl` and `manifest.json` keep
+`writeWhole`. A torn part fails the merge's payload hash, naming it; a torn
+column fails G0.
+
+**EXTRACT-BUILD-2's own calls:**
+- **The SIZING coins exactly.** WAVE-H counts a coin as seen in SIZING only
+  for a record stamped before TEST's start; a SIZING file's records from
+  TEST's start (R5) do not count. The pairs alone took such a coin (the
+  test world's XRP). So the scan keeps each of the 40 coins' earliest time
+  in each file (`pairs`: takers, makers, first), and G1 takes a coin when a
+  SIZING file's first time is before TEST's start.
+- **G6 reads an hour either side of a sample day** and the day before's
+  `asset_ctxs`: a record of the day held in the hour before's file, or a
+  row of the day in the day before's file, would otherwise be missing from
+  the independent side only. Its takers are summed in H8's order on both
+  sides, so the sums compare exactly.
+- **G4 compares instants, not sums:** at x_in, x_out and each settlement's
+  minute of every priced position, the minute price must equal WAVE-H's
+  mark (the kit's), so the funding and the gross on marks are unchanged by
+  construction; a sum compared would differ by rounding alone.
+- **G3** holds the seven bps fields of each line to 0.01 bps and every
+  other field equal, as the plan said; **G0 runs first**, and the other
+  gates only when the store is whole.
+- **The tape is read a coin-month at a time, the last two kept:** the legs
+  are asked coin by coin in time order, so G3 never holds the whole tape.
+- **The test world writes whole fills and both sides of each trade:**
+  WAVE-H's test helpers write fills without `closedPnl`, `oid` and `dir`
+  (liq refuses them, as real fills always carry them) and takers without
+  makers (the pairing fails). The polish test builds its own records.
+
+**Tests and breaks:** the suite went from 566 + 5 tests (EXTRACT-BUILD's
+six commits) to 584 + 5, in 64 files + 1 skipped. `polish-gates.test.ts`
+runs a WAVE-H world through WAVE-H's own rehearsal and look, then
+`extract` and `gates` on the same raw store: every gate passes, each break
+fails its own gate, `explore` opens only the trusted store; the tape and
+the minute price apart. 70 breaks in a scratch copy of `161f01f` (`git
+archive`; `node_modules` real folders of per-package junctions; no pnpm):
+47 killed in round one (k4 only by a syntax error, re-aimed), 23 survived
+(the scan's and the pass's boundaries, the merge's first file of a
+differing duplicate and the liq bars' own reducing leg, the tape's x
+exactly at a trade, the minute grid's order, the funding hour, and nine in
+the gates); each now has its test, and in a second copy holding them all
+23 and the re-aimed k4 are killed. Every kill's message is kept in
+`workers\EXTRACT-BUILD-2\breaks\` (the supervisor's folder).
+
+**Next:** EXTRACT-REVIEW (fresh) reviews the code; the supervisor runs
+`extract`, `gates` and `explore` once FRESH's download ends (current-task
+has the commands); then POLISH-EXPLORE.
+
 2026-11-17 (the owner — THE POLISHING PLAN APPROVED, with its fresh
 review's changes): **THE PLAN IS APPROVED WITH THE REVIEW'S CHANGES F1–F19
 AND ITS SIX ANSWERS; EXTRACT-BUILD STARTS.**

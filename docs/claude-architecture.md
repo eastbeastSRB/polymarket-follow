@@ -429,3 +429,104 @@ again.
 **The old weeks** (outside `dist`): `scripts/waveh-reproduce.ts` with
 `test/waveh-reproduce.test.ts`, the pre-cut seed converted to Hyperliquid's
 shape (R8), run when `WAVEH_PRECUT` names a JSON file of `{seedDir, out?}`.
+
+## The analyzer: the polishing's store (built 2026-11-17/18 by EXTRACT-BUILD and EXTRACT-BUILD-2; not frozen; not run on the 10 months yet)
+
+**What it is.** A fifth entry point of the same package, `dist/polish.js`
+(`src/polish.ts`, `src/polish/`): the polishing plan's extraction
+(`docs/reviews/wave-polish-plan-2026-11-17.md`, section 4, with its review's
+F3, F9 and F18; decisions 2026-11-17, "THE POLISHING PLAN APPROVED", and
+2026-11-18, EXTRACT-BUILD's technical calls). Run by hand from the
+repository's build, one run at a time, at idle priority, with a 16 GB heap
+(`node --max-old-space-size=16384`); it makes no network request. Its
+commands: `extract [--workers n] [--day YYYY-MM-DD]`, `gates`, `explore`.
+Settings, no defaults: `WAVEH_STORE` (WAVE-H's raw store, read only; its
+last two folders `WAVE-H\store`), `ANALYZER_ROOT` (the range's folder,
+neither inside the other) and, for `gates`, `WAVEH_ROOT` (WAVE-H's
+rehearsal and look, whose files are the references, read only). Exit codes
+(`exitOf`, `run.ts`): 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze
+does not verify (every command checks it first: WAVE-H's frozen code runs
+inside), 5 not ready (a file missing, differing or failing; a sealed path; a
+day above 1% failing; a part of other code; a timing run's store; the gates
+not passed), 6 a gate failed. No file or month is started in 02:30–06:00Z or
+10:25–11:15Z (WAVE-H's `windowEnd`).
+
+**`extract`** (`extract.ts`; `range.ts`: WAVE-H's 8,845 fill files, 370
+days, 760 funding windows, 13 months, DATA END; `--day` one day, a timing
+run whose store is marked partial):
+- **the pass** (`pass.ts`, `worker.ts`): every fill file by a pool of worker
+  threads (6 by default, each a 4 GB old-generation ceiling), a file at a
+  time, held to `waveh/data.sha256` after the seal (`held.ts`, `seal.ts`:
+  FRESH's raw store, `ANALYZER\FRESH\` and any key dated after DATA END are
+  refused before anything is opened); decoded block by block (`lz4.ts`, its
+  own xxh32); scanned (`scan.ts`: each line tiled by its records, read from
+  their text; a record a writer wants parsed and held to WAVE-H's own
+  schema; the counts as WAVE-H's pass keeps them, records by hour, each of
+  the 40 coins' takers and makers with their earliest time, block-number
+  runs, stretches of 60 s with no record, the base-tier rate); WAVE-H's 1%
+  day rule; one part a file (`part.ts`, `parts\<n>.part`: a header naming
+  the input, the code's fingerprint, the counts and the file's dictionaries;
+  the column blobs; the payload's SHA-256). A part of the same input and
+  code is not redone, so a stopped pass resumes;
+- **two writers** (`writers.ts`): `taker` (the 40 coins' takers, the
+  backstop's flagged) and `liq` (every coin's records with a `liquidation`
+  object, both legs); PAPER-H's every-trader fills would be a third;
+- **the contexts and funding** (`ctxs.ts`): the `asset_ctxs` days into the
+  40 coins' ten context columns by H10's minute rule, with WAVE-H's counts;
+  the funding windows through WAVE-H's own readers;
+- **the merge** (`merge.ts`), by month, all coins at once: the dictionaries
+  first (addresses sorted, so an id's order is its address's; liq's coins,
+  methods and `dir`s); each coin's takers in H8's order (time, user, `tid`,
+  then the file's), a second record of one (time, user, `tid`) dropped, a
+  `tid` twice refused; liq alike.
+
+**The store** (`<ANALYZER_ROOT>\store\`, `store.ts`; read only through the
+manifest, every file held to its size and SHA-256):
+- `manifest.json`, written last: the range, the inputs and the list's
+  SHA-256, the code's fingerprint (`dist/polish`'s files) and WAVE-H's
+  freeze, every partition's rows and every file's bytes and SHA-256, the
+  counts, the peaks and each step's seconds;
+- `files.jsonl` (each input file's counts), `dict\users.bin` (20 bytes an
+  address, sorted), `dict\names.json`;
+- the partitions, a file a column of little-endian values, its type in its
+  name (`f64`; `u64` as two `u32` halves, low first; `u32`, `u16`, `u8`,
+  `i8`): `tape\<COIN>\<YYYY-MM>\` (the 38 coins' takers: time, px, sz, side,
+  flags, user, tid), `liq\<YYYY-MM>\` (17 columns and `file`, the input's
+  index), `minute\<COIN>\<YYYY-MM>\` (the 40 coins, row k the minute
+  `start + k min`: the ten contexts and nine bars), `funding\<COIN>\<YYYY-MM>\`
+  (time, rate); every coin-month written, empty ones too.
+
+The parts and columns are written whole but not flushed (`writeUnflushed`);
+`users.bin`, `names.json`, `files.jsonl` and the manifest through WAVE-H's
+`writeWhole`. The parts stay after the merge until EXTRACT-REVIEW closes.
+
+**`gates`** (`gates.ts`, with `counted.ts` and `legs.ts`): G0–G6 into
+`<ANALYZER_ROOT>\gates\gates.json`, which names the manifest's SHA-256 and
+every reference's (`look\step1.json`, `look\positions.jsonl.gz`,
+`waveh/sizing.json`, the raw store's `books.jsonl`, the data list). G0 every
+file whole and every partition present, the store and the look made from
+WAVE-H's list, under its freeze; the others run only when G0 passes. G1
+`step1.json`'s counts field by field (the counted fills H4 and their parts
+H1 from liq and its `file` column; the block gaps replayed from the runs);
+G2 M's scan against `sizing.json`, slice 0's positions by `step1.json`'s
+SHA-256 and counts, the entries of all 147 slices (176,986); G3 WAVE-H's
+`priceSpot` on its positions and SIZING's (the tape from the store, the
+books from the raw store) against `positions.jsonl.gz` line by line, 0.01
+bps; G4 the minute price (the kit's mark, else the last non-backstop trade
+in the 5 minutes before the minute's end) equal to WAVE-H's mark at every
+instant a priced position reads; G5 every file's takers equal to its
+makers, coin by coin, `day_ntl_vlm`'s ratios by coin and day printed
+beside; G6 twelve sample days re-read by WAVE-H's own readers (an hour
+either side) against the tape, BTC's and ETH's bars, liq and the contexts.
+The store is trusted only when all pass.
+
+**`explore`** (`explore.ts`): opens only a whole store whose `gates.json`
+passed on its manifest, loads its counted fills and prints the store's
+identity and counts; it is a frame: no try is defined (POLISH-EXPLORE's). It
+writes nothing but its log.
+
+**What it imports, never changing it:** WAVE-H's frozen `fills`, `funding`,
+`coins`, `ctxs`, `keys`, `instants`, `store`, `gate`, `pass`, `slices`,
+`positions`, `legs`, `price`, `market`, `report`, `rehearse`, `look` and
+`run`; MARKET-1's `fills` (`byM4`); the kit. A test walks the three frozen
+programs' imports: none reaches `dist/polish`.
