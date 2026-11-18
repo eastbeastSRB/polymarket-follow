@@ -79,7 +79,7 @@ const LIQ_COLUMNS: readonly (keyof LiqRow)[] = [
 type Columns = Record<string, ArrayLike<number>>;
 
 /** A sample day's numbers: the 38 coins' tape (rows, Σ tid mod 2^64, Σ px·sz in H8's order) and their minute price's fallback at each minute's end (the window cut at the day's start); the 40 coins' bars and contexts, each column minute by minute; every liq row of the day, in the store's order. */
-export type DayNumbers = {
+type DayNumbers = {
   tape: Record<string, [number, string, number]>;
   fallback: Record<string, (number | null)[]>;
   bars: Record<string, Columns>;

@@ -41,7 +41,7 @@ function removeLeftovers(dirs: readonly string[]): number {
 }
 
 /** The highest of every `process.memoryUsage()` field and of the heap's ceiling (`heapLimit`), sampled every `ms` until stopped; `peak` is kept up to date. */
-export function peakWatch(ms = 5_000) {
+function peakWatch(ms = 5_000) {
   const peak: Record<string, number> = {};
   const sample = () => {
     const m: Record<string, number> = {

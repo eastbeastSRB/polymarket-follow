@@ -42,7 +42,6 @@ export const LIQ: readonly Column[] = [
   ["oid", "u64"],
 ];
 
-/** The bytes a row takes in a column of this type. */
 export const WIDTH: Readonly<Record<ColumnType, number>> = {
   f64: 8,
   u64: 8,

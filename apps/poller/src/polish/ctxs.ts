@@ -12,6 +12,7 @@
  * WAVE-H's own readers.
  */
 import { z } from "zod";
+import { MINUTE_MS } from "../schedule.js";
 import type { CtxsCount } from "../waveh/ctxs.js";
 import { fundingRows, joinFunding, type FundingRow } from "../waveh/funding.js";
 import { isoDay } from "../waveh/instants.js";
@@ -20,8 +21,6 @@ import { FAIL_LEAST, FAIL_SHARE } from "../waveh/pass.js";
 import { StoreError, type DataList } from "../waveh/store.js";
 import { readHeld } from "./held.js";
 import { decodeAll } from "./lz4.js";
-
-const MINUTE_MS = 60_000;
 
 /** The minute table's context columns: the store's name and the CSV's, the mark first. */
 export const CONTEXT: readonly (readonly [column: string, csv: string])[] = [

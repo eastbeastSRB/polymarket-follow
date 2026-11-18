@@ -5,15 +5,12 @@
  * WAVE-H's ten months are the one range now; FRESH's is added with the
  * exam's freeze. A timing run reads one day of it.
  */
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../schedule.js";
 import { DATA_END, SIZING_START } from "../waveh/instants.js";
 import { FUNDING_STARTS, fillKeys } from "../waveh/keys.js";
 import { MARKS_START } from "../waveh/market.js";
 import type { Grid } from "./ctxs.js";
 import { monthsOf } from "./merge.js";
-
-const HOUR_MS = 3_600_000;
-const DAY_MS = 86_400_000;
-const MINUTE_MS = 60_000;
 
 export type Range = {
   name: string;

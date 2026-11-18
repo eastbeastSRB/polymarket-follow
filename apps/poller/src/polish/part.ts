@@ -212,7 +212,7 @@ export function readPartHeader(
   }
 }
 
-export type PartRows = {
+type PartRows = {
   header: PartHeader;
   users: string[];
   taker: Map<string, Record<string, Values>>;

@@ -15,6 +15,7 @@ import { isDeepStrictEqual } from "node:util";
 import { gunzipSync } from "node:zlib";
 import { z } from "zod";
 import type { Research } from "../paper/research.js";
+import { DAY_MS, MINUTE_MS } from "../schedule.js";
 import { coinName, type Coins } from "../waveh/coins.js";
 import { minutesWithout } from "../waveh/ctxs.js";
 import { sha256, type Gate } from "../waveh/gate.js";
@@ -70,15 +71,13 @@ import {
 } from "./store.js";
 import { WIDTH, type ColumnType } from "./tables.js";
 
-const MINUTE_MS = 60_000;
-const DAY_MS = 86_400_000;
 /** G3's tolerance on a position's bps: the plan's 1e-9 bps (4.5(3)); 0 expected, the largest difference printed. */
-export const BPS_TOLERANCE = 1e-9;
+const BPS_TOLERANCE = 1e-9;
 /** At most this many problems a gate lists (all are counted). */
 const LISTED = 20;
 
 /** What no reference file holds (decisions 2026-11-17: the entries of all slices, WAVE-H's Final review; F9's sample days, with decisions 2026-11-18, EXTRACT-REVIEW's findings, M2: a month's last and first day, and the day holding the hour before DATA END). */
-export type Expected = {
+type Expected = {
   everySlice: number;
   sampleDays: readonly string[];
 };
@@ -123,7 +122,7 @@ const PositionLine = z.object({
   legs: z.array(LegPrint),
 });
 
-export type GateResult = { pass: boolean } & Record<string, unknown>;
+type GateResult = { pass: boolean } & Record<string, unknown>;
 
 export type GatesInput = {
   store: Store;
@@ -295,7 +294,7 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
 }
 
 /** WAVE-H's step-1 counts from the store (look.ts `lookStep1`, readMarkets): all but M's and slice 0's, which are G2's. */
-export function stepCounts(o: GatesInput, lib: Library) {
+function stepCounts(o: GatesInput, lib: Library) {
   const days: Record<string, { records: number; failed: number }> = {};
   const missing: Record<string, number> = {};
   const top = new Map<string, number>();
@@ -492,7 +491,7 @@ const BPS_FIELDS = [
 ] as const;
 
 /** Two lines of positions compared: the bps fields within the tolerance, all else equal. */
-export function compareLine(
+function compareLine(
   mine: unknown,
   ref: unknown,
 ): { equal: boolean; bps: number } {

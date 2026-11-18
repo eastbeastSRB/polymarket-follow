@@ -16,6 +16,7 @@
  * taker or maker the file lacks, the block numbers' runs, and the stretches
  * of 60 s or more with no record.
  */
+import { HOUR_MS } from "../schedule.js";
 import {
   parseRecord,
   rawRecords,
@@ -26,8 +27,7 @@ import { decodeFrame } from "./lz4.js";
 import type { Names, Writer } from "./writers.js";
 
 /** A stretch this long or longer with no record is a hole. */
-export const HOLE_MS = 60_000;
-const HOUR_MS = 3_600_000;
+const HOLE_MS = 60_000;
 
 export type Scan = {
   decoded: number;
@@ -82,7 +82,7 @@ const keepIds = (
     : value;
 
 /** JSON text, a `tid` or `oid` of 16 digits or more kept as its digits (above 2^53 a number rounds). */
-export function parseText(text: string): unknown {
+function parseText(text: string): unknown {
   return LONG_ID.test(text) ? JSON.parse(text, keepIds) : JSON.parse(text);
 }
 
@@ -161,8 +161,6 @@ function tidAt(line: Buffer, s: number, e: number): string | null {
     ? null
     : line.toString("latin1", d0, q);
 }
-
-const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Coin names by a hash of their bytes: a record's coin is read without a new string. */
 const coinNames = new Map<number, string[]>();
@@ -446,7 +444,9 @@ class Scanner {
       })
       .sort(
         (a, b) =>
-          byText(a[0], b[0]) || a[1].length - b[1].length || byText(a[1], b[1]),
+          (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) ||
+          a[1].length - b[1].length ||
+          (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0),
       );
   }
 

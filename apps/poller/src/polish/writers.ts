@@ -12,7 +12,7 @@ import type { Coins } from "../waveh/coins.js";
 import { numText, type Fill } from "../waveh/fills.js";
 
 /** BTC and ETH: minute bars, no tape. */
-export const LARGE_COINS: readonly string[] = ["BTC", "ETH"];
+const LARGE_COINS: readonly string[] = ["BTC", "ETH"];
 
 /** The 38 small coins (WAVE-H's H3) and BTC and ETH. */
 export const fortyOf = (coins: Coins): ReadonlySet<string> =>
@@ -164,7 +164,7 @@ const ADDRESS = /^0x[0-9a-f]{40}$/;
 /** liq's `liqUser` when the object names no account. */
 export const NONE = 0xffffffff;
 
-export type LiqRows = {
+type LiqRows = {
   time: number[];
   block: number[];
   coin: number[];

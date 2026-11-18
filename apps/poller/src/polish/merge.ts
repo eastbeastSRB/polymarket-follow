@@ -15,6 +15,8 @@
  */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { MINUTE_MS } from "../schedule.js";
+import { sha256 } from "../waveh/gate.js";
 import { writeWhole } from "../waveh/run.js";
 import { StoreError } from "../waveh/store.js";
 import type { Contexts, Funding, Grid } from "./ctxs.js";
@@ -34,7 +36,6 @@ import {
   NAMES_FILE,
   USERS_FILE,
   partitionDir,
-  sha256,
   type FileCounts,
   type Manifest,
   type Partition,
@@ -43,10 +44,8 @@ import {
 } from "./store.js";
 import { BACKSTOP, NONE } from "./writers.js";
 
-const MINUTE_MS = 60_000;
-
 /** The first instant of a month `YYYY-MM`, and of the next. */
-export function monthBounds(month: string): [number, number] {
+function monthBounds(month: string): [number, number] {
   const y = Number(month.slice(0, 4));
   const m = Number(month.slice(5, 7)) - 1;
   return [Date.UTC(y, m, 1), Date.UTC(y, m + 1, 1)];

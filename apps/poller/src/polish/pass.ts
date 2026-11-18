@@ -34,7 +34,7 @@ export const WORKER_FILE = path.join(
   "worker.js",
 );
 /** Each worker's old-generation ceiling (F3). */
-export const WORKER_HEAP_MB = 4096;
+const WORKER_HEAP_MB = 4096;
 
 export type FileTask = { index: number; key: string; sha256: string };
 export type Task = FileTask & {
@@ -93,7 +93,7 @@ const countersOf = (s: Counters): Counters => ({
   slowRecords: s.slowRecords,
 });
 
-export type Done = {
+type Done = {
   index: number;
   key: string;
   compressed: number;
@@ -106,7 +106,7 @@ export type Done = {
 };
 
 /** One input file into its part: sealed and listed first, then read, held to its hash, scanned and written whole. */
-export function extractFile(task: Task): Done {
+function extractFile(task: Task): Done {
   const bytes = readHeld(task.store, task.key, task.sha256);
   const forty = new Set(task.forty);
   const users = new Names();
@@ -176,7 +176,7 @@ export function answerOf(task: Task): Answer {
   }
 }
 
-export type PassSummary = {
+type PassSummary = {
   files: number;
   skipped: number;
   extracted: number;

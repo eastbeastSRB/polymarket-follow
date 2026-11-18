@@ -7,6 +7,7 @@
  * and the minute price.
  */
 import type { Market, Research } from "../paper/research.js";
+import { HOUR_MS, MINUTE_MS } from "../schedule.js";
 import type { Coins } from "../waveh/coins.js";
 import type { Marks } from "../waveh/ctxs.js";
 import { joinFunding, type FundingRow } from "../waveh/funding.js";
@@ -18,8 +19,6 @@ import { monthsOf } from "./merge.js";
 import type { Store } from "./store.js";
 import { BACKSTOP } from "./writers.js";
 
-const MINUTE_MS = 60_000;
-const HOUR_MS = 3_600_000;
 /** The minute price's look-back for a trade, as the kit's for a mark (5 minutes). */
 export const LAST_TRADE_MS = 5 * MINUTE_MS;
 
@@ -33,7 +32,6 @@ type TapeRows = {
   tid: Uint32Array;
 };
 
-/** The first index whose time is at or after t. */
 function lowerBound(time: Float64Array, t: number): number {
   let lo = 0;
   let hi = time.length;

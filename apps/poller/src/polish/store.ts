@@ -5,10 +5,10 @@
  * to the manifest's size and SHA-256. A partition is a table's coin and
  * month (liq's: its month alone), a file a column, its type in its name.
  */
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { sha256 } from "../waveh/gate.js";
 import { StoreError } from "../waveh/store.js";
 import { checkPath } from "./seal.js";
 import { valuesOf, type ColumnType, type Values } from "./tables.js";
@@ -143,9 +143,6 @@ export const partitionDir = (
   coin: string | null,
   month: string,
 ) => (coin === null ? `${table}/${month}` : `${table}/${coin}/${month}`);
-
-export const sha256 = (b: Uint8Array) =>
-  createHash("sha256").update(b).digest("hex");
 
 export class Store {
   constructor(
