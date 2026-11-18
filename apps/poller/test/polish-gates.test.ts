@@ -15,7 +15,9 @@ import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { explore, trustedStore, wholeStore } from "../src/polish/explore.js";
 import { extract } from "../src/polish/extract.js";
+import { dayFromStore } from "../src/polish/days.js";
 import {
+  WAVEH_EXPECTED,
   g0,
   g1,
   g2,
@@ -44,8 +46,10 @@ import { WAVEH_RANGE, type Range } from "../src/polish/range.js";
 import {
   Store,
   openStore,
+  partitionDir,
   type FileCounts,
   type Manifest,
+  type Table,
 } from "../src/polish/store.js";
 import { fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
@@ -881,14 +885,50 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     expect(() => trustedStore(timing)).toThrow("timing run's");
   });
 
-  it("G6 fails on a sample day's tape row removed and a context changed, the store rewritten with its hashes", async () => {
+  it("G6 reads a month's last and first day and the day DATA END cuts to its hour", async () => {
+    expect(WAVEH_EXPECTED.sampleDays).toEqual([
+      "2025-05-31",
+      "2025-06-01",
+      "2025-06-15",
+      "2025-07-27",
+      "2025-08-15",
+      "2025-09-15",
+      "2025-10-10",
+      "2025-11-15",
+      "2025-12-15",
+      "2026-01-15",
+      "2026-02-15",
+      "2026-03-15",
+      "2026-04-15",
+      "2026-05-28",
+      "2026-05-29",
+    ]);
+    const r = (await g6({
+      ...o,
+      expect: {
+        ...o.expect,
+        sampleDays: ["2025-05-31", "2025-06-01", "2026-05-29"],
+      },
+    })) as unknown as { pass: boolean; days: { day: string; pass: boolean }[] };
+    expect(r.days.map((d) => [d.day, d.pass])).toEqual([
+      ["2025-05-31", true],
+      ["2025-06-01", true],
+      ["2026-05-29", true],
+    ]);
+    const cut = dayFromStore(o, Date.parse("2026-05-29T00:00:00Z"));
+    expect([cut.bars.SOL!.last!.length, cut.ctxs.BTC!.mark!.length]).toEqual([
+      60, 60,
+    ]);
+  });
+
+  it("G6 fails on a sample day's tape row removed, a context, two bars and four liq columns changed, the store rewritten with its hashes", async () => {
     const dir = path.join(analyzer, "store");
     const m = JSON.parse(
       readFileSync(path.join(dir, "manifest.json"), "utf8"),
     ) as Manifest;
     const rewrite = (
-      table: string,
-      coin: string,
+      table: Table,
+      coin: string | null,
       month: string,
       edit: (file: string, b: Buffer) => Buffer,
     ) => {
@@ -896,13 +936,42 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         (x) => x.table === table && x.coin === coin && x.month === month,
       )!;
       for (const [file, want] of Object.entries(p.files)) {
-        const at = path.join(dir, table, coin, month, file);
+        const at = path.join(
+          dir,
+          ...partitionDir(table, coin, month).split("/"),
+          file,
+        );
         const b = edit(file, readFileSync(at));
         writeFileSync(at, b);
         Object.assign(want, { bytes: b.length, sha256: sha(b) });
       }
       return p;
     };
+    const f64At = (b: Buffer, row: number, f: (x: number) => number) => {
+      const c = Buffer.from(b);
+      c.writeDoubleLE(f(c.readDoubleLE(8 * row)), 8 * row);
+      return c;
+    };
+    // EXTRACT-REVIEW's columns-demo on W's day: liq's px, fee, closedPnl and markPx, SOL's high and liqSellNtl.
+    rewrite("liq", null, "2025-09", (file, b) =>
+      file === "px.f64"
+        ? f64At(b, 0, (x) => x + 5)
+        : file === "fee.f64"
+          ? f64At(b, 1, () => 123)
+          : file === "closedPnl.f64"
+            ? f64At(b, 0, () => -777)
+            : file === "markPx.f64"
+              ? f64At(b, 2, () => 1)
+              : b,
+    );
+    const wAt = 9 * 1440 + 600;
+    rewrite("minute", "SOL", "2025-09", (file, b) =>
+      file === "high.f64"
+        ? f64At(b, wAt, (x) => x + 9)
+        : file === "liqSellNtl.f64"
+          ? f64At(b, wAt, () => 1)
+          : b,
+    );
     // SOL's fourth taker of 2025-09 (W's day; the fifth is the next day's) dropped from every column.
     const p = rewrite("tape", "SOL", "2025-09", (_, b) => {
       const w = b.length / 5;
@@ -923,11 +992,28 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       days: { day: string; differ: string[] }[];
     };
     expect(r.pass).toBe(false);
+    const w = new Date(W).toISOString();
     expect(r.days.map((d) => [d.day, d.differ])).toEqual([
       ["2025-06-10", []],
       ["2025-07-31", []],
-      ["2025-08-01", ["ctxs kPEPE"]],
-      ["2025-09-10", ["tape SOL"]],
+      [
+        "2025-08-01",
+        [
+          "ctxs kPEPE oracle: 1 of 1440 minutes differ, the first at 2025-08-01T00:30:00.000Z",
+        ],
+      ],
+      [
+        "2025-09-10",
+        [
+          "tape SOL",
+          `bars SOL high: 1 of 1440 minutes differ, the first at ${w}`,
+          `bars SOL liqSellNtl: 1 of 1440 minutes differ, the first at ${w}`,
+          "liq px: 1 of 4 rows differ, the first row 0",
+          "liq markPx: 1 of 4 rows differ, the first row 2",
+          "liq fee: 1 of 4 rows differ, the first row 1",
+          "liq closedPnl: 1 of 4 rows differ, the first row 0",
+        ],
+      ],
     ]);
   });
 });

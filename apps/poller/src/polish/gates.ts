@@ -44,7 +44,7 @@ import { writeWhole } from "../waveh/run.js";
 import { bySlice, scanM } from "../waveh/slices.js";
 import { SHA256, readBookList, type DataList } from "../waveh/store.js";
 import { boundOf } from "./counted.js";
-import { dayFromRaw, dayFromStore } from "./days.js";
+import { compareDay, dayFromRaw, dayFromStore } from "./days.js";
 import { minuteColumn, minutePrice } from "./legs.js";
 import {
   GATES_FILE,
@@ -76,7 +76,7 @@ export const BPS_TOLERANCE = 0.01;
 /** At most this many problems a gate lists (all are counted). */
 const LISTED = 20;
 
-/** What no reference file holds (decisions 2026-11-17: the entries of all slices, WAVE-H's Final review; F9's sample days). */
+/** What no reference file holds (decisions 2026-11-17: the entries of all slices, WAVE-H's Final review; F9's sample days, with decisions 2026-11-18, EXTRACT-REVIEW's findings, M2: a month's last and first day, and the day holding the hour before DATA END). */
 export type Expected = {
   everySlice: number;
   sampleDays: readonly string[];
@@ -84,6 +84,8 @@ export type Expected = {
 export const WAVEH_EXPECTED: Expected = {
   everySlice: 176_986,
   sampleDays: [
+    "2025-05-31",
+    "2025-06-01",
     "2025-06-15",
     "2025-07-27",
     "2025-08-15",
@@ -96,6 +98,7 @@ export const WAVEH_EXPECTED: Expected = {
     "2026-03-15",
     "2026-04-15",
     "2026-05-28",
+    "2026-05-29",
   ],
 };
 
@@ -705,31 +708,22 @@ export function g5(o: GatesInput, lib: Library): GateResult {
   };
 }
 
-/** G6: each sample day's numbers from the store equal those re-read from the raw files. */
+/** G6: each sample day's numbers from the store equal, cell by cell, those re-read from the raw files. */
 export async function g6(o: GatesInput): Promise<GateResult> {
   const days = [];
   for (const d of o.expect.sampleDays) {
     const day = Date.parse(`${d}T00:00:00Z`);
     const raw = await dayFromRaw(o, day);
     const mine = dayFromStore(o, day);
-    const differ = [
-      ...(["tape", "bars", "ctxs"] as const).flatMap((part) =>
-        Object.keys({ ...mine[part], ...raw.numbers[part] })
-          .filter(
-            (coin) =>
-              !isDeepStrictEqual(mine[part][coin], raw.numbers[part][coin]),
-          )
-          .map((coin) => `${part} ${coin}`),
-      ),
-      ...(isDeepStrictEqual(mine.liq, raw.numbers.liq) ? [] : ["liq"]),
-    ];
+    const differ = compareDay(mine, raw.numbers, day);
     days.push({
       day: d,
       pass: differ.length === 0,
       records: raw.records,
       twice: raw.twice,
       tapeRows: Object.values(mine.tape).reduce((s, x) => s + x[0], 0),
-      liqRows: mine.liq[0],
+      liqRows: mine.liq.length,
+      differences: differ.length,
       differ: differ.slice(0, LISTED),
     });
     o.log("sample day", days.at(-1)!);
