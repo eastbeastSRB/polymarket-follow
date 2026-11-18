@@ -392,12 +392,156 @@ describe("the features at t", () => {
       2 * Math.sqrt(230 / 288),
       10,
     );
+    // Point 57 lies beside point 56, already without a price: one return less, 229, unknown.
+    const kept = pc[end - 286]!;
+    pc[end - 286] = NaN;
+    expect(valueOf(featuresFor(d, [entryOf(sell)]), "N11")[0]).toBeNaN();
+    pc[end - 286] = kept;
     pc[end - 1 - 300] = NaN;
     expect(valueOf(featuresFor(d, [entryOf(sell)]), "N11")[0]).toBeNaN();
     // Under 7 days with a daily RV before t's day: unknown.
     const early = fill(Date.parse("2025-05-31T12:00:00Z"), SOL, 2, -1);
     const e = dataOf({ pc: new Map([["SOL", pc]]), counted: [early] });
     expect(valueOf(featuresFor(e, [entryOf(early)]), "N11")[0]).toBeNaN();
+    // Exactly 7 days (2025-05-25 to 05-31) before 06-01: known, every day's RV as t's.
+    const seventh = fill(Date.parse("2025-06-01T12:00:00Z"), SOL, 3, -1);
+    const s = dataOf({ pc: new Map([["SOL", pc]]), counted: [seventh] });
+    expect(valueOf(featuresFor(s, [entryOf(seventh)]), "N11")[0]).toBeCloseTo(
+      1,
+      10,
+    );
+    // A day's RV ends at the day's end: the 5-minute points read only the rows k ≡ 4 (mod 5), which never move, so
+    // every RV is 0 and N11 unknown; a minute later the points would read rows that do.
+    const still = Float64Array.from({ length: MINUTES }, (_, k) =>
+      k % 5 === 4 ? 100 : 100 * (Math.floor(k / 5) % 2 === 0 ? a : a * a),
+    );
+    const z = dataOf({ pc: new Map([["SOL", still]]), counted: [sell] });
+    expect(valueOf(featuresFor(z, [entryOf(sell)]), "N11")[0]).toBeNaN();
+  });
+
+  it("each window's ends and each count at its boundary, never past t (the breaks' survivors, POLISH-EXPLORE-3)", () => {
+    const t = Date.parse("2025-06-10T09:30:00Z");
+    const e = fill(t, SOL, 2, -1);
+    // N1: a fill of σ at t − 60 min itself is up to t; a lone entry fill is a burst of one.
+    const n1 = featuresFor(
+      dataOf({ counted: [fill(t - HOUR_MS, KPEPE, 4, -1), e] }),
+      [entryOf(e)],
+    );
+    expect(valueOf(n1, "N1")).toEqual([0]);
+    const lone = dataOf({
+      counted: [e],
+      forced: [{ t, coin: "SOL", user: 1, side: -1, backstop: true }],
+    });
+    // N5: a backstop at t itself; N6: an entry of the slice at t − 24 h itself, never the entry itself.
+    const prior = entryOf(fill(t - DAY_MS, SOL, 9, 1));
+    const a = featuresFor(lone, [entryOf(e)], 120_000, [entryOf(e), prior]);
+    expect([valueOf(a, "N1"), valueOf(a, "N5"), valueOf(a, "N6")]).toEqual([
+      [1],
+      [1],
+      [1],
+    ]);
+    expect(
+      valueOf(featuresFor(lone, [entryOf(e)], 120_000, [entryOf(e)]), "N6"),
+    ).toEqual([0]);
+    // T2 is t's own UTC day: Monday 00:30Z.
+    const monday = fill(Date.parse("2025-06-09T00:30:00Z"), SOL, 3, -1);
+    expect(
+      valueOf(
+        featuresFor(dataOf({ counted: [monday] }), [entryOf(monday)]),
+        "T2",
+      ),
+    ).toEqual([1]);
+    // M = 2: W3 counts the slice's coins, W4 every slice's accounts (2 and 4 in slice 0, 3 in slice 1).
+    const counted = [
+      e,
+      fill(t - 1_000, KPEPE, 4, -1),
+      fill(t - 2_000, XRP, 3, -1),
+    ];
+    const d2 = dataOf({ counted });
+    const two = featuresOf(d2, {
+      entries: [entryOf(e)],
+      slices: bySlice(d2.counted, 2),
+      all: [entryOf(e)],
+      delay: 120_000,
+    });
+    expect([valueOf(two, "W3"), valueOf(two, "W4")]).toEqual([[2], [3]]);
+    // N4 with no forced move (B = 0): kept, whatever the bounce.
+    const K = 10 * 1440;
+    const flat = nan();
+    flat[K - 61] = 100;
+    flat[K - 1] = 100;
+    flat[K + 1] = 101;
+    const s0 = fill(at(K), SOL, 1, -1);
+    expect(
+      valueOf(
+        featuresFor(dataOf({ pc: new Map([["SOL", flat]]), counted: [s0] }), [
+          entryOf(s0),
+        ]),
+        "N4",
+      ),
+    ).toEqual([0]);
+  });
+
+  it("R1–R4 read each far end at its own instant: a week, 24 h, the 169 hourly points (the breaks' survivors, POLISH-EXPLORE-3)", () => {
+    const K = 14 * 1440 + 720;
+    const six = coins.list.slice(0, 6).map((c) => c.name);
+    const pc = new Map<string, Float64Array>();
+    const col = (v: (k: number) => number) =>
+      Float64Array.from({ length: MINUTES }, (_, k) => v(k));
+    // A doubles just after the week's far end; B moves over the last day; four stay at 100.
+    pc.set(
+      six[0]!,
+      col((k) => (k <= K - 10_080 ? 100 : 200)),
+    );
+    pc.set(
+      six[1]!,
+      col((k) => (k <= K - 1_440 ? 100 : k < K ? 102 : 103)),
+    );
+    for (const c of six.slice(2))
+      pc.set(
+        c,
+        col(() => 100),
+      );
+    pc.set(
+      "BTC",
+      col((k) => (k <= K - 1_440 ? 200 : k < K ? 204 : 210)),
+    );
+    // t at minute K + 1's start: the minute ended by t is K.
+    const sell = fill(at(K + 1), SOL, 1, -1);
+    const m = featuresFor(dataOf({ pc, counted: [sell] }), [entryOf(sell)]);
+    expect(valueOf(m, "R1")[0]).toBeCloseTo(-(10_000 + 300) / 6, 9);
+    expect(valueOf(m, "R2")[0]).toBeCloseTo(-300 / 6, 9);
+    expect(valueOf(m, "R3")[0]).toBeCloseTo(-500, 9);
+    // The highest point is t's (A +100%, B +3%), the lowest the week's far end itself (both at the base).
+    expect(valueOf(m, "R4")[0]).toBeCloseTo(1.03 / 6, 12);
+  });
+
+  it("N3 against the rows stamped in [t − 30 d, t), the last one stamped at t itself (the breaks' survivors, POLISH-EXPLORE-3)", () => {
+    const t = Date.parse("2025-06-28T10:00:00.017Z");
+    // Hourly rows stamped 17 ms after their hour from `from`, the window's, then the one stamped at t.
+    const n3 = (window: number[], last: number, from = t - 30 * DAY_MS) => {
+      const rows: FundingRow[] = window.map((r, j) => [
+        from + j * HOUR_MS - 17,
+        r,
+        from + j * HOUR_MS,
+      ]);
+      rows.push([t - 17, last, t]);
+      const sell = fill(t, SOL, 1, -1);
+      return valueOf(
+        featuresFor(
+          dataOf({ counted: [sell], funding: new Map([["SOL", rows]]) }),
+          [entryOf(sell)],
+        ),
+        "N3",
+      )[0];
+    };
+    // 720 rows, the first 72 at 1 and 648 at 0: the 90th percentile 0.1.
+    const tail = [...Array<number>(72).fill(1), ...Array<number>(648).fill(0)];
+    expect([n3(tail, 0.5), n3(tail, 0.05)]).toEqual([1, 0]);
+    // At the 90th percentile itself: not above it.
+    expect(n3(Array<number>(720).fill(0.3), 0.3)).toBe(0);
+    // Exactly 168 rows in the 30 days: known.
+    expect(n3(Array<number>(168).fill(0), 1, t - 168 * HOUR_MS)).toBe(1);
   });
 
   it("C1–C3: the ⌊n/2⌋ thinnest, widest and smallest ranked coins of the 30 days before the month, ties by asset id", () => {
@@ -433,6 +577,9 @@ describe("the features at t", () => {
     columns.get("HYPE|buyNtl")![row(month)] = 1e9;
     columns.get("SOL|mid")![5] = 0;
     columns.get("SOL|impactAsk")![5] = 1e9;
+    // The month's first minute, which the contexts never read either: SOL would be the largest.
+    columns.get("SOL|openInterest")![row(month)] = 1e12;
+    columns.get("SOL|mark")![row(month)] = 1;
     const ids = [5, 159, 200, 214, XRP];
     const entries = ids.map((iid, i) =>
       entryOf(fill(month + DAY_MS + i, iid, i + 1, -1)),
@@ -444,6 +591,31 @@ describe("the features at t", () => {
     expect(valueOf(m, "C1")).toEqual([0, 1, 0, 1, NaN]);
     expect(valueOf(m, "C2")).toEqual([1, 1, 0, 0, NaN]);
     expect(valueOf(m, "C3")).toEqual([1, 1, 0, 0, NaN]);
+    // A fifth ranked coin, kPEPE (notional 2, spread 0.25%, size 25): ⌊5/2⌋ = 2 kept.
+    const p = (v: number) => {
+      const a = nan();
+      for (let k = 0; k < row(month); k++) a[k] = v;
+      return a;
+    };
+    const ntl = new Float64Array(MINUTES);
+    for (let k = row(Date.parse("2025-05-25T14:00:00Z")); k < row(month); k++)
+      ntl[k] = 2;
+    columns.set("kPEPE|buyNtl", ntl);
+    columns.set("kPEPE|impactAsk", p(100.25));
+    columns.set("kPEPE|impactBid", p(100));
+    columns.set("kPEPE|mid", p(100));
+    columns.set("kPEPE|openInterest", p(25));
+    columns.set("kPEPE|mark", p(1));
+    const five = [5, 159, 200, 214, KPEPE].map((iid, i) =>
+      entryOf(fill(month + DAY_MS + i, iid, i + 1, -1)),
+    );
+    const f = featuresFor(
+      dataOf({ counted: five.map((e) => e.fill), columns }),
+      five,
+    );
+    expect(valueOf(f, "C1")).toEqual([0, 0, 0, 1, 1]);
+    expect(valueOf(f, "C2")).toEqual([1, 1, 0, 0, 0]);
+    expect(valueOf(f, "C3")).toEqual([1, 1, 0, 0, 0]);
   });
 });
 
@@ -501,6 +673,17 @@ describe("the cuts and the try log", () => {
         .map((t) => t.name)
         .join(" "),
     ).toBe("D0 D15 D60 H1 H2 H4 H8 H12 W2 X1");
+    expect(TRIES.map((t) => t.family).join("")).toBe(
+      "SDDDHHHHHWWWWWRRRRCCCTTXNNNNNNNNNNN",
+    );
+    expect(TRIES.flatMap((t) => ("variant" in t ? [t.variant] : []))).toEqual([
+      { delay: 10_000 },
+      { delay: 900_000 },
+      { delay: 3_600_000 },
+      ...[1, 2, 4, 8, 12].map((h) => ({ hold: h * HOUR_MS })),
+      { M2: true },
+      { target: true },
+    ]);
     const k = (name: string, v: number, cut: number | null = null) =>
       keeps(
         TRIES.find((t) => t.name === name)!,

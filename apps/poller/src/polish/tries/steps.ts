@@ -20,7 +20,7 @@ import { DAY_MS } from "../../schedule.js";
 import type { Item } from "../../market1/stats.js";
 import type { Research } from "../../paper/research.js";
 import type { Coins } from "../../waveh/coins.js";
-import { sha256 } from "../../waveh/gate.js";
+import { PACKAGE_ROOT, sha256 } from "../../waveh/gate.js";
 import { DATA_END, TEST_END, TEST_START } from "../../waveh/instants.js";
 import { episodeSpots } from "../../waveh/positions.js";
 import { writeWhole } from "../../waveh/run.js";
@@ -87,6 +87,8 @@ import { CutsFile, TRIES, keeps } from "./trylog.js";
 
 /** The steps' folder in the analyzer's folder of the range. */
 export const EXPLORE = "explore";
+/** The committed cuts the steps after `features` hold to it: `apps/poller/polish/cuts.json`, beside the try log. */
+export const CUTS_FILE = path.join(PACKAGE_ROOT, "polish", "cuts.json");
 export const STEPS = ["features", "e", "choice", "c", "beside"] as const;
 export type StepName = (typeof STEPS)[number];
 

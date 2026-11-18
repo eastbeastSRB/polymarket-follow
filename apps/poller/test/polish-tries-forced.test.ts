@@ -57,11 +57,15 @@ const own = (
 // Forced: the counted fills of the 38 coins (SOL 5, kPEPE 15) and of BTC and a builder dex's coin.
 const forced: LiqRow[] = [
   own(T1, "SOL", 3, -1, 7n, 0),
-  // The same instant: kPEPE's asset id after SOL's; account 2 before 3; tid 5 before 2^32 + 1.
-  own(T1 + 1_000, "kPEPE", 2, 1, 9n, 0, { crossed: false, method: "backstop" }),
-  own(T1 + 1_000, "SOL", 3, -1, 2n ** 32n + 1n, 0),
-  own(T1 + 1_000, "SOL", 3, -1, 5n, 0),
-  own(T1 + 1_000, "SOL", 2, -1, 8n, 0),
+  // The same instant: kPEPE's asset id after SOL's; account 2 before 3; tid 5 before 2^32 + 1; each its own px.
+  own(T1 + 1_000, "kPEPE", 2, 1, 9n, 0, {
+    crossed: false,
+    method: "backstop",
+    px: 110,
+  }),
+  own(T1 + 1_000, "SOL", 3, -1, 2n ** 32n + 1n, 0, { px: 111 }),
+  own(T1 + 1_000, "SOL", 3, -1, 5n, 0, { px: 112 }),
+  own(T1 + 1_000, "SOL", 2, -1, 8n, 0, { px: 113 }),
   own(TEST_START, "SOL", 4, 1, 11n, 1),
   own(T2, "SOL", 5, -1, 12n, 2),
   own(T2, "BTC", 6, -1, 13n, 2),
@@ -77,6 +81,16 @@ const others: LiqRow[] = [
   own(TEST_START + 50, "SOL", 13, -1, 23n, 0),
   own(TEST_START - 100, "SOL", 14, -1, 24n, 1),
   own(T2 + 3, "BTC", 15, -1, 25n, 2, { startPosition: 0 }),
+  // A SIZING file's record at TEST's start itself; another account's taker and backstop legs.
+  own(TEST_START, "SOL", 16, -1, 28n, 0),
+  { ...own(T1 + 5_000, "BTC", 17, 1, 29n, 0), liqUser: addr(18) },
+  {
+    ...own(T1 + 6_000, "BTC", 19, -1, 30n, 0, {
+      crossed: false,
+      method: "backstop",
+    }),
+    liqUser: addr(20),
+  },
 ];
 
 describe("the forced fills", () => {
@@ -122,7 +136,8 @@ describe("the forced fills", () => {
       "12",
     ]);
     const users = [2, 3, 3, 2, 4, 5];
-    expect(Array.from(f.px)).toEqual([3, ...users].map((u) => 100 + u));
+    // M4's order, not the store's: at T1 + 1 s SOL's account 2, then account 3's tids 5 and 2^32 + 1, then kPEPE.
+    expect(Array.from(f.px)).toEqual([103, 113, 112, 111, 110, 104, 105]);
     expect(Array.from(f.sz)).toEqual([3, ...users].map((u) => 1 + u / 10));
     expect(Array.from(f.markPx)).toEqual([3, ...users].map((u) => 99 + u));
   });
@@ -130,8 +145,14 @@ describe("the forced fills", () => {
   it("fail the check when the counted fills are not the store's", () => {
     for (const bad of [
       counted.slice(1),
+      counted.slice(0, -1),
       [counted[1]!, counted[0]!, ...counted.slice(2)],
       counted.map((c, i) => (i === 3 ? { ...c, method: "backstop" } : c)),
+      counted.map((c, i) =>
+        i === 3
+          ? { ...c, side: c.side === 1 ? (-1 as const) : (1 as const) }
+          : c,
+      ),
     ])
       expect(() => forcedFrom(store, coins, bad)).toThrow(GateFailed);
   });

@@ -24,10 +24,12 @@ import {
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import type { Data } from "../src/polish/tries/data.js";
 import type { Forced } from "../src/polish/tries/forced.js";
-import { E, entriesOf, type Entry } from "../src/polish/tries/parts.js";
+import { cutsOf, featuresOf } from "../src/polish/tries/features.js";
+import { E, entriesOf, inPart, type Entry } from "../src/polish/tries/parts.js";
 import { priceColumn } from "../src/polish/tries/prices.js";
 import {
   B0,
+  entriesAt,
   place,
   ruleOf,
   stopExit,
@@ -37,7 +39,10 @@ import {
 import {
   bookNets,
   calibrationOf,
+  eOf,
+  fixedSpecs,
   reproductionOf,
+  specsOf,
 } from "../src/polish/tries/steps.js";
 import {
   eachLeg,
@@ -390,6 +395,9 @@ describe("a rule's exits and positions", () => {
     expect(targetExit(d, pc, entry(fill(at(K), 1)), xIn, xIn + DAY_MS)).toBe(
       xIn + DAY_MS,
     );
+    // No forced move (B = 0): held to x_out, whatever the price does after x_in.
+    pc[K - 61] = 90;
+    expect(targetExit(d, pc, e, xIn, xIn + DAY_MS)).toBe(xIn + DAY_MS);
     pc[K - 61] = NaN;
     expect(targetExit(d, pc, e, xIn, xIn + DAY_MS)).toBeNull();
     // X2: from P(e₁) = 100 at the minute after x_in, out where a long has lost 1,000 bps.
@@ -448,6 +456,39 @@ describe("a rule's exits and positions", () => {
     expect(place(d, ruleOf("W2", [tryNamed("W2")]), E, 1, cuts).specs).toEqual(
       b0.specs,
     );
+    // Accounts 2 and 3 fall in slices 0 and 1 of 2: a wave at M = 1, none at W2's 2.
+    const split = world({
+      start: Date.parse("2025-09-01T00:00:00Z"),
+      minutes: 20 * 1440,
+      counted: [fill(t0, -1, 2), fill(t0 + 60_000, -1, 3)],
+    });
+    expect(place(split, B0, E, 1, cuts).specs).toHaveLength(1);
+    expect(
+      place(split, ruleOf("W2", [tryNamed("W2")]), E, 1, cuts).specs,
+    ).toEqual([]);
+    // The dry sweep's legs: B0's and its 8 delay and hold variants', and W2's at 2M (none here).
+    expect(fixedSpecs(split, 1)).toHaveLength(9);
+    // N4 at the rule's own x_in: the entry at 09:01 fell from 100 to 90 in the hour; by B0's x_in nothing came back,
+    // by D60's the price is 96, past half of the fall: left out of N = D60 + N4 only.
+    const s4 = Date.parse("2025-09-01T00:00:00Z");
+    const mark = new Float64Array(20 * 1440).fill(NaN);
+    const row = (iso: string) => (Date.parse(iso) - s4) / MINUTE_MS;
+    mark[row("2025-09-10T08:00:00Z")] = 100;
+    mark[row("2025-09-10T09:00:00Z")] = 90;
+    mark[row("2025-09-10T10:00:00Z")] = 96;
+    const bounce = world({
+      start: s4,
+      minutes: 20 * 1440,
+      marks: new Map([["SOL", mark]]),
+      counted: [fill(t0, -1, 2), fill(t0 + 60_000, -1, 4)],
+    });
+    expect(
+      place(bounce, ruleOf("N4", [tryNamed("N4")]), E, 1, cuts).specs,
+    ).toHaveLength(1);
+    expect(
+      place(bounce, ruleOf("N", [tryNamed("D60"), tryNamed("N4")]), E, 1, cuts)
+        .specs,
+    ).toEqual([]);
     expect(
       ruleOf("N", [tryNamed("W2"), tryNamed("X1"), tryNamed("T1")]),
     ).toEqual({
@@ -603,6 +644,85 @@ describe("the E step's checks", () => {
         everySlice: { ...want, positions: want.positions + 1 },
       }).equal,
     ).toBe(false);
+    // The first TEST position without a price at its exit (6 minutes without a mark): n must be both the positions'
+    // count and the count priced on marks.
+    const sp = specsOf(all.filter((e) => e.fill.t >= TEST_START))[0]!;
+    const coin = sp.iid === SOL ? "SOL" : "kPEPE";
+    const holed = Float64Array.from(marks.get(coin)!);
+    const k = Math.floor((sp.xOut - start) / MINUTE_MS);
+    holed.fill(NaN, k - 5, k + 1);
+    const h = world({
+      start,
+      minutes,
+      marks: new Map([...marks, [coin, holed]]),
+      counted,
+    });
+    const at0 = reproductionOf(h, all, {
+      everySlice: { positions: 0, mean: 0, se: 0 },
+    });
+    expect(at0).toMatchObject({
+      positions: line.positions,
+      onMarks: line.positions - 1,
+    });
+    const s = { mean: at0.difference.mean!, se: at0.difference.se! };
+    for (const positions of [line.positions, line.positions - 1])
+      expect(
+        reproductionOf(h, all, { everySlice: { positions, ...s } }).equal,
+      ).toBe(false);
+  });
+
+  it("the E step on one wave: W2 placed at 2M, where the wave's two accounts part; the gain floor from B0's mean", async () => {
+    // Accounts 2 and 3 a minute apart: slice 0 at M = 1, slices 0 and 1 at 2. B0 buys at 100 and sells at 102.5.
+    const t0 = Date.parse("2025-09-10T09:00:00Z");
+    const start = Date.parse("2025-09-01T00:00:00Z");
+    const minutes = 20 * 1440;
+    const xIn = t0 + 60_000 + ENTRY_DELAY_MS;
+    const sell = (t: number, a: number): Counted => ({
+      t,
+      iid: SOL,
+      addr: addr(a),
+      side: -1,
+      tid: String(a),
+      method: "market",
+    });
+    const d = world({
+      start,
+      minutes,
+      marks: new Map([["SOL", new Float64Array(minutes).fill(100)]]),
+      counted: [sell(t0, 2), sell(t0 + 60_000, 3)],
+      tape: new Map([
+        [
+          "SOL",
+          [
+            trade(xIn + 1, 100, 1e6, 1),
+            trade(xIn + DAY_MS + 1, 102.5, 1e6, -1, 2),
+          ],
+        ],
+      ]),
+    });
+    const { slices, all } = entriesAt(d, 1);
+    const entries = all.filter((e) => inPart(E, e.fill.t));
+    const cuts = JSON.parse(
+      JSON.stringify(
+        cutsOf(
+          d,
+          featuresOf(d, { entries, slices, all, delay: ENTRY_DELAY_MS }),
+        ),
+      ),
+    ) as Parameters<typeof eOf>[1]["cuts"];
+    const { out } = await eOf(d, {
+      M: 1,
+      cuts,
+      book: new Map(),
+      expect: { everySlice: { positions: 1, mean: 0, se: null } },
+      pace: () => Promise.resolve(),
+      phase: () => {},
+    });
+    const net = (2.5 * 10 - (0.00045 * 1_000 + 0.00045 * 1_025)) * 10;
+    expect(out.b0).toMatchObject({ positions: 1, priced: 1 });
+    expect(out.b0.stat!.mean).toBeCloseTo(net, 9);
+    expect(out.gain).toBeCloseTo(net / 10, 9);
+    expect(out.tries.find((x) => x.name === "W2")!.positions).toBe(0);
   });
 
   it("reads the look's book nets: WAVE-H's positions priced at the book at both ends, held to the gates' SHA-256", () => {

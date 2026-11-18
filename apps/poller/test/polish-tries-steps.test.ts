@@ -6,10 +6,11 @@
  * and on worlds in memory.
  */
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { CUTS_FILE } from "../src/polish/tries/steps.js";
 import { PACKAGE_ROOT } from "../src/waveh/gate.js";
 
 const program = path.join(PACKAGE_ROOT, "dist", "polish.js");
@@ -55,6 +56,8 @@ describe("explore --step through the built program", () => {
           ok,
           'the option "--day 2025-10-10"',
         ],
+        [["extract", "--step", "e"], ok, 'the option "--step e"'],
+        [["gates", "--step", "e"], ok, 'the option "--step e"'],
       ] as const) {
         const r = run([...args], { ...env });
         expect(r.status, r.stderr).toBe(2);
@@ -66,4 +69,13 @@ describe("explore --step through the built program", () => {
       expect(readdirSync(ok.ANALYZER_ROOT)).toEqual(["logs"]);
     },
   );
+
+  it("holds the steps after features to the committed apps/poller/polish/cuts.json, beside the try log", () => {
+    expect(path.relative(PACKAGE_ROOT, CUTS_FILE)).toBe(
+      path.join("polish", "cuts.json"),
+    );
+    expect(existsSync(path.join(path.dirname(CUTS_FILE), "tries.md"))).toBe(
+      true,
+    );
+  });
 });

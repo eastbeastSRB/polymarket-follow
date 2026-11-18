@@ -35,7 +35,13 @@ import {
   fingerprintOf,
 } from "./run.js";
 import { checkPath } from "./seal.js";
-import { LOOK_EXPECTED, STEPS, runStep, type StepName } from "./tries/steps.js";
+import {
+  CUTS_FILE,
+  LOOK_EXPECTED,
+  STEPS,
+  runStep,
+  type StepName,
+} from "./tries/steps.js";
 import { fortyOf } from "./writers.js";
 import { WAVEH_DIR, loadCoins } from "../waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "../waveh/gate.js";
@@ -198,7 +204,7 @@ try {
       coins,
       kit: await loadResearch(),
       code: fingerprint,
-      cutsFile: path.join(PACKAGE_ROOT, "polish", "cuts.json"),
+      cutsFile: CUTS_FILE,
       expect: LOOK_EXPECTED,
       pace,
       log: (event, fields) => log.info(fields, event),

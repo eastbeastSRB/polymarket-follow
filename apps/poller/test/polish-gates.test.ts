@@ -1198,6 +1198,23 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     await expect(eStep(input)).rejects.toThrow(
       "polish/cuts.json is not the features step's cuts",
     );
+    // Naming features.json, but a cut's count not its own.
+    const real = JSON.parse(
+      readFileSync(path.join(dir, "cuts.json"), "utf8"),
+    ) as { cuts: Record<string, { n: number }> };
+    writeFileSync(
+      cutsFile,
+      JSON.stringify({
+        ...real,
+        cuts: {
+          ...real.cuts,
+          W4: { ...real.cuts.W4!, n: real.cuts.W4!.n + 1 },
+        },
+      }),
+    );
+    await expect(eStep(input)).rejects.toThrow(
+      "polish/cuts.json is not the features step's cuts",
+    );
     writeFileSync(cutsFile, readFileSync(path.join(dir, "cuts.json")));
     await expect(eStep({ ...input, code: "e".repeat(64) })).rejects.toThrow(
       "explore\\features.json is of another store, code or look",
@@ -1333,6 +1350,17 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       "explore\\c.json is not of the current choice.json and e.json",
     );
     writeFileSync(cFile, text);
+    // An e.json of this identity, but not the one choice.json names.
+    const eFile = path.join(dir, "e.json");
+    const eText = readFileSync(eFile, "utf8");
+    writeFileSync(
+      eFile,
+      JSON.stringify({ ...(JSON.parse(eText) as object), written: "again" }),
+    );
+    expect(() => besideStep(input)).toThrow(
+      "explore\\c.json is not of the current choice.json and e.json",
+    );
+    writeFileSync(eFile, eText);
     const { sha: bSha, out } = besideStep(input);
     expect(sha(readFileSync(path.join(dir, "beside.json")))).toBe(bSha);
     expect(out).toMatchObject({
@@ -1700,6 +1728,13 @@ describe("the tape and the minute price", { timeout: 60_000 }, () => {
       user: addr(1),
       tid: "1",
     });
+    // The exploration's walk levels are Tape.at's: [x, x + 60 s) on our side, no backstop's, across the month's end.
+    for (const x of [E - 50_000, E - 35_000, E - 30_000, E - 29_999])
+      for (const buy of [true, false])
+        expect(levelsAt(tape, "SOL", buy, x)).toEqual(
+          levelsOf(tape.at("SOL", buy, x)),
+        );
+    expect(levelsAt(tape, "SOL", true, E - 35_000)).toHaveLength(2);
     expect(tape.last("SOL", E - MINUTE_MS, E)).toBe(11);
     expect(tape.last("SOL", E - MINUTE_MS, E - 20_000)).toBe(10);
     expect(tape.last("SOL", E - 25_000, E - 15_000)).toBe(11);

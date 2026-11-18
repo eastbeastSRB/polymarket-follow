@@ -15,8 +15,10 @@ import { adoptedOf } from "../src/polish/tries/choice.js";
 import { cutsOf, featuresOf } from "../src/polish/tries/features.js";
 import { C, E, inPart } from "../src/polish/tries/parts.js";
 import { entriesAt, ruleOf, tryNamed } from "../src/polish/tries/rules.js";
+import { C_FLOORS, E_FLOORS, statOf } from "../src/polish/tries/stats.js";
 import {
   CFile,
+  C_DAYS,
   ChoiceFile,
   EFile,
   besideOf,
@@ -161,6 +163,16 @@ describe(
         floors: { mean: true, days: true, coins: true },
       });
       expect(byName.get("S1")!.t!).toBeGreaterThan(10);
+      // k = SE_V ÷ SE_B0 on E.
+      expect(byName.get("S1")!.test!.k).toBeCloseTo(
+        byName.get("S1")!.stat!.se! / out.b0.stat!.se!,
+        12,
+      );
+      // The E floors, not C's: D0's mean lies between C's +25 and E's +50.
+      const d0 = byName.get("D0")!;
+      expect(d0.stat!.mean).toBeGreaterThan(C_FLOORS.mean);
+      expect(d0.stat!.mean).toBeLessThan(E_FLOORS.mean);
+      expect(d0.floors.mean).toBe(false);
       expect(adoptedOf(out.tries, out.gain).map((t) => t.name)).toContain("S1");
       // D0's positions are B0's entries at another delay; W2 here has B0's entries.
       expect(byName.get("D0")!.positions).toBe(i.entries.length);
@@ -326,6 +338,32 @@ describe(
       ]);
       expect(s.out.goes).toBe("S1");
       expect(s.out.rule).toEqual(ruleOf("S1", [tryNamed("S1")]));
+      // A change's k on C is its E k: SE_S1 ÷ SE_B0, both on E.
+      expect(
+        (s.out.evaluations[1] as unknown as { test: { k: number } }).test.k,
+      ).toBeCloseTo(
+        e.tries.find((x) => x.name === "S1")!.stat!.se! / e.b0.stat!.se!,
+        12,
+      );
+      // C's floors, not E's: a rule whose C mean lies between +25 and +50 keeps the mean floor; C has 146 entry days.
+      const mid = await cOf(w, {
+        M: 1,
+        cuts: i.cuts,
+        e,
+        choice: ChoiceFile.parse({
+          ...choice,
+          rule: ruleOf("N", [tryNamed("D0")]),
+        }),
+        pace,
+      });
+      const m0 = mid.out.evaluations[0] as unknown as {
+        stat: { mean: number };
+        floors: { mean: boolean };
+      };
+      expect(m0.stat.mean).toBeGreaterThan(C_FLOORS.mean);
+      expect(m0.stat.mean).toBeLessThan(E_FLOORS.mean);
+      expect(m0.floors.mean).toBe(true);
+      expect(C_DAYS).toBe(146);
       // Without the edge: nothing adopted, B0 goes, no evaluation.
       const fl = inputsOf(flat);
       const none = await run(flat, fl, 5);
@@ -414,6 +452,38 @@ describe(
         9,
       );
       expect(p.calibrationOnC).toMatchObject({ positions: 0, stat: null });
+      // The placebo flips: t* about 0, not the edge's t; B2's no-wave episodes (every first fill here is alone).
+      expect(window.above258).toBeLessThan(0.2);
+      expect(window.errors.q1!).toBeLessThan(window.errors.q3!);
+      expect(p.placebo.b2["100 days"]!.draws).toBe(300);
+      // The projection from E and C pooled, less b.
+      const pooled = statOf(
+        kit,
+        rule.flatMap((l) =>
+          l.net === null
+            ? []
+            : [{ t: l.t, iid: l.iid, x: l.net - e.calibration.rebasedBy }],
+        ),
+      )!;
+      expect(p.projection.pooled!.mProj).toBeCloseTo(
+        pooled.mean - pooled.se!,
+        9,
+      );
+      // B2 on M's slices: at M = 2 every account here is in slice 0, so B2 is M = 1's.
+      expect(besideOf(w, { ...o, M: 2 }).placebo.b2).toEqual(p.placebo.b2);
+      // W2 going: K up to 2M; B0 going: its projection is m_C itself.
+      expect(
+        besideOf(w, {
+          ...o,
+          c: { ...c, rule: { ...c.rule, M2: true } },
+        }).K.at.map((x) => x.K),
+      ).toEqual([1, 2]);
+      expect(
+        besideOf(w, { ...o, c: { ...c, goes: "B0" } }).projection.fromC,
+      ).toMatchObject({
+        mProj: c.b0.stat!.mean,
+        beside: c.b0.stat!.mean - c.b0.stat!.se!,
+      });
     });
   },
 );
