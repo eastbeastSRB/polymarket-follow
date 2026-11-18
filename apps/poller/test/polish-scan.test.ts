@@ -202,6 +202,8 @@ describe("the scanner, on every case a file's text can hold", () => {
       ["BTC", [1, 1, T + 2000]],
       ["SOL", [8, 9, T - 100]],
     ]);
+    // SOL's lone maker of block 108: its taker's record failed.
+    expect(scan.unpaired).toEqual([["SOL", "11", -1]]);
     expect(scan.runs).toEqual([
       [100, 101],
       [103, 106],
@@ -340,6 +342,72 @@ describe("the scanner at its edges", () => {
     expect(r.taker.coins.get("SOL")!.tid).toEqual([1, 0, 3, 0]);
   });
 
+  it("pairs the 40 coins' takers and makers by tid inside the file, a tid its text does not settle read by the parse", () => {
+    const quoted = record(B, {
+      coin: "SOL",
+      side: "A",
+      time: T + 2,
+      crossed: false,
+      tid: 7,
+    }).replace('"tid":7', '"tid":"7"');
+    const r = run(
+      `${[
+        ...trade(A, B, { coin: "SOL", side: "B", time: T, tid: 1 }),
+        // A taker whose maker is in the next file, a maker whose taker is in the file before.
+        record(A, {
+          coin: "SOL",
+          side: "B",
+          time: T + 1,
+          crossed: true,
+          tid: 2,
+        }),
+        record(B, {
+          coin: "BTC",
+          side: "A",
+          time: T + 1,
+          crossed: false,
+          tid: 3,
+        }),
+        // A taker, and its maker with the tid written as a string: the slow path.
+        record(A, {
+          coin: "SOL",
+          side: "B",
+          time: T + 2,
+          crossed: true,
+          tid: 7,
+        }),
+        quoted,
+        // Not one of the 40: not paired.
+        record(A, {
+          coin: "xyz:SOL",
+          side: "B",
+          time: T + 3,
+          crossed: true,
+          tid: 9,
+        }),
+        // Late: paired all the same.
+        ...trade(A, B, { coin: "SOL", side: "B", time: end, tid: 4 }),
+        // Two takers of one tid, and their one maker: one taker left open.
+        ...trade(A, B, { coin: "kPEPE", side: "B", time: T + 4, tid: 12 }),
+        record(A, {
+          coin: "kPEPE",
+          side: "B",
+          time: T + 4,
+          crossed: true,
+          tid: 12,
+        }),
+      ].join("\n")}\n`,
+      "node_fills",
+      end,
+    );
+    expect(r.scan.unpaired).toEqual([
+      ["BTC", "3", -1],
+      ["SOL", "2", 1],
+      ["kPEPE", "12", 1],
+    ]);
+    expect(r.scan).toMatchObject({ records: 12, failed: 0, slowRecords: 1 });
+  });
+
   it("counts a stretch of exactly 60 s with no record as a hole", () => {
     const r = run(
       `${[
@@ -476,6 +544,7 @@ function naive(text: string, format: Format, end: number) {
   >();
   const liqs: { t: number; coin: string; user: string; tid: string }[] = [];
   const pairs = new Map<string, [number, number, number]>();
+  const open = new Map<string, number>();
   let records = 0;
   let late = 0;
   for (const line of text.split("\n").slice(0, -1)) {
@@ -499,6 +568,10 @@ function naive(text: string, format: Format, end: number) {
         p[f.crossed ? 0 : 1] += 1;
         p[2] = Math.min(p[2], f.time);
         pairs.set(f.coin, p);
+        const k = `${f.coin} ${f.tid}`;
+        const d = (open.get(k) ?? 0) + (f.crossed ? 1 : -1);
+        if (d === 0) open.delete(k);
+        else open.set(k, d);
       }
       if (f.time >= end) {
         late += 1;
@@ -519,7 +592,16 @@ function naive(text: string, format: Format, end: number) {
         liqs.push({ t: f.time, coin: f.coin, user: rec.user, tid: f.tid });
     }
   }
-  return { takers, liqs, pairs, records, late };
+  const unpaired = [...open]
+    .map(([k, d]) => [...k.split(" "), d] as [string, string, number])
+    .sort((a, b) =>
+      a[0] !== b[0]
+        ? a[0] < b[0]
+          ? -1
+          : 1
+        : a[1].length - b[1].length || (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0),
+    );
+  return { takers, liqs, pairs, unpaired, records, late };
 }
 
 const tidOf = (rows: readonly number[], i: number) =>
@@ -546,6 +628,9 @@ describe("the scanner against a naive parse of every line", () => {
       expect(new Map([...got.scan.pairs].sort())).toEqual(
         new Map([...want.pairs].sort()),
       );
+      expect(got.scan.unpaired).toEqual(want.unpaired);
+      // node_fills' lines are half lone records: many open tids; by block every record is a trade's.
+      expect(want.unpaired.length > 0).toBe(format === "node_fills");
       for (const [coin, rows] of want.takers) {
         const mine = got.taker.coins.get(coin)!;
         expect(mine.time, coin).toEqual(rows.map((r) => r.t));

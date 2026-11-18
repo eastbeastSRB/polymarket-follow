@@ -43,6 +43,7 @@ export const PartHeader = z.object({
     refused: z.number(),
     byHour: z.array(z.tuple([z.number(), z.number()])),
     pairs: z.array(z.tuple([z.string(), z.number(), z.number(), z.number()])),
+    unpaired: z.array(z.tuple([z.string(), z.string(), z.number()])),
     runs: z.array(z.tuple([z.number(), z.number()])),
     times: z
       .object({
@@ -160,6 +161,7 @@ export function partOf(p: {
       refused: s.refused,
       byHour: [...s.byHour],
       pairs: [...s.pairs].map(([c, [a, b, first]]) => [c, a, b, first]),
+      unpaired: s.unpaired,
       runs: s.runs,
       times: s.times,
     },

@@ -726,21 +726,63 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     ).toMatchObject({ pass: true, unmarked: 1, problems: 0 });
   });
 
-  it("G5 fails on a file whose takers and makers differ", () => {
-    expect(g5(o, lib).pass).toBe(true);
-    const files = structuredClone(lib.files);
-    const f = files.find((x) => x.pairs.length > 0)!;
-    const [coin, takers, makers] = f.pairs[0]!;
-    f.pairs[0]![2] = makers + 1;
-    expect(g5(o, { ...lib, files })).toMatchObject({
+  it("G5 pairs a trade split across two files next in order, and fails on any record left unpaired, by file, coin and tid", () => {
+    expect(g5(o, lib)).toMatchObject({ pass: true, straddled: 0, problems: 0 });
+    expect(lib.files.every((f) => f.unpaired.length === 0)).toBe(true);
+    const i = lib.files.findIndex((f) => f.pairs.length > 0);
+    const g5With = (open: Record<number, [string, string, number][]>) => {
+      const files = structuredClone(lib.files);
+      for (const [at, list] of Object.entries(open))
+        files[Number(at)]!.unpaired = list;
+      return g5(o, { ...lib, files });
+    };
+    const key = (at: number) => lib.files[at]!.key;
+    // A taker at a file's end, its maker in the next file; and a maker first, its taker next.
+    expect(
+      g5With({
+        [i]: [["SOL", "77", 1]],
+        [i + 1]: [
+          ["SOL", "77", -1],
+          ["ETH", "5", -1],
+        ],
+        [i + 2]: [["ETH", "5", 1]],
+      }),
+    ).toMatchObject({ pass: true, straddled: 2, problems: 0 });
+    // Left alone; two files apart; two takers and two makers; two coins.
+    expect(g5With({ [i]: [["SOL", "77", 1]] })).toMatchObject({
       pass: false,
-      first: [`${f.key} ${coin}: ${takers} takers, ${makers + 1} makers`],
+      first: [`${key(i)} SOL 77: 1 taker unpaired`],
     });
-    f.pairs[0]![1] = takers + 2;
-    expect(g5(o, { ...lib, files })).toMatchObject({
+    expect(
+      g5With({ [i]: [["SOL", "77", 1]], [i + 2]: [["SOL", "77", -1]] }),
+    ).toMatchObject({
       pass: false,
-      first: [`${f.key} ${coin}: ${takers + 2} takers, ${makers + 1} makers`],
+      straddled: 0,
+      first: [
+        `${key(i)} SOL 77: 1 taker unpaired`,
+        `${key(i + 2)} SOL 77: 1 maker unpaired`,
+      ],
     });
+    expect(
+      g5With({ [i]: [["SOL", "77", 2]], [i + 1]: [["SOL", "77", -2]] }),
+    ).toMatchObject({
+      pass: false,
+      first: [
+        `${key(i)} SOL 77: 2 takers unpaired`,
+        `${key(i + 1)} SOL 77: 2 makers unpaired`,
+      ],
+    });
+    expect(
+      g5With({ [i]: [["SOL", "77", 1]], [i + 1]: [["kPEPE", "77", -1]] }),
+    ).toMatchObject({ pass: false, problems: 2 });
+    // Three records of one tid in three files in a row: never a pair.
+    expect(
+      g5With({
+        [i]: [["SOL", "77", 1]],
+        [i + 1]: [["SOL", "77", -1]],
+        [i + 2]: [["SOL", "77", 1]],
+      }),
+    ).toMatchObject({ pass: false, problems: 3 });
   });
 
   it("writes gates.json with passed false when a gate fails", async () => {

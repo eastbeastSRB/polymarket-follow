@@ -452,6 +452,24 @@ describe("the merge", { timeout: 60_000 }, () => {
     expect(() => s.column(p, "px")).toThrow("differs from the manifest");
   });
 
+  it("keeps in files.jsonl each file's tids left unpaired, a trade split across two files in both", async () => {
+    const { dir } = await build([
+      // The maker of a SOL trade whose taker's record is not in this file.
+      record(addr(5), {
+        coin: "SOL",
+        side: "A",
+        time: H1 + 7 * MIN,
+        crossed: false,
+        tid: 60,
+      }),
+    ]);
+    expect(
+      openStore(dir)
+        .files()
+        .map((f) => f.unpaired),
+    ).toEqual([[], [["SOL", "60", -1]], [], []]);
+  });
+
   it("stops at a tid in two taker records", async () => {
     await expect(
       build(

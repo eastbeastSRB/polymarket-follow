@@ -12,7 +12,8 @@
  * counted). The counts are what the manifest and the gates need: records and
  * failures (WAVE-H's), records by the hour of their time and those at or
  * after the range's end (counted, never kept), the 40 coins' takers and
- * makers (one of each a trade), the block numbers' runs, and the stretches
+ * makers (one of each a trade) and, paired by `tid`, the trades whose
+ * taker or maker the file lacks, the block numbers' runs, and the stretches
  * of 60 s or more with no record.
  */
 import {
@@ -48,6 +49,8 @@ export type Scan = {
   byHour: Map<number, number>;
   /** The 40 coins' taker and maker records, and their earliest time (WAVE-H's coins with a record in SIZING, H13). */
   pairs: Map<string, [takers: number, makers: number, first: number]>;
+  /** The 40 coins' (coin, `tid`)s whose taker and maker records do not pair inside the file, with takers less makers (never 0), in coin and `tid` order. */
+  unpaired: [coin: string, tid: string, takersLessMakers: number][];
   /** `node_fills_by_block`'s block numbers in line order, as runs of consecutive numbers. */
   runs: [number, number][];
   /** The records' first time, their latest, and the stretches of HOLE_MS or more with none, in file order. */
@@ -58,6 +61,7 @@ const REC = Buffer.from('["0x', "latin1");
 const TIME = Buffer.from('"time":', "latin1");
 const CROSSED = Buffer.from('"crossed":', "latin1");
 const LIQ = Buffer.from('"liquidation":', "latin1");
+const TID = Buffer.from('"tid":', "latin1");
 const COIN = Buffer.from('{"coin":"', "latin1");
 const EVENTS = Buffer.from('"events":[', "latin1");
 const BLOCK = /"block_number":(\d{1,15})[,}]/;
@@ -144,6 +148,22 @@ function boolAt(line: Buffer, v: number): number {
   return -1;
 }
 
+/** The record's `tid` as its digits: [s, e) holds one `"tid":`, its value plain digits ended by `,` or `}`; else null. */
+function tidAt(line: Buffer, s: number, e: number): string | null {
+  const k = line.indexOf(TID, s);
+  if (k < 0 || k >= e) return null;
+  const again = line.indexOf(TID, k + TID.length);
+  if (again >= 0 && again < e) return null;
+  const d0 = k + TID.length;
+  let q = d0;
+  while (q < e && line[q]! >= 0x30 && line[q]! <= 0x39) q++;
+  return q === d0 || (line[q] !== 0x2c && line[q] !== 0x7d)
+    ? null
+    : line.toString("latin1", d0, q);
+}
+
+const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
 /** Coin names by a hash of their bytes: a record's coin is read without a new string. */
 const coinNames = new Map<number, string[]>();
 
@@ -192,11 +212,14 @@ class Scanner {
     refused: 0,
     byHour: new Map(),
     pairs: new Map(),
+    unpaired: [],
     runs: [],
     times: null,
   };
   private hour = -1;
   private hourCount = 0;
+  /** `<coin> <tid>` → takers less makers so far; a pair met is deleted. */
+  private readonly open = new Map<string, number>();
 
   constructor(
     private readonly format: Format,
@@ -304,7 +327,10 @@ class Scanner {
             break;
           }
       if (!wanted) {
-        this.count(t, coin, isTaker);
+        // The 40 coins' records pair by `tid`: one whose text does not settle it is parsed.
+        const tid = this.forty.has(coin) ? tidAt(line, s, e) : "";
+        if (tid === null) this.slowRecord(line.toString("utf8", s, e), block);
+        else this.count(t, coin, isTaker, tid);
         continue;
       }
       const rec = this.parse(line.toString("utf8", s, e));
@@ -370,7 +396,7 @@ class Scanner {
   /** A record that passed: counted, and handed to the writers that want it unless it is late. */
   private take(rec: Rec, raw: unknown, block: number | null): void {
     const f = rec.fill;
-    this.count(f.time, f.coin, f.crossed);
+    this.count(f.time, f.coin, f.crossed, f.tid);
     if (f.time >= this.end) return;
     const hasLiq = f.liquidation !== undefined;
     for (const w of this.writers)
@@ -381,7 +407,7 @@ class Scanner {
         this.scan.refused += 1;
   }
 
-  private count(t: number, coin: string, isTaker: boolean): void {
+  private count(t: number, coin: string, isTaker: boolean, tid: string): void {
     const sc = this.scan;
     sc.records += 1;
     if (t >= this.end) sc.late += 1;
@@ -403,10 +429,28 @@ class Scanner {
         p[isTaker ? 0 : 1] += 1;
         if (t < p[2]) p[2] = t;
       }
+      const k = `${coin} ${tid}`;
+      const d = (this.open.get(k) ?? 0) + (isTaker ? 1 : -1);
+      if (d === 0) this.open.delete(k);
+      else this.open.set(k, d);
     }
   }
 
-  flushHour(): void {
+  /** The last hour's count, and the (coin, `tid`)s left open. */
+  finish(): void {
+    this.flushHour();
+    this.scan.unpaired = [...this.open]
+      .map(([k, d]): [string, string, number] => {
+        const at = k.lastIndexOf(" ");
+        return [k.slice(0, at), k.slice(at + 1), d];
+      })
+      .sort(
+        (a, b) =>
+          byText(a[0], b[0]) || a[1].length - b[1].length || byText(a[1], b[1]),
+      );
+  }
+
+  private flushHour(): void {
     if (this.hourCount > 0)
       this.scan.byHour.set(
         this.hour,
@@ -449,6 +493,6 @@ export function scanFill(
     carry = at < data.length ? Buffer.from(data.subarray(at)) : null;
   });
   if (carry !== null) sc.line(carry);
-  sc.flushHour();
+  sc.finish();
   return sc.scan;
 }

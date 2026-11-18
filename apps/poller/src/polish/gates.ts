@@ -623,18 +623,48 @@ export function g4(o: GatesInput, lib: Library, wave: readonly Outcome[]) {
   };
 }
 
-/** G5: in every input file, each of the 40 coins' taker records as many as its maker records; `day_ntl_vlm` beside, deciding nothing. */
+/**
+ * G5 (decisions 2026-11-18, EXTRACT-REVIEW's findings, Q4): each of the 40
+ * coins' taker records has its maker record, one `tid` a trade, in its own
+ * file; a trade a file boundary splits pairs across it, as one taker and one
+ * maker of one coin and `tid` left open in two files next in the range's
+ * order. Anything else left unpaired fails, listed by file, coin and `tid`;
+ * no tolerance. `day_ntl_vlm` beside, deciding nothing.
+ */
 export function g5(o: GatesInput, lib: Library): GateResult {
   const problems: string[] = [];
   const totals: Record<string, [number, number]> = {};
-  for (const f of lib.files)
+  const open = new Map<string, { file: number; d: number }[]>();
+  for (const f of lib.files) {
     for (const [coin, takers, makers] of f.pairs) {
       const t = (totals[coin] ??= [0, 0]);
       t[0] += takers;
       t[1] += makers;
-      if (takers !== makers)
-        problems.push(`${f.key} ${coin}: ${takers} takers, ${makers} makers`);
     }
+    for (const [coin, tid, d] of f.unpaired) {
+      const k = `${coin} ${tid}`;
+      const list = open.get(k) ?? [];
+      list.push({ file: f.index, d });
+      open.set(k, list);
+    }
+  }
+  let straddled = 0;
+  for (const [k, list] of open) {
+    const [a, b] = list;
+    if (
+      list.length === 2 &&
+      b!.file === a!.file + 1 &&
+      Math.abs(a!.d) === 1 &&
+      a!.d + b!.d === 0
+    ) {
+      straddled += 1;
+      continue;
+    }
+    for (const { file, d } of list)
+      problems.push(
+        `${lib.files[file]!.key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`,
+      );
+  }
   // By coin and whole UTC day: the takers' notional (with the backstop's, and without) ÷ day_ntl_vlm at the next midnight.
   const m = o.store.manifest;
   const ratios: Record<
@@ -669,6 +699,7 @@ export function g5(o: GatesInput, lib: Library): GateResult {
   return {
     pass: problems.length === 0,
     totals,
+    straddled,
     ...listed(problems),
     dayNtlVlm: { columns: ["with the backstop", "without"], ratios },
   };

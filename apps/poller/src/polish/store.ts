@@ -109,6 +109,8 @@ export const FileCounts = z.object({
   refused: z.number(),
   byHour: z.array(z.tuple([z.number(), z.number()])),
   pairs: z.array(z.tuple([z.string(), z.number(), z.number(), z.number()])),
+  /** The 40 coins' (coin, `tid`)s that do not pair inside the file: takers less makers (G5). */
+  unpaired: z.array(z.tuple([z.string(), z.string(), z.number()])),
   runs: z.array(z.tuple([z.number(), z.number()])),
   times: z
     .object({
