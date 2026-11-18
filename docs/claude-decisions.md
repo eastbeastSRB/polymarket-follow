@@ -1,5 +1,97 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (the owner and the supervisor — POLISH-EXPLORE's plan approved):
+**THE EXPLORATION'S PLAN IS APPROVED: 35 TRIES, THE CHOICE RULE AS ADOPTED
+(AT MOST TWO EVALUATIONS ON C), AND THE OWNER'S YES TO THE TAPE-AGAINST-BOOK
+CORRECTION. THE EXTRACTION RUNS FROM A SEPARATE BUILD OF THE CHECKED CODE,
+SO THE EXPLORATION'S CODE CAN LAND ON MAIN NOW.**
+
+**What:** POLISH-EXPLORE's plan, in
+`E:\coding\Claude\supervisor\polymarket-follow\workers\POLISH-EXPLORE\progress.md`
+under "THE PLAN" (11 sections). Written 12:11–13:17Z. No outcome on any
+data. Its one commit, `c8821c7`, holds the test-only pins F1–F3 of
+EXTRACT-FIX-CHECK; 16 of 16 of the check's survivors are now killed.
+- The supervisor's verify: 65 + 1 files, 617 + 5 tests.
+- The freezes: 61, 64 and 74.
+- `dist/polish*` is unchanged: its digest is still `88c6efb0692e…`, the
+  checked fingerprint.
+- The access scan is clean: on F:, only the look's `result.json` and
+  `report.json` and the one-day store's manifest. Peak context 516k.
+
+**The fingerprint (its answer, accepted): the extraction needs no change.**
+- `explore` opens the store through `trustedStore`: the manifest whole,
+  `gates.json`'s manifest SHA-256 and G0–G6 passed. Its own steps also hold
+  `gates.json`'s code fingerprint equal to the manifest's, and name both.
+- Plan 3.7's reproduction extracts into a new root and compares every
+  file the manifest lists, by bytes, but for the manifest itself.
+- Gates are re-run only from a build of the run's commit.
+
+**The run from a separate build (the supervisor's technical call).**
+FRESH's download is slow (the network path to AWS, decisions above), so
+the run may wait a day. So that the exploration's code can land on main
+meanwhile without touching the code the run uses:
+1. The extraction, its gates and its first `explore` run from a detached
+   git worktree of the checked commit, built there.
+2. Before the run, `dist/polish*`'s digest must equal `88c6efb0692e…` and
+   the three freezes must verify in it.
+3. Its `node_modules` are junctions to the repository's, removed one by one
+   afterwards.
+
+All work still lands on main; the worktree only runs.
+
+**Its questions, ruled:**
+1. **The order:** the run uses the separate build, so POLISH-EXPLORE may
+   commit its code on main now. The exploration's steps run only after the
+   gates pass.
+2. **The supervisor runs the five steps** (features, cuts commit, e,
+   choice, c, beside), as with the extraction.
+3. **At most two evaluations on C, not four.** The review's F5 says "allow
+   the fallback to one change (the largest t), not three, to keep the
+   count of C evaluations at two". The approval adopted the review's
+   changes where they differ from the plan (decisions 2026-11-17). So:
+   N first; if it fails, the adopted change with the largest t on E;
+   otherwise B0.
+4. **The placebo (F1)** runs in the exploration, after the choice, on the
+   rule going to FRESH with B0 beside. The exam's z = max(2.81, the rule's
+   own 99.75th percentile), for two looks. Yes.
+5. **The 50-hour stop before a part's end stays:** fixed before any
+   outcome.
+6. **C ends with DATA END:** entries to 2026-05-26T23:00Z. Yes.
+7. **The seeded marks as marked** (15 seeded: S1, the D and H families, W2,
+   R1–R4, X1).
+8. **The signal meter's shrinkage stays, labelled descriptive.**
+9. **F2's footprint:** every 100-day window of C's entry days with at
+   least 20 days and 10 coins. Yes.
+10. **The tape-against-book correction (the owner's yes, about 13:28Z: "i
+    agree with your recommendation").**
+    - **What it is:** on E only, slice 0's positions priced at the book at
+      both ends are repriced at the tape, and b is the mean of tape net −
+      book net.
+    - **The rule:** if b > +10 bps, every net of every try, on E and later
+      on C, is re-based to x − b before any statistic, and each output
+      says so first. It is one-sided: it only makes the exploration
+      stricter. C's own value is printed after the choice.
+    - **Why:** the exam prices at the book. WAVE-H showed tape-priced
+      positions at +197 and book-priced at +62, though on different
+      positions.
+11. **Two checks before any try's number:**
+    - a count-only sweep;
+    - B0 over TEST on marks must equal the look's EVERY SLICE line exactly
+      (176,986 positions, +66.133 ± 31.310), or the step stops.
+
+    Yes.
+12. **The new pins** (N3 and N11's rolling windows, N11's 80% coverage,
+    R4's hourly points, ⌊n/2⌋, N5 over every dex, N10 per coin): as pinned.
+    They can change only before run 1.
+13. **A rule with more than 10% of its positions left out on C:** a print,
+    no new rule. It is shown at the owner's ruling.
+
+**For the exam's build (noted for POLISH-RULES):** the kit's `marketFrom`
+refuses a panel ending after its CUT (2026-11-07), and FRESH runs to
+2026-11-16. So WAVE-H's `pricePosition`, `marketsFrom` and `minutePrice`
+would throw on FRESH's months. The exploration's minute price and funding
+avoid the kit's market object for this reason.
+
 2026-11-18 (the supervisor — a correction to the entry below, "EXTRACT-FIX-CHECK
 accepted"): **FRESH'S SLOWDOWN SINCE ABOUT 10:00Z IS THE NETWORK PATH TO
 AWS, NOT THE PC'S DISK. THE DOWNLOAD IS RESTARTED AND RUNS ON; ITS END

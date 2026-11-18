@@ -328,6 +328,10 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   runs at a time.** Six parallel runs saturated the C:/E: disk (228% busy,
   queue 2.3) while F: and the CPU were idle; FRESH's download runs at Idle
   priority on purpose (the supervisor, 2026-11-18).
+- **TaskStop ends a background Bash wrapper but not its node children:** a
+  vitest run and its workers kept running until stopped by pid, after
+  matching their command line. Never stop by name: FRESH's download is a
+  node process too (POLISH-EXPLORE, 2026-11-18).
 - **Before blaming the PC for a slow download, test the network path:**
   `curl -r 0-4999999 -w "%{speed_download} %{remote_ip}"` on a public file
   the tool already fetched, a few times (each one a new connection).
