@@ -47,11 +47,12 @@ entry point, `dist/paper.js`, frozen and deployed 2026-11-12; MARKET-1 a
 third, `dist/market1.js`, frozen and deployed 2026-11-13 (tag
 `market1-freeze-1`); WAVE-H a fourth, `dist/waveh.js`, frozen 2026-11-16
 (tag `waveh-freeze-1`), its one look run and closed; the analyzer a fifth,
-`dist/polish.js` (`extract`, `gates`, the frame of `explore`), run by hand;
+`dist/polish.js` (`extract`, `gates`, `explore` and the exploration's five
+steps), run by hand;
 no Turborepo, web, api or shared package yet — decisions 2026-11-11,
 COLLECTOR-BUILD's technical calls; 2026-11-12, PAPER-BUILD's; 2026-11-13,
 MARKET-BUILD's; 2026-11-14/16, WAVE-H-BUILD's and WAVE-H-FIX's; 2026-11-18,
-EXTRACT-BUILD's; docs/claude-architecture.md):** check package.json before
+EXTRACT-BUILD's and "the exploration built"; docs/claude-architecture.md):** check package.json before
 trusting this line. Ports are set by the v1 plan, clear of the lab's 3000 and 4000.
 
 ## Structure & docs

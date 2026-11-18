@@ -446,11 +446,13 @@ log, names V8's limit, `heapLimitMB`: 20,672 on 2026-11-18), whose pass
 gives each of its workers 4 GB; every ceiling is a worker's own, and V8's
 `--max-old-space-size` beats them all, so a heap flag on the command line
 or in NODE_OPTIONS is refused (exit 2). Its commands: `extract [--workers
-n] [--day YYYY-MM-DD]`, `gates`, `explore`. Settings, no defaults:
+n] [--day YYYY-MM-DD]`, `gates`, `explore [--step <name>]` (the
+exploration, its own section below). Settings, no defaults:
 `WAVEH_STORE` (WAVE-H's raw store, read only; its last two folders
 `WAVE-H\store`), `ANALYZER_ROOT` (the range's folder, neither inside the
-other) and, for `gates`, `WAVEH_ROOT` (WAVE-H's rehearsal and look, whose
-files are the references, read only); each is sealed (below) before
+other) and, for `gates` and an exploration step, `WAVEH_ROOT` (WAVE-H's
+rehearsal and look, whose files are the references, read only); each is
+sealed (below) before
 anything is made, the log's folder included. The commands print nothing
 on success: every line goes to the pino log,
 `<ANALYZER_ROOT>\logs\polish-<day>.log`, which `log.ts` prunes after 30
@@ -576,14 +578,16 @@ trusted only when each of G0–G6 passed.
 
 **`explore`** (`explore.ts`): opens only a whole store whose `gates.json`
 names its manifest and has each of G0–G6 passed, loads its counted fills
-and prints the store's identity and counts; it is a frame: no try is
-defined (POLISH-EXPLORE's). It writes nothing but its log. **The library**
-POLISH-EXPLORE imports is `library.ts` (`Library`, `libraryOf`,
-`positionsOf`, `GatesFile`), apart from the gates, with `legs.ts`
-(`Tape`, `minutePrice`, `minuteColumn`, `knownAt`).
+and prints the store's identity and counts; alone it is a frame, writing
+nothing but its log; `explore --step <name>` runs one step of the
+exploration (below). **The library** the exploration imports is
+`library.ts` (`Library`, `libraryOf`, `positionsOf`, `GatesFile`), apart
+from the gates, with `legs.ts` (`Tape`, `minutePrice`, `minuteColumn`,
+`knownAt`).
 
 **What it imports, never changing it:** the compiled closure of
-`dist/polish/main.js` is 54 files (2026-11-18): its own 21; WAVE-H's frozen
+`dist/polish/main.js` is 67 files (2026-11-18, with the exploration): its
+own 21 and the exploration's 13 (`polish/tries/`); WAVE-H's frozen
 `books`, `coins`, `ctxs`, `fills`, `funding`, `gate`, `instants`, `keys`,
 `legs`, `look`, `lz4`, `market`, `pass`, `positions`, `price`, `rehearse`,
 `report`, `run`, `slices`, `store` and `verdict`; MARKET-1's `book`,
@@ -596,3 +600,130 @@ exam's freeze list will have to carry. Node modules: `node:crypto`, `fs`,
 `module`, `os`, `path`, `url`, `util`, `v8`, `worker_threads` and `zlib`,
 `pino` and `zod`. A test walks the three frozen programs' imports: none
 reaches `dist/polish`.
+
+## The exploration (built 2026-11-18 by POLISH-EXPLORE, POLISH-EXPLORE-2 and POLISH-EXPLORE-3; not run)
+
+**What it is.** `node dist\polish.js explore --step <name>`: the polishing
+plan's step 6 (`docs/reviews/wave-polish-plan-2026-11-17.md`, sections 1
+and 2, with its review's F1–F19), as POLISH-EXPLORE's plan, approved
+(decisions 2026-11-18, "POLISH-EXPLORE's plan approved" and "the
+exploration built"). Five steps, each a run of its own, in order:
+`features`, `e`, `choice`, `c`, `beside`; between `features` and `e` the
+supervisor commits `explore\cuts.json` as `apps/poller/polish/cuts.json`.
+The code is `src/polish/tries/` (under the code's fingerprint), imported by
+no extraction module; it changes no frozen module. `main.ts` changes only
+in its explore branch: `--step` once, WAVEH_ROOT required and sealed for a
+step. The try log is `apps/poller/polish/tries.md` (35 tries, nine
+families, each try's definition, cut, instant, seeded mark and venue).
+
+**The modules.**
+- `parts.ts`: E = entries with t in [2025-06-01, 2025-12-29T22:00Z), C =
+  [2026-01-01, 2026-05-26T23:00Z) (50 h before each part's end); every
+  slice's entries for any M (MARKET-1's `waveEntries` over `bySlice`); a
+  position for any delay and hold; each counted fill's B1 episode.
+- `prices.ts`: a coin's minute price column from the minute table alone
+  (the mark, else a mark at most 5 minutes old, else the bars' last trade
+  of the 5 minutes before the minute's end, else NaN; no kit market object,
+  which refuses panels past 2026-11-07); `priceAt` (a decision's price: the
+  minute ended by the instant, through `knownAt`); `priceAfter` (an
+  outcome's: the end of the leg's minute); BASE for any hold.
+- `forced.ts`: every coin's forced fills from `liq` by H4 and
+  `countedFrom`'s file bounds; the 38 coins' px, sz and markPx, held to
+  the counted fills fill for fill.
+- `data.ts`: the one shape every computation reads (`Data`), from the
+  trusted store or a world in memory; `levelsAt`, H8's tape at a leg as
+  walk levels; `checkPrices`.
+- `trylog.ts`, `features.ts`: the 35 tries as data; every filter's feature
+  at its pinned instant, never reading a record stamped after it; the nine
+  E cuts by the kit's quantile (type 7); `CutsFile`, `cuts.json`'s schema.
+- `sweep.ts`: every distinct leg of a step read once, by coin and instant,
+  `pace` before each coin-month; the net by H9's formulas at H8's tape
+  ($1,000 in, Q out, 4.5 bps a leg, funding at the minute price before
+  each hour); the gross on marks.
+- `rules.ts`: a rule (B0 with M doubled, a delay, a hold, X1's exit,
+  filters) placed on a part; X1's and X2's exits; its items re-based by b;
+  its statistic and D-test.
+- `stats.ts`, `choice.ts`: the statistic (MARKET-1's `twoWay`), the D-test
+  by influences, the floors (E +50, 40 days, 15 coins; C +25, 30, 15), the
+  gain floor, the 100-day footprint; the choice rule (adopted at t ≥ 2.5
+  with the floors, one change a family, three families at most; on C at
+  most two evaluations, N, then the largest-t change alone, passing at
+  t ≥ 1.0).
+- `beside.ts`, `books.ts`: the prints beside (below).
+- `steps.ts`: the five steps, their identity, refusals and files;
+  `CUTS_FILE`, the committed cuts' path.
+
+**Each step** opens only the trusted store and names its identity first:
+the store's manifest SHA-256, `gates.json`'s, the code that made the store
+and the code that gated it (equal, else exit 5), this program's
+fingerprint, the look's `step1.json` and `positions.jsonl.gz` as
+`gates.json` names them, and B0's M (`step1.json`'s: 147). A predecessor's
+output missing, or of another identity, this program's fingerprint
+included, is not ready (exit 5): the five run with no code change between
+them. Every output goes to `<ANALYZER_ROOT>\explore\`, written whole, with
+each phase's seconds and the process's sizes (`peaks`, MB).
+- **`features`** (no outcome): the forced fills held to the counted fills
+  and every price column to legs.ts `minutePrice` (exit 6 otherwise); B0's
+  E entries, every filter's feature and the nine cuts; the dry sweep of the
+  legs the entries alone fix (counts, nothing walked). Writes
+  `features.json`, then `cuts.json` naming its SHA-256.
+- **`e`**: `polish/cuts.json` held to `features.json` (its SHA-256 and its
+  cuts, else exit 5). First the reproduction: B0 over TEST on marks must
+  equal the look's EVERY SLICE line (176,986 positions,
+  +66.13311166059404 ± 31.30967357566865), n exactly, m and SE to 1e-9 bps
+  (exit 6). Then the features recomputed and their cuts held to
+  `cuts.json`'s (exit 6); every group's legs in one sweep; the calibration
+  (slice 0's E positions the look priced at the book at both ends,
+  repriced at the tape; b = the mean of tape net − book net; every net on
+  E and C re-based to x − b when b > +10 bps); B0 and the 35 tries with
+  their D-tests against B0 (k = SE_V ÷ SE_B0), floors and refusals; X2
+  printed. Writes `e-positions.jsonl.gz`, then `e.json`.
+- **`choice`**: the changes adopted on E; N, B0 with them together, placed
+  and priced on E, its numbers testing nothing (F5), its k for C. Nothing
+  adopted: N is B0, nothing priced. Writes `choice-positions.jsonl.gz`,
+  then `choice.json`.
+- **`c`**: `choice.json` must name the current `e.json`. B0 on C first,
+  deciding nothing; then at most two evaluations, each priced only when its
+  turn comes: N; if it fails and more than one change was adopted, the
+  adopted change with the largest t on E alone; else B0 goes. Each: the
+  D-test with k from E, F2's floors and the footprint (every 100-day window
+  of C's 146 entry days with 20 UTC days and 10 coins). Writes
+  `c-positions.jsonl.gz`, then `c.json` naming the rule going to FRESH.
+- **`beside`**: `c.json` must name the current `choice.json`, and it the
+  current `e.json`. From the steps' positions files, for the rule going to
+  FRESH with B0 beside, deciding nothing but K and the exam's z (frozen for
+  the exam): 6.1's lines on E and C (each month, each side, without the two
+  best days, a day or a coin out, the tail, BTC's and ETH's moves, the
+  event-level mean, OWN); K, the smallest of 1, 5, 10, 20, 50 and M slices
+  whose pooled error is within 3% of all slices'; the book footprint at K;
+  the placebo (each B1 episode's sign flipped, 10,000 draws a window of 100
+  and 182 days, seed 20,261,118, for the rule, B0 and B2) and the exam's
+  z = max(2.81, the rule's 99.75th percentile at 100 days); the
+  projection; the signal meter; the error rates; the calibration on C.
+  Then **the two book prints** (`books.ts`), the only reads of **WAVE-H's
+  raw store** in the exploration: `books.jsonl`, held to the SHA-256
+  `gates.json` names (exit 5), and slice 0's held book files, each through
+  WAVE-H's own code (the leg's hour file and, in its first 10 s, the hour
+  before's; the last snapshot at or before the leg, live within 10 s and
+  usable), through the gate and the list's SHA-256, sealed after DATA END,
+  `pace` before each file. On slice 0's B0 positions of E and of C:
+  - the tape against the book: the entry legs at t + 10 s, 2, 5 and 15
+    minutes and the exit at 2 minutes, the tape's gain for the follower
+    over the book a leg in bps of the book's price, with its two-way error
+    and the legs not compared by reason ("not held": an hour on no line of
+    the book list);
+  - the walks: each entry book at x_in walked for $1,000, $10,000 and
+    $50,000, the cost against the book's mid and the extra over $1,000,
+    the walks depth short counted.
+
+  Writes `beside.json` (the book prints as its `books`).
+
+Exit codes as the analyzer's: 0 done, 1 a crash, 2 bad settings (an
+unknown or second step, `--step` on another command, a step without
+WAVEH_ROOT) or a heap flag, 4 WAVE-H's freeze, 5 not ready, 6 a check
+failed (the forced fills against the counted ones, a price column against
+`minutePrice`, the reproduction, the E cuts against `cuts.json`). The
+tests: `test/polish-tries-*.test.ts`, on worlds in memory with known
+answers (`polish-tries-world.ts`: 16 coins, a wave every 2 days, a planted
+edge after forced sells), synthetic stores and synthetic lz4 books; the
+five steps end to end on the gates world (`polish-gates.test.ts`).

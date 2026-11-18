@@ -1,5 +1,140 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (the exploration built — the technical calls of POLISH-EXPLORE,
+POLISH-EXPLORE-2 and POLISH-EXPLORE-3): **THE EXPLORATION IS BUILT, ITS
+BREAKS ROUND DONE AND ITS TWO BOOK PRINTS ADDED: `explore --step features |
+e | choice | c | beside`, TO RUN FROM MAIN'S BUILD AFTER THE EXTRACTION'S
+GATES PASS ON THE 10 MONTHS. NO OUTCOME HAS BEEN COMPUTED ON ANY REAL
+DATA.**
+
+**What:** the approved plan (POLISH-EXPLORE's `progress.md`, "THE PLAN",
+with the entry below, "POLISH-EXPLORE's plan approved", Q1–Q13), one commit
+a step, each with `pnpm verify` green in the same command and the three
+freezes verified after (61 `d04d3cd8…`, 64 `b9e17505…`, 74 `864990da…`):
+- POLISH-EXPLORE: `c8821c7` (EXTRACT-FIX-CHECK's pins F1–F3, test-only),
+  `8eecde2` parts, `21de3bc` prices, `d1f5bd4` stats, `b7f6860` choice,
+  `a08b57c` its first breaks' survivors, `e01d81b` the try log
+  `apps/poller/polish/tries.md`;
+- POLISH-EXPLORE-2: `d339881` forced, `562e25c` trylog and features,
+  `cfbf881` the features step, `2b67786` the E step, `ca27ac1` the choice
+  step, `72003ab` the C step, `0d4f8fe` the prints beside;
+- POLISH-EXPLORE-3: `8c2f479` the breaks round, `5f3f13f` the two book
+  prints, and these docs. At `5f3f13f`: 76 + 1 test files, 689 + 5 tests;
+  `dist/polish*` 36 files, digest `00c5e4b1…` (main's build; the run's
+  worktree keeps the checked `88c6efb0…` for `extract` and `gates`); the
+  compiled closure of `dist/polish/main.js` 67 files.
+
+What it is: architecture, "The exploration". The run's commands:
+current-task.
+
+**POLISH-EXPLORE's calls:**
+1. All exploration code in `src/polish/tries/`, imported by no extraction
+   module; `library.ts`, `legs.ts` and `explore.ts` unchanged.
+2. The minute price column comes from the minute table's `mark` and the
+   bars' `last`, with no kit market object (the kit's `marketFrom` refuses
+   a panel past its CUT, 2026-11-07), so the exam can run on FRESH. It
+   equals legs.ts `minutePrice` at every minute (a test through the real
+   kit; the features step checks every minute of the 38 coins, exit 6).
+3. BASE for a part uses the part's own minutes j in [from, to − h), by the
+   4-hour block of minute j, as MARKET-1's `baseOf` (equal for 24 h).
+4. The D-test's error at k = 0 equals `twoWay`'s to 1e-12 relative, not to
+   the bit: the influences are summed per cluster.
+5. F2's footprint windows are the consecutive 100-day windows from C's
+   first day: 47 for its 146 entry days.
+6. The signal meter is the mean of t² over the adoptable tries with a t,
+   the sample variance beside (descriptive).
+7. `twoWayFast` counts K as the clusters present in its range.
+8. In the F1 pins, the trade before a sample day sits in a `node_fills`
+   file, so the world's pinned counts do not move.
+
+**POLISH-EXPLORE-2's calls:**
+1. Every computation takes one `Data` shape (`data.ts`): the store's or a
+   world in memory's. Only `steps.ts` opens the store.
+2. B0's M is the look's `step1.json` M (its SHA-256 the one `gates.json`
+   names): 147 in the run. W2 is 2M.
+3. The EVERY SLICE reference is a constant, `LOOK_EXPECTED` (176,986;
+   +66.13311166059404; 31.30967357566865), as gates.ts's `WAVEH_EXPECTED`.
+   A line of one cluster has a null SE, compared as null.
+4. A failed check throws run.ts's `GateFailed` (exit 6): the forced fills
+   against the counted ones, a price column against `minutePrice`, the
+   reproduction, the E step's recomputed cuts against `cuts.json`.
+5. The reproduction runs first in the E step, before any leg is read (the
+   supervisor's ruling 1 to POLISH-EXPLORE-3: as built).
+6. `levelsAt` reads H8's tape straight from the coin-month's columns, equal
+   to `levelsOf(Tape.at(…))`.
+7. Funding through the minute price: the kit's running sums on `pc`, equal
+   to the kit's to the bit before a settlement without a mark; the trade's
+   price is charged where the mark is missing.
+8. Feature pins met in the build: N11's RV with missing returns is the sum
+   of the squares of those there are (at least 230), not rescaled; S24 (R2)
+   takes S7's unknown rule; N9 averages the fills with a markPx above 0;
+   C1–C3 read the 30 days before the month from each source's start, at
+   least 7 days, a coin with no value unranked; X2's P(e₁) unknown leaves
+   the position out.
+9. The dry sweep counts the legs the entries alone fix (B0, D0, D15, D60,
+   H1–H12, W2), not X1's exits.
+10. The choice step prices N alone on E (its k uses e.json's SE_B0).
+11. The C step prices B0 on C first, also when nothing is adopted.
+12. Each step refuses a predecessor of another identity, the program's
+    fingerprint included: the five run with no code change between them.
+13. `beside` reads the steps' positions files rather than pricing again;
+    6.1's lines for E are printed there.
+14. The calibration's "at the book at both ends" is WAVE-H's own split
+    (both legs' source "book", a net), depth-short legs included.
+15. The book footprint counts every position's legs, priced or not.
+16. The placebo's seed is 20,261,118, 10,000 draws a window length.
+17. The two book-based prints were left for the supervisor (ruled built:
+    POLISH-EXPLORE-3's 3–5).
+
+**POLISH-EXPLORE-3's calls:**
+1. **The breaks round:** 234 one-line breaks of `src/polish/tries/` and
+   `main.ts`'s explore branch (POLISH-EXPLORE-2's list, and mine on what
+   decides: the features' instants, each cut's comparison, the
+   calibration's +10 and one side, the reproduction, the D-test's k, the
+   choice's two evaluations, F2's floors, the placebo's z, K by count, each
+   step's refusal of a predecessor), in two scratch copies at below-normal
+   priority. 156 were killed at once and 78 survived.
+   - **4 are equivalent:** forced's `liqUser === NONE` (NONE is no user's
+     id, so `liqUser !== user` already refuses it); X1's `end >= xOut` (at
+     end = x_out both return x_out); X2's `<= -1,000` (dir·(q − 1)·10⁴ is
+     never exactly −1,000 for a double q; checked over 200,000 ulps either
+     side; X2 is a print); the reproduction's `xOut >= DATA_END` (every
+     TEST entry's x_out is before 2026-05-29T00:02Z).
+   - **The other 74 now die** by an assertion written for each: 6 of the
+     forced fills, 24 of the features, 3 of the try log, 2 of the tape at a
+     leg, 3 of the rules, 18 of the steps' wiring (k from E, the floors of
+     each part, W2 at 2M, the gain floor, C's 146 days, the reproduction's
+     two counts, the cuts and predecessors held), 19 of the prints beside
+     (a new file, `test/polish-tries-beside.test.ts`, for their pure
+     functions), 1 of `main.ts`'s options.
+   - **One code change:** the committed cuts' path is `steps.ts`
+     `CUTS_FILE`, pinned by a test; `main.ts` passes it. A wrong path could
+     only fail loudly (exit 5).
+   - The lists, the harness and every result: the supervisor folder's
+     `workers\POLISH-EXPLORE-3\breaks\`.
+2. **The book prints read WAVE-H's raw store in the beside step only**
+   (`tries/books.ts`). `books.jsonl` is held to the SHA-256 `gates.json`
+   names (else exit 5). Each book file is read through WAVE-H's own code
+   (`bookHours`, `lastAtOrBefore`, `bookAt`; `readLz4` through the gate and
+   the list's SHA-256) and polish's seal (`checkKey`: nothing dated after
+   DATA END), with `pace` before each file and the last two files kept. An
+   hour on no line of the list is "not held", counted. `StepInput` gains
+   `raw` (WAVEH_STORE) and `gate` (WAVE-H's, open when its freeze
+   verifies); the identity is unchanged; `besideStep` is asynchronous.
+3. **The tape against the book:** on slice 0's B0 positions of E and of C,
+   each entry leg at t + 10 s, 2, 5 and 15 minutes is walked for $1,000 at
+   H8's book and at the tape, and the exit at 2 minutes for the tape
+   entry's Q. The print is the tape's gain for the follower in bps of the
+   book's price (dir·(book − tape) ÷ book at an entry, dir·(tape − book) ÷
+   book at the exit: the calibration's sense), with its two-way error, the
+   walks depth short, and the legs not compared by reason.
+4. **The walks:** each entry book at x_in is walked for $1,000, $10,000
+   and $50,000: the cost against the book's mid and the extra over
+   $1,000, each with its two-way error, the walks depth short counted.
+5. **Both decide nothing.** They come last, as `beside.json`'s `books`.
+   24 breaks of them: 23 killed at once; one (the exit's Q) needed a
+   two-level exit tape in the test, and now dies.
+
 2026-11-18 (the owner and the supervisor — POLISH-EXPLORE's plan approved):
 **THE EXPLORATION'S PLAN IS APPROVED: 35 TRIES, THE CHOICE RULE AS ADOPTED
 (AT MOST TWO EVALUATIONS ON C), AND THE OWNER'S YES TO THE TAPE-AGAINST-BOOK

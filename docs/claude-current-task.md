@@ -7,14 +7,13 @@ clock; the forward paper experiment is FROZEN (2026-11-12, tag
 liquidation wave, is FROZEN (2026-11-13, tag `market1-freeze-1`) and runs
 daily at 10:30Z. WAVE-H, MARKET-1's wave tested once on Hyperliquid's
 history, is FROZEN (2026-11-16, tag `waveh-freeze-1`) and its one look says
-NOT SETTLED (2026-11-17: +82.6 bps a position, SE 40.9, 1,289 priced); its
-Final review reproduced it exactly. The polishing (a sharpened rule chosen
-on WAVE-H's 10 months, then one exam on FRESH's months) is approved
-(2026-11-17); FRESH's download runs since 2026-11-17 18:23Z; the
-analyzer's extraction, its gates and the frame of `explore` are built
-(2026-11-18), their Final review's findings fixed (EXTRACT-FIX); the
-fix-check comes next, then the run once FRESH's download ends.** The plan
-is the plan page (docs/claude-master-plan.md); what exists is architecture.
+NOT SETTLED (2026-11-17). The polishing (a sharpened rule chosen on WAVE-H's
+10 months, then one exam on FRESH's months) is approved (2026-11-17): its
+extraction is built, reviewed, fixed and checked (2026-11-18) and runs from
+a separate build of the checked commit once FRESH's download ends; its
+exploration is built (2026-11-18, POLISH-EXPLORE, -2 and -3), not run.** The
+plan is the plan page (docs/claude-master-plan.md); what exists is
+architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -24,104 +23,92 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 ## Where things stand
 
 - **The collector is live** (architecture, "The collector").
-- **The paper experiment** (architecture, "The paper experiment"; decisions
-  2026-11-12, from "APPROACH-REVIEW accepted" to "the freeze"): frozen,
+- **The paper experiment** (architecture, "The paper experiment"): frozen,
   `apps/poller/experiment/FROZEN.sha256`, 61 files, `d04d3cd8…f31c`; its
   daily task at 04:00Z; looks 2026-12-19, 2027-02-06, 2027-05-08.
-- **MARKET-1** (architecture, "MARKET-1"; decisions 2026-11-13, from "the
-  market lead" to "MARKET-1 — the freeze"): `dist/market1.js`, rules in
-  `apps/poller/market1/rules.md`; frozen, `market1/FROZEN.sha256`, 64 files,
-  `b9e17505…2f1d`, tag `market1-freeze-1`; START 2026-11-11; its daily task
-  at 10:30Z.
-- **WAVE-H** (architecture, "WAVE-H"; decisions 2026-11-16, "WAVE-H — the
-  freeze"; 2026-11-17, "WAVE-H — the one look's result" and "WAVE-H's Final
-  review accepted"): frozen, `waveh/FROZEN.sha256`, 74 files,
-  `864990da…8dd2`, tag `waveh-freeze-1`; its data `waveh/data.sha256`, 9,975
-  files, `b66a9bb0…676c`; the one look NOT SETTLED (band −23.0 to +188.1 bps
-  at z 2.58), reproduced by the Final review
-  (`docs/reviews/wave-h-look-2026-11-17.md`).
+- **MARKET-1** (architecture, "MARKET-1"): `dist/market1.js`; frozen,
+  `market1/FROZEN.sha256`, 64 files, `b9e17505…2f1d`; its daily task at
+  10:30Z.
+- **WAVE-H** (architecture, "WAVE-H"; decisions 2026-11-17, "WAVE-H — the
+  one look's result"): frozen, `waveh/FROZEN.sha256`, 74 files,
+  `864990da…8dd2`; its data `waveh/data.sha256`, 9,975 files; the one look
+  NOT SETTLED, reproduced by its Final review.
 - **FRESH, the months after WAVE-H's data** (architecture, "WAVE-H's data
-  download"; decisions 2026-11-17, "FRESH-FETCH verified"): started
-  2026-11-17 18:23:01Z by the supervisor, 4,102 + 170 files, 161.3 GB
-  planned, about 27 h; into `F:\polymarket-follow-research\FRESH\store\`,
-  never opened until a sharpened rule is frozen.
-- **The polishing** (decisions 2026-11-17, "THE POLISHING PLAN APPROVED";
-  the plan `docs/reviews/wave-polish-plan-2026-11-17.md`, section 6's steps):
-  step 3, the extraction, is built (architecture, "The analyzer"; decisions
-  2026-11-18, EXTRACT-BUILD's technical calls) and its Final review
-  (`docs/reviews/extract-review-2026-11-18.md`) fixed in one round
-  (decisions 2026-11-18, EXTRACT-REVIEW's findings, and EXTRACT-FIX's
-  calls). Two one-day timing stores of 2025-10-10 exist under
-  `F:\polymarket-follow-research\ANALYZER\`: `timing-2025-10-10\` (the
-  reviewed code; the fix-check compares against it) and
-  `timing-2025-10-10-b\` (the fixed code); both left for the supervisor to
-  delete.
+  download"): downloading since 2026-11-17 18:23Z into
+  `F:\polymarket-follow-research\FRESH\store\`, never opened until a
+  sharpened rule is frozen; slowed by the network path to AWS (decisions
+  2026-11-18).
+- **The polishing** (decisions 2026-11-17, "THE POLISHING PLAN APPROVED"):
+  - the extraction (architecture, "The analyzer"): `dist/polish.js`
+    `extract`, `gates`, `explore`; checked (decisions 2026-11-18,
+    "EXTRACT-FIX-CHECK accepted"); it runs from a detached worktree build
+    of the checked commit, `E:\coding\polymarket-follow-polish-run`, digest
+    `88c6efb0…` (decisions 2026-11-18, "POLISH-EXPLORE's plan approved");
+  - the exploration (architecture, "The exploration"; decisions
+    2026-11-18, "the exploration built"): `explore --step features | e |
+    choice | c | beside`, from main's build, after the gates pass.
 - **The operating budget is 250 weighted tokens a minute, all callers
-  together, never more than 30 in a burst** (decisions 2026-11-07): the
-  collector's share 50 and 15, the experiment's 120 and 15; MARKET-1 reads
-  nothing from the API; WAVE-H, FRESH and the analyzer read no Polymarket
-  endpoint (the analyzer reads only local files).
+  together, never more than 30 in a burst** (decisions 2026-11-07). The
+  analyzer reads only local files.
 - GitHub: `eastbeastSRB/polymarket-follow`, private; the owner pushes (the
   tags too).
 
 ## Next up — IN ORDER
 
-1. **EXTRACT-FIX-CHECK** (fresh, Sonnet): the 20 unbacked survivors die,
-   the new gates pass on the synthetic world and on the rebuilt one-day
-   store, EXTRACT-REVIEW's `indep2.cjs` finds 0 differences on
-   `timing-2025-10-10-b\` (decisions 2026-11-18, EXTRACT-REVIEW's findings,
-   Q7).
-2. **The extraction run on the 10 months, by the supervisor, once FRESH's
-   download has ended** (step 5): from `E:\coding\polymarket-follow\apps\poller`
-   on a clean tree after `pnpm verify`, detached through WMI at idle
-   priority (the `.cmd` files in the supervisor folder's
-   `workers\EXTRACT-FIX-2\run\`), outside 02:30–06:00Z and 10:25–11:15Z,
-   starting at least 45 minutes before a window for `gates`, **with no heap
-   flag** (`dist\polish.js` refuses one, exit 2; the program has its own
-   20 GB, named in the log's first line as `heapLimitMB` 20,672, each pass
-   worker 4 GB):
-   - `extract`: `WAVEH_STORE=F:\polymarket-follow-research\WAVE-H\store`,
-     `ANALYZER_ROOT=F:\polymarket-follow-research\ANALYZER\WAVE-H`,
-     `node dist\polish.js extract`: about 70 min, at most about 6 GB of
-     memory, about 47 GB of parts and 23 GB of store on F:; it resumes from
-     its parts if stopped; its log in `<ANALYZER_ROOT>\logs\` (copy it:
-     logs older than 30 days are pruned);
-   - `gates`: the same two and
-     `WAVEH_ROOT=F:\polymarket-follow-research\FIND-SLOTS\WAVE-H-BUILD-rehearsal`,
-     `node dist\polish.js gates`: about 40 min (G6 about 5 min on
-     2025-10-10; the gates about 10 GB of the program's 20 GB of heap);
-     `gates\gates.json`, whose G5 lists in `edges` every record accepted
-     alone in the range's first or last file (`edge` counts them); exit 6
-     when a gate fails;
-   - `explore`: the same, `node dist\polish.js explore`: a minute; it
-     prints the store's identity and counts to its log and stops ("no try
-     is defined");
-   - exit codes: 0 done, 1 a crash, 2 bad settings or a heap flag, 4 WAVE-H's
-     freeze does not verify, 5 not ready, 6 a gate failed;
-   - after the run is accepted, the supervisor deletes `parts\` (Q4).
-3. **POLISH-EXPLORE** (step 6): the tries, the try log, the choice rule;
-   then its Final review, the owner's ruling, the exam's rules and freeze.
-   Its library: `library.ts` and `legs.ts` (`knownAt` for any decision at
-   an instant; architecture, "The analyzer").
+1. **The extraction run on the 10 months, by the supervisor, once FRESH's
+   download has ended**, from the run's worktree, as ruled (decisions
+   2026-11-18, "POLISH-EXPLORE's plan approved"): `extract`, then `gates`
+   (all of G0–G6 must pass), then `explore` (the frame). Detached at idle
+   priority, outside 02:30–06:00Z and 10:25–11:15Z, no heap flag; the
+   settings `WAVEH_STORE=F:\polymarket-follow-research\WAVE-H\store`,
+   `ANALYZER_ROOT=F:\polymarket-follow-research\ANALYZER\WAVE-H` and, for
+   `gates`, `WAVEH_ROOT=F:\polymarket-follow-research\FIND-SLOTS\WAVE-H-BUILD-rehearsal`.
+2. **The exploration's five steps, by the supervisor**, from
+   `E:\coding\polymarket-follow\apps\poller` (main's build, a clean tree
+   after `pnpm verify`), the same three settings, one at a time, each after
+   the last exited 0; after each, its output's SHA-256 into the supervisor's
+   notes before the next starts; a measured peak above 10 GB stops the run:
+
+   | Run | Command | Writes (in `ANALYZER_ROOT\explore\`) | Time (estimate) | Peak (estimate) |
+   |---|---|---|---|---|
+   | 1 | `node dist\polish.js explore --step features` | `features.json`, `cuts.json` | 20–40 min | 3–6 GB |
+   | — | the cuts commit: `explore\cuts.json` copied as it is to `apps\poller\polish\cuts.json`, committed by name with `pnpm verify` (no `dist` change) | | | |
+   | 2 | `… explore --step e` | `e-positions.jsonl.gz`, `e.json` | 30–60 min | 4–8 GB |
+   | 3 | `… explore --step choice` | `choice-positions.jsonl.gz`, `choice.json` | 10–25 min | 3–6 GB |
+   | 4 | `… explore --step c` | `c-positions.jsonl.gz`, `c.json` | 20–45 min | 3–6 GB |
+   | 5 | `… explore --step beside` | `beside.json` | 20–40 min, plus the book prints (slice 0's held book files from `WAVEH_STORE`: about G3's book reading, each file scanned once a leg, 5 legs a position against G3's 2) | 4–8 GB |
+
+   Exit codes: 0 done; 1 a crash; 2 bad settings or a heap flag; 4
+   WAVE-H's freeze; 5 not ready; 6 a check failed. The log:
+   `ANALYZER_ROOT\logs\polish-<day>.log` (copy it; pruned after 30 days).
+3. **POLISH-EXPLORE's report** (`docs/reviews/polish-explore-<date>.md`),
+   its Final review (steps 2–4 recomputed by independent code from the
+   positions files), the owner's ruling on the nominee, then the exam's
+   rules, reviews and freeze, then look 1 on FRESH.
 4. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
    MARKET-1 run is live (rules.md M2).
 5. **The daily runs:** the supervisor checks each program's log, budget and
    page; no running number is read as evidence before a look.
 6. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
    (R8's B2 confirmation, after 2026-11-30), each with its own share of the
-   remaining 80 a minute (and a burst share: decisions 2026-11-13, Q12).
-7. **MARKET-1's second arm** after the polishing's freeze, with the polished
-   rule (decisions 2026-11-17, the polishing plan's answers, 7).
+   remaining 80 a minute.
+7. **MARKET-1's second arm** after the polishing's freeze, with the
+   polished rule (decisions 2026-11-17, the polishing plan's answers, 7).
 8. **Small collector follow-ups, when convenient:** drop the boards'
    `consistent` flag; a coverage mark for books that arrive late; the
-   backup task's trigger from UTC takes effect when the tasks are next
-   registered; the page's fee-category alarm.
+   backup task's trigger from UTC; the page's fee-category alarm.
 9. **The v1 plan** (the plan page), early December.
 
-## Last session (2026-11-18, EXTRACT-FIX)
+## Last session (2026-11-18, POLISH-EXPLORE-3)
 
-EXTRACT-REVIEW's findings, M1–M4 and L1–L12, fixed in one round, one fix a
-commit, each gated on `pnpm verify` with the three freezes verified after
-each (61, 64, 74): `2ca3ae4` the split of gates.ts (a pure move), `86ab8ef` M1, `e53d123` M3, `d3de0ef` G5 exact across a file boundary, `940dc51` M2, `a440a63` L2, `819a890` L1, `62f7719` M4, `27e067a` L11, `b1e659d` L3, `b728ca9` L5 (the launcher: no heap flag), `914e39b` L6, `b48db4c` L7, `3e4aebf` L8, `ba5099e` L12, `7a9b386` L9, `6e8b8aa` the tests' cleanup limit, and these docs. Breaks in a scratch copy: 49 of 49 killed by their tests (EXTRACT-REVIEW's 20 unbacked survivors and S2–S5, and 25 of the new checks). The
-one-day store `timing-2025-10-10-b\`: 52 s (the pass 44 s, the merge 7 s), a peak working set of 2,670 MiB, the program's heap ceiling 16,576 MB and each pass worker's 4,288 MB, every counter 0, every file's `unpaired` empty, every row conserved; G6 on 2025-10-10 against it: 331 s, a 10.4 GB working set (8.9 GB of heap), nothing differing but the 350 contexts at 23:59 a timing store cannot have. At the end `pnpm verify`
-was green: 64 files + 1 skipped, 610 tests + 5 skipped (decisions 2026-11-18, EXTRACT-FIX's calls).
+The exploration's build finished, on POLISH-EXPLORE's brief and the
+supervisor's rulings: `8c2f479` the breaks round (234 breaks of
+`src/polish/tries/` and `main.ts`'s explore branch; 156 killed at once, 4
+equivalent, the other 74 killed by new tests; `steps.ts` `CUTS_FILE`),
+`5f3f13f` the two book prints (`tries/books.ts`: the tape against the book
+by delay and the $10,000 and $50,000 walks, on slice 0's held books
+through WAVE-H's own book code; 24 breaks, all killed), and these docs.
+Each with `pnpm verify` green in the same command (at `5f3f13f`: 76 + 1
+files, 689 + 5 tests) and the three freezes verified after. No outcome on
+any real data; the run's worktree untouched. Decisions 2026-11-18, "the
+exploration built".
