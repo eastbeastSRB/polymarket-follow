@@ -11,13 +11,14 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmdirSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { readHeld } from "../src/polish/held.js";
 import { partFile, readPart, readPartHeader } from "../src/polish/part.js";
 import { WORKER_FILE, runPass, type FileTask } from "../src/polish/pass.js";
@@ -75,6 +76,21 @@ describe("the seal", () => {
     ).not.toThrow();
   });
 
+  it("never resolves a path sealed by its name, so nothing of FRESH is touched; any other path it resolves", () => {
+    const resolve = vi.spyOn(realpathSync, "native");
+    try {
+      for (const p of [
+        "F:\\polymarket-follow-research\\FRESH\\store\\node_fills_by_block\\hourly\\20260601\\3.lz4",
+        "F:\\polymarket-follow-research\\ANALYZER\\FRESH\\store\\manifest.json",
+      ])
+        expect(() => checkPath(p), p).toThrow(SealedError);
+      expect(resolve).not.toHaveBeenCalled();
+      checkPath(path.join(parts(), "a.lz4"));
+      expect(resolve).toHaveBeenCalled();
+    } finally {
+      resolve.mockRestore();
+    }
+  });
   it("refuses a path through a junction into a sealed folder, by its real path", () => {
     const t = parts();
     const fresh = path.join(t, "FRESH", "store");

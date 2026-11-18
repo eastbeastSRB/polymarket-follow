@@ -412,6 +412,7 @@ describe("the built program", () => {
     for (const [env, flags] of [
       [ok, ["--max-old-space-size=8192"]],
       [ok, ["--max_old_space_size=8192"]],
+      [ok, ["--max-heap-size=8192"]],
       [{ ...ok, NODE_OPTIONS: "--max-old-space-size=8192" }, []],
     ] as const) {
       const r = runIt(["explore"], env, [...flags]);
@@ -433,6 +434,26 @@ describe("the built program", () => {
     expect(start!.msg).toBe("start explore");
     expect(start!.heapLimitMB).toBeGreaterThanOrEqual(20_480);
     expect(start!.heapLimitMB).toBeLessThan(20_480 + 512);
+  }, 60_000);
+
+  it("exits 1 with its crash line when the program dies uncaught", () => {
+    // The built launcher beside a stub program that throws at its start.
+    const at = tmp("launcher");
+    writeFileSync(path.join(at, "package.json"), '{ "type": "module" }\n');
+    writeFileSync(path.join(at, "polish.js"), readFileSync(program));
+    mkdirSync(path.join(at, "polish"));
+    writeFileSync(
+      path.join(at, "polish", "main.js"),
+      'throw new Error("a stub program that throws");\n',
+    );
+    const r = spawnSync(process.execPath, [path.join(at, "polish.js")], {
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    expect(r.status, r.stderr).toBe(1);
+    expect(r.stderr).toContain(
+      "polish: crash: Error: a stub program that throws",
+    );
   }, 60_000);
 
   it("refuses a sealed folder in its settings, by name or through a junction, before it opens or makes anything, its log's folder too (exit 5)", () => {

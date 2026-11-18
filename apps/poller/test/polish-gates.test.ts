@@ -15,6 +15,7 @@ import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { explore, trustedStore, wholeStore } from "../src/polish/explore.js";
 import { extract } from "../src/polish/extract.js";
+import { CONTEXT } from "../src/polish/ctxs.js";
 import { dayFromStore } from "../src/polish/days.js";
 import {
   WAVEH_EXPECTED,
@@ -54,6 +55,7 @@ import {
   type Partition,
   type Table,
 } from "../src/polish/store.js";
+import { WIDTH, type ColumnType } from "../src/polish/tables.js";
 import { BACKSTOP, fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
@@ -201,6 +203,11 @@ function world() {
   files.set(
     fillKey(dayStart(W) + DAY_MS, "node_fills_by_block"),
     block(10, taker("SOL", "B", dayStart(W) + DAY_MS, "100", "1", 23)),
+  );
+  // A trade 2 minutes before W1's day (a node_fills file: no block number): G6's minute price fallback on that day must not reach back to it.
+  files.set(
+    fillKey(dayStart(W1) - 2 * MINUTE_MS),
+    taker("SOL", "B", dayStart(W1) - 2 * MINUTE_MS, "100", "1", 24).join("\n"),
   );
   files.set(
     fillKey(W3, "node_fills_by_block"),
@@ -850,6 +857,24 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         `${key(i + 1)} SOL 77: 2 makers unpaired`,
       ],
     });
+    // In files next to each other only one taker and one maker are a straddle: not two takers, two makers, or a taker and three makers.
+    for (const [a, b, words] of [
+      [1, 1, ["1 taker", "1 taker"]],
+      [-1, -1, ["1 maker", "1 maker"]],
+      [1, -3, ["1 taker", "3 makers"]],
+    ] as const)
+      expect(
+        g5With({ [i]: [["SOL", "77", a]], [i + 1]: [["SOL", "77", b]] }),
+        `${a} ${b}`,
+      ).toMatchObject({
+        pass: false,
+        straddled: 0,
+        problems: 2,
+        first: [
+          `${key(i)} SOL 77: ${words[0]} unpaired`,
+          `${key(i + 1)} SOL 77: ${words[1]} unpaired`,
+        ],
+      });
     expect(
       g5With({ [i]: [["SOL", "77", 1]], [i + 1]: [["kPEPE", "77", -1]] }),
     ).toMatchObject({ pass: false, problems: 2 });
@@ -1076,6 +1101,78 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     expect([cut.bars.SOL!.last!.length, cut.ctxs.BTC!.mark!.length]).toEqual([
       60, 60,
     ]);
+  });
+
+  it("G6 names every column of liq, the bars and the contexts, each changed in one cell of a sample day with its hash rewritten", async () => {
+    const month = "2025-09";
+    const day = { ...o.expect, sampleDays: [iso(W)] };
+    // One cell changed (a float by 1, or 123.456 where it is NaN; liq's time by a minute; an integer by its low bit), G6 on W's day, the file restored.
+    const tamper = async (
+      table: Table,
+      coin: string | null,
+      file: string,
+      row: number,
+    ) => {
+      const m = structuredClone(o.store.manifest);
+      const p = m.partitions.find(
+        (x) => x.table === table && x.coin === coin && x.month === month,
+      )!;
+      const at = path.join(
+        o.store.dir,
+        ...partitionDir(table, coin, month).split("/"),
+        file,
+      );
+      const was = readFileSync(at);
+      const now = Buffer.from(was);
+      const w = WIDTH[file.slice(file.indexOf(".") + 1) as ColumnType];
+      if (file.endsWith(".f64")) {
+        const v = now.readDoubleLE(row * w);
+        now.writeDoubleLE(
+          file === "time.f64"
+            ? v + MINUTE_MS
+            : Number.isNaN(v)
+              ? 123.456
+              : v + 1,
+          row * w,
+        );
+      } else now[row * w] = now[row * w]! ^ 1;
+      writeFileSync(at, now);
+      Object.assign(p.files[file]!, { bytes: now.length, sha256: sha(now) });
+      try {
+        const r = (await g6({
+          ...o,
+          store: new Store(o.store.dir, m, o.store.id),
+          expect: day,
+        })) as unknown as { pass: boolean; days: { differ: string[] }[] };
+        expect(r.pass, file).toBe(false);
+        return r.days[0]!.differ;
+      } finally {
+        writeFileSync(at, was);
+      }
+    };
+    const files = (table: Table, coin: string | null) =>
+      Object.keys(o.store.partition(table, coin, month).files);
+    const liq = files("liq", null);
+    expect(liq).toHaveLength(18);
+    for (const file of liq)
+      expect(await tamper("liq", null, file, 1), file).toEqual([
+        `liq ${file.slice(0, file.indexOf("."))}: 1 of 4 rows differ, the first row 1`,
+      ]);
+    const contexts = new Set(CONTEXT.map(([name]) => name));
+    const row = 9 * 1440 + 600;
+    const first = new Date(
+      o.store.partition("minute", "SOL", month).start + row * MINUTE_MS,
+    ).toISOString();
+    const minute = files("minute", "SOL");
+    expect(minute).toHaveLength(19);
+    for (const file of minute) {
+      const name = file.slice(0, file.indexOf("."));
+      expect(await tamper("minute", "SOL", file, row), file).toEqual([
+        `${contexts.has(name) ? "ctxs" : "bars"} SOL ${name}: 1 of 1440 minutes differ, the first at ${first}`,
+      ]);
+    }
+    // Every file restored: G6 passes again on the store as made.
+    expect((await g6({ ...o, expect: day })).pass).toBe(true);
   });
 
   it("G6 fails on a sample day's tape row removed, a context, two bars and four liq columns changed, the store rewritten with its hashes", async () => {
