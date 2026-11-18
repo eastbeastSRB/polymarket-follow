@@ -658,7 +658,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     ).toEqual(["sizingCounted"]);
   });
 
-  it("G3 fails on a price beyond 0.01 bps, on a leg's tid, on a line missing; passes a price within", () => {
+  it("G3 fails on a price beyond 1e-9 bps, on a leg's tid, on a line missing; passes a price within", () => {
     const { spots, sizing } = g2(o, lib, step1);
     const lines = gunzipSync(
       readFileSync(path.join(root, "look", "positions.jsonl.gz")),
@@ -678,10 +678,11 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       return g3({ ...o, look: dir }, lib, spots, sizing).result;
     };
     expect(g3With(() => {}).pass).toBe(true);
-    const near = g3With((ls) => (ls[0]!.priced.net += 0.005));
+    const near = g3With((ls) => (ls[0]!.priced.net += 5e-10));
     expect(near.pass).toBe(true);
-    expect(near.largestBps).toBeCloseTo(0.005, 9);
-    expect(g3With((ls) => (ls[0]!.priced.net += 0.02))).toMatchObject({
+    expect(near.largestBps).toBeGreaterThan(4e-10);
+    expect(near.largestBps).toBeLessThan(6e-10);
+    expect(g3With((ls) => (ls[0]!.priced.net += 2e-9))).toMatchObject({
       pass: false,
       first: ["line 1 differs"],
     });

@@ -71,8 +71,8 @@ import { WIDTH, type ColumnType } from "./tables.js";
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
-/** G3's tolerance on a position's bps (the plan: 0.01 bps; 0 expected). */
-export const BPS_TOLERANCE = 0.01;
+/** G3's tolerance on a position's bps: the plan's 1e-9 bps (4.5(3)); 0 expected, the largest difference printed. */
+export const BPS_TOLERANCE = 1e-9;
 /** At most this many problems a gate lists (all are counted). */
 const LISTED = 20;
 
