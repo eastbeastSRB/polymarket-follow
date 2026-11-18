@@ -716,8 +716,8 @@ describe("the look's first step (H15, R3)", { timeout: 120_000 }, () => {
     list = manifestList(
       readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
     );
-  });
-  afterAll(() => rmSync(store, { recursive: true, force: true }));
+  }, 120_000);
+  afterAll(() => rmSync(store, { recursive: true, force: true }), 120_000);
   const ctx = (): Ctx => ({
     store,
     list,

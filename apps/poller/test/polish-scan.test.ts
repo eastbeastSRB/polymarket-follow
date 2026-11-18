@@ -28,7 +28,7 @@ import path from "node:path";
 import { addr, byBlock, frameOf, record, trade } from "./polish-world.js";
 import { cleanScratch, fillKey, makeStore } from "./waveh-world.js";
 
-afterAll(cleanScratch);
+afterAll(cleanScratch, 120_000);
 
 const lz4js = createRequire(import.meta.url)("lz4js") as {
   compress: (src: Uint8Array) => Uint8Array;

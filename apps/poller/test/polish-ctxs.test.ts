@@ -23,7 +23,7 @@ import { ctxsKey, fundingKey } from "../src/waveh/keys.js";
 import { StoreError, manifestList } from "../src/waveh/store.js";
 import { CTXS_HEAD, cleanScratch, makeStore } from "./waveh-world.js";
 
-afterAll(cleanScratch);
+afterAll(cleanScratch, 120_000);
 
 const coins = loadCoins();
 const FORTY = fortyOf(coins);

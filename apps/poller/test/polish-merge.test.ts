@@ -38,7 +38,7 @@ import {
   scratch,
 } from "./waveh-world.js";
 
-afterAll(cleanScratch);
+afterAll(cleanScratch, 120_000);
 
 const coins = loadCoins();
 const FORTY = [...fortyOf(coins)];

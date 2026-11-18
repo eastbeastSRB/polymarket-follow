@@ -37,7 +37,7 @@ import { StoreError, manifestList } from "../src/waveh/store.js";
 import { addr, byBlock, record, trade } from "./polish-world.js";
 import { cleanScratch, fillKey, makeStore, scratch } from "./waveh-world.js";
 
-afterAll(cleanScratch);
+afterAll(cleanScratch, 120_000);
 
 const coins = loadCoins();
 const FORTY = [...fortyOf(coins)];

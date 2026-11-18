@@ -78,7 +78,7 @@ import {
   snapshot,
 } from "./waveh-world.js";
 
-afterAll(cleanScratch);
+afterAll(cleanScratch, 120_000);
 
 const coins = loadCoins();
 const forty = [...fortyOf(coins)];
