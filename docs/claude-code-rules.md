@@ -326,9 +326,20 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   is checked again (EXTRACT-FIX, 2026-11-18).
 - **While a download or a long run is going, run at most two test or break
   runs at a time.** Six parallel runs saturated the C:/E: disk (228% busy,
-  queue 2.3) while F: and the CPU were idle. FRESH's download runs at Idle
-  priority on purpose, so its small I/O on C:/E: starved: it fell from 1.9
-  to 0.15 MB/s (the supervisor, 2026-11-18).
+  queue 2.3) while F: and the CPU were idle; FRESH's download runs at Idle
+  priority on purpose (the supervisor, 2026-11-18).
+- **Before blaming the PC for a slow download, test the network path:**
+  `curl -r 0-4999999 -w "%{speed_download} %{remote_ip}"` on a public file
+  the tool already fetched, a few times (each one a new connection).
+  - FRESH's fall from 1.9 to about 0.15 MB/s from about 10:00Z on 2026-11-18
+    was first put down to the disk load above.
+  - With the CPU and disks idle, four of five fresh connections to the
+    bucket ran at 0.13–0.27 MB/s and one at 1.2 MB/s; another pair gave
+    0.12 and 4.5 MB/s. So the slowdown was the network path to AWS,
+    varying by endpoint.
+  - A restart of the tool (a new connection) did not help.
+
+  (The supervisor, 2026-11-18.)
 - **An fsync on F: (a hard disk) costs about 29 ms a small file** and about
   81 ms a part file. For many files whose content is held to a hash, write
   whole (`.tmp`, then rename) without the flush, and flush only the

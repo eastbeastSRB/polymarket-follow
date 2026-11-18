@@ -1,5 +1,37 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (the supervisor — a correction to the entry below, "EXTRACT-FIX-CHECK
+accepted"): **FRESH'S SLOWDOWN SINCE ABOUT 10:00Z IS THE NETWORK PATH TO
+AWS, NOT THE PC'S DISK. THE DOWNLOAD IS RESTARTED AND RUNS ON; ITS END
+MOVES LATER.**
+
+**The entry below puts the fall from about 1.9 to about 0.15 MB/s down to
+the parallel test runs saturating the C:/E: disk.** That load was real
+(228% busy, a queue of 2.3), and the rule of at most two parallel runs
+stays. **But it was not the main cause.** Measured 11:52–12:04Z, after the
+check had ended:
+- **The PC was idle:** C:/E: 0.7% busy, F: idle, the CPU 71% idle. The tool
+  still received about 0.19 MB/s over its one connection, against its own
+  limit of 2 MB/s.
+- **Fresh connections to the same public bucket** (`curl`, 5 or 10 MB
+  ranges of a file WAVE-H's store already holds, a generic user agent):
+  - 0.12, 4.5, 0.13, 1.2, 0.19 and 0.27 MB/s;
+  - each through a different AWS address.
+
+  The path to AWS us-east-2 is slow on most endpoints today.
+- **The tool restarted cleanly** (the stop file at 11:59:17Z; started again
+  at 11:59:21Z, pid 32624). Its plan: 2,312 of 4,102 fill files in the
+  store, 1,790 to fetch, 78.68 GB. The new connection ran at about 0.06
+  MB/s, so a restart does not help.
+
+**What follows:**
+- The download runs on and keeps its own pace and pauses. It speeds up when
+  the path recovers: it ran at about 2 MB/s through the evening and night of
+  2026-11-17 and until about 09:50Z on 2026-11-18.
+- **The end moves from about 23:00Z on 2026-11-18 to later.** At 2 MB/s
+  the rest takes about 11 hours, and the pause windows add more.
+- The extraction run waits for it, as decided. Nothing is opened early.
+
 2026-11-18 (the supervisor — EXTRACT-FIX-CHECK accepted, under the owner's
 go "continue with the plan"): **THE EXTRACTION IS READY TO RUN. IT RUNS ON
 THE 10 MONTHS FROM HEAD'S BUILD WITH NO CODE CHANGE, ONCE FRESH'S DOWNLOAD
