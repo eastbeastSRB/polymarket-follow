@@ -55,7 +55,8 @@ export class Tape {
 
   constructor(private readonly store: Store) {}
 
-  private rows(coin: string, month: string): TapeRows {
+  /** A coin-month's taker rows, read whole when first asked (G6 reads its day from them). */
+  rows(coin: string, month: string): TapeRows {
     const key = `${coin}|${month}`;
     let r = this.months.get(key);
     if (r === undefined) {

@@ -51,7 +51,7 @@ import {
   type Manifest,
   type Table,
 } from "../src/polish/store.js";
-import { fortyOf } from "../src/polish/writers.js";
+import { BACKSTOP, fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
 import { bookKey, ctxsKey, fundingKey } from "../src/waveh/keys.js";
@@ -972,10 +972,13 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
           ? f64At(b, wAt, () => 1)
           : b,
     );
-    // SOL's fourth taker of 2025-09 (W's day; the fifth is the next day's) dropped from every column.
-    const p = rewrite("tape", "SOL", "2025-09", (_, b) => {
+    // SOL's fourth taker of 2025-09 (W's day; the fifth is the next day's) dropped from every column,
+    // and its first made a backstop's: a column only the minute price's fallback reads.
+    const p = rewrite("tape", "SOL", "2025-09", (file, b) => {
       const w = b.length / 5;
-      return Buffer.concat([b.subarray(0, 3 * w), b.subarray(4 * w)]);
+      const c = Buffer.concat([b.subarray(0, 3 * w), b.subarray(4 * w)]);
+      if (file === "flags.u8") c[0] = c[0]! | BACKSTOP;
+      return c;
     });
     expect(p.rows).toBe(5);
     p.rows -= 1;
@@ -1006,6 +1009,8 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         "2025-09-10",
         [
           "tape SOL",
+          // The backstop's flag empties 10:00 to 10:04; the dropped trade changes 10:07 to 10:11.
+          `fallback SOL: 10 of 1440 minutes differ, the first at ${w}`,
           `bars SOL high: 1 of 1440 minutes differ, the first at ${w}`,
           `bars SOL liqSellNtl: 1 of 1440 minutes differ, the first at ${w}`,
           "liq px: 1 of 4 rows differ, the first row 0",

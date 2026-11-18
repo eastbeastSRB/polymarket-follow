@@ -3,8 +3,10 @@
  * 2026-11-18, EXTRACT-REVIEW's findings, M2 and Q6): a day's numbers from
  * the store, and the same day re-read from the raw files by WAVE-H's own
  * readers, compared cell by cell: the 38 coins' tape (rows, Σ tid, Σ px·sz),
- * the 40 coins' nine bars and ten contexts minute by minute, and every
- * column of every liq row.
+ * the 40 coins' nine bars and ten contexts minute by minute, every column
+ * of every liq row, and the minute price's fallback (EXTRACT-REVIEW L2: the
+ * last trade but a backstop's in the 5 minutes before each minute's end, as
+ * the tape gives it).
  */
 import { isDeepStrictEqual } from "node:util";
 import { byM4 } from "../market1/fills.js";
@@ -16,6 +18,7 @@ import { linesOf, readLz4 } from "../waveh/store.js";
 import { digitsOf } from "./counted.js";
 import { CONTEXT } from "./ctxs.js";
 import type { GatesInput } from "./gates.js";
+import { LAST_TRADE_MS, Tape } from "./legs.js";
 import { NONE } from "./writers.js";
 
 /** The minute table's nine bars, as the merge writes them. */
@@ -75,9 +78,10 @@ const LIQ_COLUMNS: readonly (keyof LiqRow)[] = [
 
 type Columns = Record<string, ArrayLike<number>>;
 
-/** A sample day's numbers: the 38 coins' tape (rows, Σ tid mod 2^64, Σ px·sz in H8's order); the 40 coins' bars and contexts, each column minute by minute; every liq row of the day, in the store's order. */
+/** A sample day's numbers: the 38 coins' tape (rows, Σ tid mod 2^64, Σ px·sz in H8's order) and their minute price's fallback at each minute's end (the window cut at the day's start); the 40 coins' bars and contexts, each column minute by minute; every liq row of the day, in the store's order. */
 export type DayNumbers = {
   tape: Record<string, [number, string, number]>;
+  fallback: Record<string, (number | null)[]>;
   bars: Record<string, Columns>;
   ctxs: Record<string, Columns>;
   liq: LiqRow[];
@@ -111,7 +115,13 @@ export function dayFromStore(o: GatesInput, day: number): DayNumbers {
   const month = monthOf(day);
   const end = day + DAY_MS;
   const minutes = minutesOf(day);
-  const out: DayNumbers = { tape: {}, bars: {}, ctxs: {}, liq: [] };
+  const out: DayNumbers = {
+    tape: {},
+    fallback: {},
+    bars: {},
+    ctxs: {},
+    liq: [],
+  };
   const inDay = (time: Float64Array) => {
     const rows: number[] = [];
     for (let i = 0; i < time.length; i++)
@@ -119,11 +129,10 @@ export function dayFromStore(o: GatesInput, day: number): DayNumbers {
     return rows;
   };
   for (const c of o.coins.list) {
-    const p = o.store.partition("tape", c.name, month);
-    const px = o.store.column(p, "px") as Float64Array;
-    const sz = o.store.column(p, "sz") as Float64Array;
-    const tid = o.store.column(p, "tid") as Uint32Array;
-    const rows = inDay(o.store.column(p, "time") as Float64Array);
+    // A coin's month read once: its numbers, then the fallback through the same tape.
+    const tape = new Tape(o.store);
+    const { px, sz, tid, time } = tape.rows(c.name, month);
+    const rows = inDay(time);
     let ntl = 0;
     for (const i of rows) ntl += px[i]! * sz[i]!;
     out.tape[c.name] = [
@@ -131,6 +140,10 @@ export function dayFromStore(o: GatesInput, day: number): DayNumbers {
       tidSum(rows.map((i) => BigInt(digitsOf(tid, i)))),
       ntl,
     ];
+    out.fallback[c.name] = Array.from({ length: minutes }, (_, k) => {
+      const to = day + (k + 1) * MINUTE_MS;
+      return tape.last(c.name, Math.max(day, to - LAST_TRADE_MS), to);
+    });
   }
   for (const coin of o.forty) {
     const p = o.store.partition("minute", coin, month);
@@ -312,6 +325,7 @@ export async function dayFromRaw(
   liq.sort(liqOrder);
   const out: DayNumbers = {
     tape: {},
+    fallback: {},
     bars: {},
     ctxs: ctxsFromRaw(o, day, minutes),
     liq,
@@ -362,6 +376,13 @@ export async function dayFromRaw(
       else b.liqSellNtl[k] = b.liqSellNtl[k]! + n;
     }
     out.bars[coin] = b;
+    // The fallback at minute k's end: the last trade but a backstop's in minutes k − 4 to k of the day.
+    if (out.tape[coin] !== undefined)
+      out.fallback[coin] = Array.from({ length: minutes }, (_, k) => {
+        for (let j = k; j >= Math.max(0, k - 4); j--)
+          if (!Number.isNaN(b.last[j]!)) return b.last[j]!;
+        return null;
+      });
   }
   return { numbers: out, records, twice };
 }
@@ -459,6 +480,8 @@ export function compareDay(
   for (const coin of keys(mine.tape, raw.tape))
     if (!isDeepStrictEqual(mine.tape[coin], raw.tape[coin]))
       out.push(`tape ${coin}`);
+  for (const coin of keys(mine.fallback, raw.fallback))
+    minutes(`fallback ${coin}`, mine.fallback[coin], raw.fallback[coin]);
   for (const part of ["bars", "ctxs"] as const)
     for (const coin of keys(mine[part], raw[part])) {
       const a = mine[part][coin] ?? {};
