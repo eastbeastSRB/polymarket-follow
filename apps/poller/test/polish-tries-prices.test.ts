@@ -126,6 +126,20 @@ describe("BASE for any hold", () => {
       expect(baseOf(col, START, from, to, 1440)).toEqual(base24(mk, from, to));
   });
 
+  it("stops at the grid's last minute when the part runs past it", () => {
+    const col = Float64Array.from({ length: 121 }, (_, i) =>
+      i < 60 ? 100 : 125,
+    );
+    expect(baseOf(col, START, START, START + 200 * MINUTE_MS, 60)).toEqual([
+      (60 * 2500) / 61,
+      NaN,
+      NaN,
+      NaN,
+      NaN,
+      NaN,
+    ]);
+  });
+
   it("by hand for a 60-minute hold, and in the block of each minute j", () => {
     const col = Float64Array.from({ length: 121 }, (_, i) =>
       i < 60 ? 100 : 125,

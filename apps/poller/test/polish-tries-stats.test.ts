@@ -150,6 +150,11 @@ describe("the floors", () => {
       (i) => (i.t - D0) / DAY_MS < 20 || (i.t - D0) / DAY_MS >= 126,
     );
     expect(footprintOk(ends, D0, 146)).toBe(false);
+    // Coin 10 only before day 46: only the last window, [46, 146), holds 9 coins.
+    const late = every(1).filter(
+      (i) => i.iid !== 10 || (i.t - D0) / DAY_MS < 46,
+    );
+    expect(footprintOk(late, D0, 146)).toBe(false);
   });
 });
 
