@@ -333,6 +333,17 @@ review, the supervisor re-computing on its own path what decides.
   polished rule (its Polymarket form) deciding and the parked lines beside.
   It imports MARKET-1's frozen files unchanged (decisions 2026-11-17, the
   polishing plan's questions (7)). Trigger: the polishing's freeze.
+- ⏳ **WAVE-L — the frozen recipe on Lighter** (decisions 2026-11-13, the two
+  outside researches — the owner's ruling (1): "later at most").
+  - **The data:** Lighter publishes free daily trade files from 2025-01-17,
+    with `trade_type` "liquidation" and the accounts on both sides
+    (external-apis).
+  - **What it would test:** the polished recipe, frozen, on a third venue.
+    Its months share calendar days with Hyperliquid's, so a pass there is
+    the same market period seen on another venue, not a new period. It is
+    a cross-venue check, worth less than FRESH.
+  - **Trigger:** after the exam's look 1, when the recipe is frozen (the
+    supervisor's recommendation, 2026-11-18).
 - ⏳ **Waves live in v1, as information** (labelled "under test", never
   advice). Open: how to see liquidations soon enough inside the budget
   (decisions 2026-11-13, the owner's rulings after MARKET-1's deploy (2)).
