@@ -12,32 +12,54 @@
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
 import { ENTRY_DELAY_MS, HOLD_MS } from "../../market1/price.js";
+import type { Item } from "../../market1/stats.js";
 import type { Research } from "../../paper/research.js";
 import type { Coins } from "../../waveh/coins.js";
 import { sha256 } from "../../waveh/gate.js";
+import { DATA_END, TEST_END, TEST_START } from "../../waveh/instants.js";
 import { writeWhole } from "../../waveh/run.js";
-import { bySlice } from "../../waveh/slices.js";
 import { StoreError } from "../../waveh/store.js";
 import { trustedStore } from "../explore.js";
 import { Step1 } from "../gates.js";
 import { GATES, GATES_FILE } from "../library.js";
+import { GateFailed } from "../run.js";
 import type { Store } from "../store.js";
+import { refusedFor, type TryOnE } from "./choice.js";
 import { checkPrices, dataFrom, type Data } from "./data.js";
 import { cutsOf, featuresOf } from "./features.js";
-import { E, entriesOf, inPart, positionOf, type Entry } from "./parts.js";
-import { drySweep, type Spec } from "./sweep.js";
-import { TRIES } from "./trylog.js";
+import { E, inPart, positionOf, type Entry } from "./parts.js";
+import {
+  entriesAt,
+  itemsOf,
+  judged,
+  place,
+  ruleOf,
+  stopExit,
+  unpricedOf,
+} from "./rules.js";
+import { E_FLOORS, floorsOf, gainFloor, statOf } from "./stats.js";
+import {
+  drySweep,
+  grossOnMarks,
+  priceAll,
+  type Net,
+  type Spec,
+} from "./sweep.js";
+import { CutsFile, TRIES, keeps } from "./trylog.js";
 
 /** The steps' folder in the analyzer's folder of the range. */
 export const EXPLORE = "explore";
-export const STEPS = ["features"] as const;
+export const STEPS = ["features", "e"] as const;
 export type StepName = (typeof STEPS)[number];
 
 /** The look's EVERY SLICE pooled line on marks (WAVE-H's report.json, 2026-11-17): what B0 over TEST must reproduce. */
 export type Expected = {
-  everySlice: { positions: number; mean: number; se: number };
+  /** A line of one cluster has no error (null). */
+  everySlice: { positions: number; mean: number; se: number | null };
 };
 export const LOOK_EXPECTED: Expected = {
   everySlice: {
@@ -117,7 +139,7 @@ function meter(log: StepInput["log"]) {
   const seconds: Record<string, number> = {};
   const peaks: Record<string, Record<string, number>> = {};
   return {
-    phase(name: string) {
+    phase: (name: string) => {
       const m = process.memoryUsage();
       seconds[name] = Math.round((Date.now() - t) / 1000);
       peaks[name] = {
@@ -144,12 +166,6 @@ function writeOutput(o: StepInput, name: string, value: unknown): string {
   return sha256(text);
 }
 
-/** B0's entries for the store's M: every slice's (H4's order from the first file), those of a part kept by the caller. */
-export function entriesFor(d: Data, M: number) {
-  const slices = bySlice(d.counted, M);
-  return { slices, all: entriesOf(slices) };
-}
-
 /** Positions of entries with a delay and a hold, as the sweep prices them. */
 export const specsOf = (
   entries: readonly Entry[],
@@ -164,12 +180,12 @@ export const specsOf = (
 /** The legs the E step prices that its entries alone fix: B0's, D0's, D15's, D60's, H1–H12's and W2's (X1's exits are found from prices after the entry, so not here). */
 export function fixedSpecs(d: Data, M: number): Spec[] {
   const inE = (all: readonly Entry[]) => all.filter((e) => inPart(E, e.fill.t));
-  const b0 = inE(entriesFor(d, M).all);
+  const b0 = inE(entriesAt(d, M).all);
   const out = specsOf(b0);
   for (const t of TRIES)
     if ("variant" in t && t.variant.target !== true && t.variant.M2 !== true)
       out.push(...specsOf(b0, t.variant.delay, t.variant.hold));
-  out.push(...specsOf(inE(entriesFor(d, 2 * M).all)));
+  out.push(...specsOf(inE(entriesAt(d, 2 * M).all)));
   return out;
 }
 
@@ -187,7 +203,7 @@ export async function featuresStep(o: StepInput) {
   m.phase("data");
   const prices = checkPrices(store, d);
   m.phase("prices");
-  const { slices, all } = entriesFor(d, identity.M);
+  const { slices, all } = entriesAt(d, identity.M);
   const entries = all.filter((e) => inPart(E, e.fill.t));
   const features = featuresOf(d, {
     entries,
@@ -225,10 +241,376 @@ export async function featuresStep(o: StepInput) {
   return { sha, out };
 }
 
+/** A predecessor's output, its SHA-256 and value; missing, or of another identity (store, gates, code, look, M), not ready (exit 5). */
+function readOutput(o: StepInput, name: string, identity: Identity) {
+  let bytes: Buffer;
+  try {
+    bytes = readFileSync(path.join(o.root, EXPLORE, name));
+  } catch {
+    throw new StoreError(`no ${EXPLORE}\\${name}: run its step first`);
+  }
+  const value = JSON.parse(bytes.toString("utf8")) as Record<string, unknown>;
+  if (!isDeepStrictEqual(value.identity, identity))
+    throw new StoreError(
+      `${EXPLORE}\\${name} is of another store, code or look`,
+    );
+  return { sha: sha256(bytes), value };
+}
+
+/** The committed `polish/cuts.json`, held to the features step's output and its cuts (else not ready). */
+function readCuts(
+  o: StepInput,
+  features: { sha: string; value: Record<string, unknown> },
+) {
+  let bytes: Buffer;
+  try {
+    bytes = readFileSync(o.cutsFile);
+  } catch {
+    throw new StoreError(
+      "no polish/cuts.json: commit the features step's cuts.json first",
+    );
+  }
+  const c = CutsFile.parse(JSON.parse(bytes.toString("utf8")));
+  if (
+    c.features !== features.sha ||
+    !isDeepStrictEqual(c.cuts, features.value.cuts)
+  )
+    throw new StoreError("polish/cuts.json is not the features step's cuts");
+  return { sha: sha256(bytes), cuts: c.cuts };
+}
+
+/** A step's positions, a JSON line each, gzipped and written whole. */
+function writePositions(o: StepInput, name: string, lines: readonly string[]) {
+  writeWhole(
+    path.join(o.root, EXPLORE, name),
+    gzipSync(Buffer.from(lines.map((l) => `${l}\n`).join(""))),
+  );
+}
+
+const LookLine = z.object({
+  set: z.string(),
+  spot: z.object({ t: z.number(), iid: z.number() }).loose(),
+  priced: z
+    .object({
+      net: z.number().nullable(),
+      legs: z.array(z.object({ source: z.string() }).loose().nullable()),
+    })
+    .loose()
+    .nullable(),
+});
+
+/** The look's slice-0 TEST positions priced at the book at both ends: their book nets by the entry's instant and coin (`positions.jsonl.gz`, held to the SHA-256 the gates read). */
+export function bookNets(look: string, want: string): Map<string, number> {
+  const bytes = readFileSync(path.join(look, "positions.jsonl.gz"));
+  if (sha256(bytes) !== want)
+    throw new StoreError(
+      "the look's positions.jsonl.gz is not the one the gates read",
+    );
+  const out = new Map<string, number>();
+  for (const text of gunzipSync(bytes).toString("utf8").split("\n")) {
+    if (text === "") continue;
+    const l = LookLine.parse(JSON.parse(text));
+    if (l.set !== "WAVE-H" || l.priced === null || l.priced.net === null)
+      continue;
+    if (l.priced.legs.every((g) => g?.source === "book"))
+      out.set(`${l.spot.t}|${l.spot.iid}`, l.priced.net);
+  }
+  return out;
+}
+
+/** Q10's threshold: the nets are re-based when the tape beat the book by more than 10 bps. */
+const REBASE_BPS = 10;
+
+/** 4.7, the tape against the book: over slice 0's positions of the part that the look priced at the book at both ends, b = the mean of (tape net − book net), with its two-way error; the re-basing it sets. */
+export function calibrationOf(
+  kit: Research,
+  entries: readonly Entry[],
+  nets: readonly Net[],
+  book: ReadonlyMap<string, number>,
+) {
+  const items: Item[] = [];
+  let positions = 0;
+  entries.forEach((e, i) => {
+    const ref =
+      e.slice === 0 ? book.get(`${e.fill.t}|${e.fill.iid}`) : undefined;
+    if (ref === undefined) return;
+    positions += 1;
+    const n = nets[i]!.net;
+    if (n !== null) items.push({ t: e.fill.t, iid: e.fill.iid, x: n - ref });
+  });
+  const stat = statOf(kit, items);
+  return {
+    positions,
+    unpriced: positions - items.length,
+    stat,
+    rebasedBy: stat !== null && stat.mean > REBASE_BPS ? stat.mean : 0,
+  };
+}
+
+/** Q11: B0 over TEST on marks (every slice's positions with t in TEST and x_out before DATA END) equals the look's EVERY SLICE pooled line, n exactly, m and SE to 1e-9 bps. */
+export function reproductionOf(
+  d: Data,
+  all: readonly Entry[],
+  expect: Expected,
+) {
+  const names = new Map(d.coins.list.map((c) => [c.assetId, c.name]));
+  const inTest = all.filter(
+    (e) => e.fill.t >= TEST_START && e.fill.t < TEST_END,
+  );
+  const items: Item[] = [];
+  let positions = 0;
+  specsOf(inTest).forEach((sp, i) => {
+    if (sp.xOut >= DATA_END) return;
+    positions += 1;
+    const g = grossOnMarks(d, sp, names.get(sp.iid)!);
+    if (!Number.isNaN(g))
+      items.push({ t: inTest[i]!.fill.t, iid: sp.iid, x: g });
+  });
+  const s = statOf(d.kit, items);
+  const want = expect.everySlice;
+  return {
+    equal:
+      positions === want.positions &&
+      s?.n === want.positions &&
+      Math.abs(s.mean - want.mean) <= 1e-9 &&
+      (s.se === null || want.se === null
+        ? s.se === want.se
+        : Math.abs(s.se - want.se) <= 1e-9),
+    positions,
+    onMarks: items.length,
+    /** Only the comparison: B0's m and SE less the look's. */
+    difference: {
+      mean: s === null ? null : s.mean - want.mean,
+      se: s?.se == null || want.se === null ? null : s.se - want.se,
+    },
+  };
+}
+
+/** A group of positions the E step prices: its entries, their specs, those left out by reason. */
+type Group = {
+  name: string;
+  entries: Entry[];
+  specs: Spec[];
+  left: Record<string, number>;
+};
+
+/**
+ * The E step's numbers (POLISH-EXPLORE's plan 5.2, 4.7 and 6.3): the
+ * reproduction first, then every group's legs in one sweep (B0, each
+ * variant, X2), the calibration, B0, the 35 tries in the written order with
+ * their D-tests against B0, X2 printed. A failed check throws GateFailed.
+ */
+export async function eOf(
+  d: Data,
+  o: {
+    M: number;
+    cuts: CutsFile["cuts"];
+    book: ReadonlyMap<string, number>;
+    expect: Expected;
+    pace: () => Promise<void>;
+    phase: (name: string) => void;
+  },
+) {
+  const { slices, all } = entriesAt(d, o.M);
+  const reproduction = reproductionOf(d, all, o.expect);
+  if (!reproduction.equal)
+    throw new GateFailed(
+      `B0 over TEST on marks is not the look's EVERY SLICE line: ${JSON.stringify(reproduction)}`,
+    );
+  o.phase("reproduction");
+  const entries = all.filter((e) => inPart(E, e.fill.t));
+  const f = featuresOf(d, { entries, slices, all, delay: ENTRY_DELAY_MS });
+  if (!isDeepStrictEqual(JSON.parse(JSON.stringify(cutsOf(d, f))), o.cuts))
+    throw new GateFailed("the features' cuts on E are not polish/cuts.json's");
+  o.phase("features");
+  const names = new Map(d.coins.list.map((c) => [c.assetId, c.name]));
+  const groups: Group[] = [
+    { name: "B0", entries, specs: specsOf(entries), left: {} },
+  ];
+  for (const t of TRIES) {
+    if (!("variant" in t)) continue;
+    const v = t.variant;
+    if (v.M2 === true || v.target === true) {
+      const p = place(d, ruleOf(t.name, [t]), E, o.M, o.cuts);
+      groups.push({ name: t.name, ...p });
+    } else
+      groups.push({
+        name: t.name,
+        entries,
+        specs: specsOf(entries, v.delay, v.hold),
+        left: {},
+      });
+  }
+  const x2: Group = { name: "X2", entries: [], specs: [], left: {} };
+  groups[0]!.specs.forEach((sp, i) => {
+    const out = stopExit(
+      d,
+      d.pc.get(names.get(sp.iid)!)!,
+      sp.dir,
+      sp.xIn,
+      sp.xOut,
+    );
+    if (out === null) x2.left["X2 unknown"] = (x2.left["X2 unknown"] ?? 0) + 1;
+    else {
+      x2.entries.push(entries[i]!);
+      x2.specs.push({ ...sp, xOut: out });
+    }
+  });
+  groups.push(x2);
+  const priced = await priceAll(
+    d,
+    groups.flatMap((g) => g.specs),
+    o.pace,
+  );
+  const nets = new Map<string, Net[]>();
+  let at = 0;
+  for (const g of groups) {
+    nets.set(g.name, priced.slice(at, at + g.specs.length));
+    at += g.specs.length;
+  }
+  o.phase("sweep");
+  const b0Nets = nets.get("B0")!;
+  const calibration = calibrationOf(d.kit, entries, b0Nets, o.book);
+  const b = calibration.rebasedBy;
+  const b0Items = itemsOf(entries, b0Nets, b);
+  const b0Stat = statOf(d.kit, b0Items);
+  const gain = gainFloor(b0Stat?.mean ?? 0);
+  const tries = TRIES.map((t) => {
+    let group: { entries: Entry[]; nets: Net[]; left: Record<string, number> };
+    if ("filter" in t) {
+      const v = f.get(t.name)!;
+      const cut = o.cuts[t.name as keyof typeof o.cuts]?.value ?? null;
+      const kept: number[] = [];
+      let unknown = 0;
+      entries.forEach((_, i) => {
+        const k = keeps(t, v[i]!, cut);
+        if (k === null) unknown += 1;
+        else if (k) kept.push(i);
+      });
+      group = {
+        entries: kept.map((i) => entries[i]!),
+        nets: kept.map((i) => b0Nets[i]!),
+        left: unknown > 0 ? { [`${t.name} unknown`]: unknown } : {},
+      };
+    } else {
+      const g = groups.find((x) => x.name === t.name)!;
+      group = { entries: g.entries, nets: nets.get(t.name)!, left: g.left };
+    }
+    const items = itemsOf(group.entries, group.nets, b);
+    const { stat, test } = judged(d.kit, items, b0Items, b0Stat?.se ?? null);
+    const onE: TryOnE = {
+      name: t.name,
+      family: t.family,
+      order: t.order,
+      adoptable: t.adoptable,
+      d: test?.d ?? NaN,
+      t: test?.t ?? null,
+      floors:
+        stat === null
+          ? { mean: false, days: false, coins: false }
+          : floorsOf(stat, E_FLOORS),
+    };
+    return {
+      ...onE,
+      kind: "filter" in t ? "F" : "V",
+      seeded: t.seeded,
+      venue: t.venue,
+      positions: group.entries.length,
+      priced: items.length,
+      left: group.left,
+      unpriced: unpricedOf(group.nets),
+      stat,
+      test,
+      refused: refusedFor(onE, gain),
+    };
+  });
+  o.phase("tries");
+  const x2Items = itemsOf(x2.entries, nets.get("X2")!, b);
+  const lines: string[] = [];
+  for (const g of groups)
+    g.specs.forEach((sp, i) => {
+      const fv =
+        g.name === "B0"
+          ? Object.fromEntries(
+              [...f].map(([k, v]) => [k, Number.isNaN(v[i]!) ? null : v[i]!]),
+            )
+          : {};
+      const om = grossOnMarks(d, sp, names.get(sp.iid)!);
+      lines.push(
+        JSON.stringify({
+          group: g.name,
+          slice: g.entries[i]!.slice,
+          t: g.entries[i]!.fill.t,
+          iid: sp.iid,
+          tid: g.entries[i]!.fill.tid,
+          dir: sp.dir,
+          xIn: sp.xIn,
+          xOut: sp.xOut,
+          ...nets.get(g.name)![i]!,
+          onMarks: Number.isNaN(om) ? null : om,
+          ...fv,
+        }),
+      );
+    });
+  return {
+    out: {
+      reproduction,
+      calibration,
+      b0: {
+        positions: entries.length,
+        priced: b0Items.length,
+        unpriced: unpricedOf(b0Nets),
+        stat: b0Stat,
+      },
+      gain,
+      tries,
+      x2: {
+        print: "X2 STOP, printed only (F15)",
+        positions: x2.specs.length,
+        priced: x2Items.length,
+        left: x2.left,
+        unpriced: unpricedOf(nets.get("X2")!),
+        stat: statOf(d.kit, x2Items),
+      },
+    },
+    lines,
+  };
+}
+
+/** Run 2, `e`: features.json and the committed cuts held to each other; `eOf` on the store; `e-positions.jsonl.gz`, then `e.json`. */
+export async function eStep(o: StepInput) {
+  const m = meter(o.log);
+  const { store, identity } = identityOf(o);
+  const features = readOutput(o, "features.json", identity);
+  const cuts = readCuts(o, features);
+  const d = dataFrom(store, o.coins, o.kit);
+  m.phase("data");
+  const { out, lines } = await eOf(d, {
+    M: identity.M,
+    cuts: cuts.cuts,
+    book: bookNets(o.look, identity.look.positions),
+    expect: o.expect,
+    pace: o.pace,
+    phase: m.phase,
+  });
+  writePositions(o, "e-positions.jsonl.gz", lines);
+  const value = {
+    step: "e",
+    identity,
+    inputs: { features: features.sha, cuts: cuts.sha },
+    ...out,
+    ...m.done(),
+    written: new Date().toISOString(),
+  };
+  return { sha: writeOutput(o, "e.json", value), out: value };
+}
+
 /** Runs one step by its name. */
 export async function runStep(step: StepName, o: StepInput) {
   switch (step) {
     case "features":
       return featuresStep(o);
+    case "e":
+      return eStep(o);
   }
 }

@@ -58,6 +58,7 @@ import {
 import { WIDTH, type ColumnType } from "../src/polish/tables.js";
 import { checkPrices, dataFrom, levelsAt } from "../src/polish/tries/data.js";
 import {
+  eStep,
   featuresStep,
   identityOf,
   type StepInput,
@@ -1149,6 +1150,90 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       "the look's step1.json is not the one the gates read",
     );
     expect(identityOf(input).identity).toEqual(out.identity);
+  });
+
+  it("the exploration's e step on this store: the committed cuts held to features.json, the look's own EVERY SLICE line reproduced, B0 and every try; no cuts, other cuts and another code refused", async () => {
+    const dir = path.join(analyzer, "explore");
+    const cutsFile = path.join(tmp("cuts"), "cuts.json");
+    const pooled = (
+      JSON.parse(
+        readFileSync(path.join(root, "look", "report.json"), "utf8"),
+      ) as {
+        "EVERY SLICE": {
+          pooled: {
+            positions: number;
+            onMarks: { mean: number; se: number | null };
+          };
+        };
+      }
+    )["EVERY SLICE"].pooled;
+    const input: StepInput = {
+      root: analyzer,
+      look: path.join(root, "look"),
+      coins,
+      kit: o.kit,
+      code: "f".repeat(64),
+      cutsFile,
+      expect: {
+        everySlice: {
+          positions: pooled.positions,
+          mean: pooled.onMarks.mean,
+          se: pooled.onMarks.se,
+        },
+      },
+      pace: noPace,
+      log: () => {},
+    };
+    await expect(eStep(input)).rejects.toThrow("no polish/cuts.json");
+    const cuts = JSON.parse(
+      readFileSync(path.join(dir, "cuts.json"), "utf8"),
+    ) as { features: string };
+    writeFileSync(
+      cutsFile,
+      JSON.stringify({ ...cuts, features: "0".repeat(64) }),
+    );
+    await expect(eStep(input)).rejects.toThrow(
+      "polish/cuts.json is not the features step's cuts",
+    );
+    writeFileSync(cutsFile, readFileSync(path.join(dir, "cuts.json")));
+    await expect(eStep({ ...input, code: "e".repeat(64) })).rejects.toThrow(
+      "explore\\features.json is of another store, code or look",
+    );
+    const { sha: eSha, out } = await eStep(input);
+    expect(sha(readFileSync(path.join(dir, "e.json")))).toBe(eSha);
+    // WAVE-H's one TEST position, on marks; the look priced none at the book at both ends; the tape has the SOL
+    // wave's entry trade only, so no position has both legs.
+    expect(out).toMatchObject({
+      step: "e",
+      inputs: { features: cuts.features, cuts: sha(readFileSync(cutsFile)) },
+      reproduction: { equal: true, positions: 1, onMarks: 1 },
+      calibration: { positions: 0, unpriced: 0, stat: null, rebasedBy: 0 },
+      b0: {
+        positions: 3,
+        priced: 0,
+        unpriced: { "no trade at the entry": 2, "no trade at the exit": 1 },
+        stat: null,
+      },
+      gain: 10,
+    });
+    expect(out.identity).toEqual(identityOf(input).identity);
+    expect(
+      out.tries.map((t) => [t.name, t.t, t.refused.includes("t below 2.5")]),
+    ).toEqual(out.tries.map((t) => [t.name, null, true]));
+    const lines = gunzipSync(
+      readFileSync(path.join(dir, "e-positions.jsonl.gz")),
+    )
+      .toString("utf8")
+      .split("\n")
+      .filter((l) => l !== "")
+      .map((l) => JSON.parse(l) as { group: string; unpriced: string | null });
+    expect(
+      lines.filter((l) => l.group === "B0").map((l) => l.unpriced),
+    ).toEqual([
+      "no trade at the entry",
+      "no trade at the entry",
+      "no trade at the exit",
+    ]);
   });
 
   it("G6 waits on its pace before each raw file it reads", async () => {
