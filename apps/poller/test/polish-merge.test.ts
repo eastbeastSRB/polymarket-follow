@@ -11,7 +11,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { addDay, newContexts, type Funding } from "../src/polish/ctxs.js";
-import { merge, monthsOf, type Meta } from "../src/polish/merge.js";
+import {
+  merge,
+  monthsOf,
+  type MergeInput,
+  type Meta,
+} from "../src/polish/merge.js";
 import { runPass, type FileTask } from "../src/polish/pass.js";
 import { openStore, partitionDir } from "../src/polish/store.js";
 import { BACKSTOP, LIQUIDATION, fortyOf } from "../src/polish/writers.js";
@@ -209,13 +214,15 @@ const META: Meta = {
   seconds: {},
 };
 
+const quiet = { pace: () => Promise.resolve(), log: () => {} };
+
 async function build(
   extra: string[] = [],
   order: (t: FileTask[]) => FileTask[] = (t) => t,
+  hooks: Pick<MergeInput, "pace" | "log"> = quiet,
 ) {
   const { store, tasks } = world(extra);
   const parts = tmp("parts");
-  const quiet = { pace: () => Promise.resolve(), log: () => {} };
   await runPass({
     store,
     parts,
@@ -261,7 +268,7 @@ async function build(
       forty: FORTY,
       contexts,
       funding,
-      ...quiet,
+      ...hooks,
     },
     META,
   );
@@ -515,6 +522,25 @@ describe("the merge", { timeout: 60_000 }, () => {
     );
     // 253 more names, 255 in all, still fit.
     await expect(build(dirs.slice(0, 253))).resolves.toBeDefined();
+  });
+
+  it("waits on its pace before each month, and finishes no month while it waits", async () => {
+    let months = 0;
+    const seen: [number, number][] = [];
+    await build([], (t) => t, {
+      pace: async () => {
+        const before = months;
+        await new Promise((r) => setTimeout(r, 30));
+        seen.push([before, months]);
+      },
+      log: (event) => {
+        if (event === "month") months += 1;
+      },
+    });
+    expect(seen).toEqual([
+      [0, 0],
+      [1, 1],
+    ]);
   });
 
   it("stops at a tid in two taker records", async () => {

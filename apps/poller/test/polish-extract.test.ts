@@ -117,6 +117,7 @@ describe("the settings, the exits, the fingerprint", () => {
       { WAVEH_STORE: "F:\\x\\FRESH\\store", ANALYZER_ROOT: "F:\\a\\b" },
       { WAVEH_STORE: "relative\\WAVE-H\\store", ANALYZER_ROOT: "F:\\a\\b" },
       { WAVEH_STORE: store, ANALYZER_ROOT: `${store}\\analyzer` },
+      { WAVEH_STORE: store, ANALYZER_ROOT: "F:\\polymarket-follow-research" },
       { WAVEH_STORE: store },
     ])
       expect(ExtractSettings.safeParse(bad).success, JSON.stringify(bad)).toBe(

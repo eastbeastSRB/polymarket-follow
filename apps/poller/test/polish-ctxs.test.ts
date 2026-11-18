@@ -218,6 +218,35 @@ describe("the readers on a store", () => {
     );
   });
 
+  it("waits on its pace before each day, and reads none while a pace refuses", async () => {
+    const texts = days();
+    const files = new Map(texts.map((t, i) => [ctxsKey(D0 + i * DAY), t]));
+    const { store } = makeStore(files, false);
+    const list = manifestList(
+      readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+    );
+    const read = (pace: () => Promise<void>) =>
+      readContexts({
+        store,
+        list,
+        days: [D0, D0 + DAY, D0 + 2 * DAY],
+        grid: GRID,
+        until: UNTIL,
+        forty: FORTY,
+        small: SMALL,
+        pace,
+      });
+    let calls = 0;
+    const c = await read(() => {
+      calls += 1;
+      return Promise.resolve();
+    });
+    expect([calls, c.byDay.size]).toEqual([3, 3]);
+    await expect(
+      read(() => Promise.reject(new Error("a window"))),
+    ).rejects.toThrow("a window");
+  });
+
   it("reads each coin's funding windows through WAVE-H's own readers, and refuses two rows of one hour", () => {
     const H = 3_600_000;
     const starts = [D0, D0 + 20 * DAY];

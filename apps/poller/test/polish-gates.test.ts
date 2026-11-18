@@ -951,6 +951,21 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     expect(() => trustedStore(timing)).toThrow("timing run's");
   });
 
+  it("G6 waits on its pace before each raw file it reads", async () => {
+    let calls = 0;
+    const r = await g6({
+      ...o,
+      expect: { ...o.expect, sampleDays: [iso(W)] },
+      pace: () => {
+        calls += 1;
+        return Promise.resolve();
+      },
+    });
+    expect(r.pass).toBe(true);
+    // W's day: its 24 hours and one either side.
+    expect(calls).toBe(26);
+  });
+
   it("G6 reads a month's last and first day and the day DATA END cuts to its hour", async () => {
     expect(WAVEH_EXPECTED.sampleDays).toEqual([
       "2025-05-31",

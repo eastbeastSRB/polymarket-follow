@@ -5,7 +5,13 @@
  * and every refusal: a sealed path or key, a file that differs from its
  * list, a part that is not whole or differs, WAVE-H's day rule.
  */
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -13,6 +19,7 @@ import { partFile, readPart, readPartHeader } from "../src/polish/part.js";
 import { WORKER_FILE, runPass, type FileTask } from "../src/polish/pass.js";
 import { scanFill } from "../src/polish/scan.js";
 import { SealedError, checkKey, checkPath } from "../src/polish/seal.js";
+import { WIDTH, bytesOf, valuesOf } from "../src/polish/tables.js";
 import {
   LiqWriter,
   Names,
@@ -61,6 +68,31 @@ describe("the seal", () => {
       "info/fundingHistory/SOL/1779840000000.json",
     ])
       expect(() => checkKey(k), k).not.toThrow();
+  });
+});
+
+describe("a part's columns", () => {
+  it("hold each type's whole numbers to its bounds, and refuse one past them", () => {
+    for (const [type, lo, hi] of [
+      ["u8", 0, 255],
+      ["u16", 0, 65_535],
+      ["u32", 0, 4_294_967_295],
+      ["u64", 0, 4_294_967_295],
+      ["i8", -128, 127],
+    ] as const) {
+      const b = bytesOf(type, [lo, hi]);
+      expect(b.length, type).toBe(type === "u64" ? 8 : 2 * WIDTH[type]);
+      expect([...valuesOf(type, b)], type).toEqual([lo, hi]);
+      for (const v of [hi + 1, lo - 1, 1.5])
+        expect(() => bytesOf(type, [v]), `${type} ${v}`).toThrow(
+          `a ${type} column cannot hold ${v}`,
+        );
+    }
+    expect([...valuesOf("f64", bytesOf("f64", [-1.5, NaN, 1e300]))]).toEqual([
+      -1.5,
+      NaN,
+      1e300,
+    ]);
   });
 });
 
@@ -282,6 +314,50 @@ describe("the pass", () => {
       failed: 9,
     });
   });
+
+  /** Each pace call: the parts written when it starts and when it ends (it waits 30 ms). */
+  const paced = async (workers: number) => {
+    const { store, tasks } = world();
+    const dir = parts();
+    const seen: [number, number][] = [];
+    await runPass({
+      store,
+      parts: dir,
+      files: tasks,
+      end: DATA_END,
+      code: "code-a",
+      forty: FORTY,
+      small: SMALL,
+      workers,
+      pace: async () => {
+        const before = readdirSync(dir).length;
+        await new Promise((r) => setTimeout(r, 30));
+        seen.push([before, readdirSync(dir).length]);
+      },
+      log: () => {},
+    });
+    return seen;
+  };
+
+  it("waits on its pace before each file, in this thread, and writes nothing while it waits", async () => {
+    expect(await paced(0)).toEqual([
+      [0, 0],
+      [1, 1],
+      [2, 2],
+    ]);
+  });
+
+  it.runIf(existsSync(WORKER_FILE))(
+    "waits on its pace before each file through the pool, and writes nothing while it waits",
+    async () => {
+      expect(await paced(1)).toEqual([
+        [0, 0],
+        [1, 1],
+        [2, 2],
+      ]);
+    },
+    60_000,
+  );
 
   it.runIf(existsSync(WORKER_FILE))(
     "through the worker pool writes the same parts byte for byte, and reports each thread's memory",
