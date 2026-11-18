@@ -132,6 +132,23 @@ export function minutePrice(
   return tape.last(mk.symbol, end - LAST_TRADE_MS, end);
 }
 
+/**
+ * A minute column's value known at t (EXTRACT-REVIEW L6): row k's contexts
+ * are as of its minute's end (the `asset_ctxs` row stamped in
+ * (m, m + 1 min]) and its bars cover [m, m + 1 min), so at t only the rows
+ * of minutes ended at or before t are known, the last of them
+ * floor((t − start) / 1 min) − 1, `start` the column's first minute. NaN
+ * before the first minute has ended, or past the column's last row.
+ */
+export function knownAt(
+  column: Float64Array,
+  start: number,
+  t: number,
+): number {
+  const k = Math.floor((t - start) / MINUTE_MS) - 1;
+  return k >= 0 && k < column.length ? column[k]! : NaN;
+}
+
 /** A coin's column over the whole minute grid, its months' partitions end to end. */
 export function minuteColumn(store: Store, coin: string, name: string) {
   const m = store.manifest;

@@ -32,6 +32,7 @@ import {
 import {
   Tape,
   fundingOf,
+  knownAt,
   marketsFrom,
   minuteColumn,
   minutePrice,
@@ -1110,6 +1111,21 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         ],
       ],
     ]);
+  });
+});
+
+describe("what a minute column says at an instant", () => {
+  it("is the row of the last minute ended by t, never of the minute t is in", () => {
+    const col = Float64Array.from([10, 11, 12]);
+    const start = Date.parse("2025-07-01T00:00:00Z");
+    expect(knownAt(col, start, start - 1)).toBeNaN();
+    expect(knownAt(col, start, start)).toBeNaN();
+    expect(knownAt(col, start, start + 59_999)).toBeNaN();
+    expect(knownAt(col, start, start + 60_000)).toBe(10);
+    expect(knownAt(col, start, start + 179_999)).toBe(11);
+    expect(knownAt(col, start, start + 180_000)).toBe(12);
+    expect(knownAt(col, start, start + 239_999)).toBe(12);
+    expect(knownAt(col, start, start + 240_000)).toBeNaN();
   });
 });
 
