@@ -1,5 +1,152 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-18 (EXTRACT-FIX's technical calls — the fix round of
+EXTRACT-REVIEW's findings, under the supervisor's rulings of 2026-11-18):
+**EVERY FINDING, M1–M4 AND L1–L12, IS FIXED IN ONE ROUND (L4 BY THE RULING
+Q5: NO CODE); G5 IS EXACT ACROSS A FILE BOUNDARY; THE RUN'S COMMAND LOSES
+ITS HEAP FLAG.**
+
+**What:** 18 commits, each with its tests, `pnpm verify` green in the same
+command, the three freezes verified after each (61, 64, 74;
+`pnpm-lock.yaml` unchanged, no new dependency):
+- the split and the mediums: `2ca3ae4` Q6 the split (a pure move);
+  `86ab8ef` M1; `e53d123` M3; `d3de0ef` G5; `940dc51` M2;
+- the lows: `a440a63` L2; `819a890` L1; `62f7719` M4's tests; `27e067a`
+  L11's; `b1e659d` L3; `b728ca9` L5; `914e39b` L6; `b48db4c` L7; `3e4aebf`
+  L8; `ba5099e` L12; `7a9b386` L9;
+- ``6e8b8aa`` the tests' cleanup limit; and these docs (L10).
+
+**G5's form (Q4, the supervisor's call, as it asked):** the scan pairs each
+of the 40 coins' records by (coin, `tid`) inside its file: +1 a taker, −1 a
+maker, a pair met deleted. The `tid` comes from the parse, or for a record
+the writers leave from its text (one `"tid":` of plain digits). A record
+whose text does not settle it is parsed (the slow path). What stays open
+goes into the part's header and `files.jsonl` as `unpaired`, [coin, `tid`,
+takers less makers], usually empty. G5 passes an open (coin, `tid`) only as
+one taker and one maker in two files next in the range's order (counted as
+`straddled`). Everything else fails, every record listed by file, coin and
+`tid`, with no tolerance. The old per-file count check goes: a straddled
+trade would fail it. On 2025-10-10 every file's `unpaired` is empty.
+Where G5 can still fail on a faithful archive, for the owner to rule on,
+never waived in code:
+- a record of the range's first file (2025-05-25 14h) or last
+  (2026-05-29 01h) whose other half lies outside the range;
+- at 2025-07-27 08h, the hour both formats hold, a trade split from
+  `node_fills` 08h to 09h: no `node_fills` 09h is in the range, and the
+  next file in order is `node_fills_by_block` 08h.
+
+**G6's three days (M2, as ruled):** 2025-05-31 (a month's last day; 2025-05
+was never sampled), 2025-06-01 (a month's first day, so the pair crosses a
+month's end) and 2026-05-29 (the hour before DATA END: 60 minutes); fifteen
+in all. Every column of liq, of the 40 coins' bars and of the contexts is
+compared cell by cell. The raw side keeps `tid` and `oid` as digits by its
+own reviver: WAVE-H's `parseLine` keeps the `tid` alone, and the pass's
+`parseText` is not used, so a fault in one is seen by the other.
+
+**G6's memory on the 2.1 GB hour** (2025-10-10: the built `days.js` on the
+new one-day store and WAVE-H's raw files, read only, at idle priority while
+the breaks ran):
+- 331 s;
+- the process's peak working set 10,358 MiB (11,266 paged), its JS heap
+  8,926 MiB of the 16,576 ceiling;
+- 19,127,562 records; 4,712,980 tape rows; 788,904 liq rows on each side;
+- 350 differences, every one a context at 23:59 (35 coins × 10 columns):
+  a timing store reads no next day's file, as EXTRACT-REVIEW noted. Nothing
+  else differs: no tape number, no liq cell, no bar minute, no fallback
+  minute.
+
+With the Library G1–G5 keep, the gates' heap is about 10 GB of 16 on the
+crash day. The review had guessed 5.
+
+**L2, read as the review's optional fix:** G6 also compares the minute
+price's fallback (`Tape.last` over the 5 minutes before each minute's end,
+the window cut at the day's start) with the raw side's, every minute of
+each sample day for the 38 coins. G4's text is reworded: it shows that no
+priced instant needed the fallback.
+
+**L5:** V8's `--max-old-space-size` is process-wide and beats every
+worker's `resourceLimits`. Measured: a 4096 worker got 16,576 MB under the
+flag, with `execArgv: []` too, and a worker's `execArgv` cannot carry the
+flag. So `dist/polish.js` became a launcher: it runs the program
+(`polish/main.js`) in a worker of `resourceLimits` 16384, and its pass
+workers keep 4096. A heap flag on the command line or in NODE_OPTIONS is
+refused (exit 2). Each thread's `heap_size_limit` goes into the pass's
+memory and the manifest's peaks; the program's start line names its own.
+On the one-day store: the program 16,576 MB, each of the six pass workers
+4,288 MB. A 4096 worker and one with no limit both get 4,288 MB on this PC
+(V8's default for 31.9 GB), so a break tells them apart only by another
+size: 8192 gave 8,384 and was caught.
+
+**L3:** `checkPath` refuses by name, then by the real path of the path's
+longest existing part (`realpathSync.native`: junctions and links
+followed, short names expanded). A path sealed by its name is never
+resolved, so nothing of FRESH is touched. The program seals its settings
+before it makes its log's folder (exit 5), and `runGates` seals the raw
+store and the look.
+
+**L12:** `extract` deletes every `.tmp` file under `parts\` and `store\`
+first (files only, no link followed). `--day` into a root whose
+`store\manifest.json` exists is refused (exit 5).
+
+**The others as the review proposed:**
+- L1: 1e-9 bps, the largest printed.
+- L6: `knownAt` (`legs.ts`), with the two clocks in architecture.
+- L7: `takers.delete(coin)`.
+- L8: a 30 s limit; no upper bound. Two more hooks get 120 s. WAVE-H's
+  rehearse test's "the look's first step" writes a store to DATA END in its
+  `beforeAll`, and it overran vitest's 10 s hook default in two full
+  verifies, once on a quiet machine: the suite is heavier now (about 6 min
+  of wall). Under the breaks' load the gates file's cleanup did too, so
+  every polish test file's cleanup gets the limit. That WAVE-H test is in
+  no freeze list.
+- L9: 17 exports, the time constants and the duplicate `sha256`.
+- L10: architecture.
+- L4: no code, by Q5. Any change to `dist/polish*` redoes the pass;
+  architecture says so.
+
+**Tests and breaks:** the suite went from 584 + 5 tests to 610 + 5, in 64
+files + 1 skipped. 49 breaks ran in three scratch copies of `7a9b386`, in the usual setup:
+`git archive`; `node_modules` real folders of per-package junctions; tsc
+and vitest run directly, never pnpm. A break that the built program must
+carry rebuilt `dist` in its copy; a heavy gates test was filtered with `-t`
+to the test that must fail.
+- EXTRACT-REVIEW's 20 unbacked survivors (G0b–G0g, G2a, G2c, M5, M9, M12,
+  S1, P1–P5, T11b, T1, T2), re-aimed where a fix moved their text, and
+  S2–S5: all 24 killed by a test's assertion.
+- 25 breaks of the new checks: M1's counters and conservation, the resumed
+  part's counters, M3's fingerprint and all-gates rule, G5's pairing and its
+  straddle rule, G6's liq, contexts, order and fallback, L3's real path and
+  the program's and `runGates`' seals, L5's heap flag and both ceilings,
+  L12's refusal and walk, L6's accessor, L1's tolerance. All 25 killed by
+  their tests' assertions. N4 and N24 also met the gates file's cleanup
+  hook timing out under the load; rerun on a quiet machine, both died by
+  their assertions alone.
+
+None died by a syntax error or a timeout alone. Every kill's message is in
+the supervisor folder's `workers\EXTRACT-FIX\breaks\`.
+
+**The new one-day store** (`extract --day 2025-10-10 --workers 6`, the fixed
+code `a97cfea7…`, into `ANALYZER\timing-2025-10-10-b\`, detached at idle
+priority, 2026-11-18 08:30:52–08:31:44Z, the collector's audit 90/90 before
+it):
+- 52 s: the pass 44 s, the merge 7 s; 138 CPU-s;
+- the process's peak working set 2,670 MiB;
+- EXTRACT-BUILD-2's: 80 s (40 and 40, the merge then flushing every store
+  file), about 120 CPU-s, 2,580 MiB. The merge's 33 s less is the fsync
+  call; the pass's 4 s and 15% more CPU are the pairing by `tid` and the
+  counters;
+- the same store: 1,124 files, tape 179.1 MB, liq 75.7 MB (788,904 rows),
+  minute 8.9 MB, 85,636 users;
+- records 19,127,562; refused, misread, slow and late all 0; every file's
+  `unpaired` empty; every row conserved (4,712,980 + 1,693,757 takers,
+  788,904 liq, 0 duplicates).
+
+FRESH's download shares F:, so the figures are pessimistic.
+
+**Next:** EXTRACT-FIX-CHECK (fresh, Sonnet) → the run (`extract`, `gates`,
+`explore`) when FRESH ends, with the command files in the supervisor
+folder's `workers\EXTRACT-FIX\run\` → POLISH-EXPLORE.
+
 2026-11-18 (the supervisor — EXTRACT-REVIEW's findings, under the owner's
 night go): **"AFTER THESE FIXES": EVERY FINDING (M1–M4, L1–L12) IS FIXED IN
 ONE ROUND BEFORE THE RUN ON THE 10 MONTHS, BY A FRESH FIXER (EXTRACT-FIX);

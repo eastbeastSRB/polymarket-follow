@@ -12,8 +12,9 @@ Final review reproduced it exactly. The polishing (a sharpened rule chosen
 on WAVE-H's 10 months, then one exam on FRESH's months) is approved
 (2026-11-17); FRESH's download runs since 2026-11-17 18:23Z; the
 analyzer's extraction, its gates and the frame of `explore` are built
-(2026-11-18) and wait for that download to end.** The plan is the plan page
-(docs/claude-master-plan.md); what exists is architecture.
+(2026-11-18), their Final review's findings fixed (EXTRACT-FIX); the
+fix-check comes next, then the run once FRESH's download ends.** The plan
+is the plan page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
 folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
@@ -47,11 +48,14 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 - **The polishing** (decisions 2026-11-17, "THE POLISHING PLAN APPROVED";
   the plan `docs/reviews/wave-polish-plan-2026-11-17.md`, section 6's steps):
   step 3, the extraction, is built (architecture, "The analyzer"; decisions
-  2026-11-18, EXTRACT-BUILD's technical calls): `dist/polish.js` with
-  `extract`, `gates` and the frame of `explore`. A one-day timing ran on
-  2025-10-10 into `F:\polymarket-follow-research\ANALYZER\timing-2025-10-10\`
-  (about 3 GB with the fsync check's copies; left for the supervisor to
-  delete); the whole run is about 70 minutes.
+  2026-11-18, EXTRACT-BUILD's technical calls) and its Final review
+  (`docs/reviews/extract-review-2026-11-18.md`) fixed in one round
+  (decisions 2026-11-18, EXTRACT-REVIEW's findings, and EXTRACT-FIX's
+  calls). Two one-day timing stores of 2025-10-10 exist under
+  `F:\polymarket-follow-research\ANALYZER\`: `timing-2025-10-10\` (the
+  reviewed code; the fix-check compares against it) and
+  `timing-2025-10-10-b\` (the fixed code); both left for the supervisor to
+  delete.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07): the
   collector's share 50 and 15, the experiment's 120 and 15; MARKET-1 reads
@@ -62,31 +66,39 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **EXTRACT-REVIEW** (fresh): the extraction's code review, its fixes and a
-   fix-check if needed (plan section 6, step 4).
+1. **EXTRACT-FIX-CHECK** (fresh, Sonnet): the 20 unbacked survivors die,
+   the new gates pass on the synthetic world and on the rebuilt one-day
+   store, EXTRACT-REVIEW's `indep2.cjs` finds 0 differences on
+   `timing-2025-10-10-b\` (decisions 2026-11-18, EXTRACT-REVIEW's findings,
+   Q7).
 2. **The extraction run on the 10 months, by the supervisor, once FRESH's
    download has ended** (step 5): from `E:\coding\polymarket-follow\apps\poller`
    on a clean tree after `pnpm verify`, detached through WMI at idle
-   priority (a `.cmd` that sets the settings, as WAVE-H's look), outside
-   02:30–06:00Z and 10:25–11:15Z, starting at least 45 minutes before a
-   window for `gates`:
+   priority (the `.cmd` files in the supervisor folder's
+   `workers\EXTRACT-FIX\run\`), outside 02:30–06:00Z and 10:25–11:15Z,
+   starting at least 45 minutes before a window for `gates`, **with no heap
+   flag** (`dist\polish.js` refuses one, exit 2; the program has its own
+   16 GB, each pass worker 4 GB):
    - `extract`: `WAVEH_STORE=F:\polymarket-follow-research\WAVE-H\store`,
      `ANALYZER_ROOT=F:\polymarket-follow-research\ANALYZER\WAVE-H`,
-     `node --max-old-space-size=16384 dist\polish.js extract`: about 70 min,
-     at most about 6 GB of memory, about 47 GB of parts and 23 GB of store
-     on F:; it resumes from its parts if stopped; its log in
-     `<ANALYZER_ROOT>\logs\`;
+     `node dist\polish.js extract`: about 70 min, at most about 6 GB of
+     memory, about 47 GB of parts and 23 GB of store on F:; it resumes from
+     its parts if stopped; its log in `<ANALYZER_ROOT>\logs\` (copy it:
+     logs older than 30 days are pruned);
    - `gates`: the same two and
      `WAVEH_ROOT=F:\polymarket-follow-research\FIND-SLOTS\WAVE-H-BUILD-rehearsal`,
-     `node --max-old-space-size=16384 dist\polish.js gates`: about 30 min;
-     `gates\gates.json`; exit 6 when a gate fails;
-   - `explore`: the same, `dist\polish.js explore`: a minute; it prints the
-     store's identity and counts and stops ("no try is defined");
-   - exit codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze does
-     not verify, 5 not ready, 6 a gate failed;
-   - after EXTRACT-REVIEW closes, the supervisor deletes `parts\` (Q4).
+     `node dist\polish.js gates`: about 40 (G6 about 5 min on 2025-10-10, about 10 GB of heap) min; `gates\gates.json`;
+     exit 6 when a gate fails;
+   - `explore`: the same, `node dist\polish.js explore`: a minute; it
+     prints the store's identity and counts to its log and stops ("no try
+     is defined");
+   - exit codes: 0 done, 1 a crash, 2 bad settings or a heap flag, 4 WAVE-H's
+     freeze does not verify, 5 not ready, 6 a gate failed;
+   - after the run is accepted, the supervisor deletes `parts\` (Q4).
 3. **POLISH-EXPLORE** (step 6): the tries, the try log, the choice rule;
    then its Final review, the owner's ruling, the exam's rules and freeze.
+   Its library: `library.ts` and `legs.ts` (`knownAt` for any decision at
+   an instant; architecture, "The analyzer").
 4. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
    MARKET-1 run is live (rules.md M2).
 5. **The daily runs:** the supervisor checks each program's log, budget and
@@ -102,16 +114,10 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
    registered; the page's fee-category alarm.
 9. **The v1 plan** (the plan page), early December.
 
-## Last session (2026-11-17/18, EXTRACT-BUILD, then EXTRACT-BUILD-2)
+## Last session (2026-11-18, EXTRACT-FIX)
 
-The polishing's extraction, on EXTRACT-BUILD's approved plan, each commit
-gated on `pnpm verify` with the three freezes verified after each (61, 64,
-74): EXTRACT-BUILD's six (`b40a3a4` the LZ4 decoder … `1f2b892` the program
-and `extract`), then EXTRACT-BUILD-2's: the one-day timing and the fsync
-measurement; `9b0fce1` the parts and columns without fsync; `5a5588f` the
-counted fills, the legs, the gates G0–G6 and `gates`; `161f01f` the frame
-of `explore`; `f914b17` tests for the breaks' survivors (70 breaks in a
-scratch copy: 47 killed in round one, the 23 survivors and one re-aimed
-break killed in round two); and these docs. At the end `pnpm verify` was
-green: 64 files + 1 skipped, 584 tests + 5 skipped (decisions 2026-11-18,
-EXTRACT-BUILD's technical calls).
+EXTRACT-REVIEW's findings, M1–M4 and L1–L12, fixed in one round, one fix a
+commit, each gated on `pnpm verify` with the three freezes verified after
+each (61, 64, 74): `2ca3ae4` the split of gates.ts (a pure move), `86ab8ef` M1, `e53d123` M3, `d3de0ef` G5 exact across a file boundary, `940dc51` M2, `a440a63` L2, `819a890` L1, `62f7719` M4, `27e067a` L11, `b1e659d` L3, `b728ca9` L5 (the launcher: no heap flag), `914e39b` L6, `b48db4c` L7, `3e4aebf` L8, `ba5099e` L12, `7a9b386` L9, `6e8b8aa` the tests' cleanup limit, and these docs. Breaks in a scratch copy: 49 of 49 killed by their tests (EXTRACT-REVIEW's 20 unbacked survivors and S2–S5, and 25 of the new checks). The
+one-day store `timing-2025-10-10-b\`: 52 s (the pass 44 s, the merge 7 s), a peak working set of 2,670 MiB, the program's heap ceiling 16,576 MB and each pass worker's 4,288 MB, every counter 0, every file's `unpaired` empty, every row conserved; G6 on 2025-10-10 against it: 331 s, a 10.4 GB working set (8.9 GB of heap), nothing differing but the 350 contexts at 23:59 a timing store cannot have. At the end `pnpm verify`
+was green: 64 files + 1 skipped, 610 tests + 5 skipped (decisions 2026-11-18, EXTRACT-FIX's calls).
