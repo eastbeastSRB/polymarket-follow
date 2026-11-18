@@ -46,8 +46,8 @@ export type Scan = {
   refused: number;
   /** Records by the UTC hour of their time (the hour's start in ms). */
   byHour: Map<number, number>;
-  /** The 40 coins' taker and maker records. */
-  pairs: Map<string, [number, number]>;
+  /** The 40 coins' taker and maker records, and their earliest time (WAVE-H's coins with a record in SIZING, H13). */
+  pairs: Map<string, [takers: number, makers: number, first: number]>;
   /** `node_fills_by_block`'s block numbers in line order, as runs of consecutive numbers. */
   runs: [number, number][];
   /** The records' first time, their latest, and the stretches of HOLE_MS or more with none, in file order. */
@@ -398,8 +398,11 @@ class Scanner {
     }
     if (this.forty.has(coin)) {
       const p = sc.pairs.get(coin);
-      if (p === undefined) sc.pairs.set(coin, isTaker ? [1, 0] : [0, 1]);
-      else p[isTaker ? 0 : 1] += 1;
+      if (p === undefined) sc.pairs.set(coin, isTaker ? [1, 0, t] : [0, 1, t]);
+      else {
+        p[isTaker ? 0 : 1] += 1;
+        if (t < p[2]) p[2] = t;
+      }
     }
   }
 

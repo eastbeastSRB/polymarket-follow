@@ -290,7 +290,13 @@ describe("the built program", () => {
   });
   const runIt = (args: string[], env: Record<string, string>) =>
     spawnSync(process.execPath, [program, ...args], {
-      env: { ...process.env, WAVEH_STORE: "", ANALYZER_ROOT: "", ...env },
+      env: {
+        ...process.env,
+        WAVEH_STORE: "",
+        ANALYZER_ROOT: "",
+        WAVEH_ROOT: "",
+        ...env,
+      },
       encoding: "utf8",
       timeout: 60_000,
     });
@@ -303,6 +309,12 @@ describe("the built program", () => {
       [["look"], ok, 'the command "look"'],
       [["extract", "--workers", "40"], ok, 'the option "--workers 40"'],
       [["extract", "--day", "2026-06-01"], ok, "is not a day of WAVE-H"],
+      [["gates"], ok, "WAVEH_ROOT"],
+      [
+        ["gates", "--workers", "2"],
+        { ...ok, WAVEH_ROOT: tmp("waveh") },
+        'the option "--workers 2"',
+      ],
       [
         ["extract"],
         { ...ok, WAVEH_STORE: "F:\\x\\FRESH\\store" },

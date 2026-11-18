@@ -199,8 +199,8 @@ describe("the scanner, on every case a file's text can hold", () => {
       [T, 23],
     ]);
     expect([...scan.pairs].sort()).toEqual([
-      ["BTC", [1, 1]],
-      ["SOL", [8, 9]],
+      ["BTC", [1, 1, T + 2000]],
+      ["SOL", [8, 9, T - 100]],
     ]);
     expect(scan.runs).toEqual([
       [100, 101],
@@ -385,7 +385,7 @@ function naive(text: string, format: Format, end: number) {
     { t: number; px: number; sz: number; tid: string; user: string }[]
   >();
   const liqs: { t: number; coin: string; user: string; tid: string }[] = [];
-  const pairs = new Map<string, [number, number]>();
+  const pairs = new Map<string, [number, number, number]>();
   let records = 0;
   let late = 0;
   for (const line of text.split("\n").slice(0, -1)) {
@@ -405,8 +405,9 @@ function naive(text: string, format: Format, end: number) {
       records += 1;
       const f = rec.fill;
       if (FORTY.has(f.coin)) {
-        const p = pairs.get(f.coin) ?? [0, 0];
+        const p = pairs.get(f.coin) ?? [0, 0, f.time];
         p[f.crossed ? 0 : 1] += 1;
+        p[2] = Math.min(p[2], f.time);
         pairs.set(f.coin, p);
       }
       if (f.time >= end) {

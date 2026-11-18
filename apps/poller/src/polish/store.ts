@@ -108,7 +108,7 @@ export const FileCounts = z.object({
   late: z.number(),
   refused: z.number(),
   byHour: z.array(z.tuple([z.number(), z.number()])),
-  pairs: z.array(z.tuple([z.string(), z.number(), z.number()])),
+  pairs: z.array(z.tuple([z.string(), z.number(), z.number(), z.number()])),
   runs: z.array(z.tuple([z.number(), z.number()])),
   times: z
     .object({

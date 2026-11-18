@@ -96,6 +96,9 @@ export function writeUnflushed(
   }
 }
 
+/** WAVEH_ROOT, for `gates`: WAVE-H's folder of the rehearsal and the look, whose files are the references (read only). */
+export const LookSettings = z.object({ WAVEH_ROOT: absolute });
+
 /** The compiled program's files, `dist/polish.js` and `dist/polish/`: their paths and hashes, hashed again. */
 export function fingerprintOf(packageRoot: string): string {
   const files: string[] = [];

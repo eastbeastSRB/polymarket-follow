@@ -5,53 +5,74 @@
  * API:
  *
  *   node --max-old-space-size=16384 dist/polish.js extract [--workers n] [--day YYYY-MM-DD]
+ *   node --max-old-space-size=16384 dist/polish.js gates
  *
  * `extract`: WAVE-H's ten months into the analyzer's store (extract.ts),
  * every file held to the frozen `waveh/data.sha256`; `--day` one day of
- * them, for a timing run. Settings, no defaults: WAVEH_STORE (WAVE-H's raw
- * store, read only) and ANALYZER_ROOT (the analyzer's folder of the range).
- * Exit codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze does not
- * verify, 5 not ready.
+ * them, for a timing run. `gates`: the store's gates G0–G6 (gates.ts) into
+ * `<ANALYZER_ROOT>\gates\gates.json`. Settings, no defaults: WAVEH_STORE
+ * (WAVE-H's raw store, read only), ANALYZER_ROOT (the analyzer's folder of
+ * the range), and for `gates` WAVEH_ROOT (WAVE-H's rehearsal and look, read
+ * only). Exit codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze
+ * does not verify, 5 not ready, 6 a gate failed.
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createLog } from "./log.js";
-import { extract } from "./polish/extract.js";
+import { loadResearch } from "./paper/research.js";
+import { STORE, extract } from "./polish/extract.js";
+import { GATES, WAVEH_EXPECTED, runGates } from "./polish/gates.js";
 import { WAVEH_RANGE, dayOf } from "./polish/range.js";
-import { ExtractSettings, exitOf, fingerprintOf } from "./polish/run.js";
+import {
+  ExtractSettings,
+  GateFailed,
+  LookSettings,
+  exitOf,
+  fingerprintOf,
+} from "./polish/run.js";
+import { openStore } from "./polish/store.js";
 import { fortyOf } from "./polish/writers.js";
 import { WAVEH_DIR, loadCoins } from "./waveh/coins.js";
-import { PACKAGE_ROOT, verifyFreeze } from "./waveh/gate.js";
+import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "./waveh/gate.js";
+import { loadSizing } from "./waveh/look.js";
 import { FrozenDiffer, windowEnd } from "./waveh/run.js";
-import { readDataList } from "./waveh/store.js";
+import { StoreError, readDataList } from "./waveh/store.js";
 
 function refuse(why: string): never {
   process.stderr.write(`polish: refused: ${why}\n`);
   process.exit(2);
 }
+const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
+  e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 
 const [command, ...options] = process.argv.slice(2);
-if (command !== "extract") refuse(`the command "${command ?? ""}": extract`);
+if (command !== "extract" && command !== "gates")
+  refuse(`the command "${command ?? ""}": extract or gates`);
 let workers = 6;
 let day: string | null = null;
 for (let i = 0; i < options.length; i += 2) {
   const [flag, value] = [options[i], options[i + 1]];
-  if (flag === "--workers" && /^([1-9]|1[0-6])$/.test(value ?? ""))
+  if (
+    command === "extract" &&
+    flag === "--workers" &&
+    /^([1-9]|1[0-6])$/.test(value ?? "")
+  )
     workers = Number(value);
-  else if (flag === "--day" && /^\d{4}-\d\d-\d\d$/.test(value ?? ""))
+  else if (
+    command === "extract" &&
+    flag === "--day" &&
+    /^\d{4}-\d\d-\d\d$/.test(value ?? "")
+  )
     day = value!;
   else refuse(`the option "${flag ?? ""} ${value ?? ""}"`);
 }
 const parsed = ExtractSettings.safeParse(process.env);
-if (!parsed.success)
-  refuse(
-    parsed.error.issues
-      .map((i) => `${i.path.join(".")}: ${i.message}`)
-      .join("; "),
-  );
+if (!parsed.success) refuse(issues(parsed.error));
 const settings = parsed.data;
+const look = LookSettings.safeParse(process.env);
+if (command === "gates" && !look.success) refuse(issues(look.error));
 let range = WAVEH_RANGE;
 if (day !== null) {
   try {
@@ -64,6 +85,16 @@ if (day !== null) {
 os.setPriority(os.constants.priority.PRIORITY_LOW);
 const { log, close } = createLog(settings.ANALYZER_ROOT, "polish");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const pace = async () => {
+  for (
+    let end = windowEnd(Date.now());
+    end !== null;
+    end = windowEnd(Date.now())
+  ) {
+    log.info({ until: new Date(end).toISOString() }, "a window: waiting");
+    await sleep(Math.min(60_000, end - Date.now() + 1_000));
+  }
+};
 let code = 0;
 try {
   const freeze = verifyFreeze(PACKAGE_ROOT);
@@ -83,35 +114,66 @@ try {
     `start ${command}`,
   );
   const data = readFileSync(path.join(WAVEH_DIR, "data.sha256"));
+  const list = readDataList(data.toString("utf8"));
+  const listSha256 = createHash("sha256").update(data).digest("hex");
   const coins = loadCoins();
-  const manifest = await extract({
-    store: settings.WAVEH_STORE,
-    root: settings.ANALYZER_ROOT,
-    list: readDataList(data.toString("utf8")),
-    listName: "waveh/data.sha256",
-    listSha256: createHash("sha256").update(data).digest("hex"),
-    range,
-    workers,
-    code: fingerprint,
-    wavehFrozen: freeze.sha256,
-    forty: [...fortyOf(coins)],
-    small: coins.list.map((c) => c.name),
-    pace: async () => {
-      for (
-        let end = windowEnd(Date.now());
-        end !== null;
-        end = windowEnd(Date.now())
-      ) {
-        log.info({ until: new Date(end).toISOString() }, "a window: waiting");
-        await sleep(Math.min(60_000, end - Date.now() + 1_000));
-      }
-    },
-    log: (event, fields) => log.info(fields, event),
-  });
-  log.info(
-    { partitions: manifest.partitions.length, seconds: manifest.seconds },
-    "done",
-  );
+  if (command === "extract") {
+    const manifest = await extract({
+      store: settings.WAVEH_STORE,
+      root: settings.ANALYZER_ROOT,
+      list,
+      listName: "waveh/data.sha256",
+      listSha256,
+      range,
+      workers,
+      code: fingerprint,
+      wavehFrozen: freeze.sha256,
+      forty: [...fortyOf(coins)],
+      small: coins.list.map((c) => c.name),
+      pace,
+      log: (event, fields) => log.info(fields, event),
+    });
+    log.info(
+      { partitions: manifest.partitions.length, seconds: manifest.seconds },
+      "done",
+    );
+  } else {
+    const store = openStore(path.join(settings.ANALYZER_ROOT, STORE));
+    if (store.manifest.partial !== null)
+      throw new StoreError(
+        `the store is a timing run's (${store.manifest.partial})`,
+      );
+    const result = await runGates(
+      {
+        store,
+        raw: settings.WAVEH_STORE,
+        list,
+        listSha256,
+        look: path.join(look.data!.WAVEH_ROOT, "look"),
+        sizing: loadSizing(),
+        sizingSha256: sha256(readFileSync(path.join(WAVEH_DIR, "sizing.json"))),
+        wavehFrozen: freeze.sha256,
+        gate: gateOf(freeze),
+        code: fingerprint,
+        fill: WAVEH_RANGE.fill,
+        coins,
+        forty: [...fortyOf(coins)],
+        kit: await loadResearch(),
+        expect: WAVEH_EXPECTED,
+        pace,
+        log: (event, fields) => log.info(fields, event),
+      },
+      path.join(settings.ANALYZER_ROOT, GATES),
+    );
+    const failed = Object.entries(result.gates)
+      .filter(([, g]) => !g.pass)
+      .map(([name]) => name);
+    if (!result.passed)
+      throw new GateFailed(
+        `${failed.join(", ") || "a gate not run"}: see gates\\gates.json`,
+      );
+    log.info({ seconds: result.seconds }, "done: every gate passed");
+  }
 } catch (err) {
   const exit = exitOf(err);
   if (exit.code === 1)
