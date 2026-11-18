@@ -135,6 +135,10 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   own** (`cmd /c rmdir <link>`, no `/s`). The copy is then a plain folder,
   and a later cleanup cannot follow it into the repository's `node_modules`
   (EXTRACT-FIX-2, 2026-11-18).
+- **vitest does not typecheck:** a scratch copy's or a quick run's `vitest
+  run` passes code tsc rejects. Run tsc first (`pnpm test` does). A script
+  that rewrites imports must write them in Prettier's form, or
+  `format:check` fails the verify (POLISH-EXPLORE-2, 2026-11-18).
 - **typescript-eslint's `require-await` rejects an async stub with no
   `await`:** return `Promise.resolve()` from a plain function instead
   (EXTRACT-FIX, 2026-11-18).
