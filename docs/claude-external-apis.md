@@ -473,6 +473,24 @@ read from a venue's page is as that page read on the day.
   never share a minute). Minutes with no row for any coin: 2025-05-25 14:23
   (9 minutes), 06-28 08:18 (7), 07-19 09:53 (21), 07-27 11:53 (8); the last
   two cover a funding hour by more than 5 minutes.
+- **What the archive's files hold, measured** (EXTRACT-BUILD's checks C1–C4,
+  2026-11-17 22:15–22:23Z, on WAVE-H's store held to its list; decisions
+  2026-11-18, EXTRACT-BUILD's technical calls):
+  - **`day_ntl_vlm` is a rolling 24-hour volume, counted once a trade:**
+    both legs give twice it. On 2025-08-15, at the next midnight it equals
+    the day's taker notional within 0.3% for most of the 40 coins (BNB
+    +0.83%; VVV +30.4%, a thin coin). On 2025-10-10, the crash day, the
+    taker notional is 0.95 to 1.96 times it (1.138 in all); the backstop's
+    legs are up to 54% of a coin's takers. It is no completeness check.
+  - **Every trade has exactly one taker record and one maker record in the
+    same file,** by coin. Seen on every file of 2025-06-15 and 2025-07-27,
+    and on 2025-10-10: 6,406,737 takers and 6,406,737 makers.
+  - **The switch from `node_fills` to `node_fills_by_block` (2025-07-27
+    08h) leaves a hole:** the two files are disjoint, and no record exists
+    from 08:45:48.664 to 08:50:10.273 (4 min 22 s).
+  - Every fill object starts with `{"coin":"`. A `node_fills_by_block`
+    line can reach about 14 MB (EXTRACT-BUILD-2); 2025-08-15's longest is
+    2.1 MB.
 - **Lighter, `v1.1/lighter/core/mainnet/trades/date=YYYY-MM-DD/trades.parquet`
   (2025-07-01: 53,421,855 B, ZSTD Parquet, one row group, header 770,163
   rows, 43 columns, read 2026-11-13 23:32Z):** `id, created_at, updated_at,

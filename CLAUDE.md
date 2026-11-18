@@ -40,17 +40,19 @@ Planned, the same as polymarket-lab's, copied by the skeleton build and never
 shared: Turborepo + pnpm · React 19 + Vite + TS (web) · Express + TS (api) · a
 node-cron poller · a shared package for Zod schemas and constants · MongoDB,
 its own database (native driver, Zod is the schema) · pino · vitest. **Built so far
-(2026-11-16): the collector, the paper experiment's program, MARKET-1's and
-WAVE-H's, all in `apps/poller` in a pnpm workspace (TypeScript, Zod, pino,
-the MongoDB driver, vitest; the experiment a second entry point,
-`dist/paper.js`, frozen and deployed 2026-11-12; MARKET-1 a third,
-`dist/market1.js`, frozen and deployed 2026-11-13 (tag `market1-freeze-1`);
-WAVE-H a fourth, `dist/waveh.js`, run by hand, not yet frozen; no
-Turborepo, web, api or shared package yet — decisions 2026-11-11,
+(2026-11-18): the collector, the paper experiment's program, MARKET-1's,
+WAVE-H's and the analyzer's, all in `apps/poller` in a pnpm workspace
+(TypeScript, Zod, pino, the MongoDB driver, vitest; the experiment a second
+entry point, `dist/paper.js`, frozen and deployed 2026-11-12; MARKET-1 a
+third, `dist/market1.js`, frozen and deployed 2026-11-13 (tag
+`market1-freeze-1`); WAVE-H a fourth, `dist/waveh.js`, frozen 2026-11-16
+(tag `waveh-freeze-1`), its one look run and closed; the analyzer a fifth,
+`dist/polish.js` (`extract`, `gates`, the frame of `explore`), run by hand;
+no Turborepo, web, api or shared package yet — decisions 2026-11-11,
 COLLECTOR-BUILD's technical calls; 2026-11-12, PAPER-BUILD's; 2026-11-13,
-MARKET-BUILD's; 2026-11-14/16, WAVE-H-BUILD's and WAVE-H-FIX's;
-docs/claude-architecture.md):** check package.json before trusting
-this line. Ports are set by the v1 plan, clear of the lab's 3000 and 4000.
+MARKET-BUILD's; 2026-11-14/16, WAVE-H-BUILD's and WAVE-H-FIX's; 2026-11-18,
+EXTRACT-BUILD's; docs/claude-architecture.md):** check package.json before
+trusting this line. Ports are set by the v1 plan, clear of the lab's 3000 and 4000.
 
 ## Structure & docs
 docs/claude-current-task.md — where we are, what is next.

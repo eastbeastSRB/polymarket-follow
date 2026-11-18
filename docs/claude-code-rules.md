@@ -97,6 +97,21 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   file-level `afterEach` cleanup deletes a store a `beforeAll` shares. Gate
   every commit on `pnpm verify`'s exit code in the same command: `f77fa89`
   went in red when a test timed out under load (WAVE-H-BUILD, 2026-11-14).
+- **A test that spawns the built program gets an explicit 60 s limit:** a
+  test spawning `dist/polish.js` seven times passed alone and timed out at
+  5.09 s under the full suite's load in the supervisor's verify
+  (EXTRACT-BUILD-2, 2026-11-18).
+- **WAVE-H's test helpers write incomplete records:** fills without
+  `closedPnl`, `oid` and `dir`, and takers without makers. A test of a
+  reader that wants whole records builds its own (EXTRACT-BUILD-2,
+  2026-11-18).
+- **A break that deletes a statement is `void 0`, not an empty line:** an
+  empty line can make the next statement an `if`'s body. A break that leaves
+  a dangling `else` is killed by a syntax error, which proves nothing:
+  re-aim it (EXTRACT-BUILD-2, 2026-11-18).
+- **Compare two implementations' floats in the same order, or compare
+  instants rather than sums:** a sum in another order differs by rounding
+  alone (EXTRACT-BUILD-2, G4 and G6, 2026-11-18).
 - **Drive a whole run with a fake clock that moves only when the run waits,**
   and bound it in fake time, so a run that never ends fails with a message
   (WAVE-H-FETCH, 2026-11-14).
@@ -275,6 +290,12 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   formatting alone. **The harness moves a foreground command to the
   background after about 180 s:** wait on the background task's notice
   (WAVE-H-FIX, 2026-11-16).
+- **An fsync on F: (a hard disk) costs about 29 ms a small file** and about
+  81 ms a part file. For many files whose content is held to a hash, write
+  whole (`.tmp`, then rename) without the flush, and flush only the
+  manifest. **Scale a worker pool's one-day timing by CPU-seconds, not by
+  the wall:** one big file can hold a day's pass (EXTRACT-BUILD-2,
+  2026-11-18).
 - **Node's `.env` loader** (`process.loadEnvFile`, Node 24.13) keeps unquoted
   backslashes, and a variable already set in the environment wins
   (COLLECTOR-BUILD, 2026-11-11).
