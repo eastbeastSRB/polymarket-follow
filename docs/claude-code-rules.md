@@ -97,10 +97,10 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   file-level `afterEach` cleanup deletes a store a `beforeAll` shares. Gate
   every commit on `pnpm verify`'s exit code in the same command: `f77fa89`
   went in red when a test timed out under load (WAVE-H-BUILD, 2026-11-14).
-- **A test that spawns the built program gets an explicit 60 s limit:** a
-  test spawning `dist/polish.js` seven times passed alone and timed out at
-  5.09 s under the full suite's load in the supervisor's verify
-  (EXTRACT-BUILD-2, 2026-11-18).
+- **A test that spawns a process or the built program gets an explicit 60 s
+  limit:** a test spawning `dist/polish.js` seven times passed alone and
+  timed out at 5.09 s under the full suite's load in the supervisor's
+  verify. Six such tests got one (`36901d0`; EXTRACT-BUILD-2, 2026-11-18).
 - **WAVE-H's test helpers write incomplete records:** fills without
   `closedPnl`, `oid` and `dir`, and takers without makers. A test of a
   reader that wants whole records builds its own (EXTRACT-BUILD-2,
