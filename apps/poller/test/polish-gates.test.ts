@@ -43,6 +43,7 @@ import {
   type Library,
 } from "../src/polish/library.js";
 import { WAVEH_RANGE, type Range } from "../src/polish/range.js";
+import { SealedError } from "../src/polish/seal.js";
 import {
   Store,
   openStore,
@@ -853,6 +854,14 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         [i + 2]: [["SOL", "77", 1]],
       }),
     ).toMatchObject({ pass: false, problems: 3 });
+  });
+
+  it("refuses a sealed raw store or look before it reads anything", async () => {
+    const sealed = path.join(tmp("sealed"), "ANALYZER", "FRESH");
+    for (const edit of [{ raw: path.join(sealed, "raw") }, { look: sealed }])
+      await expect(runGates({ ...o, ...edit }, tmp("gates"))).rejects.toThrow(
+        SealedError,
+      );
   });
 
   it("writes gates.json with passed false when a gate fails", async () => {

@@ -7,14 +7,18 @@
  */
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmdirSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
+import { readHeld } from "../src/polish/held.js";
 import { partFile, readPart, readPartHeader } from "../src/polish/part.js";
 import { WORKER_FILE, runPass, type FileTask } from "../src/polish/pass.js";
 import { scanFill } from "../src/polish/scan.js";
@@ -53,6 +57,45 @@ describe("the seal", () => {
       "C:\\notes\\FRESH\\plan.txt",
     ])
       expect(() => checkPath(p), p).not.toThrow();
+  });
+
+  it("refuses every spelling of a sealed path: slashes, `..`, `.`, UNC, the long prefix", () => {
+    for (const p of [
+      "F:/polymarket-follow-research/FRESH/store/asset_ctxs/20260601.csv.lz4",
+      "F:\\x\\WAVE-H\\..\\FRESH\\store\\a.lz4",
+      "F:\\x\\FRESH\\y\\..\\store\\a.lz4",
+      "F:\\x\\FRESH\\.\\store\\a.lz4",
+      "F:\\x\\FRESH\\\\store\\a.lz4",
+      "\\\\localhost\\F$\\x\\FRESH\\store\\a.lz4",
+      "\\\\?\\F:\\x\\ANALYZER\\FRESH\\gates.json",
+    ])
+      expect(() => checkPath(p), p).toThrow(SealedError);
+    expect(() =>
+      checkPath("F:\\x\\FRESH\\store\\..\\..\\WAVE-H\\store\\a.lz4"),
+    ).not.toThrow();
+  });
+
+  it("refuses a path through a junction into a sealed folder, by its real path", () => {
+    const t = parts();
+    const fresh = path.join(t, "FRESH", "store");
+    mkdirSync(fresh, { recursive: true });
+    writeFileSync(path.join(fresh, "a.lz4"), "synthetic");
+    mkdirSync(path.join(t, "WAVE-H"));
+    const junction = path.join(t, "WAVE-H", "store");
+    symlinkSync(fresh, junction, "junction");
+    try {
+      for (const p of [
+        junction,
+        path.join(junction, "a.lz4"),
+        path.join(junction, "not", "yet", "there.part"),
+      ])
+        expect(() => checkPath(p), p).toThrow(SealedError);
+      expect(() => checkPath(path.join(t, "WAVE-H", "b.lz4"))).not.toThrow();
+    } finally {
+      // The junction alone, never what it points at.
+      rmdirSync(junction);
+    }
+    expect(existsSync(path.join(fresh, "a.lz4"))).toBe(true);
   });
 
   it("refuses a key dated after DATA END, and one whose date does not parse", () => {
@@ -269,6 +312,18 @@ describe("the pass", () => {
     );
     const sealed = path.join(store, "FRESH", "store");
     await expect(pass(sealed, parts(), tasks)).rejects.toThrow(SealedError);
+    // A key dated after DATA END is refused before the list is asked or the file opened.
+    expect(() =>
+      readHeld(
+        store,
+        "node_fills_by_block/hourly/20260601/0.lz4",
+        "a".repeat(64),
+      ),
+    ).toThrow(
+      new SealedError(
+        "node_fills_by_block/hourly/20260601/0.lz4: dated after DATA END, FRESH's months, sealed until the polishing's exam is frozen",
+      ),
+    );
   });
 
   it("stops on WAVE-H's day rule: more than 1%, and 10, of a day's records failing", async () => {

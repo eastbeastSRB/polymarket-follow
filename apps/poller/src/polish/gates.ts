@@ -55,6 +55,7 @@ import {
   type Library,
 } from "./library.js";
 import { monthsOf } from "./merge.js";
+import { checkPath } from "./seal.js";
 import type { Counters } from "./pass.js";
 import {
   FILES_FILE,
@@ -736,6 +737,8 @@ export async function runGates(
   o: GatesInput,
   dir: string,
 ): Promise<GatesFile & Record<string, unknown>> {
+  checkPath(o.raw);
+  checkPath(o.look);
   const t0 = Date.now();
   let t = t0;
   const seconds: Record<string, number> = {};

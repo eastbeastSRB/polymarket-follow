@@ -36,6 +36,7 @@ import {
   exitOf,
   fingerprintOf,
 } from "./polish/run.js";
+import { checkPath } from "./polish/seal.js";
 import { fortyOf } from "./polish/writers.js";
 import { WAVEH_DIR, loadCoins } from "./waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "./waveh/gate.js";
@@ -83,6 +84,16 @@ if (day !== null) {
   } catch (err) {
     refuse((err as Error).message);
   }
+}
+
+// The seal before anything is opened or made, the log's folder included.
+try {
+  checkPath(settings.WAVEH_STORE);
+  checkPath(settings.ANALYZER_ROOT);
+  if (command === "gates") checkPath(look.data!.WAVEH_ROOT);
+} catch (err) {
+  process.stderr.write(`polish: not ready: ${(err as Error).message}\n`);
+  process.exit(5);
 }
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);

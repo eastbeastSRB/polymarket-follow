@@ -18,7 +18,13 @@ import {
   type Meta,
 } from "../src/polish/merge.js";
 import { runPass, type FileTask } from "../src/polish/pass.js";
-import { openStore, partitionDir } from "../src/polish/store.js";
+import { SealedError } from "../src/polish/seal.js";
+import {
+  FILES_FILE,
+  Store,
+  openStore,
+  partitionDir,
+} from "../src/polish/store.js";
 import { BACKSTOP, LIQUIDATION, fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { DATA_END } from "../src/waveh/instants.js";
@@ -435,6 +441,15 @@ describe("the merge", { timeout: 60_000 }, () => {
       [2, 2],
       [3, 2],
     ]);
+  });
+
+  it("opens and reads no store inside a sealed folder", async () => {
+    const { dir, manifest } = await build();
+    const sealed = path.join(tmp("sealed"), "ANALYZER", "FRESH", "store");
+    expect(() => openStore(sealed)).toThrow(SealedError);
+    const s = new Store(sealed, manifest, "0".repeat(64));
+    expect(() => s.bytes(FILES_FILE, manifest.files)).toThrow(SealedError);
+    expect(openStore(dir).files().length).toBe(4);
   });
 
   it("gives the same files from the parts in another order, and refuses a file that differs", async () => {

@@ -6,10 +6,13 @@
  */
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmdirSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -261,6 +264,19 @@ describe("extract, end to end", { timeout: 60_000 }, () => {
     expect(s.files().map((f) => f.key)).toEqual(w.range.fill);
   });
 
+  it("refuses a sealed root or store before it writes or reads anything", async () => {
+    const w = world();
+    const at = tmp("sealed");
+    const root = path.join(at, "ANALYZER", "FRESH");
+    await expect(run(w, root)).rejects.toThrow(SealedError);
+    expect(existsSync(root)).toBe(false);
+    const fine = path.join(at, "ANALYZER", "WAVE-H");
+    await expect(
+      run({ ...w, store: path.join(w.store, "FRESH", "store") }, fine),
+    ).rejects.toThrow(SealedError);
+    expect(existsSync(fine)).toBe(false);
+  });
+
   it("stops before reading anything when the list lacks a file the range needs", async () => {
     const w = world();
     const list = new Map(w.list);
@@ -338,6 +354,35 @@ describe("the built program", () => {
       const r = runIt([...args], env);
       expect(r.status, why).toBe(2);
       expect(r.stderr, why).toContain(why);
+    }
+  }, 60_000);
+
+  it("refuses a sealed folder in its settings, by name or through a junction, before it opens or makes anything, its log's folder too (exit 5)", () => {
+    const at = tmp("sealed");
+    const fresh = path.join(at, "FRESH", "store");
+    mkdirSync(fresh, { recursive: true });
+    mkdirSync(path.join(at, "WAVE-H"));
+    const junction = path.join(at, "WAVE-H", "store");
+    symlinkSync(fresh, junction, "junction");
+    try {
+      for (const env of [
+        {
+          WAVEH_STORE: "F:\\x\\WAVE-H\\store",
+          ANALYZER_ROOT: path.join(at, "ANALYZER", "FRESH"),
+        },
+        {
+          WAVEH_STORE: junction,
+          ANALYZER_ROOT: path.join(at, "ANALYZER", "WAVE-H"),
+        },
+      ]) {
+        const r = runIt(["explore"], env);
+        expect(r.status, r.stderr).toBe(5);
+        expect(r.stderr).toContain("FRESH is sealed");
+      }
+      expect(existsSync(path.join(at, "ANALYZER"))).toBe(false);
+    } finally {
+      // The junction alone, never what it points at.
+      rmdirSync(junction);
     }
   }, 60_000);
 });
