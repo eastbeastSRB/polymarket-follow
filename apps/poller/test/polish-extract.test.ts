@@ -310,6 +310,7 @@ describe("the built program", () => {
       [["extract", "--workers", "40"], ok, 'the option "--workers 40"'],
       [["extract", "--day", "2026-06-01"], ok, "is not a day of WAVE-H"],
       [["gates"], ok, "WAVEH_ROOT"],
+      [["explore", "--day", "2025-10-10"], ok, 'the option "--day 2025-10-10"'],
       [
         ["gates", "--workers", "2"],
         { ...ok, WAVEH_ROOT: tmp("waveh") },

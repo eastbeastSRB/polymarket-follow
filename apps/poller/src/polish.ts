@@ -6,11 +6,13 @@
  *
  *   node --max-old-space-size=16384 dist/polish.js extract [--workers n] [--day YYYY-MM-DD]
  *   node --max-old-space-size=16384 dist/polish.js gates
+ *   node --max-old-space-size=16384 dist/polish.js explore
  *
  * `extract`: WAVE-H's ten months into the analyzer's store (extract.ts),
  * every file held to the frozen `waveh/data.sha256`; `--day` one day of
  * them, for a timing run. `gates`: the store's gates G0–G6 (gates.ts) into
- * `<ANALYZER_ROOT>\gates\gates.json`. Settings, no defaults: WAVEH_STORE
+ * `<ANALYZER_ROOT>\gates\gates.json`. `explore`: its frame (explore.ts),
+ * the store opened only when its gates passed. Settings, no defaults: WAVEH_STORE
  * (WAVE-H's raw store, read only), ANALYZER_ROOT (the analyzer's folder of
  * the range), and for `gates` WAVEH_ROOT (WAVE-H's rehearsal and look, read
  * only). Exit codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze
@@ -22,7 +24,8 @@ import os from "node:os";
 import path from "node:path";
 import { createLog } from "./log.js";
 import { loadResearch } from "./paper/research.js";
-import { STORE, extract } from "./polish/extract.js";
+import { explore, trustedStore, wholeStore } from "./polish/explore.js";
+import { extract } from "./polish/extract.js";
 import { GATES, WAVEH_EXPECTED, runGates } from "./polish/gates.js";
 import { WAVEH_RANGE, dayOf } from "./polish/range.js";
 import {
@@ -32,13 +35,12 @@ import {
   exitOf,
   fingerprintOf,
 } from "./polish/run.js";
-import { openStore } from "./polish/store.js";
 import { fortyOf } from "./polish/writers.js";
 import { WAVEH_DIR, loadCoins } from "./waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "./waveh/gate.js";
 import { loadSizing } from "./waveh/look.js";
 import { FrozenDiffer, windowEnd } from "./waveh/run.js";
-import { StoreError, readDataList } from "./waveh/store.js";
+import { readDataList } from "./waveh/store.js";
 
 function refuse(why: string): never {
   process.stderr.write(`polish: refused: ${why}\n`);
@@ -48,8 +50,8 @@ const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
   e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 
 const [command, ...options] = process.argv.slice(2);
-if (command !== "extract" && command !== "gates")
-  refuse(`the command "${command ?? ""}": extract or gates`);
+if (command !== "extract" && command !== "gates" && command !== "explore")
+  refuse(`the command "${command ?? ""}": extract, gates or explore`);
 let workers = 6;
 let day: string | null = null;
 for (let i = 0; i < options.length; i += 2) {
@@ -137,15 +139,10 @@ try {
       { partitions: manifest.partitions.length, seconds: manifest.seconds },
       "done",
     );
-  } else {
-    const store = openStore(path.join(settings.ANALYZER_ROOT, STORE));
-    if (store.manifest.partial !== null)
-      throw new StoreError(
-        `the store is a timing run's (${store.manifest.partial})`,
-      );
+  } else if (command === "gates") {
     const result = await runGates(
       {
-        store,
+        store: wholeStore(settings.ANALYZER_ROOT),
         raw: settings.WAVEH_STORE,
         list,
         listSha256,
@@ -173,6 +170,9 @@ try {
         `${failed.join(", ") || "a gate not run"}: see gates\\gates.json`,
       );
     log.info({ seconds: result.seconds }, "done: every gate passed");
+  } else {
+    const frame = explore(trustedStore(settings.ANALYZER_ROOT), coins);
+    log.info(frame, "explore: the store is trusted; no try is defined");
   }
 } catch (err) {
   const exit = exitOf(err);

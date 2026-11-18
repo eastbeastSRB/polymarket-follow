@@ -1,9 +1,10 @@
 /**
- * The counted fills, the legs and the gates (src/polish/counted.ts,
- * legs.ts, gates.ts) on a synthetic WAVE-H world: WAVE-H's own rehearsal
- * and look write the references, polish's `extract` and `gates` on the same
- * raw store pass every gate, and each break fails its own gate. The tape
- * and the minute price apart, on a store across a month's end.
+ * The counted fills, the legs, the gates and explore's frame
+ * (src/polish/counted.ts, legs.ts, gates.ts, explore.ts) on a synthetic
+ * WAVE-H world: WAVE-H's own rehearsal and look write the references,
+ * polish's `extract` and `gates` on the same raw store pass every gate, each
+ * break fails its own gate, and explore opens only the trusted store. The
+ * tape and the minute price apart, on a store across a month's end.
  */
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,8 +13,11 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
+import { explore, trustedStore, wholeStore } from "../src/polish/explore.js";
 import { extract } from "../src/polish/extract.js";
 import {
+  GATES,
+  GATES_FILE,
   g0,
   g1,
   g2,
@@ -485,6 +489,50 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       pass: false,
       first: [`${f.key} ${coin}: ${takers} takers, ${makers + 1} makers`],
     });
+  });
+
+  it("explore opens only a whole store whose gates passed on its manifest, and loads its counted fills", () => {
+    expect(() => trustedStore(analyzer)).toThrow("run gates first");
+    const dir = path.join(analyzer, GATES);
+    mkdirSync(dir, { recursive: true });
+    const gates = (passed: boolean, manifestSha256: string) =>
+      writeFileSync(
+        path.join(dir, GATES_FILE),
+        JSON.stringify({
+          store: { manifestSha256 },
+          passed,
+          gates: {},
+          written: "x",
+        }),
+      );
+    gates(true, "0".repeat(64));
+    expect(() => trustedStore(analyzer)).toThrow(
+      "gates.json is of another store",
+    );
+    gates(false, o.store.id);
+    expect(() => trustedStore(analyzer)).toThrow(
+      "the store's gates did not pass",
+    );
+    gates(true, o.store.id);
+    expect(explore(trustedStore(analyzer), coins)).toMatchObject({
+      store: { manifestSha256: o.store.id, range: "WAVE-H" },
+      counts: { counted: 6, sizing: 4 },
+      tries: "no try is defined",
+    });
+    // A timing run's store is never a whole one.
+    const timing = tmp("timing");
+    mkdirSync(path.join(timing, "store"));
+    const m = JSON.parse(
+      readFileSync(path.join(analyzer, "store", "manifest.json"), "utf8"),
+    ) as Manifest;
+    writeFileSync(
+      path.join(timing, "store", "manifest.json"),
+      JSON.stringify({ ...m, partial: "2025-10-10" }),
+    );
+    expect(() => wholeStore(timing)).toThrow(
+      "the store is a timing run's (2025-10-10)",
+    );
+    expect(() => trustedStore(timing)).toThrow("timing run's");
   });
 
   it("G6 fails on a sample day's tape row removed and a context changed, the store rewritten with its hashes", async () => {
