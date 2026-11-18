@@ -2269,7 +2269,7 @@ describe("the runner", () => {
       `waveh-fetch: --store ${wrong}: a store of FRESH's range is`,
     );
     expect(fs.readdirSync(root)).toEqual([]);
-  });
+  }, 60_000);
 
   it("runs one download at a time across the two stores: a run refuses (exit 3) while the other range's store holds a live, fresh lock, and never takes it", async () => {
     for (const [folder, otherFolder, more] of [

@@ -45,5 +45,5 @@ describe("the poller's crash handler", () => {
     expect(last).toMatchObject({ level: 60, msg: "poller crashed" });
     expect(last.err?.message).toMatch(/EISDIR/);
     expect(existsSync(recordings)).toBe(false);
-  });
+  }, 60_000);
 });

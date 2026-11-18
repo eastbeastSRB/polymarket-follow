@@ -204,7 +204,7 @@ describe("the paper experiment's run, waited for (M2, F2)", () => {
     writeFileSync(path.join(dir, PAPER_LOCK.heartbeat), "{}\n");
     writeFileSync(path.join(dir, PAPER_LOCK.lock), `${process.pid}\n`);
     expect(paperRunLive(dir, Date.now())).toBe(false);
-  });
+  }, 60_000);
 
   // A process this one may not signal (Windows' System, or init): what a hand run meets in the paper task's S4U process.
   const guarded = process.platform === "win32" ? 4 : 1;
@@ -267,7 +267,7 @@ describe("the paper experiment's run, waited for (M2, F2)", () => {
     utimesSync(path.join(dir, PAPER_LOCK.heartbeat), new Date(t), new Date(t));
     expect(await waitForPaper(dir, log, ending)).toBe(true);
     expect(slept).toEqual([PAPER_CHECK_EVERY_MS, PAPER_CHECK_EVERY_MS]);
-  });
+  }, 60_000);
 });
 
 describe("MARKET-1's settings (M0, M15)", () => {

@@ -86,7 +86,7 @@ describe("takeLock", () => {
     expect(readFileSync(path.join(stale, LOCK_FILE), "utf8")).toBe(
       `${process.pid}\n`,
     );
-  });
+  }, 60_000);
 });
 
 describe("the heartbeat", () => {

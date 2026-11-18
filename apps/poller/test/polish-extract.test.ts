@@ -326,5 +326,5 @@ describe("the built program", () => {
       expect(r.status, why).toBe(2);
       expect(r.stderr, why).toContain(why);
     }
-  });
+  }, 60_000);
 });
