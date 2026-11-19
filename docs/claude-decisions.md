@@ -1,5 +1,43 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the E step stopped while writing; no outcome
+seen): **THE POSITIONS FILE IS WRITTEN AS A STREAM (EXPLORE-FIX-1). THEN
+THE FEATURES STEP RERUNS, CUTS.JSON'S FEATURES HASH IS UPDATED WITH ITS
+NINE VALUES UNCHANGED, AND THE STEPS GO ON.**
+
+**What happened:** `explore --step e` ran from 17:36:52Z (code
+`9272a8c1…`).
+- Its phases: data 37 s, the reproduction of the look's EVERY SLICE line
+  9 s (it passed: a difference stops the step with exit 6), features 66
+  s, the sweep 94 s, the tries 6 s. Peak 3.66 GB.
+- **Then, at 17:40:28Z, writing the positions file:** "RangeError: Invalid
+  string length at Array.join (writePositions)", exit 1.
+- Every position of every try was joined into one string: millions of
+  lines, past V8's largest string.
+- **Nothing was written:** no `e.json`, no `e-positions.jsonl.gz`. The
+  log holds only phase lines (times and memory).
+
+**No outcome of any try has been seen by anyone:** the supervisor read
+the log's lines from the step's start, and they hold no number of a
+try's result.
+
+**The rulings:**
+1. **EXPLORE-FIX-1** (a small fresh build) makes `writePositions` stream
+   its lines through gzip, in the same line format, for e, choice and c
+   alike. One commit with its tests, `pnpm verify` and the freezes.
+2. **The code's fingerprint changes,** so the steps refuse
+   `features.json` written by `9272a8c1…`.
+   - The features step reruns (about 4 minutes).
+   - Its nine cut values come from the features alone, so they must come
+     out identical. The supervisor checks that value by value against
+     `853c864`'s cuts.json.
+   - cuts.json is then committed again with the new `features` SHA-256
+     and the same nine values, still before any outcome.
+   - If any value differed, the run stops for a ruling.
+3. **The store and its gates stand:** the steps hold `gates.json`'s code
+   (`9272a8c1…`) equal to the manifest's, and the exploration's code was
+   always meant to run after the store was built (decisions 2026-11-18).
+
 2026-11-19 (the supervisor — the analyzer's store of WAVE-H's 10 months
 is trusted): **EVERY GATE PASSED. THE EXPLORATION RUNS.**
 
