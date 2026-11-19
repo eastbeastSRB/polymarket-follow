@@ -88,12 +88,14 @@ export const Manifest = z.object({
     /**
      * The (user, `tid`) checks (decisions 2026-11-19): by "<coin> <month>",
      * the taker records kept whose `tid` another user's record of the
-     * coin's month has (two trades); the (user, `tid`)s met twice, refused:
-     * none, for one stops the merge before the manifest. The duplicates
-     * dropped are `merge`'s.
+     * coin's month has, and those whose user's previous record of the `tid`
+     * is 60 s or more before (each two trades); the (user, `tid`)s met
+     * again within 60 s or in liq's month, refused: none, for one stops the
+     * merge before the manifest. The duplicates dropped are `merge`'s.
      */
     tids: z.object({
       shared: z.record(z.string(), z.number()),
+      sameUserApart: z.record(z.string(), z.number()),
       refused: z.literal(0),
     }),
   }),

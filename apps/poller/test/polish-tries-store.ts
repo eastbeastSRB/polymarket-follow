@@ -278,7 +278,7 @@ export function writeStore(dir: string, spec: StoreSpec): Manifest {
       badCells: {},
       funding: {},
       merge: {},
-      tids: { shared: {}, refused: 0 },
+      tids: { shared: {}, sameUserApart: {}, refused: 0 },
     },
     peaks: {},
     seconds: {},

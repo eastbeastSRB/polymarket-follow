@@ -1,5 +1,22 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (EXTRACT-FIX-3 — the supervisor's ruling at 11:28Z on the call
+left open below): **ONE USER'S TID AT TWO INSTANTS STOPS THE RUN ONLY WHEN
+THE TWO RECORDS ARE LESS THAN 60 S APART; 60 S OR MORE APART THEY ARE TWO
+TRADES, KEPT AND COUNTED (`counts.tids.sameUserApart`).** WAVE-H's tape
+window is [x, x + 60 s) and skips a seen user and `tid`, so two records 60
+s or more apart never meet in one window: WAVE-H keeps both. `checkUnique`
+holds each record to its user's previous one of the `tid`, against WAVE-H's
+own `TAPE_MS`; the month's log line names `sameUserApart` by coin; Q2–Q4
+stand as recommended (`refused` a literal 0, G5 by (coin, `tid`), liq by
+month). Tests: 60 s apart kept and counted, 59.999 s refused, a third
+record 30 s after a second 70 s after the first refused, the two HYPE
+trades made one user's (12 days apart) kept. Breaks: 38, the boundary and
+the count among them, each killed by an assertion (the supervisor folder's
+`workers\EXTRACT-FIX-3\breaks\`). G6's raw re-read still keeps a record
+once by user and `tid` a day, so such a pair inside one sample day would
+fail G6, loudly.
+
 2026-11-19 (EXTRACT-FIX-3's technical calls — the supervisor's ruling on the
 shared trade id, built before the run): **THE MERGE'S TAKER CHECK KEYS ON
 (USER, TID), AS WAVE-H KEYS A FILL: TWO USERS' RECORDS OF ONE TID ARE KEPT

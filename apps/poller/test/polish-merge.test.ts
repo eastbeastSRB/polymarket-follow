@@ -412,7 +412,11 @@ describe("the merge", { timeout: 60_000 }, () => {
       bars: { in: 1, out: 1, duplicates: 0 },
       liq: { in: 8, out: 6, duplicates: 2 },
     });
-    expect(manifest.counts.tids).toEqual({ shared: {}, refused: 0 });
+    expect(manifest.counts.tids).toEqual({
+      shared: {},
+      sameUserApart: {},
+      refused: 0,
+    });
   });
 
   it("keeps liq's first file's record of the hour both formats hold, with every coin's names", async () => {
@@ -735,6 +739,7 @@ describe("the merge", { timeout: 60_000 }, () => {
     ]);
     expect(manifest.counts.tids).toEqual({
       shared: { "SOL 2025-07": 2, "BTC 2025-07": 1 },
+      sameUserApart: {},
       refused: 0,
     });
     expect(manifest.counts.merge).toMatchObject({
@@ -745,30 +750,72 @@ describe("the merge", { timeout: 60_000 }, () => {
     expect(
       lines
         .filter(([event]) => event === "month")
-        .map(([, f]) => [f.month, f.duplicates, f.shared]),
+        .map(([, f]) => [f.month, f.duplicates, f.shared, f.sameUserApart]),
     ).toEqual([
-      ["2025-06", 0, {}],
-      ["2025-07", 3, { SOL: 2, BTC: 1 }],
+      ["2025-06", 0, {}, {}],
+      ["2025-07", 3, { SOL: 2, BTC: 1 }, {}],
     ]);
   });
 
-  it("stops at one user's tid in two records at two instants, naming the user, the tid and both instants, and how many in all", async () => {
+  it("keeps one user's two records of one tid 60 s or more apart, two trades no tape window holds both of, and counts them; stops at two less than 60 s apart, held to the user's previous record, naming the user, the tid, both instants and how many in all", async () => {
     const again = (user: number, tid: number, time: number) =>
       trade(addr(user), addr(66), { coin: "SOL", side: "B", time, tid });
     const iso = (t: number) => new Date(t).toISOString();
-    const first = `SOL 2025-07: the user ${addr(9)} has the tid 7 in two records, at ${iso(H1 + 5 * MIN)} and ${iso(H1 + 9 * MIN)}`;
-    const one = await build(again(9, 7, H1 + 9 * MIN)).catch((e: unknown) => e);
+    // addr(9)'s tid 7 at H1 + 5 min, again exactly 60 s later.
+    const T = H1 + 5 * MIN;
+    const lines: [string, Record<string, unknown>][] = [];
+    const kept = build(again(9, 7, T + 60_000), (t) => t, {
+      pace: () => Promise.resolve(),
+      log: (event, fields) =>
+        lines.push([event, fields as Record<string, unknown>]),
+    });
+    await expect(kept).resolves.toBeDefined();
+    const { dir, manifest } = await kept;
+    const s = openStore(dir);
+    const users = s.users();
+    const p = s.partition("tape", "SOL", "2025-07");
+    const time = [...s.column(p, "time")];
+    const user = [...s.column(p, "user")].map((u) => users[u]);
+    const tid = s.column(p, "tid") as Uint32Array;
+    expect(
+      time.filter((_, i) => user[i] === addr(9) && digitsOf(tid, i) === "7"),
+    ).toEqual([T, T + 60_000]);
+    expect(manifest.counts.tids).toEqual({
+      shared: {},
+      sameUserApart: { "SOL 2025-07": 1 },
+      refused: 0,
+    });
+    expect(
+      lines
+        .filter(([event]) => event === "month")
+        .map(([, f]) => [f.month, f.shared, f.sameUserApart]),
+    ).toEqual([
+      ["2025-06", {}, {}],
+      ["2025-07", {}, { SOL: 1 }],
+    ]);
+    // 59.999 s later: a window holds both.
+    const first = `SOL 2025-07: the user ${addr(9)} has the tid 7 in two records less than 60 s apart, at ${iso(T)} and ${iso(T + 59_999)}`;
+    const one = await build(again(9, 7, T + 59_999)).catch((e: unknown) => e);
     expect(one).toBeInstanceOf(StoreError);
     expect((one as Error).message).toBe(first);
+    // 70 s after the first, then 30 s after that: refused against the previous record.
+    const three = await build([
+      ...again(9, 7, T + 70_000),
+      ...again(9, 7, T + 100_000),
+    ]).catch((e: unknown) => e);
+    expect(three).toBeInstanceOf(StoreError);
+    expect((three as Error).message).toBe(
+      `SOL 2025-07: the user ${addr(9)} has the tid 7 in two records less than 60 s apart, at ${iso(T + 70_000)} and ${iso(T + 100_000)}`,
+    );
     const two = await build([
-      ...again(9, 7, H1 + 9 * MIN),
-      ...again(5, 40, H1 + 10 * MIN),
+      ...again(9, 7, T + 59_999),
+      ...again(5, 40, H1 + 6 * MIN + 30_000),
     ]).catch((e: unknown) => e);
     expect(two).toBeInstanceOf(StoreError);
     expect((two as Error).message).toBe(`${first} (2 in all)`);
   });
 
-  it("keeps the two HYPE trades of June 2025 that share a tid, the archive's records as they are, and refuses them when both are one user's; a manifest naming a refusal does not open", async () => {
+  it("keeps the two HYPE trades of June 2025 that share a tid, the archive's records as they are, two users' or one user's 12 days apart, and counts them; a manifest naming a refusal does not open", async () => {
     const built = hypeMerged();
     await expect(built).resolves.toBeDefined();
     const { dir, manifest } = await built;
@@ -793,6 +840,7 @@ describe("the merge", { timeout: 60_000 }, () => {
     });
     expect(manifest.counts.tids).toEqual({
       shared: { "HYPE 2025-06": 1 },
+      sameUserApart: {},
       refused: 0,
     });
     expect(manifest.counts.merge.tape).toEqual({
@@ -803,11 +851,17 @@ describe("the merge", { timeout: 60_000 }, () => {
     expect(s.files().map((f) => [f.key, f.unpaired])).toEqual(
       [...HYPE_TRADES.keys()].map((key) => [key, []]),
     );
-    const err = await hypeMerged(HYPE_TAKERS[0]).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(StoreError);
-    expect((err as Error).message).toBe(
-      `HYPE 2025-06: the user ${HYPE_TAKERS[0]} has the tid ${SHARED_TID} in two records, at 2025-06-18T16:40:51.943Z and 2025-06-30T01:39:02.640Z`,
-    );
+    // Both takers one user's: two trades 12 days apart, kept.
+    const one = hypeMerged(HYPE_TAKERS[0]);
+    await expect(one).resolves.toBeDefined();
+    const same = openStore((await one).dir);
+    const q = same.partition("tape", "HYPE", "2025-06");
+    expect([...same.column(q, "time")]).toEqual([1750264851943, 1751247542640]);
+    expect((await one).manifest.counts.tids).toEqual({
+      shared: {},
+      sameUserApart: { "HYPE 2025-06": 1 },
+      refused: 0,
+    });
     const file = path.join(dir, "manifest.json");
     const m = JSON.parse(readFileSync(file, "utf8")) as {
       counts: { tids: { refused: number } };

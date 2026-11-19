@@ -467,6 +467,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     // The two users' trades of tid 7: both kept, and counted.
     expect(o.store.manifest.counts.tids).toEqual({
       shared: { "SOL 2025-09": 1 },
+      sameUserApart: {},
       refused: 0,
     });
   });

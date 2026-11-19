@@ -6,9 +6,10 @@
  * and `dir`s, sorted. Then month by month: each coin's taker rows in H8's
  * order (time, the user's address, `tid`, then the input file's order), a
  * second record of one (time, user, `tid`) dropped and counted (the first
- * file's kept), a (user, `tid`) met twice in a coin's month stopping the
- * run, two users' records of one `tid` kept and counted; liq alike by
- * (time, coin, user, `tid`, file), a (user, `tid`) met twice stopping it.
+ * file's kept), a user's two records of one `tid` less than 60 s apart
+ * stopping the run, 60 s or more apart kept and counted, two users'
+ * records of one `tid` kept and counted; liq alike by (time, coin, user,
+ * `tid`, file), a (user, `tid`) met twice in a month stopping it.
  * Written for each month: the 38 coins' tape, liq, the 40 coins' minute
  * table (the contexts and the bars from their takers), the 38 coins'
  * funding; each file whole, its size and SHA-256 kept; then `files.jsonl`
@@ -18,6 +19,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { MINUTE_MS } from "../schedule.js";
 import { sha256 } from "../waveh/gate.js";
+import { TAPE_MS } from "../waveh/price.js";
 import { writeWhole } from "../waveh/run.js";
 import { StoreError } from "../waveh/store.js";
 import type { Contexts, Funding, Grid } from "./ctxs.js";
@@ -194,13 +196,15 @@ function pick<T extends Typed>(
 }
 
 /**
- * Each (user, `tid`) once in a coin's month of kept taker rows (`tid` as u64
- * halves), WAVE-H's rule (rules.md H2; its tape skips a seen user and
- * `tid`), else the run stops, naming the user, the `tid` and both instants.
- * Two users' records of one `tid` are two trades, both kept: Hyperliquid's
- * `tid` is a 50-bit hash of the two orders' ids (decisions 2026-11-19).
- * Returns how many records share their `tid` with an earlier one of
- * another user.
+ * A coin's month of kept taker rows (`tid` as u64 halves, in H8's order) as
+ * WAVE-H's tape reads them: a window [x, x + 60 s) skips a seen user and
+ * `tid` (rules.md H2, H8; decisions 2026-11-19). A user's two records of
+ * one `tid` less than 60 s apart stop the run, naming the user, the `tid`
+ * and both instants; 60 s or more apart, no window holds both: two trades,
+ * kept. Two users' records of one `tid` are two trades too: Hyperliquid's
+ * `tid` is a 50-bit hash of the two orders' ids. Counts the records kept
+ * whose `tid` another user's earlier record has (`shared`), and those whose
+ * user's previous record of the `tid` is 60 s or more before (`apart`).
  */
 function checkUnique(
   tid: Uint32Array,
@@ -208,38 +212,38 @@ function checkUnique(
   time: Float64Array,
   what: string,
   users: readonly string[],
-): number {
-  // Every `tid` once, the common case, by a native sort; then only the few met twice, user by user.
+): { shared: number; apart: number } {
+  // Every `tid` once, the common case, by a native sort; then only the few met twice, user by user, in time order.
   const sorted = new BigUint64Array(tid.slice().buffer).sort();
   const twice = new Set<bigint>();
   for (let i = 1; i < sorted.length; i++)
     if (sorted[i] === sorted[i - 1]) twice.add(sorted[i]!);
-  if (twice.size === 0) return 0;
+  const out = { shared: 0, apart: 0 };
+  if (twice.size === 0) return out;
   const rows = new BigUint64Array(tid.buffer, tid.byteOffset, user.length);
-  const firstRow = new Map<string, number>();
+  const lastRow = new Map<string, number>();
   const met = new Set<bigint>();
   let refused = 0;
   let first = "";
-  let shared = 0;
   for (let i = 0; i < rows.length; i++) {
     const t = rows[i]!;
     if (!twice.has(t)) continue;
     const k = `${user[i]} ${t}`;
-    const j = firstRow.get(k);
-    if (j !== undefined) {
+    const j = lastRow.get(k);
+    lastRow.set(k, i);
+    if (j === undefined) {
+      if (met.has(t)) out.shared += 1;
+      else met.add(t);
+    } else if (time[i]! - time[j]! < TAPE_MS) {
       if (refused++ === 0)
-        first = `the user ${users[user[i]!]} has the tid ${t} in two records, at ${new Date(time[j]!).toISOString()} and ${new Date(time[i]!).toISOString()}`;
-      continue;
-    }
-    firstRow.set(k, i);
-    if (met.has(t)) shared += 1;
-    else met.add(t);
+        first = `the user ${users[user[i]!]} has the tid ${t} in two records less than 60 s apart, at ${new Date(time[j]!).toISOString()} and ${new Date(time[i]!).toISOString()}`;
+    } else out.apart += 1;
   }
   if (refused > 0)
     throw new StoreError(
       `${what}: ${first}${refused > 1 ? ` (${refused} in all)` : ""}`,
     );
-  return shared;
+  return out;
 }
 
 export type MergeInput = {
@@ -331,7 +335,11 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
     bars: { in: 0, out: 0, duplicates: 0 },
     liq: { in: 0, out: 0, duplicates: 0 },
   };
-  const tids: Manifest["counts"]["tids"] = { shared: {}, refused: 0 };
+  const tids: Manifest["counts"]["tids"] = {
+    shared: {},
+    sameUserApart: {},
+    refused: 0,
+  };
   const partitions: Partition[] = [];
   const small = new Set(o.small);
   for (const month of o.months) {
@@ -472,9 +480,10 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
     const minutes = Math.max(0, (g1 - g0) / MINUTE_MS);
     const off = (g0 - o.grid.start) / MINUTE_MS;
 
-    // The month's rows dropped, and its coins' records kept with another user's `tid`.
+    // The month's rows dropped, and its coins' records kept with another user's `tid` or 60 s or more after their own.
     let dropped = liqs.n - lkeep.length;
     const shared: Record<string, number> = {};
+    const sameUserApart: Record<string, number> = {};
     for (const coin of o.forty) {
       const acc = takers.get(coin)!;
       const order = Array.from({ length: acc.n }, (_, i) => i).sort(
@@ -502,9 +511,13 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
       const user = pick(acc.user, keep);
       const time = pick(acc.time, keep);
       const s = checkUnique(tid, user, time, `${coin} ${month}`, users);
-      if (s > 0) {
-        shared[coin] = s;
-        tids.shared[`${coin} ${month}`] = s;
+      if (s.shared > 0) {
+        shared[coin] = s.shared;
+        tids.shared[`${coin} ${month}`] = s.shared;
+      }
+      if (s.apart > 0) {
+        sameUserApart[coin] = s.apart;
+        tids.sameUserApart[`${coin} ${month}`] = s.apart;
       }
       const table = small.has(coin) ? counts.tape! : counts.bars!;
       table.in += acc.n;
@@ -616,6 +629,7 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
       liq: lkeep.length,
       duplicates: dropped,
       shared,
+      sameUserApart,
       seconds: Math.round((Date.now() - tm) / 1000),
       rssMB: Math.round(process.memoryUsage().rss / 2 ** 20),
     });
