@@ -1,5 +1,41 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the analyzer's store of WAVE-H's 10 months
+is trusted): **EVERY GATE PASSED. THE EXPLORATION RUNS.**
+
+**The run** (main's build `992a44f`, fingerprint `9272a8c1…`, heap
+20,672 MB; detached at idle priority from the supervisor's
+`verify/POLISH-RUN/`):
+- **`extract`:** 15:20:09 → 16:32:54Z, exit 0.
+  - Pass 3,106 s, contexts 146 s, funding 6 s, merge 1,112 s.
+  - 1,521 partitions.
+  - The same 4 shared tids as the first run; 0 same-user pairs; 0
+    duplicates.
+- **`gates`:** 16:35:38 → 17:18:01Z, exit 0, "every gate passed" (2,548
+  s).
+  - **G0:** 14,563 files, 21,251,178,093 B; counters 0; the store's code
+    equals the gates'.
+  - **G1:** 2,421,070 counted fills; no day differing.
+  - **G2:** 1,299 positions; everySlice 176,986; the positions' SHA-256
+    `a5506b86…85e5`, the look's.
+  - **G3:** 1,589 lines, 1,289 priced, largest difference 0 bps.
+  - **G4:** 33,514 instants, 0 unmarked.
+  - **G5:** 0 straddled, 0 edge, `known` the three listed records, 0
+    problems.
+  - **G6:** the 15 sample days.
+- **`explore`'s frame:** exit 0 at 17:21Z. Store manifest SHA-256
+  `19b72688…3c92`; 697,852 users; tape rows 448,389,336 in = out.
+- **`gates.json`** SHA-256 `8aef300d…b968`, copied to
+  `verify/POLISH-RUN/gates-run2.json`.
+
+**Next:**
+1. The five steps from the same build: features, the cuts commit, e,
+   choice, c and beside.
+2. Then POLISH-EXPLORE-REPORT and POLISH-EXPLORE-REVIEW.
+3. After the review closes, the folders `ANALYZER\WAVE-H-stopped-1\` and
+   `WAVE-H-gates-failed-1\` are deleted, the timing stores too, and the
+   worktree of `598abd8` is removed.
+
 2026-11-19 (EXTRACT-FIX-4 — the supervisor's ruling below, built): **G5
 PASSES ONLY WHEN THE RECORDS LEFT UNPAIRED AFTER THE STRADDLES AND THE
 EDGES ARE EXACTLY THOSE `apps/poller/polish/known-unpaired.json` LISTS,
