@@ -1,5 +1,95 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the exam's placebo and WITHHELD projection
+ran; three questions ruled under the owner's overnight go): **z FOR LOOK 1
+IS 2.847 (LIKELY 2.360). OPTION B, CUTTING THE DAYS WITHOUT BOOKS, BRINGS
+THE CHANCE OF WITHHELD FROM ABOUT 12% TO ABOUT 2%; IT IS THE RECOMMENDED
+DEFAULT, AND THE OWNER CONFIRMS IT AT THE TALK. ONLY HOLDS OR DOES NOT HOLD
+END THE EXAM EARLY.**
+
+**The owner's go, 2026-11-19 about 23:38Z:** "please continue over the
+night. as usually only critical things you should stop, otherwise i agree
+on your suggestions".
+
+**The placebo** (`exam --step placebo`, 23:21:16–23:27:39Z, exit 0, peak
+2.6 GB; `ANALYZER\POLISH-RULES\placebo.json`, SHA-256 `c25345f7…9575`,
+checked by the supervisor):
+- **Its checks passed:**
+  - N's E lines are B0's at W4 ≥ 336, one for one;
+  - W4's E quantiles come out at exactly 336, 715 and 1,391;
+  - N at K = 147 equals `beside.json`'s placebo to the bit;
+  - K = 10 agrees with POLISH-EXPLORE-REVIEW's independent placebo within
+    sampling noise.
+- **z by T10:**
+
+  | Looks | HOLDS | LIKELY |
+  |---|---|---|
+  | Two looks, look 1 (100 days) | 2.847 | 2.360 |
+  | Two looks, look 2 (182 days) | 2.81 | 2.437 |
+  | One later look | 2.653 | 2.213 |
+
+  Every value above its floor comes from the 715 line's day flips (E
+  alone). Its 182-day windows are only 30 distinct starts.
+- **The projection** (F13; P(HOLDS) / P(LIKELY or HOLDS)):
+
+  | Line | Look 1 | Look 2 | One later look |
+  |---|---|---|---|
+  | 715 line (E alone: 203.4 less 79.1; seeded, optimistic) | 4.3% / 11.0% | 10.1% / 18.3% | 13.2% / 24.9% |
+  | N (C: 211.3 less 122.1) | 4.6% / 11.5% | 7.9% / 14.9% | 10.4% / 20.7% |
+
+  The safety net and TOO FEW fire in none of E's 100-day windows.
+
+**The WITHHELD projection** (`workers\POLISH-RULES\withheld\withheld.mjs`;
+`ANALYZER\POLISH-RULES\withheld\withheld.json`, SHA-256 `8e8249d7…3048`;
+counts only):
+- **The model is checked.** Every leg of N's slices 0–19 was walked again
+  at the tape and equals the sweep (13,002). The model reproduces the
+  look's own shares on TEST: 6.02% against 6.02%, and 4.58% against 4.58%.
+- **The 715 line under option A** (as planned, E's rates): mean 5.1%,
+  P(WITHHELD) 11.6%; 19.6% if 2026-11-13 → 15 also lack books.
+- **By part:**
+  - book short: 0;
+  - tape short: 1.9;
+  - unpriced at the tape: 1.0;
+  - funding without a price: 2.4 (one day, 2025-07-18);
+  - F7's 07-08: 0.07.
+- **Option B** (a position with a leg on 2026-07-08 or 07-12 → 17 is cut
+  from the deciding days and printed apart):
+  - mean 2.2%, P(WITHHELD) 1.8%;
+  - with C's rates: 4.3%, 6.3%;
+  - cost: 10% of the line's positions (9 entry days), the error about 5%
+    larger, P(HOLDS) at look 1 4.3% → 3.9%, the safety net firing in 7.1%
+    of E's windows.
+- **Options C and D** are not recommended:
+  - C, tape-short legs counted as priced: N's short legs carry half its
+    gain;
+  - D, a higher threshold.
+
+**The rulings:**
+1. **Q1, WITHHELD: option B is the marked option's recommended default.**
+   - Its days are fixed at the freeze from F7's list, the archive
+     listing's metadata (today 2026-07-08 and 07-12 → 17).
+   - Step 1's safety net and step 2 cut the same days.
+   - A day the fetch later finds without books is not cut; its legs go to
+     the tape, as under A.
+   - At the owner's talk the owner confirms B or keeps A.
+   - Why: it trades about 0.4 points of P(HOLDS) for about 10 points less
+     risk of an exam that cannot answer.
+2. **Q2, F14 read as MARKET-1's M11, which F14 names:** only HOLDS or DOES
+   NOT HOLD end the exam at look 1. WITHHELD, TOO FEW, LIKELY and NOT
+   SETTLED let look 2 run, and at the last look the reading stands. Why: a
+   data problem at look 1 must not end the exam with no answer. The z of
+   each look already pays for two looks.
+3. **Q3 (T12) confirmed:** the safety net is read once, at the first look's
+   step 1, and the line it picks decides every later look. One rule decides
+   the exam.
+
+**For the owner's talk (unchanged):** the looks, WITHHELD's B (recommended)
+or A, and Q4. **A correction to the supervisor's rough word to the owner:**
+the 715 rule's conservative chance at look 1 is about the same as N's
+(4.3% against 4.6%), not double. Its edge shows at look 2 and at one later
+look.
+
 2026-11-19 (the owner — the exam's recipe): **THE 715 CUT DECIDES THE EXAM
 ON FRESH, WITH THE SAFETY NET. N AND THE 1,391 CUT ARE PRINTED BESIDE.
 EVERY OTHER VARIATION IS RECORDED FOR A LATER TALK.**
