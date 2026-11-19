@@ -505,15 +505,19 @@ deleted first. Then:
   first (addresses sorted, so an id's order is its address's; liq's coins,
   methods and `dir`s); each coin's takers in H8's order (time, user, `tid`,
   then the file's), a second record of one (time, user, `tid`) dropped, a
-  `tid` twice refused; liq alike; a coin's month freed once written.
+  (user, `tid`) twice refused, two users' records of one `tid` kept and
+  counted (Hyperliquid's `tid` is not unique: decisions 2026-11-19); liq
+  alike; a coin's month freed once written; each month's log line names
+  its rows dropped and its shared records by coin.
 
 **The store** (`<ANALYZER_ROOT>\store\`, `store.ts`; read only through the
 manifest, every file held to its size and SHA-256):
 - `manifest.json`, written last: the range, the inputs and the list's
   SHA-256, the code's fingerprint (`dist/polish`'s files) and WAVE-H's
   freeze, every partition's rows and every file's bytes and SHA-256, the
-  counts (the merge's rows in, out and duplicates by table), the peaks and
-  each step's seconds;
+  counts (the merge's rows in, out and duplicates by table; `tids`, the
+  shared records kept by coin-month and `refused`, 0), the peaks and each
+  step's seconds;
 - `files.jsonl` (each input file's counts, its `unpaired` (coin, `tid`)s
   among them), `dict\users.bin` (20 bytes an address, sorted),
   `dict\names.json`;

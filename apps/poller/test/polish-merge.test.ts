@@ -2,15 +2,24 @@
  * The merge and the store (src/polish/merge.ts, store.ts): parts of a
  * synthetic store across a month's end and the hour both formats share,
  * merged and read back — H8's order with its ties, a record in both formats
- * kept once (the first file's), a `tid` twice refused, rows in their months,
- * the minute bars and contexts, funding, the dictionaries' order, the same
- * files from the parts in another order, and a file that differs refused.
+ * kept once (the first file's), two users' records of one `tid` kept and
+ * counted (the two HYPE trades of June 2025 among them), one user's `tid`
+ * twice refused, rows in their months, the minute bars and contexts, funding,
+ * the dictionaries' order, the same files from the parts in another order,
+ * and a file that differs refused.
  */
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { addDay, newContexts, type Funding } from "../src/polish/ctxs.js";
+import { digitsOf } from "../src/polish/counted.js";
+import {
+  addDay,
+  newContexts,
+  type Contexts,
+  type Funding,
+  type Grid,
+} from "../src/polish/ctxs.js";
 import {
   merge,
   monthsOf,
@@ -182,6 +191,11 @@ function world(extra: string[] = []) {
       `${byBlock(5, soldOut(addr(3), H2 + 30 * MIN, 777))}\n`,
     ],
   ]);
+  return storeOf(files);
+}
+
+/** A raw store of these files alone, and its fill files as the pass's tasks, in the map's order. */
+function storeOf(files: Map<string, string>) {
   const { store } = makeStore(files, false);
   const list = manifestList(
     readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
@@ -193,6 +207,40 @@ function world(extra: string[] = []) {
   }));
   return { store, tasks };
 }
+
+/**
+ * The two HYPE trades of June 2025 that share one `tid`, each its maker's and
+ * its taker's record as the archive wrote them (read 2026-11-19 from WAVE-H's
+ * raw store, each file held to `waveh/data.sha256`): the extraction's first
+ * run stopped on them (decisions 2026-11-19).
+ */
+const SHARED_TID = "899064266001530";
+const HYPE_TRADES = new Map([
+  [
+    "node_fills/hourly/20250618/16.lz4",
+    [
+      '["0xe94bf59e6beeb153c8a6dc28d8683865339c9958",{"coin":"HYPE","px":"38.747","sz":"0.57","side":"B","time":1750264851943,"startPosition":"3936.55","dir":"Open Long","closedPnl":"0.0","hash":"0xcdbdf83aa1601c7c8c890425c369b80201c700be3af1b1f9731d2b74ce963a3f","oid":103775832468,"crossed":false,"fee":"0.000883","tid":899064266001530,"feeToken":"USDC"}]',
+      '["0xc5ed4501500fcbfb2b88fb7f0aa52f834ed44346",{"coin":"HYPE","px":"38.747","sz":"0.57","side":"A","time":1750264851943,"startPosition":"-1340.45","dir":"Open Short","closedPnl":"0.0","hash":"0xcdbdf83aa1601c7c8c890425c369b80201c700be3af1b1f9731d2b74ce963a3f","oid":103775962486,"crossed":true,"fee":"0.004328","tid":899064266001530,"cloid":"0x00000000d4ec000432924bb6936a172e","feeToken":"USDC"}]',
+    ],
+  ],
+  [
+    "node_fills/hourly/20250630/1.lz4",
+    [
+      '["0x7632bc759ac904181b6d6f3d885afba8891f0798",{"coin":"HYPE","px":"40.135","sz":"28.61","side":"B","time":1751247542640,"startPosition":"-2631.59","dir":"Close Short","closedPnl":"-3.161405","hash":"0xab3de3451f193966fb550426834fa2020931004d16946c9fb86484a4450d00fa","oid":107515091144,"crossed":false,"fee":"-0.034447","tid":899064266001530,"cloid":"0x20250630000000000000000000117782","feeToken":"USDC"}]',
+      '["0x0284bbd3646b59740a167ef78a306028343f3806",{"coin":"HYPE","px":"40.135","sz":"28.61","side":"A","time":1751247542640,"startPosition":"-10228.5","dir":"Open Short","closedPnl":"0.0","hash":"0xab3de3451f193966fb550426834fa2020931004d16946c9fb86484a4450d00fa","oid":107515091459,"crossed":true,"fee":"0.367443","tid":899064266001530,"feeToken":"USDC"}]',
+    ],
+  ],
+]);
+/** Their takers, in time order. */
+const HYPE_TAKERS = [
+  "0xc5ed4501500fcbfb2b88fb7f0aa52f834ed44346",
+  "0x0284bbd3646b59740a167ef78a306028343f3806",
+] as const;
+/** The minutes from the first trade's hour, 2025-06-18 16h, to the second's end, 06-30 02:00Z: 11 days and 10 hours. */
+const HYPE_GRID: Grid = {
+  start: Date.parse("2025-06-18T16:00:00Z"),
+  minutes: (11 * 24 + 10) * 60,
+};
 
 const tmp = (name: string) => {
   const d = mkdtempSync(path.join(tmpdir(), `polish-${name}-`));
@@ -227,19 +275,6 @@ async function build(
   order: (t: FileTask[]) => FileTask[] = (t) => t,
   hooks: Pick<MergeInput, "pace" | "log"> = quiet,
 ) {
-  const { store, tasks } = world(extra);
-  const parts = tmp("parts");
-  await runPass({
-    store,
-    parts,
-    files: tasks,
-    end: DATA_END,
-    code: "c",
-    forty: FORTY,
-    small: SMALL,
-    workers: 0,
-    ...quiet,
-  });
   const contexts = newContexts(GRID, FORTY);
   addDay(
     contexts,
@@ -261,6 +296,30 @@ async function build(
       ["SOL", { windows: { "2025-06-14": 2 }, failed: 0, late: 0 }],
     ]),
   };
+  return merged(world(extra), GRID, contexts, funding, order, hooks);
+}
+
+/** A raw store's files through the pass, then the merge of the grid's months. */
+async function merged(
+  { store, tasks }: { store: string; tasks: FileTask[] },
+  grid: Grid,
+  contexts: Contexts,
+  funding: Funding,
+  order: (t: FileTask[]) => FileTask[] = (t) => t,
+  hooks: Pick<MergeInput, "pace" | "log"> = quiet,
+) {
+  const parts = tmp("parts");
+  await runPass({
+    store,
+    parts,
+    files: tasks,
+    end: DATA_END,
+    code: "c",
+    forty: FORTY,
+    small: SMALL,
+    workers: 0,
+    ...quiet,
+  });
   const dir = tmp("store");
   const manifest = await merge(
     {
@@ -268,18 +327,38 @@ async function build(
       dir,
       files: order(tasks),
       code: "c",
-      months: monthsOf(GRID.start, GRID.start + GRID.minutes * MIN),
-      grid: GRID,
+      months: monthsOf(grid.start, grid.start + grid.minutes * MIN),
+      grid,
       small: SMALL,
       forty: FORTY,
       contexts,
       funding,
       ...hooks,
     },
-    META,
+    {
+      ...META,
+      minuteStart: grid.start,
+      inputs: { ...META.inputs, fill: tasks.length },
+    },
   );
   return { dir, manifest };
 }
+
+/** The two HYPE trades alone, merged over their grid, the second trade's taker `taker2`. */
+const hypeMerged = (taker2: string = HYPE_TAKERS[1]) =>
+  merged(
+    storeOf(
+      new Map(
+        [...HYPE_TRADES].map(([key, lines]) => [
+          key,
+          `${lines.join("\n")}\n`.replace(HYPE_TAKERS[1], taker2),
+        ]),
+      ),
+    ),
+    HYPE_GRID,
+    newContexts(HYPE_GRID, FORTY),
+    { byCoin: new Map(), counts: new Map() },
+  );
 
 describe("the merge", { timeout: 60_000 }, () => {
   it("writes each coin's tape in H8's order, rows in their months, a record in both formats once", async () => {
@@ -333,6 +412,7 @@ describe("the merge", { timeout: 60_000 }, () => {
       bars: { in: 1, out: 1, duplicates: 0 },
       liq: { in: 8, out: 6, duplicates: 2 },
     });
+    expect(manifest.counts.tids).toEqual({ shared: {}, refused: 0 });
   });
 
   it("keeps liq's first file's record of the hour both formats hold, with every coin's names", async () => {
@@ -558,16 +638,182 @@ describe("the merge", { timeout: 60_000 }, () => {
     ]);
   });
 
-  it("stops at a tid in two taker records", async () => {
-    await expect(
-      build(
-        trade(addr(6), addr(60), {
+  it("keeps two users' records of one tid, at two instants or at one, in H8's order, each trade paired in its file; counts them in the manifest and the month's log line, beside the rows dropped", async () => {
+    const lines: [string, Record<string, unknown>][] = [];
+    const built = build(
+      [
+        // Another user's trade with the tid of addr(9)'s at H1 + 5 min: two trades.
+        ...trade(addr(6), addr(63), {
           coin: "SOL",
           side: "B",
           time: H1 + 9 * MIN,
           tid: 7,
         }),
-      ),
-    ).rejects.toThrow("SOL 2025-07: the tid 7 is in two records");
+        // Two users' trades of one tid at one instant: by address.
+        ...trade(addr(12), addr(64), {
+          coin: "SOL",
+          side: "A",
+          time: H1 + 8 * MIN,
+          tid: 70,
+        }),
+        ...trade(addr(1), addr(65), {
+          coin: "SOL",
+          side: "A",
+          time: H1 + 8 * MIN,
+          tid: 70,
+        }),
+        // BTC's alike: its bars count both.
+        ...trade(addr(13), addr(67), {
+          coin: "BTC",
+          side: "B",
+          time: H1 + 11 * MIN,
+          px: "60000",
+          sz: "0.1",
+          tid: 80,
+        }),
+        ...trade(addr(14), addr(68), {
+          coin: "BTC",
+          side: "A",
+          time: H1 + 12 * MIN,
+          px: "60010",
+          sz: "0.2",
+          tid: 80,
+        }),
+      ],
+      (t) => t,
+      {
+        pace: () => Promise.resolve(),
+        log: (event, fields) =>
+          lines.push([event, fields as Record<string, unknown>]),
+      },
+    );
+    // Not refused: the merge resolves.
+    await expect(built).resolves.toBeDefined();
+    const { dir, manifest } = await built;
+    const s = openStore(dir);
+    const users = s.users();
+    const p = s.partition("tape", "SOL", "2025-07");
+    const tid = s.column(p, "tid") as Uint32Array;
+    expect({
+      time: [...s.column(p, "time")],
+      user: [...s.column(p, "user")].map((u) => users[u]),
+      tid: Array.from({ length: p.rows }, (_, i) => digitsOf(tid, i)),
+      side: [...s.column(p, "side")],
+    }).toEqual({
+      time: [
+        H1 + 5 * MIN,
+        H1 + 5 * MIN,
+        H1 + 6 * MIN,
+        H1 + 6 * MIN,
+        H1 + 8 * MIN,
+        H1 + 8 * MIN,
+        H1 + 9 * MIN,
+        H2 + 30 * MIN,
+      ],
+      user: [
+        addr(2),
+        addr(9),
+        addr(5),
+        addr(5),
+        addr(1),
+        addr(12),
+        addr(6),
+        addr(3),
+      ],
+      tid: ["8", "7", "40", "50", "70", "70", "7", "777"],
+      side: [1, 1, 1, 1, -1, -1, 1, -1],
+    });
+    const btc = s.partition("minute", "BTC", "2025-07");
+    expect(
+      ["trades", "buyNtl", "sellNtl"].map((c) => [
+        ...s.column(btc, c).subarray(11, 13),
+      ]),
+    ).toEqual([
+      [1, 1],
+      [6000, 0],
+      [0, 12002],
+    ]);
+    expect(manifest.counts.tids).toEqual({
+      shared: { "SOL 2025-07": 2, "BTC 2025-07": 1 },
+      refused: 0,
+    });
+    expect(manifest.counts.merge).toMatchObject({
+      tape: { in: 14, out: 13, duplicates: 1 },
+      bars: { in: 3, out: 3, duplicates: 0 },
+    });
+    expect(s.files().map((f) => f.unpaired)).toEqual([[], [], [], []]);
+    expect(
+      lines
+        .filter(([event]) => event === "month")
+        .map(([, f]) => [f.month, f.duplicates, f.shared]),
+    ).toEqual([
+      ["2025-06", 0, {}],
+      ["2025-07", 3, { SOL: 2, BTC: 1 }],
+    ]);
+  });
+
+  it("stops at one user's tid in two records at two instants, naming the user, the tid and both instants, and how many in all", async () => {
+    const again = (user: number, tid: number, time: number) =>
+      trade(addr(user), addr(66), { coin: "SOL", side: "B", time, tid });
+    const iso = (t: number) => new Date(t).toISOString();
+    const first = `SOL 2025-07: the user ${addr(9)} has the tid 7 in two records, at ${iso(H1 + 5 * MIN)} and ${iso(H1 + 9 * MIN)}`;
+    const one = await build(again(9, 7, H1 + 9 * MIN)).catch((e: unknown) => e);
+    expect(one).toBeInstanceOf(StoreError);
+    expect((one as Error).message).toBe(first);
+    const two = await build([
+      ...again(9, 7, H1 + 9 * MIN),
+      ...again(5, 40, H1 + 10 * MIN),
+    ]).catch((e: unknown) => e);
+    expect(two).toBeInstanceOf(StoreError);
+    expect((two as Error).message).toBe(`${first} (2 in all)`);
+  });
+
+  it("keeps the two HYPE trades of June 2025 that share a tid, the archive's records as they are, and refuses them when both are one user's; a manifest naming a refusal does not open", async () => {
+    const built = hypeMerged();
+    await expect(built).resolves.toBeDefined();
+    const { dir, manifest } = await built;
+    const s = openStore(dir);
+    const users = s.users();
+    const p = s.partition("tape", "HYPE", "2025-06");
+    const tid = s.column(p, "tid") as Uint32Array;
+    expect({
+      time: [...s.column(p, "time")],
+      user: [...s.column(p, "user")].map((u) => users[u]),
+      tid: Array.from({ length: p.rows }, (_, i) => digitsOf(tid, i)),
+      px: [...s.column(p, "px")],
+      sz: [...s.column(p, "sz")],
+      side: [...s.column(p, "side")],
+    }).toEqual({
+      time: [1750264851943, 1751247542640],
+      user: [...HYPE_TAKERS],
+      tid: [SHARED_TID, SHARED_TID],
+      px: [38.747, 40.135],
+      sz: [0.57, 28.61],
+      side: [-1, -1],
+    });
+    expect(manifest.counts.tids).toEqual({
+      shared: { "HYPE 2025-06": 1 },
+      refused: 0,
+    });
+    expect(manifest.counts.merge.tape).toEqual({
+      in: 2,
+      out: 2,
+      duplicates: 0,
+    });
+    expect(s.files().map((f) => [f.key, f.unpaired])).toEqual(
+      [...HYPE_TRADES.keys()].map((key) => [key, []]),
+    );
+    const err = await hypeMerged(HYPE_TAKERS[0]).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(StoreError);
+    expect((err as Error).message).toBe(
+      `HYPE 2025-06: the user ${HYPE_TAKERS[0]} has the tid ${SHARED_TID} in two records, at 2025-06-18T16:40:51.943Z and 2025-06-30T01:39:02.640Z`,
+    );
+    const file = path.join(dir, "manifest.json");
+    const m = JSON.parse(readFileSync(file, "utf8")) as {
+      counts: { tids: { refused: number } };
+    };
+    m.counts.tids.refused = 1;
+    writeFileSync(file, JSON.stringify(m));
+    expect(() => openStore(dir)).toThrow(/refused/);
   });
 });

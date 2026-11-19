@@ -1,5 +1,86 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (EXTRACT-FIX-3's technical calls — the supervisor's ruling on the
+shared trade id, built before the run): **THE MERGE'S TAKER CHECK KEYS ON
+(USER, TID), AS WAVE-H KEYS A FILL: TWO USERS' RECORDS OF ONE TID ARE KEPT
+AND COUNTED, AND ONE USER'S TID AT TWO INSTANTS STILL STOPS THE RUN, NAMED.
+NO OTHER PLACE IN `src/polish/` TAKES A TID ALONE FOR A TRADE.**
+
+**The records** (the supervisor's two, re-read from WAVE-H's raw store,
+each file held to `waveh/data.sha256`):
+- `node_fills/hourly/20250618/16.lz4`: a HYPE trade at 1750264851943, px
+  38.747, sz 0.57, maker `0xe94b…9958`, taker `0xc5ed…4346`;
+- `20250630/1.lz4`: another at 1751247542640, px 40.135, sz 28.61, maker
+  `0x7632…0798`, taker `0x0284…3f06`.
+
+Both carry `tid` 899064266001530; each trade's two legs share their time
+and hash. Hyperliquid's docs give a `tid` as a 50-bit hash of the two
+orders' ids, and (block_time, coin, tid) as a trade's unique id
+(external-apis, 2026-11-19).
+
+**The change** (`merge.ts` `checkUnique`; the specification WAVE-H's rule,
+rules.md H2, its tape skipping a seen user and `tid`):
+- A coin's month of kept takers is still sorted by `tid` natively; only
+  the `tid`s met twice are then read user by user. Two users' records are
+  two trades: both kept, in H8's order.
+- One user's `tid` twice, after the duplicate drop, stops the run (exit
+  5), naming the coin-month, the user, the `tid`, both instants and how
+  many in all.
+- The three counts: the duplicates dropped stay `counts.merge`'s; the
+  manifest's new `counts.tids` holds the shared records kept, by
+  "<coin> <month>", and `refused: 0` (a refusal stops the merge before the
+  manifest; a manifest naming one does not parse); each month's log line
+  names its `duplicates` and its `shared` by coin.
+- **The duplicate drop agrees with WAVE-H's "counts once":** its key
+  (time, user, `tid`) is narrower, but with the check after it each (user,
+  `tid`) is kept once in a coin's month, the first file's: dropped at one
+  instant, refused at two.
+
+**What the other places do with two trades of one `tid`:**
+- **liq's check** keys on (user, `tid`) already: the four legs are kept;
+  one user's `tid` twice in a month stops the run. Its scope is a month,
+  WAVE-H's pass the whole run: a user's `tid` in two months would be kept
+  twice, and G1's legs would show it.
+- **G5** pairs by (coin, `tid`) in a file, by count: two whole trades of
+  one `tid` are two takers and two makers, paired, which is right. Only
+  holes or straddles on exactly those trades can mislead it: two halves of
+  different trades missing would pass, in one file or as a straddle of two
+  files next to each other; two trades of one `tid` both straddling would
+  fail it. Pairing by (coin, `tid`, time), Hyperliquid's trade id, would
+  close it; not done.
+- **G6's sums** (rows, Σ `tid`, Σ px·sz) count both trades on both sides:
+  its raw re-read keeps a record once by user and `tid`.
+- **`files.jsonl`'s `unpaired`**: per file and (coin, `tid`), takers less
+  makers, as G5 reads them.
+- **The exploration:** the forced fills sort by (t, asset id, user, `tid`)
+  and match the counted fills one for one; the sweep reads a leg's levels
+  by coin, side and time, without `tid`; `beside.ts` finds a line's fill by
+  (t, asset id, `tid`) only for its B1 episode, which (t, asset id) alone
+  decides.
+- The check's scope is a coin's month: one user's `tid` at two instants
+  less than 60 s apart across a month's end would be kept twice where
+  WAVE-H's tape keeps one.
+
+**Tests:** the merge's (two users' trades of one `tid` at two instants and
+at one, SOL's and BTC's; the refusal's message and its count; the two HYPE
+trades' four records as the archive wrote them, kept, and refused when both
+takers are one user; a manifest naming a refusal) and the gates world's (a
+second user's SOL trade of `tid` 7 on WAVE-H's entry tape: G0–G6 pass).
+
+**Breaks:** 30, in two scratch copies of `83c038b` with the change laid
+over, the unbroken copies passing first (14 and 25 tests): 28 on the
+merge's tests (every rule of the check, its call, the counts, the log line
+and the schema; and a wrong fix, the drop by `tid` alone), 2 on the gates
+world (the old rule; the wrong fix). All 30 killed, 29 by a test's
+assertion and the old rule on the gates world by the extract's own stop in
+the world's setup; none by a timeout or a syntax error. Lists, harness and
+results: the supervisor folder's `workers\EXTRACT-FIX-3\breaks\`.
+
+**Open, the supervisor's call before the run:** whether one user's `tid`
+at two instants 60 s or more apart should be kept instead (WAVE-H's tape
+keeps both, each in its own window). EXTRACT-FIX-3's report gives the
+estimate and its recommendation.
+
 2026-11-19 (the supervisor — the extraction's run stopped on a shared trade
 id; under the owner's go "keep working and notify me"): **THE MERGE'S
 GUARD KEYS ON (USER, TID), AS WAVE-H KEYS A FILL. EXTRACT-FIX-3 MAKES THE

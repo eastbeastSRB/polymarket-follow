@@ -6,12 +6,13 @@
  * and `dir`s, sorted. Then month by month: each coin's taker rows in H8's
  * order (time, the user's address, `tid`, then the input file's order), a
  * second record of one (time, user, `tid`) dropped and counted (the first
- * file's kept), a `tid` met twice in a coin's month stopping the run; liq
- * alike by (time, coin, user, `tid`, file), a (user, `tid`) met twice
- * stopping it. Written for each month: the 38 coins' tape, liq, the 40
- * coins' minute table (the contexts and the bars from their takers), the 38
- * coins' funding; each file whole, its size and SHA-256 kept; then
- * `files.jsonl` and the manifest, last.
+ * file's kept), a (user, `tid`) met twice in a coin's month stopping the
+ * run, two users' records of one `tid` kept and counted; liq alike by
+ * (time, coin, user, `tid`, file), a (user, `tid`) met twice stopping it.
+ * Written for each month: the 38 coins' tape, liq, the 40 coins' minute
+ * table (the contexts and the bars from their takers), the 38 coins'
+ * funding; each file whole, its size and SHA-256 kept; then `files.jsonl`
+ * and the manifest, last.
  */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
@@ -192,13 +193,53 @@ function pick<T extends Typed>(
   return out;
 }
 
-/** Every `tid` (u64 halves) once, else the run stops: in a coin's taker rows a trade has one taker. */
-function checkUnique(tid: Uint32Array, what: string): void {
-  const b = new BigUint64Array(tid.slice().buffer);
-  b.sort();
-  for (let i = 1; i < b.length; i++)
-    if (b[i] === b[i - 1])
-      throw new StoreError(`${what}: the tid ${b[i]} is in two records`);
+/**
+ * Each (user, `tid`) once in a coin's month of kept taker rows (`tid` as u64
+ * halves), WAVE-H's rule (rules.md H2; its tape skips a seen user and
+ * `tid`), else the run stops, naming the user, the `tid` and both instants.
+ * Two users' records of one `tid` are two trades, both kept: Hyperliquid's
+ * `tid` is a 50-bit hash of the two orders' ids (decisions 2026-11-19).
+ * Returns how many records share their `tid` with an earlier one of
+ * another user.
+ */
+function checkUnique(
+  tid: Uint32Array,
+  user: Uint32Array,
+  time: Float64Array,
+  what: string,
+  users: readonly string[],
+): number {
+  // Every `tid` once, the common case, by a native sort; then only the few met twice, user by user.
+  const sorted = new BigUint64Array(tid.slice().buffer).sort();
+  const twice = new Set<bigint>();
+  for (let i = 1; i < sorted.length; i++)
+    if (sorted[i] === sorted[i - 1]) twice.add(sorted[i]!);
+  if (twice.size === 0) return 0;
+  const rows = new BigUint64Array(tid.buffer, tid.byteOffset, user.length);
+  const firstRow = new Map<string, number>();
+  const met = new Set<bigint>();
+  let refused = 0;
+  let first = "";
+  let shared = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const t = rows[i]!;
+    if (!twice.has(t)) continue;
+    const k = `${user[i]} ${t}`;
+    const j = firstRow.get(k);
+    if (j !== undefined) {
+      if (refused++ === 0)
+        first = `the user ${users[user[i]!]} has the tid ${t} in two records, at ${new Date(time[j]!).toISOString()} and ${new Date(time[i]!).toISOString()}`;
+      continue;
+    }
+    firstRow.set(k, i);
+    if (met.has(t)) shared += 1;
+    else met.add(t);
+  }
+  if (refused > 0)
+    throw new StoreError(
+      `${what}: ${first}${refused > 1 ? ` (${refused} in all)` : ""}`,
+    );
+  return shared;
 }
 
 export type MergeInput = {
@@ -290,6 +331,7 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
     bars: { in: 0, out: 0, duplicates: 0 },
     liq: { in: 0, out: 0, duplicates: 0 },
   };
+  const tids: Manifest["counts"]["tids"] = { shared: {}, refused: 0 };
   const partitions: Partition[] = [];
   const small = new Set(o.small);
   for (const month of o.months) {
@@ -430,6 +472,9 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
     const minutes = Math.max(0, (g1 - g0) / MINUTE_MS);
     const off = (g0 - o.grid.start) / MINUTE_MS;
 
+    // The month's rows dropped, and its coins' records kept with another user's `tid`.
+    let dropped = liqs.n - lkeep.length;
+    const shared: Record<string, number> = {};
     for (const coin of o.forty) {
       const acc = takers.get(coin)!;
       const order = Array.from({ length: acc.n }, (_, i) => i).sort(
@@ -454,12 +499,18 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
         keep.push(i);
       }
       const tid = pick(acc.tid, keep, true);
-      checkUnique(tid, `${coin} ${month}`);
+      const user = pick(acc.user, keep);
+      const time = pick(acc.time, keep);
+      const s = checkUnique(tid, user, time, `${coin} ${month}`, users);
+      if (s > 0) {
+        shared[coin] = s;
+        tids.shared[`${coin} ${month}`] = s;
+      }
       const table = small.has(coin) ? counts.tape! : counts.bars!;
       table.in += acc.n;
       table.out += keep.length;
       table.duplicates += acc.n - keep.length;
-      const time = pick(acc.time, keep);
+      dropped += acc.n - keep.length;
       const px = pick(acc.px, keep);
       const sz = pick(acc.sz, keep);
       const side = pick(acc.side, keep);
@@ -472,7 +523,7 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
             ["sz.f64", sz],
             ["side.i8", side],
             ["flags.u8", flags],
-            ["user.u32", pick(acc.user, keep)],
+            ["user.u32", user],
             ["tid.u64", tid],
           ]),
         );
@@ -563,6 +614,8 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
       month,
       parts: chosen.length,
       liq: lkeep.length,
+      duplicates: dropped,
+      shared,
       seconds: Math.round((Date.now() - tm) / 1000),
       rssMB: Math.round(process.memoryUsage().rss / 2 ** 20),
     });
@@ -618,6 +671,7 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
       badCells: Object.fromEntries(c.badCells),
       funding: Object.fromEntries(o.funding.counts),
       merge: counts,
+      tids,
     },
     peaks: meta.peaks(),
     seconds: { ...meta.seconds, merge: Math.round((Date.now() - t0) / 1000) },

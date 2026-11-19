@@ -461,6 +461,14 @@ read from a venue's page is as that page read on the day.
   (user = `liquidatedUser`, `crossed` true, `startPosition` non-zero and
   opposite to the side) and the counterparty's (a maker, `crossed` false),
   with one `tid` and one `hash`. Method seen in that hour: "market".
+- **A `tid` is not unique across trades** (2026-11-19, EXTRACT-FIX-3):
+  Hyperliquid's docs (websocket subscriptions, `WsTrade`, read 10:26Z) give
+  it as a 50-bit hash of the buyer's and the seller's order ids, and
+  (block_time, coin, tid) as a trade's globally unique id; their `WsFill`
+  still calls `tid` a unique trade id. The archive holds two HYPE trades of
+  June 2025 with `tid` 899064266001530 (`node_fills/hourly/20250618/16.lz4`
+  and `20250630/1.lz4`): other users, oids, hashes and times, each trade's
+  two legs sharing their time and hash (decisions 2026-11-19).
 - **`asset_ctxs` rows (the 68 day files 2025-05-25 → 07-31, the 38 coins'
   rows; WAVE-H-BUILD's E6 2026-11-14, counted again by WAVE-H-FIX's third
   rehearsal 2026-11-16 07:11Z through the program's readers):** a CSV with the

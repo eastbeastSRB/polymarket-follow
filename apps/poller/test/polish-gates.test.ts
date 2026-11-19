@@ -108,8 +108,9 @@ const noPace = () => Promise.resolve();
 
 // A SOL wave in SIZING (priced by the rehearsal); a kPEPE wave late on
 // 2025-07-31 (its exit in TEST: left for the look); a SOL wave in TEST
-// (WAVE-H's one position, its entry book missing: the tape). Block numbers
-// with gaps and a line that goes back.
+// (WAVE-H's one position, its entry book missing: the tape, two users'
+// trades of one tid on it). Block numbers with gaps and a line that goes
+// back.
 const W1 = Date.parse("2025-06-10T10:00:00Z");
 const W3 = Date.parse("2025-07-31T23:30:00Z");
 const W = Date.parse("2025-09-10T10:00:00Z");
@@ -249,6 +250,15 @@ function world() {
       block(9, [
         ...liquidation(4, "SOL", "A", W + 5 * MINUTE_MS, 6),
         ...taker("SOL", "B", W + ENTRY + 100, "101", "20", 7),
+        // Another user's trade of tid 7, on the entry's tape too: two trades of one tid, as in Hyperliquid's archive (decisions 2026-11-19).
+        ...trade(addr(600), addr(996), {
+          coin: "SOL",
+          side: "B",
+          time: W + ENTRY + 150,
+          px: "101.5",
+          sz: "1",
+          tid: 7,
+        }),
         ...taker("SOL", "A", W + ENTRY + 200, "100.5", "20", 8),
         // A coin with no record in SIZING: one of THE LATE COINS.
         ...taker("DOGE", "B", W + 1_000, "0.2", "1000", 14),
@@ -452,8 +462,13 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       ["2025-06-10", 2, 6],
       ["2025-07-31", 4, 8],
       ["2025-08-01", 1, 2],
-      ["2025-09-10", 5, 4],
+      ["2025-09-10", 6, 4],
     ]);
+    // The two users' trades of tid 7: both kept, and counted.
+    expect(o.store.manifest.counts.tids).toEqual({
+      shared: { "SOL 2025-09": 1 },
+      refused: 0,
+    });
   });
 
   it("reads the settled funding as WAVE-H's rows, each at its nominal hour", () => {
@@ -771,8 +786,9 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       pass: false,
       first: ["line 1 differs"],
     });
-    expect(lines[0]!.legs[0]!.tids).toEqual(["7"]);
-    expect(g3With((ls) => (ls[0]!.legs[0]!.tids = ["8"]))).toMatchObject({
+    // WAVE-H's entry tape holds both trades of tid 7, two users'; one alone differs.
+    expect(lines[0]!.legs[0]!.tids).toEqual(["7", "7"]);
+    expect(g3With((ls) => (ls[0]!.legs[0]!.tids = ["7"]))).toMatchObject({
       pass: false,
       first: ["line 1 differs"],
     });
@@ -1099,7 +1115,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       M: 1,
     });
     // Three waves, each entered at its second account's fill: all in E. Each entry's 13 legs (B0's two,
-    // D0's, D15's and D60's two each, the five holds' exits); one trade, the SOL wave's entry at W + 7 min.
+    // D0's, D15's and D60's two each, the five holds' exits); two trades, two users' of one tid, at the SOL wave's entry at W + 7 min.
     // The minutes priced by a trade, no mark within 5 minutes: SOL's 2 minutes before W1's day (1),
     // DOGE's at W (5), XRP's at TEST's start and 50 ms after it (6).
     expect(out).toMatchObject({
@@ -1109,7 +1125,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         minutes: (38 * (DATA_END - WAVEH_RANGE.grid.start)) / MINUTE_MS,
         byTrade: 12,
       },
-      dry: { legs: 39, trades: 1, withoutTrade: 38 },
+      dry: { legs: 39, trades: 2, withoutTrade: 38 },
     });
     expect(
       JSON.parse(readFileSync(path.join(dir, "cuts.json"), "utf8")),
@@ -1122,6 +1138,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         );
     expect(levelsAt(lib.tape, "SOL", true, W + ENTRY + 100)).toEqual([
       [101, 20],
+      [101.5, 1],
     ]);
     // A price column off in one minute fails the check (the grid's first 2,000 minutes checked).
     const d = dataFrom(o.store, coins, o.kit);
@@ -1226,7 +1243,7 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     const { sha: eSha, out } = await eStep(input);
     expect(sha(readFileSync(path.join(dir, "e.json")))).toBe(eSha);
     // WAVE-H's one TEST position, on marks; the look priced none at the book at both ends; the tape has the SOL
-    // wave's entry trade only, so no position has both legs.
+    // wave's entry trades only, so no position has both legs.
     expect(out).toMatchObject({
       step: "e",
       inputs: { features: cuts.features, cuts: sha(readFileSync(cutsFile)) },
@@ -1611,15 +1628,15 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
           ? f64At(b, wAt, () => 1)
           : b,
     );
-    // SOL's fourth taker of 2025-09 (W's day; the fifth is the next day's) dropped from every column,
-    // and its first made a backstop's: a column only the minute price's fallback reads.
+    // SOL's fifth taker of 2025-09 (W's day, the last; the sixth is the next day's) dropped from every
+    // column, and its first made a backstop's: a column only the minute price's fallback reads.
     const p = rewrite("tape", "SOL", "2025-09", (file, b) => {
-      const w = b.length / 5;
-      const c = Buffer.concat([b.subarray(0, 3 * w), b.subarray(4 * w)]);
+      const w = b.length / 6;
+      const c = Buffer.concat([b.subarray(0, 4 * w), b.subarray(5 * w)]);
       if (file === "flags.u8") c[0] = c[0]! | BACKSTOP;
       return c;
     });
-    expect(p.rows).toBe(5);
+    expect(p.rows).toBe(6);
     p.rows -= 1;
     // kPEPE's oracle at 2025-08-01 00:30 changed.
     rewrite("minute", "kPEPE", "2025-08", (file, b) => {
