@@ -1,5 +1,63 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the owner — two stricter crash cuts beside the exam):
+**THE EXAM PRINTS N AT TWO STRICTER CUTS OF W4, AT LEAST 715 AND AT LEAST
+1,391 ACCOUNTS, BESIDE ITS VERDICT. THEY DECIDE NOTHING. N KEEPS
+DECIDING.**
+
+The owner, about 21:55Z: "ok, that can be good recommendation, i agree",
+on the supervisor's recommendation.
+
+**Where the idea came from:**
+- **The owner asked** whether a harder filter for crashes could give fewer
+  trades at more bps.
+- **The supervisor printed B0 on E only** at W4's E quantiles (the
+  different accounts liquidated venue-wide on σ in the hour). C and FRESH
+  were never read. Outputs: `verify/CRASH-PRINT/crash-print.out` and
+  `crash-days.out` in the supervisor folder.
+- **This print is seeded:** it was made after the review showed where N's
+  gain sits. So it is no evidence; it only shapes this print.
+
+**The print (E, priced positions, a one-way error by day):**
+
+| W4 at least | Quantile | Positions | Days | Mean | SE |
+|---|---|---|---|---|---|
+| 336 | p50, N | 65,533 | 99 | +94.7 | 54.0 |
+| 715 | p75 | 31,860 | 54 | +173.6 | 67.3 |
+| 1,391 | p90 | 12,924 | 18 | +258.2 | 92.3 |
+| 2,164 | p95 | 6,487 | 8 | +526.8 | 201.0 |
+| 4,612 | p98 | 2,776 | 3 | +1,957.8 | 416.4 |
+
+- **The p98 row is one day:** 2025-10-10 has 2,300 positions at +2,350.7.
+  The other two days are 2025-09-22 (130 positions, +297.7) and 2025-11-03
+  (346 positions, −30.2).
+- **The counts are pooled over 147 slices:** about 19 positions a slice at
+  p98, 446 at N.
+
+**What:**
+1. **The two prints** are N with W4's cut at 715 and at 1,391, the 75th and
+   90th percentiles of W4's feature over B0's 148,154 entries on E.
+   - They are printed on the deciding line (K = 20, the deciding days)
+     beside the verdict, and on all 147 slices.
+   - Each shows m ± SE, days, coins and the two best days' share, with the
+     label "seeded, decides nothing".
+   - They are frozen in `polish/rules.md` with everything else, before
+     FRESH opens.
+2. **N alone decides** the exam's verdict, at the bars already fixed.
+3. **If one cut is clearly stronger on FRESH,** it becomes a new candidate.
+   It gets its own rules and test on months after FRESH, planned then.
+4. **Making the 715 cut the deciding rule instead of N** stays one of the
+   options at the owner's talk before the freeze, with its numbers.
+
+**Why:**
+- **One rule decides,** so the 99% bar keeps its meaning. Printing the
+  stricter cuts costs nothing and shows them on clean data.
+- **The cut was chosen after looking,** and C is spent on N, so no fair
+  check exists for it before FRESH.
+- **The exam needs at least 20 days.** The 1,391 cut had 18 days in E's 211,
+  which scales to about 9 on FRESH's ~100 clean days (TOO FEW). The 715 cut
+  scales to about 26.
+
 2026-11-19 (the owner — the exam's slices, before its rules are frozen):
 **THE EXAM'S DECIDING LINE POOLS K = 20 SLICES (0–19), NOT 10.**
 
