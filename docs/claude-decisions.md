@@ -1,5 +1,46 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the owner — the exam's recipe): **THE 715 CUT DECIDES THE EXAM
+ON FRESH, WITH THE SAFETY NET. N AND THE 1,391 CUT ARE PRINTED BESIDE.
+EVERY OTHER VARIATION IS RECORDED FOR A LATER TALK.**
+
+**The owner, about 22:08Z:** "ok, let's go with 715 shortcut, keep working
+and notify me. all other possible variations record for later, we will
+discuss."
+
+**What:**
+1. **The deciding recipe** is B0 + W4 with W4's cut at **715 accounts**:
+   enter only when at least 715 different accounts had a counted fill (H4:
+   the liquidated account's own fill) of σ in the 38 coins up to t,
+   venue-wide. Everything else is N's. It is D53's branch of POLISH-RULES's
+   plan, `[OPTION A]` filled.
+2. **The safety net** (decisions 2026-11-19, the 715 option made safe):
+   - step 1's counts, before any price, give the 715 line fewer than 20
+     UTC days or 10 coins → N decides instead, at the same z;
+   - the switch is printed.
+3. **Beside the verdict, deciding nothing:** N (W4 ≥ 336) and the 1,391
+   cut, labelled; all 147 slices.
+4. **z, LIKELY, the floors, K = 20, the verdicts and their order** stay as
+   ruled.
+5. **Still open, for the owner's talk before the freeze:**
+   - the looks: two, or one later look;
+   - WITHHELD's option B (cut the no-book days);
+   - Q4: a market-adjusted excess, default no change.
+6. **Recorded for a later talk** (the plan page's backlog, "Variations for
+   later"): the other cuts as their own later tests; bigger trades on
+   bigger crashes; N as the clean-checked rule; Q4's market-adjusted
+   reading.
+
+**Why** (decisions 2026-11-19, the 715 option made safe):
+- on E, the cut keeps 89.1% of N's gain on 48.6% of its positions;
+- z rises from 1.75 to 2.58, and the two best days' share falls from 56%
+  to 47%;
+- a HOLDS on FRESH is proof for any rule frozen before FRESH opens;
+- the safety net removes its TOO FEW risk without reading an outcome.
+
+**The honest gap:** it was chosen after looking, and no clean months
+checked it before FRESH.
+
 2026-11-19 (the supervisor — the 715 option made safe, for the owner's
 choice at the talk): **IF THE OWNER CHOOSES THE 715 CUT TO DECIDE, N TAKES
 OVER WHEN STEP 1'S COUNTS, BEFORE ANY PRICE, GIVE THE 715 LINE FEWER THAN
