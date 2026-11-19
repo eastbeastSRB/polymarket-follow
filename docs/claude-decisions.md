@@ -1,5 +1,46 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the owner — the exam's bar, before its rules are written): **HOLDS
+STAYS AT 99%; THE EXAM ALSO PRINTS A NAMED 95% READING, "LIKELY". THE REST
+IS DECIDED AT THE OWNER'S TALK BEFORE THE FREEZE.**
+
+The owner, about 21:05Z: "ok, agree, we can add LIKELY also, that is good
+idea", on the supervisor's recommendation.
+
+**What:**
+1. **HOLDS keeps the strict bar:** z = max(2.81, the placebo's 99.75th
+   percentile) with two looks, as F1 and decisions 2026-11-17 set it. The
+   placebo is to be recomputed on the exam's K = 10 slices by
+   POLISH-EXPLORE-REVIEW.
+2. **"LIKELY" is a named reading.** It is printed when HOLDS is not
+   reached but the same test passes at a 95% bar, in the exam's order:
+   - WITHHELD and TOO FEW first;
+   - then DOES NOT HOLD;
+   - then HOLDS;
+   - then LIKELY;
+   - otherwise NOT SETTLED.
+
+   Its z is set by the exam's rules, for one or two looks, before the
+   freeze. **It decides nothing that HOLDS decides,** and it is never read
+   as a HOLDS. It says "very probably real, not yet proven".
+3. **Why:**
+   - HOLDS is the verdict money may follow, so it stays strict.
+   - N's gain rests on a few big cascades, so a lucky stretch is likelier
+     than the textbook bar assumes.
+   - A strong but unproven result should still be visible, named in
+     advance.
+4. **Still open, for the owner's talk before the freeze** (POLISH-RULES
+   writes them as marked options):
+   - the recipe's approval or an override;
+   - two looks, or one later look.
+
+**Where it came from:**
+- The 99% bar came inside WAVE-H's rules (H11, z 2.58, two-sided 1%),
+  which the owner approved with WAVE-H's plan on 2026-11-14.
+- The polishing kept it (decisions 2026-11-17).
+- The owner's +50 bps line is from 2026-11-13 (MARKET-1's plan).
+- MARKET-1's forward test spends 5% over its three looks.
+
 2026-11-19 (the supervisor — the exploration's five steps ran): **THE
 NOMINEE IS B0 + W4 (VENUE-WIDE WAVES). IT PASSED THE CHECK MONTHS AND
 GOES TO FRESH, SUBJECT TO THE REPORT, ITS INDEPENDENT REVIEW AND THE
