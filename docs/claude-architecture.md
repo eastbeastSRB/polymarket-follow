@@ -598,8 +598,8 @@ from the gates, with `legs.ts` (`Tape`, `minutePrice`, `minuteColumn`,
 `knownAt`).
 
 **What it imports, never changing it:** the compiled closure of
-`dist/polish/main.js` is 67 files (2026-11-18, with the exploration): its
-own 21 and the exploration's 13 (`polish/tries/`); WAVE-H's frozen
+`dist/polish/main.js` is 68 files (2026-11-19, with `gzlines`): its
+own 21 and the exploration's 14 (`polish/tries/`); WAVE-H's frozen
 `books`, `coins`, `ctxs`, `fills`, `funding`, `gate`, `instants`, `keys`,
 `legs`, `look`, `lz4`, `market`, `pass`, `positions`, `price`, `rehearse`,
 `report`, `run`, `slices`, `store` and `verdict`; MARKET-1's `book`,
@@ -652,6 +652,10 @@ families, each try's definition, cut, instant, seeded mark and venue).
   `pace` before each coin-month; the net by H9's formulas at H8's tape
   ($1,000 in, Q out, 4.5 bps a leg, funding at the minute price before
   each hour); the gross on marks.
+- `gzlines.ts`: the steps' positions files written and read as streams
+  (chunks of 2^20 characters through one gzip stream to `.tmp`, then
+  renamed; read 64 KiB at a time, line by line), never one string, which
+  V8 caps (decisions 2026-11-19, the E step stopped while writing).
 - `rules.ts`: a rule (B0 with M doubled, a delay, a hold, X1's exit,
   filters) placed on a part; X1's and X2's exits; its items re-based by b;
   its statistic and D-test.

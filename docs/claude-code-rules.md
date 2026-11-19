@@ -155,6 +155,12 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
     value a test computes to a file from a scratch copy's test.
 
   (POLISH-EXPLORE-3 and the supervisor, 2026-11-18.)
+- **No file that can reach millions of lines is ever one string:** V8 caps
+  a string (the real E step threw "Invalid string length" in `Array.join`).
+  Write and read such files as streams (`tries/gzlines.ts`).
+  **A `stream.pipeline` ending in an async function that throws rejects with
+  AbortError,** not that error: end a pipeline that parses in a Writable
+  whose callback gets the error (EXPLORE-FIX-1, 2026-11-19).
 - **vitest does not typecheck:** a scratch copy's or a quick run's `vitest
   run` passes code tsc rejects. Run tsc first (`pnpm test` does). A script
   that rewrites imports must write them in Prettier's form, or
