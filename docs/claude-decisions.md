@@ -1,5 +1,60 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the extraction's run stopped on a shared trade
+id; under the owner's go "keep working and notify me"): **THE MERGE'S
+GUARD KEYS ON (USER, TID), AS WAVE-H KEYS A FILL. EXTRACT-FIX-3 MAKES THE
+FIX. THEN THE WHOLE RUN (EXTRACT, GATES, EXPLORE AND THE FIVE STEPS) RUNS
+FROM ONE BUILD OF MAIN.**
+
+**What happened:**
+- **FRESH's download ended** at 09:03:35Z: 4,614 files, 161,267,704,895 B.
+  The supervisor's `fresh-done.cjs` found 4,102 + 170 + 342 files, 0
+  missing, 0 size differences, 0 `.part`, 0 extra, reading names and sizes
+  only.
+- **`extract` ran** from the worktree of `598abd8` (fingerprint
+  `88c6efb0…`, heap 20,672 MB), from 09:09:48Z.
+  - The pass read all 8,845 files in about 52 minutes, peak about 3.1 GB.
+  - The merge wrote 2025-05, then stopped at 10:07:29Z with exit 5: "HYPE
+    2025-06: the tid 899064266001530 is in two records".
+- **The supervisor read the two records** (WAVE-H's raw store, read only;
+  `sup\find-tid.mjs` over June 2025's 720 files):
+  - 2025-06-18 16h: px 38.747, sz 0.57, taker `0xc5ed…4346`;
+  - 2025-06-30 01h: px 40.135, sz 28.61, taker `0x0284…3f06`.
+
+  The users, hashes, oids and times all differ. **Two different trades
+  share one `tid`: Hyperliquid's `tid` is not unique across trades.**
+
+**The rulings (technical calls within the approved plan):**
+1. **WAVE-H's own rule is the specification.**
+   - `waveh/rules.md`: "A fill found in both formats (the same `user` and
+     `tid`) counts once";
+   - its tape skips a seen `user|tid`.
+
+   So WAVE-H kept both trades. The store's taker uniqueness check keys on
+   (user, `tid`): the same (user, `tid`) twice still stops the run, and
+   two users sharing a `tid` are two trades. EXTRACT-FIX-3 also checks
+   every other place in `src/polish/` that assumes a unique `tid`.
+2. **The guard did its job:** it stopped rather than guess. The fix makes
+   it exact, not looser.
+3. **One build for the whole run.** The exploration is built and verified,
+   and the fix changes the extraction's code anyway. So `extract`, `gates`,
+   `explore` and the five steps run from main's build after the fix. No
+   code change lands between them, and the fingerprint is one throughout.
+   The worktree of `598abd8` is no longer needed; it is removed after the
+   run (its two junctions one by one, then `git worktree remove`).
+4. **The stopped run's folder** (`ANALYZER\WAVE-H\`: the parts of
+   `88c6efb0` and the partial store) is renamed to
+   `ANALYZER\WAVE-H-stopped-1\`, not deleted, before the new run. It is
+   deleted only after the new run's gates pass. The new run starts with
+   an empty `ANALYZER\WAVE-H\`, and its pass is redone (about 52 minutes),
+   since the parts name their code.
+5. **The check of the fix:**
+   - the supervisor reads the diff and runs `pnpm verify` and the freezes;
+   - the gates on the 10 months reproduce WAVE-H's counts, positions and
+     prices, so they are the independent check of the store;
+   - a fresh fix-check would add little to a one-function change that the
+     gates test on real data.
+
 2026-11-18 (the exploration built — the technical calls of POLISH-EXPLORE,
 POLISH-EXPLORE-2 and POLISH-EXPLORE-3): **THE EXPLORATION IS BUILT, ITS
 BREAKS ROUND DONE AND ITS TWO BOOK PRINTS ADDED: `explore --step features |
