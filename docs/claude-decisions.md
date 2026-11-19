@@ -1,5 +1,66 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — POLISH-RULES's plan, its eight questions
+ruled before the build): **THE EXAM'S PLAN IS ACCEPTED. LIKELY NEVER ENDS
+THE EXAM, DOES NOT HOLD KEEPS HOLDS'S z, z COMES FROM THE PLACEBO AT EACH
+LOOK'S OWN LENGTH, AND FRESH OPENS ONLY ON A TAGGED FREEZE. A FRESH
+POLISH-RULES BUILDS.**
+
+**What:**
+- **The plan:** `workers/POLISH-RULES/progress.md`, "THE PLAN"
+  (2026-11-19 21:55–22:01Z). It holds rules P0–P16, the definitions
+  D1–D53, the code in `src/polish/exam/`, the tests and the breaks, three
+  runs on real data, and the WITHHELD projection's method. It includes K =
+  20 and the two side cuts. Nothing was built or run, and FRESH was never
+  opened.
+- **Four traps it found in the code,** each handled in the plan:
+  - WAVE-H's frozen `fillKeys` stops at DATA END + 1 h;
+  - `countedFrom` and `forcedFrom` drop every record after DATA END;
+  - `inPart`'s 50-hour stop would cut about a day per segment;
+  - the kit's `marketFrom` refuses dates past 2026-11-07.
+
+**The rulings (the supervisor's, within the owner's rulings above):**
+1. **Q1, the seal opens only on a tagged freeze.** `polish/FROZEN.sha256`
+   must verify, and the git tag its header names must hold that very file
+   byte for byte (`git show <tag>:…`).
+2. **Q2, z per look** (F1): the window of the look's own length (100 days
+   for look 1; 182 days for look 2 or one later look); the larger of the
+   episode flips and the day flips; 100,000 draws.
+   - HOLDS: max(2.81, 99.75th) at each of two looks; max(2.58, 99.5th) for
+     one look.
+   - LIKELY: max(2.24, 98.75th) at each of two looks; max(1.96, 97.5th) for
+     one look.
+3. **Q3, DOES NOT HOLD keeps HOLDS's z.** A real +50 effect is called DOES
+   NOT HOLD at most 0.25–0.5% of the time, not 2.5%.
+4. **Q4, LIKELY counts as NOT SETTLED for F14.** After a LIKELY at look 1,
+   look 2 still runs. LIKELY is printed by name at each look, and at the last
+   look it stands as the exam's reading. This is how "it decides nothing
+   HOLDS decides" works in time (the owner, 2026-11-19).
+5. **Q5, WITHHELD** stays as plan 3.3 defines it (D37) for now. The
+   projection runs early, and its options come with numbers before the
+   reviews. Cutting the no-book days from the deciding days (option B,
+   fixed from metadata only) or keeping them is the owner's call at the
+   talk.
+6. **Q6, FRESH's `asset_ctxs` days** that fail WAVE-H's 1% rule, or carry
+   another header, are read as absent and listed, never a stop. This is
+   F7's pre-stated fallback; nothing that decides needs `asset_ctxs`.
+7. **Q7 (a), G5 on FRESH:** any unpaired record beyond the straddles and
+   FRESH's two edges stops step 1, with every record listed. It goes by H0's
+   route: a `polish/fresh-unpaired.json` data file (empty at the freeze), a
+   re-freeze of that file, then step 1 again. There is no waiver in code
+   (decisions 2026-11-18).
+8. **Q8, BASE on FRESH** comes from the deciding days' minutes, both
+   segments pooled by 4-hour block (plan 3.3).
+9. **T1–T9 as recommended.**
+   - T3 reads FRESH's `manifest.jsonl` for names, bytes and SHA-256s only,
+     never a data file.
+   - T4's reproduction runs detached, at idle priority, outside 02:30–06:00Z
+     and 10:25–11:15Z, on the supervisor's word at the time.
+
+**Why a fresh worker:** the planner's context reached 592k (61%) with the
+plan alone, and the build is several sessions. A fresh POLISH-RULES builds
+from THE PLAN, as WAVE-H-BUILD's successor did (WORKFLOW, "Size").
+
 2026-11-19 (the owner — two stricter crash cuts beside the exam):
 **THE EXAM PRINTS N AT TWO STRICTER CUTS OF W4, AT LEAST 715 AND AT LEAST
 1,391 ACCOUNTS, BESIDE ITS VERDICT. THEY DECIDE NOTHING. N KEEPS
