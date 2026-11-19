@@ -1,5 +1,57 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the gates on the 10 months: six pass exactly,
+G5 lists three one-sided trades; the supervisor's ruling on the list, as
+decided before the run ("the supervisor rules on the list; never a waiver
+in code")): **THE THREE ARE ARCHIVE DEFECTS. G5 ACCEPTS EXACTLY THESE
+THREE, NAMED IN A COMMITTED LIST, AND NOTHING ELSE. THE RUN REPEATS FROM
+THE FIXED BUILD.**
+
+**The run** (main's build `c16b01a`, fingerprint `dc1e54b1…`):
+- **`extract`** ended with exit 0 at 13:19:47Z.
+  - It took 3,102 s for the pass, 142 for the contexts, 5 for funding and
+    1,098 for the merge.
+  - 1,521 partitions; the merge's peak was 4.36 GB.
+  - It found 4 shared tids (HYPE 2025-06, SUI 2025-07, HYPE 2025-10,
+    BTC 2025-11), 0 same-user pairs and 0 duplicates.
+- **`gates`** ended with exit 6 at 14:06:47Z.
+  - **G0 passed:** 14,563 files, 21.25 GB, counters 0, the code equal.
+  - **G1 passed:** 2,421,070 counted fills, no day differing.
+  - **G2 passed:** 1,299 positions, everySlice 176,986, the positions'
+    SHA-256 `a5506b86…` as the look's.
+  - **G3 passed:** 1,289 priced, largest difference 0 bps.
+  - **G4 passed:** 33,514 instants.
+  - **G6 passed:** 15 days.
+  - **G5 failed:** 3 records unpaired, 0 straddles, 0 edges.
+
+**The three, read in the raw files by the supervisor** (`sup\find-tid.mjs`
+over every file of their month: June 720, July 745; read only):
+
+| File | Coin | `tid` | Record | Its other side |
+|---|---|---|---|---|
+| `node_fills/hourly/20250601/11.lz4` | ETH | 6896551551965 | taker B 0.035 @ 2,496.2, `hash` all zeros | in no file of 2025-06 |
+| `node_fills/hourly/20250608/9.lz4` | VVV | 250170946875997 | maker B 6.66 @ 2.784 | in no file of 2025-06 |
+| `node_fills/hourly/20250712/8.lz4` | PUMP | 12410765120022 | taker B 90,389 @ 0.005549 | in no file of 2025-07 |
+
+All three are one-sided in Hyperliquid's own archive. The ETH record's
+zero hash marks a fill outside the normal two-sided matching. WAVE-H read
+the same records: G1's counts are equal. They are a negligible part of the
+tape: one VVV trade missing from it, and two takers whose makers are
+missing.
+
+**The ruling:**
+- **G5 reads a committed list** (`apps/poller/polish/known-unpaired.json`:
+  file, coin, `tid`, side, and this entry's date).
+- **It passes only when the unpaired records equal the list exactly:**
+  every listed record is found unpaired, and nothing else is.
+- gates.json prints them as `known`.
+
+This is a ruling on named records, not a tolerance: any other unpaired
+record, or a listed one that pairs, fails G5. EXTRACT-FIX-4 builds it.
+The change is to the code, so `extract` and `gates` run again from the
+fixed build (about two hours). The failed run's folder is renamed
+`ANALYZER\WAVE-H-gates-failed-1\` and deleted after the new gates pass.
+
 2026-11-19 (EXTRACT-FIX-3 — the supervisor's ruling at 11:28Z on the call
 left open below): **ONE USER'S TID AT TWO INSTANTS STOPS THE RUN ONLY WHEN
 THE TWO RECORDS ARE LESS THAN 60 S APART; 60 S OR MORE APART THEY ARE TWO
