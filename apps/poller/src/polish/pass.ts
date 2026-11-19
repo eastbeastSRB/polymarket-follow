@@ -23,7 +23,7 @@ import { partFile, partOf, readPartHeader } from "./part.js";
 import { scanFill } from "./scan.js";
 import { readHeld } from "./held.js";
 import { writeUnflushed } from "./run.js";
-import { SealedError } from "./seal.js";
+import { SEALED, SealedError, type Seal } from "./seal.js";
 import { LiqWriter, Names, TakerWriter } from "./writers.js";
 
 /** The worker's compiled file: tests through the sources start the build's worker too. */
@@ -44,6 +44,8 @@ export type Task = FileTask & {
   code: string;
   forty: readonly string[];
   small: readonly string[];
+  /** The seal the file is read under (seal.ts): open only by the exam's gate. */
+  seal: Seal;
 };
 
 /** A thread's memory, and its heap's ceiling (`heapLimit`, V8's `heap_size_limit`). */
@@ -107,7 +109,7 @@ type Done = {
 
 /** One input file into its part: sealed and listed first, then read, held to its hash, scanned and written whole. */
 function extractFile(task: Task): Done {
-  const bytes = readHeld(task.store, task.key, task.sha256);
+  const bytes = readHeld(task.store, task.key, task.sha256, task.seal);
   const forty = new Set(task.forty);
   const users = new Names();
   const taker = new TakerWriter(forty, new Set(task.small));
@@ -200,6 +202,8 @@ export async function runPass(o: {
   small: readonly string[];
   /** 0: in this thread (the tests). */
   workers: number;
+  /** The seal the files are read under; closed when not given. */
+  seal?: Seal;
   /** Waits out the windows before a file starts. */
   pace: () => Promise<void>;
   log: (event: string, fields: object) => void;
@@ -289,6 +293,7 @@ export async function runPass(o: {
     code: o.code,
     forty: o.forty,
     small: o.small,
+    seal: o.seal ?? SEALED,
   });
   if (o.workers === 0) {
     for (const f of todo) {

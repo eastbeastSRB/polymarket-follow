@@ -4,15 +4,16 @@
  * 2026-11-17, the plan approved): a 38-coin record whose `liquidation`
  * object names its own account, reducing, a taker's or a backstop's.
  * SIZING's come from the files dated before TEST's start, stamped before
- * it; TEST's from the later files, stamped from TEST's start to DATA END; a
- * later file's fill stamped before TEST's start is in neither part. With
- * them, WAVE-H's count of the 38 coins' liquidation legs by month, kind and
- * method. Each list in MARKET-1's M4 order, as WAVE-H's.
+ * it; TEST's from the later files, stamped from TEST's start to the store's
+ * end (DATA END for WAVE-H's ten months, FRESH_END for FRESH's: rules.md
+ * P3); a later file's fill stamped before TEST's start is in neither part.
+ * With them, WAVE-H's count of the 38 coins' liquidation legs by month,
+ * kind and method. Each list in MARKET-1's M4 order, as WAVE-H's.
  */
 import { byM4 } from "../market1/fills.js";
 import type { Coins } from "../waveh/coins.js";
 import type { Counted } from "../waveh/fills.js";
-import { DATA_END, TEST_START, monthOf } from "../waveh/instants.js";
+import { TEST_START, monthOf } from "../waveh/instants.js";
 import { keyDate } from "../waveh/keys.js";
 import type { FileCounts, Store } from "./store.js";
 import { NONE } from "./writers.js";
@@ -21,13 +22,16 @@ import { NONE } from "./writers.js";
 export const digitsOf = (halves: Uint32Array, i: number): string =>
   ((BigInt(halves[2 * i + 1]!) << 32n) | BigInt(halves[2 * i]!)).toString();
 
-/** Whether an input file is SIZING's (dated before TEST's start), and the bound of the records WAVE-H used from it. */
-export function boundOf(f: Pick<FileCounts, "key">): {
+/** Whether an input file is SIZING's (dated before TEST's start), and the bound of the records used from it: TEST's start for SIZING's, else the store's end. */
+export function boundOf(
+  f: Pick<FileCounts, "key">,
+  end: number,
+): {
   sizing: boolean;
   until: number;
 } {
   const sizing = keyDate(f.key)! < TEST_START;
-  return { sizing, until: sizing ? TEST_START : DATA_END };
+  return { sizing, until: sizing ? TEST_START : end };
 }
 
 export type CountedSet = {
@@ -44,7 +48,7 @@ export type CountedSet = {
 export function countedFrom(store: Store, coins: Coins): CountedSet {
   const users = store.users();
   const names = store.names();
-  const bounds = store.files().map(boundOf);
+  const bounds = store.files().map((f) => boundOf(f, store.manifest.end));
   const backstop = names.methods.indexOf("backstop");
   const legs = new Map<string, number>();
   const sizing: Counted[] = [];

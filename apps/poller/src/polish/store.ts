@@ -10,7 +10,7 @@ import path from "node:path";
 import { z } from "zod";
 import { sha256 } from "../waveh/gate.js";
 import { StoreError } from "../waveh/store.js";
-import { checkPath } from "./seal.js";
+import { SEALED, checkPath, type Seal } from "./seal.js";
 import { valuesOf, type ColumnType, type Values } from "./tables.js";
 
 export const TABLES = ["tape", "liq", "minute", "funding"] as const;
@@ -71,6 +71,8 @@ export const Manifest = z.object({
   partitions: z.array(Partition),
   counts: z.object({
     ctxsByDay: z.record(z.string(), Count),
+    /** FRESH's `asset_ctxs` days read as absent (polish/rules.md P2), by day: why; written only when there is one. */
+    ctxsAbsent: z.record(z.string(), z.string()).optional(),
     ctxsLarge: Count,
     badCells: z.record(z.string(), z.number()),
     funding: z.record(
@@ -163,12 +165,14 @@ export class Store {
     readonly manifest: Manifest,
     /** The manifest file's own SHA-256: the store's identity. */
     readonly id: string,
+    /** The seal its files are read under: open only by the exam's gate (FRESH's store). */
+    readonly seal: Seal = SEALED,
   ) {}
 
   /** A store file's bytes, held to its line. */
   bytes(rel: string, want: StoredFile): Buffer {
     const file = path.join(this.dir, ...rel.split("/"));
-    checkPath(file);
+    checkPath(file, this.seal);
     let b: Buffer;
     try {
       b = readFileSync(file);
@@ -233,9 +237,9 @@ export class Store {
   }
 }
 
-/** The store in `dir`: its manifest read and parsed (a store without one, or with one that does not parse, is refused). */
-export function openStore(dir: string): Store {
-  checkPath(dir);
+/** The store in `dir`, under the seal: its manifest read and parsed (a store without one, or with one that does not parse, is refused). */
+export function openStore(dir: string, seal: Seal = SEALED): Store {
+  checkPath(dir, seal);
   let text: Buffer;
   try {
     text = readFileSync(path.join(dir, MANIFEST));
@@ -243,5 +247,5 @@ export function openStore(dir: string): Store {
     throw new StoreError(`${dir}: no ${MANIFEST}`);
   }
   const m = Manifest.parse(JSON.parse(text.toString("utf8")));
-  return new Store(dir, m, sha256(text));
+  return new Store(dir, m, sha256(text), seal);
 }

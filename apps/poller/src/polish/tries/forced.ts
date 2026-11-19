@@ -37,7 +37,7 @@ export function forcedFrom(
 ): Forced {
   const users = store.users();
   const names = store.names();
-  const bounds = store.files().map(boundOf);
+  const bounds = store.files().map((f) => boundOf(f, store.manifest.end));
   const backstop = names.methods.indexOf("backstop");
   const assetOf = names.coins.map((n) => coins.byName.get(n)?.assetId ?? -1);
   const all = { t: [] as number[], coin: [] as number[], user: [] as number[] };

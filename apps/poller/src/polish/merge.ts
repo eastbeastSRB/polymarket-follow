@@ -681,6 +681,7 @@ export async function merge(o: MergeInput, meta: Meta): Promise<Manifest> {
     partitions,
     counts: {
       ctxsByDay: Object.fromEntries(c.byDay),
+      ...(c.absent.size > 0 && { ctxsAbsent: Object.fromEntries(c.absent) }),
       ctxsLarge: c.large,
       badCells: Object.fromEntries(c.badCells),
       funding: Object.fromEntries(o.funding.counts),

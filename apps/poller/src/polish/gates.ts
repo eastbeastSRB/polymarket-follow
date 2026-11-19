@@ -336,7 +336,7 @@ function stepCounts(o: GatesInput, lib: Library) {
     const d = (days[day] ??= { records: 0, failed: 0 });
     d.records += f.records;
     d.failed += f.failed;
-    const b = boundOf(f);
+    const b = boundOf(f, o.store.manifest.end);
     for (const [hour, n] of f.byHour) if (hour >= b.until) late += n;
     // WAVE-H's rule line by line (waveh/pass.ts), over each run of consecutive block numbers.
     for (const [a, z] of f.runs) {

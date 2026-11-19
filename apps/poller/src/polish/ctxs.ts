@@ -8,8 +8,10 @@
  * when its time and its mark pass WAVE-H's schema; each other cell is its
  * number, or NaN and counted when it is none. A row stamped at or after the
  * range's end is not used. The counts are WAVE-H's, by day, for the 38
- * coins, and a day above WAVE-H's 1% stops the run. Funding goes through
- * WAVE-H's own readers.
+ * coins, and a day above WAVE-H's 1% stops the run; in FRESH's range such
+ * a day, or one whose header lacks a column, is read as absent and listed
+ * instead (polish/rules.md P2; decisions 2026-11-19, POLISH-RULES's plan
+ * ruled, Q6). Funding goes through WAVE-H's own readers.
  */
 import { z } from "zod";
 import { MINUTE_MS } from "../schedule.js";
@@ -21,6 +23,10 @@ import { FAIL_LEAST, FAIL_SHARE } from "../waveh/pass.js";
 import { StoreError, type DataList } from "../waveh/store.js";
 import { readHeld } from "./held.js";
 import { decodeAll } from "./lz4.js";
+import type { Seal } from "./seal.js";
+
+/** A day file whose header lacks a column the store keeps. */
+export class CtxsHeaderError extends Error {}
 
 /** The minute table's context columns: the store's name and the CSV's, the mark first. */
 export const CONTEXT: readonly (readonly [column: string, csv: string])[] = [
@@ -70,6 +76,8 @@ export type Contexts = {
   large: CtxsCount;
   /** By column, the cells that are not a number (each one NaN). */
   badCells: Map<string, number>;
+  /** FRESH's days read as absent (rules.md P2), by day: why. */
+  absent: Map<string, string>;
 };
 
 const zeroCount = (): CtxsCount => ({
@@ -99,6 +107,7 @@ export function newContexts(grid: Grid, forty: Iterable<string>): Contexts {
     byDay: new Map(),
     large: zeroCount(),
     badCells: new Map(),
+    absent: new Map(),
   };
 }
 
@@ -116,7 +125,7 @@ export function addDay(
   const iCoin = head.indexOf("coin");
   const at = CONTEXT.map(([, csv]) => head.indexOf(csv));
   if (iTime < 0 || iCoin < 0 || at.some((i) => i < 0))
-    throw new Error(`asset_ctxs header "${lines[0]!.slice(0, 200)}"`);
+    throw new CtxsHeaderError(`asset_ctxs header "${lines[0]!.slice(0, 200)}"`);
   for (let k = 1; k < lines.length; k++) {
     const line = lines[k]!;
     if (line === "") continue;
@@ -171,7 +180,34 @@ export function addDay(
   return count;
 }
 
-/** Every day of `days` (each held to the list) into new contexts on `grid`; a day failing WAVE-H's 1% stops it. */
+/** WAVE-H's 1% rule on a day's rows of the small coins. */
+const failing = (c: CtxsCount) =>
+  c.failed >= FAIL_LEAST && c.failed / c.rows > FAIL_SHARE;
+const failingText = (c: CtxsCount) =>
+  `${c.failed} of ${c.rows} asset_ctxs rows of the small coins fail WAVE-H's schema`;
+
+/** Why a day file would fail WAVE-H's rules (its header, or its 1%), counted by `addDay` itself on contexts of no minute; null when it passes. */
+function whyAbsent(
+  text: string,
+  until: number,
+  forty: Iterable<string>,
+  small: ReadonlySet<string>,
+): string | null {
+  try {
+    const count = addDay(
+      newContexts({ start: 0, minutes: 0 }, forty),
+      text,
+      until,
+      small,
+    );
+    return failing(count) ? failingText(count) : null;
+  } catch (err) {
+    if (err instanceof CtxsHeaderError) return err.message;
+    throw err;
+  }
+}
+
+/** Every day of `days` (each held to the list) into new contexts on `grid`; a day failing WAVE-H's 1% stops it, or with `failingDayAbsent` (FRESH's range) is read as absent and listed. */
 export async function readContexts(o: {
   store: string;
   list: DataList;
@@ -181,6 +217,9 @@ export async function readContexts(o: {
   forty: Iterable<string>;
   small: ReadonlySet<string>;
   pace: () => Promise<void>;
+  failingDayAbsent?: boolean;
+  /** The seal the days are read under; closed when not given. */
+  seal?: Seal;
 }): Promise<Contexts> {
   const c = newContexts(o.grid, o.forty);
   for (const d of o.days) {
@@ -188,18 +227,23 @@ export async function readContexts(o: {
     const key = ctxsKey(d);
     let text: string;
     try {
-      text = decodeAll(readHeld(o.store, key, o.list.get(key))).toString(
-        "utf8",
-      );
+      text = decodeAll(
+        readHeld(o.store, key, o.list.get(key), o.seal),
+      ).toString("utf8");
     } catch (err) {
       if (err instanceof StoreError) throw err;
       throw new StoreError(`${key}: ${(err as Error).message}`);
     }
+    if (o.failingDayAbsent === true) {
+      const why = whyAbsent(text, o.until, c.byCoin.keys(), o.small);
+      if (why !== null) {
+        c.absent.set(isoDay(d), why);
+        continue;
+      }
+    }
     const count = addDay(c, text, o.until, o.small);
-    if (count.failed >= FAIL_LEAST && count.failed / count.rows > FAIL_SHARE)
-      throw new StoreError(
-        `${isoDay(d)}: ${count.failed} of ${count.rows} asset_ctxs rows of the small coins fail WAVE-H's schema`,
-      );
+    if (failing(count))
+      throw new StoreError(`${isoDay(d)}: ${failingText(count)}`);
     c.byDay.set(isoDay(d), count);
   }
   return c;
@@ -222,6 +266,8 @@ export function readFunding(o: {
   coins: readonly string[];
   starts: readonly number[];
   until: number;
+  /** The seal the windows are read under; closed when not given. */
+  seal?: Seal;
 }): Funding {
   const byCoin = new Map<string, FundingRow[]>();
   const counts: Funding["counts"] = new Map();
@@ -234,7 +280,7 @@ export function readFunding(o: {
       const key = fundingKey(coin, start);
       const r = fundingRows(
         coin,
-        readHeld(o.store, key, o.list.get(key)).toString("utf8"),
+        readHeld(o.store, key, o.list.get(key), o.seal).toString("utf8"),
         o.until,
       );
       windows[isoDay(start)] = r.rows.length;

@@ -17,7 +17,7 @@ import { readContexts, readFunding } from "./ctxs.js";
 import { merge } from "./merge.js";
 import { runPass } from "./pass.js";
 import type { Range } from "./range.js";
-import { checkPath } from "./seal.js";
+import { checkPath, type Seal } from "./seal.js";
 import { MANIFEST, type Manifest } from "./store.js";
 
 export const PARTS = "parts";
@@ -78,9 +78,11 @@ export async function extract(o: {
   small: readonly string[];
   pace: () => Promise<void>;
   log: (event: string, fields: object) => void;
+  /** The seal the range is read and written under: open only by the exam's gate (FRESH's); closed when not given. */
+  seal?: Seal;
 }): Promise<Manifest> {
-  checkPath(o.store);
-  checkPath(o.root);
+  checkPath(o.store, o.seal);
+  checkPath(o.root, o.seal);
   const r = o.range;
   if (r.partial !== null && existsSync(path.join(o.root, STORE, MANIFEST)))
     throw new StoreError(
@@ -123,6 +125,7 @@ export async function extract(o: {
     workers: o.workers,
     pace: o.pace,
     log: o.log,
+    seal: o.seal,
   });
   lap("pass");
   o.log("pass done", pass);
@@ -135,6 +138,8 @@ export async function extract(o: {
     forty: o.forty,
     small: new Set(o.small),
     pace: o.pace,
+    failingDayAbsent: r.failingCtxsDayAbsent,
+    seal: o.seal,
   });
   lap("contexts");
   const funding = readFunding({
@@ -143,9 +148,14 @@ export async function extract(o: {
     coins: o.small,
     starts: r.fundingStarts,
     until: r.end,
+    seal: o.seal,
   });
   lap("funding");
-  o.log("contexts and funding", { days: contexts.byDay.size, seconds });
+  o.log("contexts and funding", {
+    days: contexts.byDay.size,
+    absent: Object.fromEntries(contexts.absent),
+    seconds,
+  });
   const manifest = await merge(
     {
       parts: path.join(o.root, PARTS),
