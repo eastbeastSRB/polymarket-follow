@@ -11,7 +11,7 @@ decides nothing:** the owner rules on the nominee.
 
 - **Every number that decides, recomputed with code of my own, equals the outputs.** B0 on E, W4's D-test against B0, its
   floors and the gain floor, N on E, N and B0 on C, the D-test on C with k from E, F2's floors: the largest difference in any
-  statistic is **3.1e-12** (bps or a ratio); every count is equal. Twenty-one of the 35 tries and every table of the report's
+  statistic is **3.1e-12** (bps or a ratio); every count is equal. **All 35 tries** (and the X2 print) and every table of the report's
   section 3 agree (section 2).
 - **The choice rule was applied exactly:** W4 is the only change with t ≥ 2.5 and every floor met in a family that had no
   larger t; W1 (t 2.53) lost its family to W4 (t 3.03); X1 (t 2.81) was refused by the mean floor; one evaluation on C was spent.
@@ -33,7 +33,7 @@ positions, **+66.13311166059353 ± 31.30967357566873** (the look: …404, …865
 **What holds.**
 1. N = B0 + W4 on E: 65,533 priced positions, **+94.69 ± 54.26**, D +48.65, SE_D 16.07, **t 3.027**; on C: 16,754, **+211.26 ±
    122.14**, D +154.69 ± 69.79, **t 2.217**, every F2 floor met. Equal to the outputs to 1e-12.
-2. B0 on E +33.70 ± 39.72, on C +41.41 ± 48.36: equal.
+2. B0 on E +33.70 ± 39.72, on C +41.41 ± 48.36: equal. **All 35 tries** on E, each against B0, equal as well (largest difference 3.1e-12; every count, cut, unknown count and refusal reason the same).
 3. The cuts were committed before any outcome: 853c864 at 17:36:44Z and eccafa0 at 19:08:25Z, each before the E step that
    followed it (17:36:52Z and 19:08:32Z); the first E run wrote nothing; W4's cut, 336, is my own median too.
 
@@ -124,20 +124,19 @@ Mine | output (file field) | |difference|. bps unless a ratio.
 | C's own k | 2.5253535721554785 | 2.525353572155474 | 4.4e-15 |
 | F2's floors on C | mean 211 ≥ 25; days 50 ≥ 30; coins 35 ≥ 15; footprint **47 windows of 100 days, fewest days 25 (≥ 20), fewest coins 35 (≥ 10)** | all `true` (the windows' counts are not printed) | — |
 
-**Twenty-one tries on E** (positions, priced, m, SE, k, D, SE_D, t and every refusal reason) with the same pipeline:
+**All 35 tries on E, and the X2 print** (positions, priced, m, SE, k, D, SE_D, t, every refusal reason, the unknown counts and the cuts), each against B0 with the same pipeline:
 
 | Tries | Result |
 |---|---|
 | S1, D0, D15, D60, H1, H2, H4, H8, H12, W1, W2, W3, W4, T1, T2, X1, N1, N6 | counts equal; every statistic within **3.1e-12**; every `refused` list equal |
-| N4, N5, N10 | counts equal; the statistics equal to the three decimals compared |
+| N4, N5, N10; W5, N2, N9; R1, R2, R3, R4; N3, N7, N8; C1, C2, C3; N11 | counts equal (positions, priced, unknown); the statistics equal to the three decimals compared; the nine cuts equal to `cuts.json` (W5 to 4e-15 and N2 to 1e-16; W4, R2, R3, R4, N7, N8, N9 exactly) |
+| X2 (print) | 135,954 priced; unpriced 1,630 / 9,061 / 1,509; m −15.146682032531 ± 56.036551185224 (the output −15.146682032530 ± 56.036551185224): 7e-13 |
 
 The decisive ones in detail: **W1** m +70.617 ± 47.555, D +30.267, SE_D 11.972, t **2.528**, refused none (so W4's t 3.027 decides
 the family). **X1** (the target exit, 111,851 exits triggered, 61 positions left out) m **+49.5062** ± 18.292, D +33.986, t
 **2.806**: only `the mean floor` refuses it, by **0.494 bps**. **H12** t 2.087, m +60.87 ± 22.09: only `t below 2.5`.
 
-**The tries not recomputed (14):** W5, R1–R4, C1–C3, N2, N3, N7, N8, N9, N11 (and the X2 print). Their reported t lie between
-−2.26 and +2.19 (N8, print only, +2.19; R1 +1.36; N11 +1.27; W5 +1.13); none is near 2.5. The 21 that agree share their
-legs, prices, statistics and tests, so what remains unchecked is each one's own feature definition.
+**The signal meter and the error rates:** from the 33 adoptable t's the mean of t² is 2.7775, the sample variance 2.7746 and the shrink 0.640; 0.621% a try, 20.5% and 3.3% for the 33, 11.2% and 1.8% for the 18 unseeded: all equal to the report's (arithmetic on the outputs' t, which my own t's equal).
 
 **The report against `e.json`:** every row of its tables 3.1, 3.2 and 3.3 (35 tries; 490 numbers: positions, priced, m, SE, z,
 days, coins, the seeded flag, k, D, SE_D, t, the four floors, the unpriced counts) equals the output as rounded. The 15 seeded
@@ -160,6 +159,7 @@ tries are the try log's (S1, D0, D15, D60, H1–H12, W2, R1–R4, X1).
 | b on E | +3.761073138782 ± 2.649656208286, n 675 | same, **with the look's WAVE-H set only** (finding 7) |
 | b on C | +1.137173 ± 0.808825, n 318 | same |
 | Projection formula, K = 147 | 3.61% / 6.49%; pooled 2.06% / 3.39% | 3.610% / 6.495%; 2.060% / 3.390% |
+| Months, sides, the day and the coin whose leaving-out gives the lowest and the highest mean, the tail (worst day, largest fall, most open at once, worst position, worst 5%'s mean): N and B0 on E and on C | 152 numbers | all equal to 1e-6 (the coins are the same by asset id) |
 | Placebo, K = 147 (my draw order) | window error 88.2 (74.0–135.7); sd 0.938; 99.75th 2.50 | 88.1 (74.0–135.7); 0.939; 2.57 |
 
 ## 3. The added points
@@ -375,16 +375,15 @@ summed by group; the filter tries are B0's lines that pass their filter (my mask
 9. **The walks' "extra over $1,000"** is the ratio of walk prices (E: +11.96 at $10,000), not the difference of the costs
    (+12.77); the report does not say so.
 10. **F2's footprint is printed as `true` only.** C's 47 windows have at least 25 days and 35 coins against 20 and 10.
-11. **Not recomputed:** 14 tries' own features (W5, R1–R4, C1–C3, N2, N3, N7, N8, N9, N11), the signal meter and the error-rate
-    arithmetic beyond the check above, the run's seconds and peaks.
+11. **Not recomputed:** the run's seconds and peaks, the placebo's exact draws, the BTC and ETH lines (5.3), and the tape-against-book table (5.10) beyond the E and C calibrations.
 
 ## 6. What I could not do, and what is left
 
 - My placebo is my own draw order. Its all-slice version matches the report's windows and sd and its tails within sampling
   noise; I cannot say the draws are the report's.
-- The 14 tries listed in finding 11 need their features rebuilt (W5 and N2 from the minute notional, R1–R4 from the minute
-  prices, C1–C3 from monthly ranks, N3 from funding, N7, N8 from contexts, N9 from `markPx`, N11 from five-minute returns).
-  None is near the bar in the report; their agreement is untested.
+- The pins I took from the plan's text (the minute price's five-minute staleness, the monthly windows of C1–C3 from 2025-05-25, N11's
+  daily grid, the funding hour's nominal time) reproduce every output; where the plan is silent a different reading would
+  have shown as a difference, and none did.
 - The 2.81 at K = 10 rests on 10,000 draws a window and a 200,000-draw check at 100 days.
 - Nothing was run on FRESH or on C beyond B0 and N, and nothing was changed in the repository but this file.
 
