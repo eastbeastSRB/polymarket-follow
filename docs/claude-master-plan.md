@@ -332,6 +332,7 @@ review, the supervisor re-computing on its own path what decides.
   - **Stricter crash cuts** (1,391 accounts printed beside on FRESH; 2,164 and 4,612 seen on the explore months only: 8 and 3 days, the strictest being 2025-10-10's crash alone).
   - **Bigger trades on bigger crashes**, instead of fewer trades: every wave kept, the size growing with the crash, so the proof keeps its days while the money leans to the crash days (the supervisor's idea, 2026-11-19).
   - **A market-adjusted reading** (the review's Q4): most of the gain is the small coins' common bounce after a market-wide crash; whether HOLDS should need more than that. Open at the talk, default no change.
+  - **The right balance** (the owner, 2026-11-19: "not to much trades but also not to less, avoid big losses, many positions at the time"): how many trades a crash may open, how many positions may be open at once (on a crash day the rule opens many at the same moment, all the same way), and loss limits. A way of trading the proven rule, studied after its proof and itself tested on months it has not seen.
   - **Shorter holds** (the plan's strongest lever on paper: the error falls with the hold) and the other tries the exploration printed.
   - **Trigger:** after the exam's look 1, at the owner's talk.
 - ⏳ **MARKET-1's second arm**: the variants parked for a later arm, as their
