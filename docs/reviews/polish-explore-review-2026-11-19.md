@@ -395,7 +395,7 @@ summed by group; the filter tries are B0's lines that pass their filter (my mask
 2. **z at K = 10:** freeze **2.81** (placebo 99.75th 2.36–2.40 by episode, 2.58–2.63 by day, both below it).
 3. **Print OWN and the concentration beside the exam's verdict** (the market's part of the gross; the top 2 days' share; the event
    level). Recommendation: yes, deciding nothing.
-4. **Should HOLDS also need a market-adjusted excess?** That would change a frozen rule (H12's BASE). Recommendation: no
+4. **Should HOLDS also need a market-adjusted excess?** That would change a frozen rule (the coin's 4-hour BASE of H10, read by H12's HOLDS). Recommendation: no
    change to the rule; the owner decides at the talk whether a result carried by the market's rebound after cascades is the
    result he wants "HOLDS" to mean.
 5. **LIKELY's z:** my placebo at K = 10 gives 1.71–1.87 (97.5th) and 1.92–2.10 (98.75th) at 100 days; the normal 1.96 and
