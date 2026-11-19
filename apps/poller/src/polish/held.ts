@@ -7,16 +7,17 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { StoreError } from "../waveh/store.js";
-import { checkKey, checkPath } from "./seal.js";
+import { SEALED, checkKey, checkPath, type Seal } from "./seal.js";
 
 export function readHeld(
   store: string,
   key: string,
   sha256: string | undefined,
+  seal: Seal = SEALED,
 ): Buffer {
   const file = path.join(store, ...key.split("/"));
-  checkPath(file);
-  checkKey(key);
+  checkPath(file, seal);
+  checkKey(key, seal);
   if (sha256 === undefined) throw new StoreError(`${key}: not in the list`);
   let bytes: Buffer;
   try {

@@ -14,7 +14,7 @@ import type { Gate } from "../../waveh/gate.js";
 import { bookKey } from "../../waveh/keys.js";
 import { bookAt, type Found } from "../../waveh/price.js";
 import { readLz4, type BookList } from "../../waveh/store.js";
-import { checkKey } from "../seal.js";
+import { SEALED, checkKey, type Seal } from "../seal.js";
 import type { Line } from "./beside.js";
 import type { Data } from "./data.js";
 import { statOf } from "./stats.js";
@@ -27,7 +27,8 @@ export type HeldBook = { book: Book } | { why: string };
  * code: x's hour file and, in the first 10 s of the hour when that file has
  * no snapshot, the hour before's (`bookHours`, as WAVE-H's `bookFound`); the
  * last snapshot at or before x (`lastAtOrBefore`), live within 10 s and
- * usable (`bookAt`). Each file is sealed after DATA END (`checkKey`), read
+ * usable (`bookAt`). Each file is sealed after DATA END unless the exam's
+ * gate opened the seal, and at or after FRESH_END always (`checkKey`), read
  * through the gate and held to the list's SHA-256 (`readLz4`), after
  * `pace`; the last two files read are kept (an hour's and the hour before's),
  * so legs in the order of the coin and the instant read each file once.
@@ -37,6 +38,7 @@ export function heldBooks(
   gate: Gate,
   list: BookList,
   pace: () => Promise<void>,
+  seal: Seal = SEALED,
 ): (coin: string, x: number) => Promise<HeldBook> {
   const kept: { key: string; bytes: Uint8Array }[] = [];
   const found = async (
@@ -49,7 +51,7 @@ export function heldBooks(
     if (!list.files.has(key)) return "not held";
     let file = kept.find((k) => k.key === key);
     if (file === undefined) {
-      checkKey(key);
+      checkKey(key, seal);
       await pace();
       file = { key, bytes: readLz4(gate, raw, list.files, key) };
       kept.unshift(file);
