@@ -11,6 +11,13 @@ plan page or external-apis — or it does not exist.
 
 | Review | What | Accepted |
 |---|---|---|
+| `polish-explore-2026-11-19.md` | POLISH-EXPLORE-REPORT (Opus): the exploration on the 10 months.
+- **The checks:** the reproduction is exact; b +3.76, so no re-base.
+- **E:** B0 +33.7 ± 39.7. W4 (venue-wide waves, at least 336 accounts) is adopted alone (t 3.03, +94.7).
+- **C:** N = B0 + W4 passes (+211.3 ± 122.1, t 2.22, every floor), so N goes to FRESH.
+- **The exam:** z 2.81; the projection 3.6% / 6.5%.
+- **The nuance:** one position per episode gives −3.6 (E) and +67.4 (C); without the two best days +44.5 / +64.1. The gain rests on a few big market-wide cascades.
+- **Open:** z and the projection must be recomputed on K = 10. | decisions 2026-11-19, the exploration's five steps ran |
 | `extract-fix-check-2026-11-18.md` | EXTRACT-FIX-CHECK (Sonnet): the fresh check of the extraction's fix round — ready to run. Every finding is fixed as ruled. No high or medium finding. 67 of 67 fixers' breaks killed. The review's two demonstrations now fail a gate. Its parse of 2025-10-10 against the rebuilt one-day store: 0 differences. Low F1–F3 are missing test pins. I1: the tape's side and user are unread by G6 (a known limit) | decisions 2026-11-18, EXTRACT-FIX-CHECK accepted |
 | `extract-review-2026-11-18.md` | EXTRACT-REVIEW (Sonnet): the Final review of the polishing's extraction (`dist/polish.js`) — after these fixes, not a rework. No high findings. M1 refused records no gate sees; M2 columns and days no gate reads; M3 fingerprints not compared; M4 refusals untested; L1–L12. A table of each class of error and its gate. Its independent parse of 2025-10-10 against the one-day store: 0 differences (19,127,562 records) | decisions 2026-11-18, EXTRACT-REVIEW's findings |
 | `wave-polish-plan-2026-11-17.md` | WAVE-POLISH-PLAN (Opus): the plan for sharpening the wave — FRESH holds MARKET-FIND's discovery window, so the exam decides on its other days; 38 named tries and 11 fixed features on the 10 months, a D-test and a two-stage choice rule (explore 2025-06 → 12, check 2026-01 → 05); one exam on FRESH; an extraction of about 16 GB from WAVE-H-LOOK-REVIEW's pipeline, Node only | decisions 2026-11-17, the polishing plan approved (with its review's changes) |
