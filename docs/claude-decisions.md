@@ -1,5 +1,87 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the exploration's Final review verified):
+**THE CHOICE STANDS. POLISH-EXPLORE-REVIEW REBUILT EVERY NUMBER THAT
+DECIDES WITH ITS OWN CODE, AND ALL ARE EQUAL. ITS FINDINGS GO TO
+POLISH-RULES AND TO THE OWNER'S TALK BEFORE THE FREEZE.**
+
+**What:**
+- **The review** is `docs/reviews/polish-explore-review-2026-11-19.md`
+  (`fbf8d5c`, `e135f0d`, `4f2f2d4`; Sonnet 5.5, max; context peak 540k).
+  Its verdict: "the choice stands".
+- **What it recomputed, from the trusted store's columns,** with code that
+  imports nothing of `src/polish/tries/`. It first proved its code on the
+  look's EVERY SLICE line (176,986 positions, +66.133 ± 31.310, difference
+  5e-13). Then:
+  - B0 on E, W4's D-test, the floors and the gain floor;
+  - N on E and on C, and B0 on C;
+  - all 35 tries and the X2 print;
+  - the report's tables 3.1–3.3 (490 numbers, 0 mismatches);
+  - the calibration b, the K table, the footprint, the projection at
+    K = 147.
+
+  The largest difference is 3.1e-12. Every count is equal.
+- **The one difference:** B0's event level on E is −14.146 against the
+  report's −14.208. It is a tie-break order (finding 8) and decides nothing.
+- **The cuts came before any outcome.** `853c864` was committed at
+  17:36:44Z, before E's run 1 started at 17:36:52Z (it crashed and wrote
+  nothing). `eccafa0` was committed at 19:08:25Z, before run 2 at 19:08:32Z.
+
+**The supervisor's verification:**
+- **Only its report was committed:** three commits, one file.
+- **Access was clean.** Outside its own folder it read only the folders its
+  brief allowed (POLISH-EXPLORE, POLISH-EXPLORE-2, WAVE-H-LOOK-REVIEW). It
+  never touched FRESH, the live data, `dist/polish.js` or the network.
+- **The concentration lines, rebuilt on my own path from the exploration's
+  positions files.** The output is
+  `workers/POLISH-EXPLORE-REVIEW/supervisor-verify/conc-check.out`. All
+  equal:
+  - **N on E:** 74,104 positions, 65,533 priced, +94.686. The two best
+    days (2025-11-04 and 10-11) make 55.7% of the gain. Without the five
+    best days, the mean is +16.4.
+  - **N on C:** +211.263. The two best days (2026-02-06 and 02-05) make
+    74.8%. Without the five best days, −23.4.
+  - **Depth short at the tape:** 21.9% on E and 38.1% on C.
+
+**What it concludes, for the exam:**
+1. **z stays 2.81 at K = 10.** The placebo's 99.75th percentile is
+   2.36–2.40 with episode flips and 2.58–2.63 with day flips. The window
+   error at K = 10 is 78.0 at 100 days and 66.6 at 182.
+2. **P(HOLDS)** from C minus one error (F13) is 4.8% at look 1 and 7.0% at
+   look 2 on slices 0–9's errors. On a typical block of ten slices it is
+   about 3.4% / 5.9%.
+3. **N's gain rests on a few market-wide cascade days:**
+   - the event level is −3.6 (E) and +67.4 (C);
+   - the effective days are 36.7 of 99 and 16.6 of 50;
+   - OWN is +10.0 and +7.5, so 92% and 97% of the gross is the other
+     small coins' own move over the hold.
+4. **Depth-short legs at the tape** carry 58% (E) and 46% (C) of N's gain.
+   N without a short leg is +50.9 (E) and +185.1 (C).
+5. **At the book, $1,000 was never short.** N's walks: $10,000 costs +31.4
+   bps on E and +5.5 on C.
+6. **`missing` is 0 everywhere.**
+
+**Where its questions go:**
+- **To POLISH-RULES, as the supervisor's technical calls:**
+  - z 2.81 with both flips' percentiles printed (Q2);
+  - printed beside the verdict, deciding nothing (Q3, Q6): OWN, the
+    top-two days' share, the event-level mean, and the mean by price
+    source and by depth short;
+  - LIKELY's z = max(normal, placebo), as HOLDS's (Q5): 1.96 for one look,
+    2.24 at each of two;
+  - the projection of N's WITHHELD share before the freeze (the
+    supervisor's own item: N's tape legs are often depth short, and the
+    no-book days fall to the tape).
+- **To the owner:**
+  - **Q1, K = 10 or K = 20.** F19's count picked 10 on slices 0–9's own
+    error, but a typical block of ten is 5.1% above all 147's (outside
+    F19's 3%), while blocks of twenty are within 2.7%. K = 20 costs about
+    2.8 GB of books against 2.1. The supervisor recommends 20; the owner's
+    yes is asked now.
+  - **Q4, whether HOLDS should need a market-adjusted excess,** at the talk
+    before the freeze. The review recommends no change.
+  - **The recipe and the looks,** already open.
+
 2026-11-19 (the owner — the exam's bar, before its rules are written): **HOLDS
 STAYS AT 99%; THE EXAM ALSO PRINTS A NAMED 95% READING, "LIKELY". THE REST
 IS DECIDED AT THE OWNER'S TALK BEFORE THE FREEZE.**
