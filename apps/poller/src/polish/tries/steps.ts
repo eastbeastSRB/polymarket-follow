@@ -10,10 +10,10 @@
  * alone, no price at any leg; its `cuts.json` is what the supervisor
  * commits as `polish/cuts.json` before any outcome.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { gunzipSync, gzipSync } from "node:zlib";
+import { gunzipSync } from "node:zlib";
 import { z } from "zod";
 import { ENTRY_DELAY_MS, HOLD_MS } from "../../market1/price.js";
 import { DAY_MS } from "../../schedule.js";
@@ -55,6 +55,7 @@ import {
 import { bookPrints, heldBooks } from "./books.js";
 import { checkPrices, dataFrom, type Data } from "./data.js";
 import { cutsOf, featuresOf } from "./features.js";
+import { readGzLines, writeGzLines } from "./gzlines.js";
 import { C, E, STOP_MS, inPart, positionOf, type Entry } from "./parts.js";
 import {
   B0,
@@ -342,12 +343,9 @@ function readCuts(
   return { sha: sha256(bytes), cuts: c.cuts };
 }
 
-/** A step's positions, a JSON line each, gzipped and written whole. */
+/** A step's positions, a JSON line each, gzipped as a stream and written whole (`gzlines.ts`). */
 function writePositions(o: StepInput, name: string, lines: readonly string[]) {
-  writeWhole(
-    path.join(o.root, EXPLORE, name),
-    gzipSync(Buffer.from(lines.map((l) => `${l}\n`).join(""))),
-  );
+  return writeGzLines(path.join(o.root, EXPLORE, name), lines);
 }
 
 const LookLine = z.object({
@@ -676,7 +674,7 @@ export async function eStep(o: StepInput) {
     pace: o.pace,
     phase: m.phase,
   });
-  writePositions(o, "e-positions.jsonl.gz", lines);
+  await writePositions(o, "e-positions.jsonl.gz", lines);
   const value = {
     step: "e",
     identity,
@@ -795,7 +793,7 @@ export async function choiceStep(o: StepInput) {
     pace: o.pace,
   });
   m.phase("N on E");
-  writePositions(o, "choice-positions.jsonl.gz", lines);
+  await writePositions(o, "choice-positions.jsonl.gz", lines);
   const value = {
     step: "choice",
     identity,
@@ -945,7 +943,7 @@ export async function cStep(o: StepInput) {
     pace: o.pace,
   });
   m.phase("C");
-  writePositions(o, "c-positions.jsonl.gz", lines);
+  await writePositions(o, "c-positions.jsonl.gz", lines);
   const value = {
     step: "c",
     identity,
@@ -967,19 +965,12 @@ export const CFile = z.object({
 });
 export type CFile = z.infer<typeof CFile>;
 
-/** A step's positions file, its lines parsed (our own file). */
-function readLines(o: StepInput, name: string): Line[] {
-  let bytes: Buffer;
-  try {
-    bytes = readFileSync(path.join(o.root, EXPLORE, name));
-  } catch {
+/** A step's positions file, its lines parsed in order (our own file), read as a stream (`gzlines.ts`). */
+async function readLines(o: StepInput, name: string): Promise<Line[]> {
+  const file = path.join(o.root, EXPLORE, name);
+  if (!existsSync(file))
     throw new StoreError(`no ${EXPLORE}\\${name}: run its step first`);
-  }
-  return gunzipSync(bytes)
-    .toString("utf8")
-    .split("\n")
-    .filter((l) => l !== "")
-    .map((l) => Line.parse(JSON.parse(l)));
+  return readGzLines(file, (l) => Line.parse(JSON.parse(l)));
 }
 
 /** The placebo's seed (printed) and its draws a window length (F1). */
@@ -1110,9 +1101,9 @@ export async function besideStep(o: StepInput) {
   const d = dataFrom(store, o.coins, o.kit);
   m.phase("data");
   const lines = {
-    e: readLines(o, "e-positions.jsonl.gz"),
-    choice: readLines(o, "choice-positions.jsonl.gz"),
-    c: readLines(o, "c-positions.jsonl.gz"),
+    e: await readLines(o, "e-positions.jsonl.gz"),
+    choice: await readLines(o, "choice-positions.jsonl.gz"),
+    c: await readLines(o, "c-positions.jsonl.gz"),
   };
   const out = besideOf(d, {
     M: identity.M,

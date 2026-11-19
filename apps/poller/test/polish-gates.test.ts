@@ -11,6 +11,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -1566,6 +1567,10 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       goes: "B0",
       rule: { name: "B0" },
     });
+    // Its positions, written by the step's end: none here.
+    expect(
+      gunzipSync(readFileSync(path.join(dir, "c-positions.jsonl.gz"))).length,
+    ).toBe(0);
   });
 
   it("the exploration's beside step on this store: c.json of the current choice and e, the prints for B0 going, no position priced; the book prints on the look's held books", async () => {
@@ -1613,6 +1618,16 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       "the raw store's books.jsonl is not the one the gates read",
     );
     writeFileSync(listFile, listText);
+    // A positions file missing (not ready), then one holding a line that is not a position (our own file: it throws).
+    const cPositions = path.join(dir, "c-positions.jsonl.gz");
+    const cBytes = readFileSync(cPositions);
+    rmSync(cPositions);
+    await expect(besideStep(input)).rejects.toThrow(
+      "no explore\\c-positions.jsonl.gz: run its step first",
+    );
+    writeFileSync(cPositions, gzipSync(`${JSON.stringify({ group: "B0" })}\n`));
+    await expect(besideStep(input)).rejects.toThrow(ZodError);
+    writeFileSync(cPositions, cBytes);
     let reads = 0;
     const { sha: bSha, out } = await besideStep({
       ...input,

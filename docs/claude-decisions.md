@@ -1,5 +1,38 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (EXPLORE-FIX-1 — ruling 1 below, built): **THE POSITIONS FILES
+ARE WRITTEN AND READ AS STREAMS (`src/polish/tries/gzlines.ts`): NO STRING
+OR BUFFER HOLDS A WHOLE FILE. EACH LINE, AND THE GZIP BYTES, ARE WHAT THE
+ONE-STRING WRITER WOULD HAVE WRITTEN.**
+- **The writer** (e, choice and c): the lines joined into chunks of 2^20
+  characters, each ending at a line's end; one gzip stream into
+  `<file>.tmp`, flushed, then renamed with `writeWhole`'s tries (10, 1 s
+  apart). Each step awaits it before writing its JSON.
+- **The reader** (beside): the file read 64 KiB and gunzipped 16 KiB at a
+  time into a Writable that splits at "\n" (a line or a UTF-8 character
+  cut between chunks joined, the empty lines left out), each line through
+  `Line.parse`, in order. A missing file is still not ready (exit 5); a
+  file cut short, or a refused line, rejects with its own error.
+- **The largest piece held:** a chunk, under 2^20 characters plus one
+  line. On a synthetic 3.0 GB set (5.26 million lines) the built module
+  wrote in 18 s and read in 6 s, peak RSS 756 MB, 499 MB of it the lines.
+- **Why the reader ends in a Writable:** when an async function ends a
+  `pipeline` and throws, its `for await` destroys the source first, and
+  the pipeline rejects with an AbortError, losing the line's own error
+  (Node 24.13).
+- **The other places in `src/polish/`:** none reads or writes millions of
+  lines as one string (`bookNets` and G3 read the look's 1,589 lines; the
+  steps' JSON files are summaries; the store's `files.jsonl`, its names
+  and a day's context CSV are bounded). None changed.
+- **Tests:** `polish-tries-gzlines` (new; among them a set past V8's
+  longest string, written and read back, where the old join throws
+  "Invalid string length"); polish-gates (c's positions file there at its
+  step's end; beside refusing a missing positions file and a line that is
+  not a `Line`). 35 breaks: 34 killed by assertions; the flush survives (an
+  fsync shows only after a power cut).
+- **`dist/polish*`:** 37 files, `8ce269e3…0345`, so `features` reruns
+  (ruling 2). `cuts.json`, the extraction and the gates are unchanged.
+
 2026-11-19 (the supervisor — the E step stopped while writing; no outcome
 seen): **THE POSITIONS FILE IS WRITTEN AS A STREAM (EXPLORE-FIX-1). THEN
 THE FEATURES STEP RERUNS, CUTS.JSON'S FEATURES HASH IS UPDATED WITH ITS
