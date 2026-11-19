@@ -458,8 +458,9 @@ on success: every line goes to the pino log,
 `<ANALYZER_ROOT>\logs\polish-<day>.log`, which `log.ts` prunes after 30
 days (copy a run's log to keep it); stderr says only why the program
 stopped before its log was open. Exit codes (`exitOf`, `run.ts`): 0 done,
-1 a crash (a manifest or `gates.json` that does not parse among them: our
-own files), 2 bad settings or a heap flag, 4 WAVE-H's freeze does not
+1 a crash (a manifest, `gates.json` or `polish/known-unpaired.json` that
+does not parse among them: our own files), 2 bad settings or a heap flag,
+4 WAVE-H's freeze does not
 verify (every command checks it first: WAVE-H's frozen code runs inside),
 5 not ready (a file missing, differing or failing; a sealed path, in the
 settings or later; a day above 1% failing; a part of other code; a timing
@@ -572,8 +573,12 @@ range's order (`straddled`; the two 2025-07-27 08h files, 1506 and 1507,
 are next to each other), one record left alone in the range's first or
 last file, whose other half is in the hour outside the range, counted
 apart and every one listed (`edge`, `edges`; decisions 2026-11-18,
-EXTRACT-FIX verified, 2), anything else failing, listed by file, coin
-and `tid`, `day_ntl_vlm`'s ratios by coin and day printed beside; G6
+EXTRACT-FIX verified, 2), the rest exactly the one-sided trades of
+Hyperliquid's archive that `apps/poller/polish/known-unpaired.json` lists,
+each on its side (`known`; the list read before G0; decisions 2026-11-19,
+EXTRACT-FIX-4), any other record unpaired or a listed one not found
+failing, listed by file, coin and `tid`, `day_ntl_vlm`'s ratios by coin and
+day printed beside; G6
 fifteen sample days (2025-05-31, 06-01, 06-15, 07-27, 08-15, 09-15, 10-10,
 11-15, 12-15, 2026-01-15, 02-15, 03-15, 04-15, 05-28 and 05-29, the hour
 before DATA END) re-read by WAVE-H's own readers (an hour either side, its

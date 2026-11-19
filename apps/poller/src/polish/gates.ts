@@ -3,7 +3,8 @@
  * review's F9; decisions 2026-11-17, the plan approved, Q1 and Q5): G0 the
  * store whole; G1 WAVE-H's step-1 counts; G2 its positions; G3 its prices;
  * G4 the minute price's fallback changing none of them; G5 the tape
- * complete, each trade's taker record paired with its maker's, with
+ * complete, each trade's taker record paired with its maker's but the
+ * one-sided trades `polish/known-unpaired.json` names, with
  * `day_ntl_vlm` printed beside; G6 sample days re-read by WAVE-H's own
  * readers. They reproduce numbers already seen: only slice 0's known
  * positions are priced. The result, `gates\gates.json`, names the manifest
@@ -18,7 +19,7 @@ import type { Research } from "../paper/research.js";
 import { DAY_MS, MINUTE_MS } from "../schedule.js";
 import { coinName, type Coins } from "../waveh/coins.js";
 import { minutesWithout } from "../waveh/ctxs.js";
-import { sha256, type Gate } from "../waveh/gate.js";
+import { PACKAGE_ROOT, sha256, type Gate } from "../waveh/gate.js";
 import {
   DATA_END,
   SIZING_DAYS,
@@ -102,6 +103,32 @@ export const WAVEH_EXPECTED: Expected = {
   ],
 };
 
+/** The one-sided trades G5 accepts (decisions 2026-11-19, the gates on the 10 months): `apps/poller/polish/known-unpaired.json`. */
+export const KNOWN_UNPAIRED_FILE = path.join(
+  PACKAGE_ROOT,
+  "polish",
+  "known-unpaired.json",
+);
+
+/** A trade one-sided in Hyperliquid's own archive, its other side in no file of its month: its file, coin and `tid`, the side present, and the date of the supervisor's ruling. */
+const KnownRecord = z.object({
+  file: z.string(),
+  coin: z.string(),
+  tid: z.string().regex(/^\d+$/),
+  side: z.enum(["taker", "maker"]),
+  ruled: z.string().regex(/^\d{4}-\d\d-\d\d$/),
+});
+/** `polish/known-unpaired.json` (our own file: one that does not parse throws), each record listed once. */
+export const KnownUnpaired = z
+  .array(KnownRecord)
+  .refine(
+    (list) =>
+      new Set(list.map((r) => `${r.file} ${r.coin} ${r.tid}`)).size ===
+      list.length,
+    "a record listed twice",
+  );
+export type KnownUnpaired = z.infer<typeof KnownUnpaired>;
+
 /** WAVE-H's `look/step1.json` (our own file: one that does not parse throws). */
 export const Step1 = z.object({
   sha256: z.string().regex(SHA256),
@@ -145,6 +172,8 @@ export type GatesInput = {
   forty: readonly string[];
   kit: Research;
   expect: Expected;
+  /** The list G5 accepts (`KNOWN_UNPAIRED_FILE`). */
+  knownUnpairedFile: string;
   pace: () => Promise<void>;
   log: (event: string, fields: object) => void;
 };
@@ -634,11 +663,19 @@ export function g4(o: GatesInput, lib: Library, wave: readonly Outcome[]) {
  * two files next in the range's order (2025-07-27 08h's two files are next
  * to each other). One record left open alone in the range's first or last
  * file is a trade whose other half lies in the hour outside the range:
- * counted apart (`edge`) and every one listed. Anything else left unpaired
- * fails, listed by file, coin and `tid`; no tolerance. `day_ntl_vlm`
- * beside, deciding nothing.
+ * counted apart (`edge`) and every one listed. The records left unpaired
+ * after these must be exactly the list's (`polish/known-unpaired.json`),
+ * each one record on its side: trades one-sided in Hyperliquid's own
+ * archive, by the supervisor's ruling (decisions 2026-11-19, the gates on
+ * the 10 months), printed as `known`. Any other record left unpaired fails,
+ * and so does a listed one not found, each listed by file, coin and `tid`;
+ * no tolerance. `day_ntl_vlm` beside, deciding nothing.
  */
-export function g5(o: GatesInput, lib: Library): GateResult {
+export function g5(
+  o: GatesInput,
+  lib: Library,
+  known: KnownUnpaired,
+): GateResult {
   const problems: string[] = [];
   const totals: Record<string, [number, number]> = {};
   const open = new Map<string, { file: number; d: number }[]>();
@@ -655,11 +692,19 @@ export function g5(o: GatesInput, lib: Library): GateResult {
       open.set(k, list);
     }
   }
-  const lineOf = (file: number, k: string, d: number) =>
-    `${lib.files[file]!.key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`;
+  const lineOf = (key: string, k: string, d: number) =>
+    `${key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`;
   const last = lib.files.length - 1;
   let straddled = 0;
   const edges: string[] = [];
+  // Each listed record by the line G5 prints for it; found unpaired, it leaves for `found`.
+  const ruled = new Map(
+    known.map((r) => [
+      lineOf(r.file, `${r.coin} ${r.tid}`, r.side === "taker" ? 1 : -1),
+      r,
+    ]),
+  );
+  const found: string[] = [];
   for (const [k, list] of open) {
     const [a, b] = list;
     if (
@@ -676,11 +721,19 @@ export function g5(o: GatesInput, lib: Library): GateResult {
       Math.abs(a!.d) === 1 &&
       (a!.file === 0 || a!.file === last)
     ) {
-      edges.push(lineOf(a!.file, k, a!.d));
+      edges.push(lineOf(lib.files[a!.file]!.key, k, a!.d));
       continue;
     }
-    for (const { file, d } of list) problems.push(lineOf(file, k, d));
+    for (const { file, d } of list) {
+      const line = lineOf(lib.files[file]!.key, k, d);
+      if (ruled.delete(line)) found.push(line);
+      else problems.push(line);
+    }
   }
+  for (const r of ruled.values())
+    problems.push(
+      `${r.file} ${r.coin} ${r.tid}: listed as 1 ${r.side} unpaired, not found`,
+    );
   // By coin and whole UTC day: the takers' notional (with the backstop's, and without) ÷ day_ntl_vlm at the next midnight.
   const m = o.store.manifest;
   const ratios: Record<
@@ -718,6 +771,7 @@ export function g5(o: GatesInput, lib: Library): GateResult {
     straddled,
     edge: edges.length,
     edges,
+    known: found,
     ...listed(problems),
     dayNtlVlm: { columns: ["with the backstop", "without"], ratios },
   };
@@ -765,6 +819,9 @@ export async function runGates(
   };
   const step1File = path.join(o.look, "step1.json");
   const step1 = Step1.parse(JSON.parse(readFileSync(step1File, "utf8")));
+  const known = KnownUnpaired.parse(
+    JSON.parse(readFileSync(o.knownUnpairedFile, "utf8")),
+  );
   const references = {
     step1: sha256Of(step1File),
     positions: sha256Of(path.join(o.look, "positions.jsonl.gz")),
@@ -785,7 +842,7 @@ export async function runGates(
     done("G3", three.result);
     done("G4", g4(o, lib, three.wave));
     await o.pace();
-    done("G5", g5(o, lib));
+    done("G5", g5(o, lib, known));
     done("G6", await g6(o));
   }
   const file = {

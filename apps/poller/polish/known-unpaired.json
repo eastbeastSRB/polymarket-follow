@@ -1,0 +1,23 @@
+[
+  {
+    "file": "node_fills/hourly/20250601/11.lz4",
+    "coin": "ETH",
+    "tid": "6896551551965",
+    "side": "taker",
+    "ruled": "2026-11-19"
+  },
+  {
+    "file": "node_fills/hourly/20250608/9.lz4",
+    "coin": "VVV",
+    "tid": "250170946875997",
+    "side": "maker",
+    "ruled": "2026-11-19"
+  },
+  {
+    "file": "node_fills/hourly/20250712/8.lz4",
+    "coin": "PUMP",
+    "tid": "12410765120022",
+    "side": "taker",
+    "ruled": "2026-11-19"
+  }
+]

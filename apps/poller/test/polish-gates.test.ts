@@ -6,11 +6,18 @@
  * break fails its own gate, and explore opens only the trusted store. The
  * tape and the minute price apart, on a store across a month's end.
  */
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ZodError } from "zod";
 import { loadResearch, type Research } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { explore, trustedStore, wholeStore } from "../src/polish/explore.js";
@@ -18,6 +25,8 @@ import { extract } from "../src/polish/extract.js";
 import { CONTEXT } from "../src/polish/ctxs.js";
 import { dayFromStore } from "../src/polish/days.js";
 import {
+  KNOWN_UNPAIRED_FILE,
+  KnownUnpaired,
   WAVEH_EXPECTED,
   g0,
   g1,
@@ -68,6 +77,7 @@ import {
 } from "../src/polish/tries/steps.js";
 import { BACKSTOP, fortyOf } from "../src/polish/writers.js";
 import { loadCoins } from "../src/waveh/coins.js";
+import { PACKAGE_ROOT } from "../src/waveh/gate.js";
 import { DATA_END, TEST_START } from "../src/waveh/instants.js";
 import { bookKey, ctxsKey, fundingKey } from "../src/waveh/keys.js";
 import { BooksNeeded, type Ctx } from "../src/waveh/legs.js";
@@ -370,6 +380,9 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
       pace: noPace,
       log: () => {},
     });
+    // This world has no one-sided trade: its list G5 accepts is empty.
+    const none = path.join(tmp("known"), "known-unpaired.json");
+    writeFileSync(none, "[]\n");
     o = {
       store: openStore(path.join(analyzer, "store")),
       raw: store,
@@ -389,11 +402,23 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
         everySlice: step1.positions,
         sampleDays: [W1, W3, TEST_START, W].map(iso),
       },
+      knownUnpairedFile: none,
       pace: noPace,
       log: () => {},
     };
     lib = libraryOf(o);
   }, 300_000);
+
+  /** G5 on this world's files, the files named holding the unpaired records given, and the list given. */
+  const g5With = (
+    open: Record<number, [string, string, number][]>,
+    known: KnownUnpaired = [],
+  ) => {
+    const files = structuredClone(lib.files);
+    for (const [at, list] of Object.entries(open))
+      files[Number(at)]!.unpaired = list;
+    return g5(o, { ...lib, files }, known);
+  };
 
   it("reproduces WAVE-H's look: every gate passes, and gates.json names the manifest and the references", async () => {
     expect(step1).toMatchObject({
@@ -834,21 +859,16 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
   });
 
   it("G5 pairs a trade split across two files next in order, accepts a record left alone only in the range's first or last file, listing it, and fails on any other record left unpaired, by file, coin and tid", () => {
-    expect(g5(o, lib)).toMatchObject({
+    expect(g5(o, lib, [])).toMatchObject({
       pass: true,
       straddled: 0,
       edge: 0,
       edges: [],
+      known: [],
       problems: 0,
     });
     expect(lib.files.every((f) => f.unpaired.length === 0)).toBe(true);
     const i = lib.files.findIndex((f) => f.pairs.length > 0);
-    const g5With = (open: Record<number, [string, string, number][]>) => {
-      const files = structuredClone(lib.files);
-      for (const [at, list] of Object.entries(open))
-        files[Number(at)]!.unpaired = list;
-      return g5(o, { ...lib, files });
-    };
     const key = (at: number) => lib.files[at]!.key;
     // A taker at a file's end, its maker in the next file; and a maker first, its taker next.
     expect(
@@ -974,6 +994,202 @@ describe("the gates on a WAVE-H world", { timeout: 300_000 }, () => {
     expect(
       g5With({ [at08]: [["SOL", "77", 1]], [at08 + 2]: [["SOL", "77", -1]] }),
     ).toMatchObject({ pass: false, straddled: 0, edge: 0, problems: 2 });
+  });
+
+  it("G5 accepts exactly the one-sided trades known-unpaired.json lists, each found unpaired on its side after the straddles and the edges, printed as known; another record unpaired, or a listed one missing, paired, of another side, count or file, or at an edge, fails, named", () => {
+    const known = KnownUnpaired.parse(
+      JSON.parse(readFileSync(KNOWN_UNPAIRED_FILE, "utf8")),
+    );
+    const key = (at: number) => lib.files[at]!.key;
+    const [eth, vvv, pump] = [
+      "node_fills/hourly/20250601/11.lz4",
+      "node_fills/hourly/20250608/9.lz4",
+      "node_fills/hourly/20250712/8.lz4",
+    ].map((k) => lib.files.findIndex((f) => f.key === k)) as [
+      number,
+      number,
+      number,
+    ];
+    // The three as the 10 months' files.jsonl holds them (decisions 2026-11-19, the gates on the 10 months).
+    const three: Record<number, [string, string, number][]> = {
+      [eth]: [["ETH", "6896551551965", 1]],
+      [vvv]: [["VVV", "250170946875997", -1]],
+      [pump]: [["PUMP", "12410765120022", 1]],
+    };
+    const lines = [
+      "node_fills/hourly/20250601/11.lz4 ETH 6896551551965: 1 taker unpaired",
+      "node_fills/hourly/20250608/9.lz4 VVV 250170946875997: 1 maker unpaired",
+      "node_fills/hourly/20250712/8.lz4 PUMP 12410765120022: 1 taker unpaired",
+    ];
+    const notFound = [
+      "node_fills/hourly/20250601/11.lz4 ETH 6896551551965: listed as 1 taker unpaired, not found",
+      "node_fills/hourly/20250608/9.lz4 VVV 250170946875997: listed as 1 maker unpaired, not found",
+      "node_fills/hourly/20250712/8.lz4 PUMP 12410765120022: listed as 1 taker unpaired, not found",
+    ];
+    expect(g5With(three, known)).toMatchObject({
+      pass: true,
+      straddled: 0,
+      edge: 0,
+      edges: [],
+      known: lines,
+      problems: 0,
+      first: [],
+    });
+    // Without the list they fail, as on the 10 months; this world's own files have none of them.
+    expect(g5With(three)).toMatchObject({
+      pass: false,
+      known: [],
+      problems: 3,
+      first: lines,
+    });
+    expect(g5(o, lib, known)).toMatchObject({
+      pass: false,
+      known: [],
+      problems: 3,
+      first: notFound,
+    });
+    // One record more, in a file of its own or in a listed record's file.
+    const i = lib.files.findIndex((f) => f.pairs.length > 0);
+    expect(g5With({ ...three, [i]: [["SOL", "77", 1]] }, known)).toMatchObject({
+      pass: false,
+      known: lines,
+      problems: 1,
+      first: [`${key(i)} SOL 77: 1 taker unpaired`],
+    });
+    expect(
+      g5With(
+        {
+          ...three,
+          [eth]: [
+            ["ETH", "5", -1],
+            ["ETH", "6896551551965", 1],
+          ],
+        },
+        known,
+      ),
+    ).toMatchObject({
+      pass: false,
+      known: lines,
+      problems: 1,
+      first: ["node_fills/hourly/20250601/11.lz4 ETH 5: 1 maker unpaired"],
+    });
+    // A listed record missing; paired across the next file (a straddle).
+    expect(
+      g5With({ [eth]: three[eth]!, [pump]: three[pump]! }, known),
+    ).toMatchObject({
+      pass: false,
+      known: [lines[0], lines[2]],
+      problems: 1,
+      first: [notFound[1]],
+    });
+    expect(
+      g5With({ ...three, [eth + 1]: [["ETH", "6896551551965", -1]] }, known),
+    ).toMatchObject({
+      pass: false,
+      straddled: 1,
+      known: [lines[1], lines[2]],
+      problems: 1,
+      first: [notFound[0]],
+    });
+    // A list naming the other side, or another file; two takers where one is listed.
+    const vvvTaker = known.map((r) =>
+      r.coin === "VVV" ? { ...r, side: "taker" as const } : r,
+    );
+    expect(g5With(three, vvvTaker)).toMatchObject({
+      pass: false,
+      known: [lines[0], lines[2]],
+      problems: 2,
+      first: [
+        lines[1],
+        "node_fills/hourly/20250608/9.lz4 VVV 250170946875997: listed as 1 taker unpaired, not found",
+      ],
+    });
+    const ethNext = known.map((r) =>
+      r.coin === "ETH" ? { ...r, file: key(eth + 1) } : r,
+    );
+    expect(g5With(three, ethNext)).toMatchObject({
+      pass: false,
+      known: [lines[1], lines[2]],
+      problems: 2,
+      first: [
+        lines[0],
+        `${key(eth + 1)} ETH 6896551551965: listed as 1 taker unpaired, not found`,
+      ],
+    });
+    expect(
+      g5With({ ...three, [eth]: [["ETH", "6896551551965", 2]] }, known),
+    ).toMatchObject({
+      pass: false,
+      known: [lines[1], lines[2]],
+      problems: 2,
+      first: [
+        "node_fills/hourly/20250601/11.lz4 ETH 6896551551965: 2 takers unpaired",
+        notFound[0],
+      ],
+    });
+    // A record alone in the range's first file is an edge, never a listed one.
+    const atEdge = [
+      {
+        file: key(0),
+        coin: "SOL",
+        tid: "77",
+        side: "maker" as const,
+        ruled: "2026-11-19",
+      },
+    ];
+    expect(g5With({ [0]: [["SOL", "77", -1]] }, atEdge)).toMatchObject({
+      pass: false,
+      edge: 1,
+      known: [],
+      problems: 1,
+      first: [`${key(0)} SOL 77: listed as 1 maker unpaired, not found`],
+    });
+  });
+
+  it("reads the list G5 accepts from knownUnpairedFile, and refuses one that does not parse before any gate runs, writing no gates.json", async () => {
+    // The committed list on this world, which has none of its three: G5 alone fails, naming each.
+    const r = await runGates(
+      { ...o, knownUnpairedFile: KNOWN_UNPAIRED_FILE },
+      tmp("gates"),
+    );
+    expect(
+      Object.entries(r.gates)
+        .filter(([, g]) => !g.pass)
+        .map(([k]) => k),
+    ).toEqual(["G5"]);
+    expect(r.gates.G5).toMatchObject({
+      known: [],
+      problems: 3,
+      first: [
+        "node_fills/hourly/20250601/11.lz4 ETH 6896551551965: listed as 1 taker unpaired, not found",
+        "node_fills/hourly/20250608/9.lz4 VVV 250170946875997: listed as 1 maker unpaired, not found",
+        "node_fills/hourly/20250712/8.lz4 PUMP 12410765120022: listed as 1 taker unpaired, not found",
+      ],
+    });
+    const bad = path.join(tmp("known"), "known-unpaired.json");
+    for (const [text, error] of [
+      ["[", SyntaxError],
+      [
+        '[{"file":"x","coin":"ETH","tid":"1","side":"both","ruled":"2026-11-19"}]',
+        ZodError,
+      ],
+    ] as const) {
+      writeFileSync(bad, text);
+      const dir = tmp("gates");
+      const events: string[] = [];
+      await expect(
+        runGates(
+          {
+            ...o,
+            knownUnpairedFile: bad,
+            log: (event) => events.push(event),
+          },
+          dir,
+        ),
+      ).rejects.toThrow(error);
+      expect(events, text).toEqual([]);
+      expect(existsSync(path.join(dir, GATES_FILE)), text).toBe(false);
+    }
   });
 
   it("refuses a sealed raw store or look before it reads anything", async () => {
@@ -1837,5 +2053,90 @@ describe("the tape and the minute price", { timeout: 60_000 }, () => {
     expect(() => minuteColumn(shifted, "SOL", "mark")).toThrow(
       "minute/SOL/2025-07 does not follow its month before",
     );
+  });
+});
+
+describe("the list of one-sided trades G5 accepts", () => {
+  it("is the committed apps/poller/polish/known-unpaired.json: the supervisor's three, each its file, coin, tid, the side present and the ruling's date", () => {
+    expect(path.relative(PACKAGE_ROOT, KNOWN_UNPAIRED_FILE)).toBe(
+      path.join("polish", "known-unpaired.json"),
+    );
+    expect(
+      KnownUnpaired.parse(
+        JSON.parse(readFileSync(KNOWN_UNPAIRED_FILE, "utf8")),
+      ),
+    ).toEqual([
+      {
+        file: "node_fills/hourly/20250601/11.lz4",
+        coin: "ETH",
+        tid: "6896551551965",
+        side: "taker",
+        ruled: "2026-11-19",
+      },
+      {
+        file: "node_fills/hourly/20250608/9.lz4",
+        coin: "VVV",
+        tid: "250170946875997",
+        side: "maker",
+        ruled: "2026-11-19",
+      },
+      {
+        file: "node_fills/hourly/20250712/8.lz4",
+        coin: "PUMP",
+        tid: "12410765120022",
+        side: "taker",
+        ruled: "2026-11-19",
+      },
+    ]);
+  });
+
+  it("refuses a list that is not one, a record without a field or with one of another kind, a side neither taker nor maker, a tid not digits, a date not a day, and a record listed twice", () => {
+    const r = {
+      file: "node_fills/hourly/20250601/11.lz4",
+      coin: "ETH",
+      tid: "6896551551965",
+      side: "taker",
+      ruled: "2026-11-19",
+    };
+    const refused = (list: unknown) =>
+      KnownUnpaired.safeParse(list).error?.issues.map(
+        (i) => `${i.path.join(".")}: ${i.message}`,
+      ) ?? [];
+    expect(refused([])).toEqual([]);
+    // One record a (file, coin, tid): another tid, coin or file is another record.
+    expect(
+      refused([
+        r,
+        { ...r, tid: "1" },
+        { ...r, coin: "SOL" },
+        { ...r, file: "node_fills/hourly/20250601/12.lz4" },
+      ]),
+    ).toEqual([]);
+    expect(refused([r, { ...r, side: "maker" }])).toEqual([
+      ": a record listed twice",
+    ]);
+    expect(refused(r).map((x) => x.split(":")[0])).toEqual([""]);
+    for (const k of Object.keys(r))
+      expect(
+        refused([
+          Object.fromEntries(Object.entries(r).filter(([x]) => x !== k)),
+        ]).map((x) => x.split(":")[0]),
+        k,
+      ).toEqual([`0.${k}`]);
+    for (const [edit, at] of [
+      [{ file: 7 }, "0.file"],
+      [{ coin: null }, "0.coin"],
+      [{ side: "both" }, "0.side"],
+      [{ tid: 6896551551965 }, "0.tid"],
+      [{ tid: "" }, "0.tid"],
+      [{ tid: "6896551551965.0" }, "0.tid"],
+      [{ tid: "-6896551551965" }, "0.tid"],
+      [{ ruled: "2026-11" }, "0.ruled"],
+      [{ ruled: "19 November 2026" }, "0.ruled"],
+    ] as const)
+      expect(
+        refused([{ ...r, ...edit }]).map((x) => x.split(":")[0]),
+        JSON.stringify(edit),
+      ).toEqual([at]);
   });
 });

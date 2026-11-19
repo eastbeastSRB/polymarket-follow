@@ -24,7 +24,7 @@ import { createLog } from "../log.js";
 import { loadResearch } from "../paper/research.js";
 import { explore, trustedStore, wholeStore } from "./explore.js";
 import { extract } from "./extract.js";
-import { WAVEH_EXPECTED, runGates } from "./gates.js";
+import { KNOWN_UNPAIRED_FILE, WAVEH_EXPECTED, runGates } from "./gates.js";
 import { GATES } from "./library.js";
 import { WAVEH_RANGE, dayOf } from "./range.js";
 import {
@@ -184,6 +184,7 @@ try {
         forty: [...fortyOf(coins)],
         kit: await loadResearch(),
         expect: WAVEH_EXPECTED,
+        knownUnpairedFile: KNOWN_UNPAIRED_FILE,
         pace,
         log: (event, fields) => log.info(fields, event),
       },

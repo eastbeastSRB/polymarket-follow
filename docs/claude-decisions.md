@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (EXTRACT-FIX-4 — the supervisor's ruling below, built): **G5
+PASSES ONLY WHEN THE RECORDS LEFT UNPAIRED AFTER THE STRADDLES AND THE
+EDGES ARE EXACTLY THOSE `apps/poller/polish/known-unpaired.json` LISTS,
+EACH ON ITS SIDE; `runGates` READS THE LIST BEFORE G0.**
+- **The list:** the ruling's three, each its file key, coin, `tid` as
+  digits, the side present and `ruled: "2026-11-19"`; Zod-parsed
+  (`KnownUnpaired`: a failure throws; one file, coin and `tid` listed
+  twice is refused); its path `KNOWN_UNPAIRED_FILE` (`gates.ts`), pinned
+  by a test and passed by name in `main.ts`, as `CUTS_FILE`.
+- **The comparison** (`g5(o, lib, known)`): each listed record is the line
+  G5 prints for an unpaired one. A record left after the straddles and the
+  edges whose line is listed is `known`; any other fails, as before; a
+  listed line not found fails too ("…: listed as 1 maker unpaired, not
+  found"). So a listed record that pairs, is missing, lies at an edge, or
+  is found on the other side, in another file or as two records fails G5.
+- **Read before G0,** beside `step1.json`: a list that does not parse
+  stops the run at once (exit 1, as for any of our files), not after
+  G0–G4's 16 minutes.
+- **Tests and breaks:** polish-gates (the world with the three unpaired as
+  the 10 months hold them passes, and each case above fails, named;
+  `runGates` on the committed list fails G5 alone; a bad list is refused
+  before any gate). 37 breaks, all killed by assertions (the supervisor
+  folder's `workers\EXTRACT-FIX-4\breaks\`); `main.ts`'s line is reached
+  only by the built program on a real store, where a wrong path stops the
+  run before G0 or fails G5.
+- **Not done:** the list's SHA-256 among `gates.json`'s references
+  (`known` prints the records accepted); EXTRACT-FIX-4's report asks.
+
 2026-11-19 (the supervisor — the gates on the 10 months: six pass exactly,
 G5 lists three one-sided trades; the supervisor's ruling on the list, as
 decided before the run ("the supervisor rules on the list; never a waiver
