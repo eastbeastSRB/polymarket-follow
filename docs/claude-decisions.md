@@ -1,5 +1,63 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the exploration's five steps ran): **THE
+NOMINEE IS B0 + W4 (VENUE-WIDE WAVES). IT PASSED THE CHECK MONTHS AND
+GOES TO FRESH, SUBJECT TO THE REPORT, ITS INDEPENDENT REVIEW AND THE
+OWNER'S RULING.**
+
+All from main's build `dde2bf1` + the cuts `eccafa0` (code `8ce269e3…`),
+on the trusted store (manifest `19b72688…`, gates `8aef300d…`).
+
+**The steps:**
+- **features:** rerun, exit 0. The nine cuts are equal to `853c864`'s.
+- **e:** exit 0 at 19:12:34Z (e.json `82cb2a76…`).
+  - **The reproduction:** equal (176,986, difference 0).
+  - **The calibration:** tape − book +3.76 ± 2.65 on 675 positions, so no
+    re-base.
+  - **B0 on E:** +33.7 ± 39.7 (135,145 priced, 211 days, 34 coins).
+  - **W4** (at least 336 accounts liquidated venue-wide on σ in the hour):
+    t 3.03, +94.7 ± 54.3.
+  - **X1** t 2.81 but refused by the mean floor (+49.5 < +50).
+  - W1 t 2.53, the same family. H12 t 2.09.
+  - S1, the delays and the crash filters were below B0.
+- **choice:** exit 0. Adopted W4 alone; N = B0 + W4, which on E is
+  65,533 priced, +94.7, z 1.75, 99 days, 33 coins.
+- **c:** exit 0.
+  - **N on C:** +211.3 ± 122.1 (16,754 priced, 50 days, 35 coins); D 154.7,
+    SE_D 69.8, **t 2.22 ≥ 1.0, every floor met**.
+  - **B0 on C (a print):** +41.4 ± 48.4.
+  - **goes: N.**
+- **beside:** exit 0 at 20:27:07Z (beside.json `daa41f88…`).
+  - **Months:** 6 of 7 on E positive (July −14), 5 of 5 on C positive.
+  - **Sides:** almost all forced sells (65,133 of 65,533 on E).
+  - **The worst day:** 2025-10-10.
+  - **The signal meter:** "more than luck alone" (mean t² 2.78).
+  - **W4 is unseeded:** a useless unseeded change reaches FRESH at most
+    1.8% of the time.
+  - **K = 10.** The book footprint is 2.1 GB for FRESH.
+  - **The placebo:** the rule's 99.75th percentile 2.57, so **the exam's z
+    is 2.81**. The rule's median window error on 100 days is 88 bps (B0's
+    58).
+  - **The projection** (C minus one error, F13): m 89.1, **P(HOLDS) 3.6% at
+    look 1, 6.5% at look 2**; pooled E+C m 67.7 (2.1% / 3.4%).
+  - **The walks** (slice 0 on E): $1,000 costs about 5.0 bps, $10,000
+    about 17.8, $50,000 about 46.6.
+  - **calibrationOnC:** +1.14 ± 0.81.
+  - The run took 1,609 s (books 1,325 s); peak 5.6 GB.
+
+**The honest power picture, for the owner's ruling:**
+- The bar at look 1 is about 2.81 × the window error: about +250 bps on
+  100 clean days.
+- On the plan's conservative projection, HOLDS at look 1 is unlikely
+  (about 4%).
+- If the check months' +211 were the true edge, it would be about one in
+  three. That is the supervisor's rough arithmetic on beside's error, not
+  a plan output.
+- Look 2's longer window raises both.
+
+**Next:** POLISH-EXPLORE-REPORT (started 20:30Z), then
+POLISH-EXPLORE-REVIEW, then the owner's ruling.
+
 2026-11-19 (EXPLORE-FIX-1 — ruling 1 below, built): **THE POSITIONS FILES
 ARE WRITTEN AND READ AS STREAMS (`src/polish/tries/gzlines.ts`): NO STRING
 OR BUFFER HOLDS A WHOLE FILE. EACH LINE, AND THE GZIP BYTES, ARE WHAT THE
