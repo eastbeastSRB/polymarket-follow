@@ -1,5 +1,48 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the supervisor — the 715 option made safe, for the owner's
+choice at the talk): **IF THE OWNER CHOOSES THE 715 CUT TO DECIDE, N TAKES
+OVER WHEN STEP 1'S COUNTS, BEFORE ANY PRICE, GIVE THE 715 LINE FEWER THAN
+20 DAYS OR 10 COINS. THE CHOICE STAYS THE OWNER'S.**
+
+**The owner, about 22:10Z:** "i would like to do shortcut but also would
+like to do FRESH now, not to wait". The owner is weighing the 715 cut
+deciding (decisions 2026-11-19, the two stricter crash cuts, item 4)
+against N deciding with the cut as a reference.
+
+**The evidence for the shortcut** (E only, seeded;
+`verify/CRASH-PRINT/share.out` from `crash-print.out`):
+- the 715 cut keeps 48.6% of N's priced positions on E and **89.1% of its
+  summed net**;
+- the positions between N's cut and 715 (33,673) average +20.0;
+- on E's one-way error by day, z rises from 1.75 (N) to 2.58, and the two
+  best days' share falls from 56% to 47%.
+
+**Against it:**
+- it was chosen after the review showed where the gain sits, and C is spent
+  on N, so no clean check exists before FRESH;
+- its error is about a quarter larger;
+- it had 54 of E's 211 days, which scales to about 26 on FRESH's ~100 clean
+  days (fewer if the no-book days are cut), near TOO FEW's 20.
+
+A HOLDS on FRESH would still be proof: any rule frozen before FRESH opens
+keeps the 99% bar's protection. What is uncertain is only its chance.
+
+**What (D53's branch, if the owner chooses it):**
+1. The 715 line decides at the same z, LIKELY and floors as N.
+2. **The safety net:** step 1 (counts only, before any price) counts the 715
+   line's positions on the deciding days. If they span fewer than 20 UTC days
+   or 10 coins, **N decides instead**, at the same z. The switch is printed.
+   It reads no outcome, so the bar keeps its meaning.
+3. N and the 1,391 cut are printed beside.
+4. **POLISH-RULES prints for both choices,** before the talk: P(HOLDS) and
+   P(LIKELY or HOLDS) at each look, P(the safety net fires), and the WITHHELD
+   share. For 715 these come from E alone, labelled seeded and optimistic.
+
+**FRESH runs now either way.** Look 1 runs on FRESH as soon as the rules are
+reviewed and frozen, not in February. Only look 2 waits for FRESH-2's
+months.
+
 2026-11-19 (the supervisor — POLISH-RULES's plan, its eight questions
 ruled before the build): **THE EXAM'S PLAN IS ACCEPTED. LIKELY NEVER ENDS
 THE EXAM, DOES NOT HOLD KEEPS HOLDS'S z, z COMES FROM THE PLACEBO AT EACH
