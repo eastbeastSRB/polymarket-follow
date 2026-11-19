@@ -99,6 +99,19 @@ export function writeUnflushed(
 /** WAVEH_ROOT, for `gates`: WAVE-H's folder of the rehearsal and the look, whose files are the references (read only). */
 export const LookSettings = z.object({ WAVEH_ROOT: absolute });
 
+/** The exam's settings (polish/rules.md P15), no defaults: ANALYZER_ROOT, the ten months' folder (its trusted store, gates and exploration; read only), and EXAM_ROOT, the exam's own folder, neither inside the other. */
+export const ExamSettings = z
+  .object({ ANALYZER_ROOT: absolute, EXAM_ROOT: absolute })
+  .refine(
+    (s) =>
+      !inside(s.EXAM_ROOT, s.ANALYZER_ROOT) &&
+      !inside(s.ANALYZER_ROOT, s.EXAM_ROOT),
+    {
+      message: "must lie outside ANALYZER_ROOT, and ANALYZER_ROOT outside it",
+      path: ["EXAM_ROOT"],
+    },
+  );
+
 /** The compiled program's files, `dist/polish.js` and `dist/polish/`: their paths and hashes, hashed again. */
 export function fingerprintOf(packageRoot: string): string {
   const files: string[] = [];

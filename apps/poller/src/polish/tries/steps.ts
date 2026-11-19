@@ -197,7 +197,7 @@ function bookListOf(raw: string, want: string): BookList {
 }
 
 /** A step's clock and memory: each phase's seconds, and the process's sizes at its end. */
-function meter(log: StepInput["log"]) {
+export function meter(log: StepInput["log"]) {
   const t0 = Date.now();
   let t = t0;
   const seconds: Record<string, number> = {};

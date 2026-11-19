@@ -7,13 +7,18 @@
  * (gates.ts) into `<ANALYZER_ROOT>\gates\gates.json`. `explore`: its frame
  * (explore.ts), the store opened only when its gates passed; `explore --step
  * <name>` one of the exploration's steps (tries/steps.ts) into
- * `<ANALYZER_ROOT>\explore\`. Settings, no defaults: WAVEH_STORE (WAVE-H's
- * raw store, read only), ANALYZER_ROOT (the analyzer's folder of the range),
- * and for `gates` and a step WAVEH_ROOT (WAVE-H's rehearsal and look, read
- * only). Exit codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze
- * does not verify, 5 not ready, 6 a gate or a step's check failed.
- * Every line goes to the log, `<ANALYZER_ROOT>\logs\polish-<day>.log`;
- * stderr says only why the program stopped before its log was open.
+ * `<ANALYZER_ROOT>\explore\`. `exam --step <name>` one of the exam's steps
+ * (exam/steps.ts, polish/rules.md P15) into `<EXAM_ROOT>`, under the seal
+ * the exam's freeze gives (exam/gate.ts; closed while no freeze exists).
+ * Settings, no defaults: WAVEH_STORE (WAVE-H's raw store, read only),
+ * ANALYZER_ROOT (the analyzer's folder of the range), for `gates` and a
+ * step WAVEH_ROOT (WAVE-H's rehearsal and look, read only), and for the
+ * exam ANALYZER_ROOT (the ten months', read only) and EXAM_ROOT. Exit
+ * codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze does not
+ * verify, 5 not ready, 6 a gate or a step's check failed. Every line goes
+ * to the log, `<ANALYZER_ROOT>\logs\polish-<day>.log` (the exam's in
+ * EXAM_ROOT); stderr says only why the program stopped before its log was
+ * open.
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -22,19 +27,23 @@ import path from "node:path";
 import { getHeapStatistics } from "node:v8";
 import { createLog } from "../log.js";
 import { loadResearch } from "../paper/research.js";
+import { EXAM_DESIGN } from "./exam/design.js";
+import { sealOf, verifyExamFreeze } from "./exam/gate.js";
+import { EXAM_STEPS, runExamStep, type ExamStep } from "./exam/steps.js";
 import { explore, trustedStore, wholeStore } from "./explore.js";
 import { extract } from "./extract.js";
 import { KNOWN_UNPAIRED_FILE, WAVEH_EXPECTED, runGates } from "./gates.js";
 import { GATES } from "./library.js";
 import { WAVEH_RANGE, dayOf } from "./range.js";
 import {
+  ExamSettings,
   ExtractSettings,
   GateFailed,
   LookSettings,
   exitOf,
   fingerprintOf,
 } from "./run.js";
-import { checkPath } from "./seal.js";
+import { SEALED, checkPath } from "./seal.js";
 import {
   CUTS_FILE,
   LOOK_EXPECTED,
@@ -46,7 +55,7 @@ import { fortyOf } from "./writers.js";
 import { WAVEH_DIR, loadCoins } from "../waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "../waveh/gate.js";
 import { loadSizing } from "../waveh/look.js";
-import { FrozenDiffer, windowEnd } from "../waveh/run.js";
+import { FrozenDiffer, sharedHashes, windowEnd } from "../waveh/run.js";
 import { readDataList } from "../waveh/store.js";
 
 function refuse(why: string): never {
@@ -57,11 +66,17 @@ const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
   e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 
 const [command, ...options] = process.argv.slice(2);
-if (command !== "extract" && command !== "gates" && command !== "explore")
-  refuse(`the command "${command ?? ""}": extract, gates or explore`);
+if (
+  command !== "extract" &&
+  command !== "gates" &&
+  command !== "explore" &&
+  command !== "exam"
+)
+  refuse(`the command "${command ?? ""}": extract, gates, explore or exam`);
 let workers = 6;
 let day: string | null = null;
 let step: StepName | null = null;
+let examStep: ExamStep | null = null;
 for (let i = 0; i < options.length; i += 2) {
   const [flag, value] = [options[i], options[i + 1]];
   if (
@@ -83,11 +98,23 @@ for (let i = 0; i < options.length; i += 2) {
     STEPS.some((s) => s === value)
   )
     step = value as StepName;
+  else if (
+    command === "exam" &&
+    flag === "--step" &&
+    examStep === null &&
+    EXAM_STEPS.some((s) => s === value)
+  )
+    examStep = value as ExamStep;
   else refuse(`the option "${flag ?? ""} ${value ?? ""}"`);
 }
-const parsed = ExtractSettings.safeParse(process.env);
-if (!parsed.success) refuse(issues(parsed.error));
-const settings = parsed.data;
+if (command === "exam" && examStep === null)
+  refuse(`exam needs --step ${EXAM_STEPS.join(" | ")}`);
+const exam = command === "exam" ? ExamSettings.safeParse(process.env) : null;
+if (exam !== null && !exam.success) refuse(issues(exam.error));
+const parsed =
+  command === "exam" ? null : ExtractSettings.safeParse(process.env);
+if (parsed !== null && !parsed.success) refuse(issues(parsed.error));
+const settings = parsed?.data;
 const look = LookSettings.safeParse(process.env);
 if ((command === "gates" || step !== null) && !look.success)
   refuse(issues(look.error));
@@ -99,19 +126,31 @@ if (day !== null) {
     refuse((err as Error).message);
   }
 }
+/** The folders the command reads or writes, its log's first. */
+const folders =
+  exam !== null
+    ? [exam.data.EXAM_ROOT, exam.data.ANALYZER_ROOT]
+    : [
+        settings!.ANALYZER_ROOT,
+        settings!.WAVEH_STORE,
+        ...(command === "gates" || step !== null
+          ? [look.data!.WAVEH_ROOT]
+          : []),
+      ];
+// The exam's steps run under the seal its freeze gives; every other command under the closed seal.
+const seal =
+  command === "exam" ? sealOf(verifyExamFreeze(PACKAGE_ROOT)) : SEALED;
 
 // The seal before anything is opened or made, the log's folder included.
 try {
-  checkPath(settings.WAVEH_STORE);
-  checkPath(settings.ANALYZER_ROOT);
-  if (command === "gates" || step !== null) checkPath(look.data!.WAVEH_ROOT);
+  for (const f of folders) checkPath(f, seal);
 } catch (err) {
   process.stderr.write(`polish: not ready: ${(err as Error).message}\n`);
   process.exit(5);
 }
 
 os.setPriority(os.constants.priority.PRIORITY_LOW);
-const { log, close } = createLog(settings.ANALYZER_ROOT, "polish");
+const { log, close } = createLog(folders[0]!, "polish");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const pace = async () => {
   for (
@@ -139,6 +178,11 @@ try {
       workers,
       day,
       heapLimitMB: Math.round(getHeapStatistics().heap_size_limit / 2 ** 20),
+      ...(command === "exam" && {
+        examStep,
+        examSealOpen: seal.examFrozen,
+        shared: sharedHashes(PACKAGE_ROOT),
+      }),
     },
     `start ${command}`,
   );
@@ -146,10 +190,26 @@ try {
   const list = readDataList(data.toString("utf8"));
   const listSha256 = createHash("sha256").update(data).digest("hex");
   const coins = loadCoins();
-  if (command === "extract") {
+  if (examStep !== null) {
+    const r = await runExamStep(examStep, {
+      analyzer: exam!.data.ANALYZER_ROOT,
+      root: exam!.data.EXAM_ROOT,
+      coins,
+      kit: await loadResearch(),
+      code: fingerprint,
+      wavehFrozen: freeze.sha256,
+      cutsFile: CUTS_FILE,
+      design: EXAM_DESIGN,
+      log: (event, fields) => log.info(fields, event),
+    });
+    log.info(
+      { examStep, sha256: r.sha },
+      `done: the exam's ${examStep} step written`,
+    );
+  } else if (command === "extract") {
     const manifest = await extract({
-      store: settings.WAVEH_STORE,
-      root: settings.ANALYZER_ROOT,
+      store: settings!.WAVEH_STORE,
+      root: settings!.ANALYZER_ROOT,
       list,
       listName: "waveh/data.sha256",
       listSha256,
@@ -169,8 +229,8 @@ try {
   } else if (command === "gates") {
     const result = await runGates(
       {
-        store: wholeStore(settings.ANALYZER_ROOT),
-        raw: settings.WAVEH_STORE,
+        store: wholeStore(settings!.ANALYZER_ROOT),
+        raw: settings!.WAVEH_STORE,
         list,
         listSha256,
         look: path.join(look.data!.WAVEH_ROOT, "look"),
@@ -188,7 +248,7 @@ try {
         pace,
         log: (event, fields) => log.info(fields, event),
       },
-      path.join(settings.ANALYZER_ROOT, GATES),
+      path.join(settings!.ANALYZER_ROOT, GATES),
     );
     const failed = Object.entries(result.gates)
       .filter(([, g]) => !g.pass)
@@ -200,9 +260,9 @@ try {
     log.info({ seconds: result.seconds }, "done: every gate passed");
   } else if (step !== null) {
     const r = await runStep(step, {
-      root: settings.ANALYZER_ROOT,
+      root: settings!.ANALYZER_ROOT,
       look: path.join(look.data!.WAVEH_ROOT, "look"),
-      raw: settings.WAVEH_STORE,
+      raw: settings!.WAVEH_STORE,
       gate: gateOf(freeze),
       coins,
       kit: await loadResearch(),
@@ -214,7 +274,7 @@ try {
     });
     log.info({ step, sha256: r.sha }, `done: the ${step} step written`);
   } else {
-    const frame = explore(trustedStore(settings.ANALYZER_ROOT), coins);
+    const frame = explore(trustedStore(settings!.ANALYZER_ROOT), coins);
     log.info(frame, "explore: the store is trusted; no try is defined");
   }
 } catch (err) {

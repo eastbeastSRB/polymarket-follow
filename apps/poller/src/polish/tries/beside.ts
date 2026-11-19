@@ -295,30 +295,48 @@ export function footprintOf(ls: readonly Line[], K: number) {
 }
 
 /**
- * F1's placebo on E ∪ C: each B1 episode's sign flipped at random (the
- * kit's `mulberry32`, the seed printed), `draws` draws for windows of 100
- * and 182 consecutive days at a random start; t* = the flipped mean ÷ its
- * two-way SE. Printed: P(t* > 2.58), P(t* > 2.81), the sd of t*, its 99.5th
- * and 99.75th percentiles, and the window errors of the unflipped nets
- * (median and quartiles), with Student's t at G − 1 beside.
+ * F1's placebo on the span [from, to): each B1 episode's sign flipped at
+ * random (`flip` "episode", the default), or each UTC day's of the span
+ * ("day": POLISH-EXPLORE-REVIEW's; polish/rules.md P10), by the kit's
+ * `mulberry32` (the seed printed), `draws` draws for windows of 100 and 182
+ * consecutive days at a random start; t* = the flipped mean ÷ its two-way
+ * SE. Printed: P(t* > 1.96, 2.24, 2.58 and 2.81), the sd of t*, its 97.5th,
+ * 98.75th, 99.5th and 99.75th percentiles, and the window errors of the
+ * unflipped nets (median and quartiles), with Student's t at G − 1 beside.
  */
 export function placeboOf(
-  d: Data,
+  d: Pick<Data, "counted" | "kit">,
   ls: readonly Line[],
   b: number,
-  o: { seed: number; draws: number; from: number; to: number },
+  o: {
+    seed: number;
+    draws: number;
+    from: number;
+    to: number;
+    flip?: "episode" | "day";
+  },
 ) {
-  const episode = episodeIds(d.counted);
-  const fillOf = new Map(d.counted.map((f) => [`${f.t}|${f.iid}|${f.tid}`, f]));
   const priced = ls.filter((l) => l.net !== null).sort((x, y) => x.t - y.t);
   const items = priced.map((l) => itemOf(l, b)!);
   const x = Float64Array.from(items, (i) => i.x);
   const t = Float64Array.from(items, (i) => i.t);
-  const ep = Int32Array.from(priced, (l) => {
-    const f = fillOf.get(`${l.t}|${l.iid}|${l.tid}`);
-    return f === undefined ? -1 : episode.get(f)!;
-  });
-  const episodes = Math.max(0, ...ep) + 1;
+  // Each item's unit whose sign is drawn (−1: never flipped), and how many units a draw signs.
+  let unit: Int32Array;
+  let units: number;
+  if (o.flip === "day") {
+    unit = Int32Array.from(t, (v) => Math.floor((v - o.from) / DAY_MS));
+    units = Math.ceil((o.to - o.from) / DAY_MS);
+  } else {
+    const episode = episodeIds(d.counted);
+    const fillOf = new Map(
+      d.counted.map((f) => [`${f.t}|${f.iid}|${f.tid}`, f]),
+    );
+    unit = Int32Array.from(priced, (l) => {
+      const f = fillOf.get(`${l.t}|${l.iid}|${l.tid}`);
+      return f === undefined ? -1 : episode.get(f)!;
+    });
+    units = Math.max(0, ...unit) + 1;
+  }
   const cl = clustersOf(items);
   const rng = (
     d.kit.stats as unknown as { mulberry32: (seed: number) => () => number }
@@ -340,15 +358,15 @@ export function placeboOf(
       const ts: number[] = [];
       const errors: number[] = [];
       const flipped = new Float64Array(x.length);
-      const sign = new Int8Array(episodes);
+      const sign = new Int8Array(units);
       for (let k = 0; k < o.draws && span >= 0; k++) {
         const s = o.from + Math.floor(rng() * (span / DAY_MS + 1)) * DAY_MS;
         const lo = lower(s);
         const hi = lower(s + days * DAY_MS);
-        for (let e = 0; e < episodes; e++) sign[e] = rng() < 0.5 ? -1 : 1;
+        for (let e = 0; e < units; e++) sign[e] = rng() < 0.5 ? -1 : 1;
         let m = 0;
         for (let i = lo; i < hi; i++) {
-          flipped[i] = ep[i]! < 0 ? x[i]! : sign[ep[i]!]! * x[i]!;
+          flipped[i] = unit[i]! < 0 ? x[i]! : sign[unit[i]!]! * x[i]!;
           m += flipped[i]!;
         }
         const se = twoWayFast(flipped, cl, lo, hi);
@@ -360,12 +378,14 @@ export function placeboOf(
       const sd = Math.sqrt(
         ts.reduce((s, v) => s + (v - mt) ** 2, 0) / Math.max(1, ts.length - 1),
       );
+      const above = (z: number) =>
+        ts.filter((v) => v > z).length / Math.max(1, ts.length);
       return [
         `${days} days`,
         {
           draws: ts.length,
-          above258: ts.filter((v) => v > 2.58).length / Math.max(1, ts.length),
-          above281: ts.filter((v) => v > 2.81).length / Math.max(1, ts.length),
+          above258: above(2.58),
+          above281: above(2.81),
           sd,
           p995: q(ts, 0.995),
           p9975: q(ts, 0.9975),
@@ -376,23 +396,31 @@ export function placeboOf(
           },
           /** Student's t at G − 1 (G = the window's days), two-sided 0.5%, as a reference. */
           student: d.kit.stats.tCritical(0.005, days - 1),
+          above196: above(1.96),
+          above224: above(2.24),
+          p975: q(ts, 0.975),
+          p9875: q(ts, 0.9875),
         },
       ];
     }),
-  ) as Record<
-    string,
-    {
-      draws: number;
-      above258: number;
-      above281: number;
-      sd: number;
-      p995: number | null;
-      p9975: number | null;
-      errors: { median: number | null; q1: number | null; q3: number | null };
-      student: number;
-    }
-  >;
+  ) as Record<string, Placebo>;
 }
+
+/** One window length's placebo print. */
+export type Placebo = {
+  draws: number;
+  above258: number;
+  above281: number;
+  sd: number;
+  p995: number | null;
+  p9975: number | null;
+  errors: { median: number | null; q1: number | null; q3: number | null };
+  student: number;
+  above196: number;
+  above224: number;
+  p975: number | null;
+  p9875: number | null;
+};
 
 /** The exam's z (Q4): max(2.81, the rule's own 99.75th percentile of t* at 100 days), for two looks. */
 export const examZ = (p9975: number | null) => Math.max(2.81, p9975 ?? 2.81);
