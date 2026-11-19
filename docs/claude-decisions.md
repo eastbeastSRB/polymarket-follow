@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-19 (the owner — the exam's slices, before its rules are frozen):
+**THE EXAM'S DECIDING LINE POOLS K = 20 SLICES (0–19), NOT 10.**
+
+The owner, about 21:48Z: "ok man! you know the best, let's go with 20 if
+you think that will be more reliable", on the supervisor's recommendation
+(decisions 2026-11-19, the exploration's Final review verified, Q1).
+
+**What:**
+1. **The line:** N on slices 0–19 pooled, on the deciding days. All 147 are
+   still printed beside.
+2. **z and LIKELY's z** come from the placebo gate run on K = 20, by the
+   same rule as before: max(the textbook value, the placebo's percentile).
+3. **The books** cover slices 0–19's legs: about 2.8 GB against K = 10's
+   2.1 GB (the review's estimate). The exact footprint comes from the
+   exam's step 1.
+
+**Why:**
+- **F19's count picked K = 10 on slices 0–9's own error,** but those slices
+  sit on the lucky side of their own blocks:
+  - a typical block of ten is ×1.051 of all 147 slices' error, outside
+    F19's 3%;
+  - blocks of twenty are ×1.027, inside it.
+- **So K = 20 is what F19's count gives** when it is measured on a typical
+  block, which is how the exam's error will behave on new months. The line
+  also gets slightly more precise (beside.json's K table: SE 48.3 against
+  50.0).
+- **It is chosen from E and C's counts alone,** before FRESH is opened, so
+  it reads nothing of an outcome.
+
 2026-11-19 (the supervisor — the exploration's Final review verified):
 **THE CHOICE STANDS. POLISH-EXPLORE-REVIEW REBUILT EVERY NUMBER THAT
 DECIDES WITH ITS OWN CODE, AND ALL ARE EQUAL. ITS FINDINGS GO TO
