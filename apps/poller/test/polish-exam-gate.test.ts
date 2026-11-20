@@ -24,7 +24,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   EXAM_CLOSURE,
   EXAM_FILES,
@@ -428,6 +428,23 @@ describe("the exam's freeze (a temporary git repository)", () => {
     expect(f.ok ? [] : f.problems).toContain(
       `the tag polish-freeze-1 does not hold ${EXAM_FROZEN_FILE}`,
     );
+    expect(verifyExamFreeze(root).ok).toBe(true);
+  }, 60_000);
+
+  it("refuses, saying so, when git cannot show the tag's list (no git on the PATH)", () => {
+    vi.stubEnv("PATH", "");
+    const f = (() => {
+      try {
+        return verifyExamFreeze(root);
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    })();
+    expect(f.ok).toBe(false);
+    expect(f.ok ? [] : f.problems).toEqual([
+      expect.stringMatching(/^git could not show the tag's list \(.*ENOENT/),
+    ]);
+    expect(sealOf(f)).toEqual({ examFrozen: false });
     expect(verifyExamFreeze(root).ok).toBe(true);
   }, 60_000);
 });

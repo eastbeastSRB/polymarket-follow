@@ -100,16 +100,19 @@ export function examFiles(root: string): string[] {
   );
 }
 
-/** The list's bytes as the tag holds them, or null when git has no such tag or file there. */
-export function taggedList(root: string, tag: string): Buffer | null {
+/** The list's bytes as the tag holds them, or why not: git has no such tag or file there, or git could not run (not on the PATH, or it timed out). */
+export function taggedList(root: string, tag: string): Buffer | string {
   try {
     return execFileSync("git", ["show", `${tag}:./${EXAM_FROZEN_FILE}`], {
       cwd: root,
       stdio: ["ignore", "pipe", "ignore"],
       timeout: 30_000,
     });
-  } catch {
-    return null;
+  } catch (err) {
+    // git's own refusal carries its exit status; a git that never ran or was stopped has none.
+    return typeof (err as { status?: unknown }).status === "number"
+      ? `the tag ${tag} does not hold ${EXAM_FROZEN_FILE}`
+      : `git could not show the tag's list (${(err as Error).message})`;
   }
 }
 
@@ -152,8 +155,7 @@ export function verifyExamFreeze(root: string): ExamFreeze {
     );
   else {
     const held = taggedList(root, tag);
-    if (held === null)
-      problems.push(`the tag ${tag} does not hold ${EXAM_FROZEN_FILE}`);
+    if (typeof held === "string") problems.push(held);
     else if (!held.equals(list))
       problems.push(`the tag ${tag} holds another ${EXAM_FROZEN_FILE}`);
   }

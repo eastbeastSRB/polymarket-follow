@@ -378,7 +378,7 @@ describe("(c) the look's lines", () => {
     legs,
   });
 
-  it("passes each bps field within 1e-9 and every other field equal; names a line beyond, another field, a line missing", () => {
+  it("passes each bps field within 1e-9 and every other field equal; names another field, a line missing, a WAVE-H line beyond", () => {
     const prices = [{ priced, legs: [leg] }];
     expect(matchLook([spot], prices, [line()])).toMatchObject({
       equal: true,
@@ -403,7 +403,14 @@ describe("(c) the look's lines", () => {
       matchLook([spot, spot], [...prices, ...prices], [line()]),
     ).toMatchObject({
       equal: false,
-      problems: ["1 lines of the look, 2 positions"],
+      problems: ["1 WAVE-H lines of the look, 2 positions"],
+    });
+    // The look's SIZING lines follow its WAVE-H lines and count for nothing; a WAVE-H line beyond ours (a tail we dropped) is refused.
+    const sizing = { ...line(), set: "SIZING" };
+    expect(matchLook([spot], prices, [line(), sizing]).equal).toBe(true);
+    expect(matchLook([spot], prices, [line(), line(), sizing])).toMatchObject({
+      equal: false,
+      problems: ["2 WAVE-H lines of the look, 1 positions"],
     });
   });
 });

@@ -160,7 +160,7 @@ export function matchPlacebo(
   return out;
 }
 
-/** (c): each WAVE-H position priced book first, against its line of the look's `positions.jsonl.gz` (set "WAVE-H"). */
+/** (c): each WAVE-H position priced book first, against its line of the look's `positions.jsonl.gz` (set "WAVE-H"), whose WAVE-H lines are as many as the positions (SIZING's lines follow them). */
 export function matchLook(
   spots: readonly Spot[],
   prices: readonly Price[],
@@ -168,9 +168,12 @@ export function matchLook(
 ) {
   const problems: string[] = [];
   let bps = 0;
-  if (lines.length < spots.length)
+  const wavehLines = lines.filter(
+    (l) => (l as { set?: unknown } | null)?.set === "WAVE-H",
+  ).length;
+  if (wavehLines !== spots.length)
     problems.push(
-      `${lines.length} lines of the look, ${spots.length} positions`,
+      `${wavehLines} WAVE-H lines of the look, ${spots.length} positions`,
     );
   spots.forEach((s, i) => {
     const ref = lines[i];
