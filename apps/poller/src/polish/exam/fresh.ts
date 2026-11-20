@@ -25,6 +25,13 @@ import { FRESH_END } from "../seal.js";
 import type { FileCounts } from "../store.js";
 import { NO_BOOK_DAYS, SAFETY_NET, SEGMENTS } from "./design.js";
 
+/** FRESH's data list (rules.md P2, D7; T3): `polish/fresh.sha256`, data.sha256's form, written from FRESH's manifest by tools/polish-freeze.cjs. */
+export const FRESH_LIST_FILE = path.join(
+  PACKAGE_ROOT,
+  "polish",
+  "fresh.sha256",
+);
+
 /** FRESH's one-sided trades ruled by H0's route (Q7 (a)), in known-unpaired.json's form: `polish/fresh-unpaired.json`, empty at the freeze. */
 export const FRESH_UNPAIRED_FILE = path.join(
   PACKAGE_ROOT,

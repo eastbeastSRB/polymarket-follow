@@ -354,22 +354,17 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
   return { pass: problems.length === 0, ...whole, ...listed(problems) };
 }
 
-/** WAVE-H's step-1 counts from the store (look.ts `lookStep1`, readMarkets): all but M's and slice 0's, which are G2's. */
-function stepCounts(o: GatesInput, lib: Library) {
+/** The input files' records and failed lines by day, and the block numbers missing by day and gone back, over the files in order (G1's, and the exam's step 1 on FRESH). */
+export function byDayOf(files: readonly FileCounts[]) {
   const days: Record<string, { records: number; failed: number }> = {};
   const missing: Record<string, number> = {};
-  const top = new Map<string, number>();
-  const sizingCoins = new Set<string>();
-  let late = 0;
   let back = 0;
   let last: number | null = null;
-  for (const f of lib.files) {
+  for (const f of files) {
     const day = isoDay(keyDate(f.key)!);
     const d = (days[day] ??= { records: 0, failed: 0 });
     d.records += f.records;
     d.failed += f.failed;
-    const b = boundOf(f, o.store.manifest.end);
-    for (const [hour, n] of f.byHour) if (hour >= b.until) late += n;
     // WAVE-H's rule line by line (waveh/pass.ts), over each run of consecutive block numbers.
     for (const [a, z] of f.runs) {
       if (last !== null && a <= last) back += Math.min(z, last) - a + 1;
@@ -377,6 +372,19 @@ function stepCounts(o: GatesInput, lib: Library) {
         missing[day] = (missing[day] ?? 0) + a - last - 1;
       last = Math.max(last ?? z, z);
     }
+  }
+  return { days, blocks: { missing, back } };
+}
+
+/** WAVE-H's step-1 counts from the store (look.ts `lookStep1`, readMarkets): all but M's and slice 0's, which are G2's. */
+function stepCounts(o: GatesInput, lib: Library) {
+  const { days, blocks } = byDayOf(lib.files);
+  const top = new Map<string, number>();
+  const sizingCoins = new Set<string>();
+  let late = 0;
+  for (const f of lib.files) {
+    const b = boundOf(f, o.store.manifest.end);
+    for (const [hour, n] of f.byHour) if (hour >= b.until) late += n;
     // A SIZING file's records from TEST's start (a month's first instant) are WAVE-H's late ones.
     for (const [month, rate] of f.topTaker)
       if (!b.sizing || month < monthOf(TEST_START))
@@ -418,7 +426,7 @@ function stepCounts(o: GatesInput, lib: Library) {
     late,
     early: lib.early,
     legs: Object.fromEntries([...lib.legs].sort()),
-    blocks: { missing, back },
+    blocks,
     topTakerBps: Object.fromEntries(
       [...top].map(([month, r]) => [month, Math.round(r * 1e8) / 1e4]),
     ),

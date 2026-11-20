@@ -16,19 +16,31 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { FrozenDiffer, RENAME_PAUSE_MS, RENAME_TRIES } from "../waveh/run.js";
+import { BooksNeeded } from "../waveh/legs.js";
+import {
+  AlreadyRun,
+  FrozenDiffer,
+  RENAME_PAUSE_MS,
+  RENAME_TRIES,
+} from "../waveh/run.js";
 import { StoreError } from "../waveh/store.js";
 import { SealedError } from "./seal.js";
 
 /** A gate of the store failed (exit 6). */
 export class GateFailed extends Error {}
+/** The exam's freeze does not verify, so FRESH stays sealed (exit 4; the look's steps). */
+export class ExamUnfrozen extends Error {}
 
-/** The program's exit for an error, and its log line: 4 WAVE-H's freeze does not verify; 5 not ready (a store file missing, differing or failing; a sealed path; the store not trusted); 6 a gate failed; 1 a crash. */
+/** The program's exit for an error, and its log line: 4 WAVE-H's freeze, or the exam's for the look's steps, does not verify; 5 not ready (a store file missing, differing or failing; a sealed path; the store not trusted; books needed; already run); 6 a gate or a check failed; 1 a crash. */
 export function exitOf(err: unknown): { code: 1 | 4 | 5 | 6; event: string } {
   if (err instanceof FrozenDiffer)
     return { code: 4, event: "WAVE-H's freeze does not verify" };
+  if (err instanceof ExamUnfrozen)
+    return { code: 4, event: "the exam's freeze does not verify" };
   if (err instanceof StoreError || err instanceof SealedError)
     return { code: 5, event: "not ready" };
+  if (err instanceof BooksNeeded) return { code: 5, event: "books needed" };
+  if (err instanceof AlreadyRun) return { code: 5, event: "already run" };
   if (err instanceof GateFailed) return { code: 6, event: "a gate failed" };
   return { code: 1, event: "crash" };
 }
@@ -127,6 +139,23 @@ export const ReproSettings = z
     {
       message: "must lie outside EXAM_ROOT, and EXAM_ROOT outside them",
       path: ["WAVEH_STORE"],
+    },
+  );
+
+/** The look's settings beside the exam's (THE PLAN D50): FRESH_STORE, FRESH's raw store (`…\FRESH\store`; its fill files, `asset_ctxs` days, funding windows and books), read only, outside the exam's folder. */
+export const FreshSettings = z
+  .object({ FRESH_STORE: absolute, EXAM_ROOT: absolute })
+  .refine((s) => tail(s.FRESH_STORE) === "fresh/store", {
+    message: "is not FRESH's raw store (…\\FRESH\\store)",
+    path: ["FRESH_STORE"],
+  })
+  .refine(
+    (s) =>
+      !inside(s.EXAM_ROOT, s.FRESH_STORE) &&
+      !inside(s.FRESH_STORE, s.EXAM_ROOT),
+    {
+      message: "must lie outside EXAM_ROOT, and EXAM_ROOT outside it",
+      path: ["FRESH_STORE"],
     },
   );
 

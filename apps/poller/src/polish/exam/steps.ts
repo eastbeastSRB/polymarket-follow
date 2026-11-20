@@ -10,6 +10,9 @@
  * - `reproduce` (before FRESH opens; again at look 1 by the frozen program):
  *   repro.ts's three parts, into `<EXAM_ROOT>\repro.json`, exit 6 when one
  *   fails.
+ * - `1` (look 1, the exam's seal open, the reproduction passed by this
+ *   program): FRESH extracted and held whole, its lines placed and counted,
+ *   the safety net read, the book files needed listed; then exit 5.
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -18,8 +21,9 @@ import { z } from "zod";
 import type { Research } from "../../paper/research.js";
 import type { Coins } from "../../waveh/coins.js";
 import { sha256, type Gate } from "../../waveh/gate.js";
+import { BooksNeeded, booksOf } from "../../waveh/legs.js";
 import { markAt } from "../../waveh/report.js";
-import { writeWhole } from "../../waveh/run.js";
+import { AlreadyRun, writeWhole } from "../../waveh/run.js";
 import {
   SHA256,
   StoreError,
@@ -29,12 +33,13 @@ import {
 import { countedFrom } from "../counted.js";
 import { trustedStore } from "../explore.js";
 import { STORE, extract } from "../extract.js";
+import type { KnownUnpaired } from "../gates.js";
 import { Tape, marketsFrom } from "../legs.js";
 import { GATES, GATES_FILE, positionsOf } from "../library.js";
-import { WAVEH_RANGE } from "../range.js";
-import { GateFailed } from "../run.js";
-import { SEALED } from "../seal.js";
-import { openStore } from "../store.js";
+import { WAVEH_RANGE, type Range } from "../range.js";
+import { ExamUnfrozen, GateFailed } from "../run.js";
+import { SEALED, type Seal } from "../seal.js";
+import { openStore, type Store } from "../store.js";
 import { Line } from "../tries/beside.js";
 import { dataFrom } from "../tries/data.js";
 import { readGzLines } from "../tries/gzlines.js";
@@ -44,6 +49,8 @@ import { ChoiceFile, meter } from "../tries/steps.js";
 import { CutsFile } from "../tries/trylog.js";
 import { fortyOf } from "../writers.js";
 import { K, M, PLACEBO, PLACEBO_JSON, type ExamDesign } from "./design.js";
+import { holesOf, integrityOf, safetyNet } from "./fresh.js";
+import { LINES, countsOf, linesOf, onDeciding } from "./look.js";
 import { placeboPrint } from "./placebo.js";
 import { bookReader, priceAtTheBook } from "./price.js";
 import {
@@ -55,8 +62,11 @@ import {
   partOf,
 } from "./repro.js";
 
-export const EXAM_STEPS = ["placebo", "reproduce"] as const;
+export const EXAM_STEPS = ["placebo", "reproduce", "1"] as const;
 export type ExamStep = (typeof EXAM_STEPS)[number];
+
+/** A file of ours, as the steps write each: indented JSON and a newline. */
+const json = (value: unknown) => `${JSON.stringify(value, null, 1)}\n`;
 
 export type ExamInput = {
   /** ANALYZER_ROOT: the ten months' folder (its trusted store, gates and exploration), read only. */
@@ -446,18 +456,237 @@ export async function reproduceStep(o: ReproInput) {
   return { sha: sha256(text), out: value };
 }
 
-/** Runs one exam step by its name; the reproduction with its own settings. */
+/** What the look's steps read beside the exam's inputs (THE PLAN D47, D50): FRESH's raw store and its list (`polish/fresh.sha256`), its range, the seal the exam's freeze opens and that freeze, the one-sided trades ruled (`polish/fresh-unpaired.json`), the extraction's workers and pace. */
+export type LookInput = ExamInput & {
+  fresh: string;
+  list: DataList;
+  listSha256: string;
+  range: Range;
+  seal: Seal;
+  freeze: { sha256: string; tag: string };
+  known: KnownUnpaired;
+  workers: number;
+  pace: () => Promise<void>;
+};
+
+/** Look 1's folder in the exam's, and step 1's files in it. */
+export const LOOK1 = "look1";
+export const STEP1 = "step1.json";
+export const BOOKS_NEEDED = "books-needed.txt";
+export const INTEGRITY = "integrity.json";
+
+/** What the look reads of repro.json (our own file: one that does not parse throws). */
+const ReproFile = z.object({
+  identity: z.object({ code: z.string() }),
+  passed: z.boolean(),
+});
+
+/** The look's gate (D47): the exam's seal open (its freeze verified, held by its tag), and `<EXAM_ROOT>\repro.json` passed by this very program; repro.json's SHA-256. */
+function lookGate(o: LookInput): string {
+  if (!o.seal.examFrozen)
+    throw new ExamUnfrozen(
+      "FRESH stays sealed: the exam's freeze does not verify",
+    );
+  const file = path.join(o.root, "repro.json");
+  if (!existsSync(file))
+    throw new StoreError(
+      "no repro.json in EXAM_ROOT: the reproduction runs first",
+    );
+  const bytes = readFileSync(file);
+  const r = ReproFile.parse(JSON.parse(bytes.toString("utf8")));
+  if (!r.passed || r.identity.code !== o.code)
+    throw new StoreError(
+      `repro.json is not a reproduction this program passed (passed ${r.passed}, by ${r.identity.code})`,
+    );
+  return sha256(bytes);
+}
+
+/** The exam's rule and cuts: choice.json's rule (N's) and polish/cuts.json, each held to the design's SHA-256, W4's cut N's. */
+function ruleAndCuts(o: ExamInput) {
+  const rule = ChoiceFile.parse(
+    JSON.parse(
+      readFileSync(
+        explored(o, "choice.json", o.design.explored.choice),
+        "utf8",
+      ),
+    ),
+  ).rule as Rule;
+  const cuts = CutsFile.parse(
+    JSON.parse(
+      heldFile(o.cutsFile, o.design.explored.cuts, "polish/cuts.json").toString(
+        "utf8",
+      ),
+    ),
+  ).cuts;
+  if (cuts.W4.value !== o.design.recipe.n)
+    throw new GateFailed(
+      `polish/cuts.json's W4 is not N's cut ${o.design.recipe.n}`,
+    );
+  return { rule, cuts };
+}
+
+/** FRESH's lines from its store (D13–D17, D29, D30): its data, files and holes, each line's positions, and their SHA-256, which step 2 holds to step 1's. */
+function lookOf(
+  o: LookInput,
+  store: Store,
+  { rule, cuts }: ReturnType<typeof ruleAndCuts>,
+) {
+  const d = dataFrom(store, o.coins, o.kit);
+  const files = store.files();
+  const holes = holesOf(files);
+  const { lines, unknown } = linesOf(d, holes, rule, cuts, o.design.recipe);
+  const positionsSha256 = sha256(JSON.stringify(lines));
+  return { d, files, holes, lines, unknown, positionsSha256 };
+}
+
+/**
+ * `exam --step 1` (THE PLAN D47; D8, D9, D48, D53b; T11, T12), counts only,
+ * before any price: the look's gate and the inputs held; FRESH's
+ * extraction under the open seal into `<EXAM_ROOT>\store`; its integrity
+ * into `look1\integrity.json`, a failure stopping here (exit 6, every
+ * record listed, for H0's route); the lines placed; the safety net, read
+ * once, here, naming the deciding line; the counts; the book files that N's
+ * legs on the deciding days need (a superset of the 715 line's) into
+ * `look1\books-needed.txt`; `look1\step1.json` written whole; then exit 5,
+ * books needed. It runs again only once H0's route has removed step1.json.
+ */
+export async function stepOne(o: LookInput): Promise<never> {
+  const m = meter(o.log);
+  const repro = lookGate(o);
+  const dir = path.join(o.root, LOOK1);
+  if (existsSync(path.join(dir, STEP1)))
+    throw new AlreadyRun(
+      `${LOOK1}\\${STEP1} exists: step 1 runs again only once H0's route removes it`,
+    );
+  const { identity } = identityOf(o);
+  const rc = ruleAndCuts(o);
+  const forty = [...fortyOf(o.coins)];
+  await extract({
+    store: o.fresh,
+    root: o.root,
+    list: o.list,
+    listName: "polish/fresh.sha256",
+    listSha256: o.listSha256,
+    range: o.range,
+    workers: o.workers,
+    code: o.code,
+    wavehFrozen: o.wavehFrozen,
+    forty,
+    small: o.coins.list.map((c) => c.name),
+    pace: o.pace,
+    log: o.log,
+    seal: o.seal,
+  });
+  m.phase("extraction");
+  const store = openStore(path.join(o.root, STORE), o.seal);
+  const integrity = integrityOf(
+    {
+      store,
+      list: o.list,
+      listSha256: o.listSha256,
+      wavehFrozen: o.wavehFrozen,
+      code: o.code,
+      fill: o.range.fill,
+      coins: o.coins,
+      forty,
+    },
+    o.known,
+  );
+  const integrityText = json({
+    store: store.id,
+    ...integrity,
+    written: new Date().toISOString(),
+  });
+  writeWhole(path.join(dir, INTEGRITY), integrityText);
+  m.phase("integrity");
+  if (!integrity.pass)
+    throw new GateFailed(
+      `FRESH's store failed its integrity: see ${LOOK1}\\${INTEGRITY}`,
+    );
+  const look = lookOf(o, store, rc);
+  const net = safetyNet(
+    look.lines["715"].filter((p) => onDeciding(p) && p.left === null),
+  );
+  const needed = booksOf(
+    look.lines.N.filter((p) => onDeciding(p) && p.left === null),
+    o.coins,
+  );
+  const counts = countsOf({
+    d: look.d,
+    m: store.manifest,
+    files: look.files,
+    holes: look.holes,
+    lines: look.lines,
+    range: o.range,
+    coins: o.coins,
+    forty,
+  });
+  m.phase("positions");
+  writeWhole(path.join(dir, BOOKS_NEEDED), `${needed.join("\n")}\n`);
+  const positions = Object.fromEntries(
+    LINES.map((n) => [n, look.lines[n].length]),
+  );
+  writeWhole(
+    path.join(dir, STEP1),
+    json({
+      step: "1",
+      identity: {
+        ...identity,
+        exam: o.freeze,
+        freshList: o.listSha256,
+        freshStore: store.id,
+        repro,
+      },
+      inputs: {
+        choice: o.design.explored.choice,
+        cuts: o.design.explored.cuts,
+        recipe: o.design.recipe,
+      },
+      integrity: sha256(integrityText),
+      deciding: {
+        line: net.deciding,
+        why: net.why,
+        days: net.days,
+        coins: net.coins,
+      },
+      positionsSha256: look.positionsSha256,
+      positions,
+      featureUnknown: look.unknown,
+      booksNeeded: needed.length,
+      counts,
+      ...m.done(),
+      written: new Date().toISOString(),
+    }),
+  );
+  o.log("step 1", {
+    deciding: net.deciding,
+    positions,
+    booksNeeded: needed.length,
+  });
+  throw new BooksNeeded(
+    `step 1 done: ${needed.length} book files listed in ${LOOK1}\\${BOOKS_NEEDED}`,
+  );
+}
+
+/** Runs one exam step by its name; the reproduction and the look with their own settings. */
 export function runExamStep(
   step: ExamStep,
   o: ExamInput,
-  repro: Omit<ReproInput, keyof ExamInput> | null,
+  more: {
+    repro: Omit<ReproInput, keyof ExamInput> | null;
+    look: Omit<LookInput, keyof ExamInput> | null;
+  },
 ) {
   switch (step) {
     case "placebo":
       return placeboStep(o);
     case "reproduce":
-      if (repro === null)
+      if (more.repro === null)
         throw new GateFailed("the reproduction needs its own settings");
-      return reproduceStep({ ...o, ...repro });
+      return reproduceStep({ ...o, ...more.repro });
+    case "1":
+      if (more.look === null)
+        throw new GateFailed("the look needs its own settings");
+      return stepOne({ ...o, ...more.look });
   }
 }

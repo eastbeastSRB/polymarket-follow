@@ -13,31 +13,39 @@
  * Settings, no defaults: WAVEH_STORE (WAVE-H's raw store, read only),
  * ANALYZER_ROOT (the analyzer's folder of the range), for `gates` and a
  * step WAVEH_ROOT (WAVE-H's rehearsal and look, read only), and for the
- * exam ANALYZER_ROOT (the ten months', read only) and EXAM_ROOT. Exit
- * codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze does not
- * verify, 5 not ready, 6 a gate or a step's check failed. Every line goes
- * to the log, `<ANALYZER_ROOT>\logs\polish-<day>.log` (the exam's in
- * EXAM_ROOT); stderr says only why the program stopped before its log was
- * open.
+ * exam ANALYZER_ROOT (the ten months', read only) and EXAM_ROOT, with
+ * FRESH_STORE (FRESH's raw store, read only) for the look's steps. Exit
+ * codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze, or for the
+ * look's steps the exam's, does not verify, 5 not ready (books needed
+ * among them), 6 a gate or a step's check failed. Every line goes to the
+ * log, `<ANALYZER_ROOT>\logs\polish-<day>.log` (the exam's in EXAM_ROOT);
+ * stderr says only why the program stopped before its log was open.
  */
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { getHeapStatistics } from "node:v8";
 import { createLog } from "../log.js";
 import { loadResearch } from "../paper/research.js";
 import { EXAM_DESIGN } from "./exam/design.js";
+import { FRESH_LIST_FILE, FRESH_UNPAIRED_FILE } from "./exam/fresh.js";
 import { sealOf, verifyExamFreeze } from "./exam/gate.js";
 import { EXAM_STEPS, runExamStep, type ExamStep } from "./exam/steps.js";
 import { explore, trustedStore, wholeStore } from "./explore.js";
 import { extract } from "./extract.js";
-import { KNOWN_UNPAIRED_FILE, WAVEH_EXPECTED, runGates } from "./gates.js";
+import {
+  KNOWN_UNPAIRED_FILE,
+  KnownUnpaired,
+  WAVEH_EXPECTED,
+  runGates,
+} from "./gates.js";
 import { GATES } from "./library.js";
-import { WAVEH_RANGE, dayOf } from "./range.js";
+import { FRESH_RANGE, WAVEH_RANGE, dayOf } from "./range.js";
 import {
   ExamSettings,
   ExtractSettings,
+  FreshSettings,
   GateFailed,
   LookSettings,
   ReproSettings,
@@ -57,7 +65,7 @@ import { WAVEH_DIR, loadCoins } from "../waveh/coins.js";
 import { PACKAGE_ROOT, gateOf, sha256, verifyFreeze } from "../waveh/gate.js";
 import { loadSizing } from "../waveh/look.js";
 import { FrozenDiffer, sharedHashes, windowEnd } from "../waveh/run.js";
-import { readDataList } from "../waveh/store.js";
+import { StoreError, readDataList } from "../waveh/store.js";
 
 function refuse(why: string): never {
   process.stderr.write(`polish: refused: ${why}\n`);
@@ -115,6 +123,8 @@ if (exam !== null && !exam.success) refuse(issues(exam.error));
 const repro =
   examStep === "reproduce" ? ReproSettings.safeParse(process.env) : null;
 if (repro !== null && !repro.success) refuse(issues(repro.error));
+const fresh = examStep === "1" ? FreshSettings.safeParse(process.env) : null;
+if (fresh !== null && !fresh.success) refuse(issues(fresh.error));
 const parsed =
   command === "exam" ? null : ExtractSettings.safeParse(process.env);
 if (parsed !== null && !parsed.success) refuse(issues(parsed.error));
@@ -139,6 +149,7 @@ const folders =
         ...(repro === null
           ? []
           : [repro.data.WAVEH_STORE, repro.data.WAVEH_ROOT]),
+        ...(fresh === null ? [] : [fresh.data.FRESH_STORE]),
       ]
     : [
         settings!.ANALYZER_ROOT,
@@ -147,9 +158,15 @@ const folders =
           ? [look.data!.WAVEH_ROOT]
           : []),
       ];
-// The exam's steps run under the seal its freeze gives; every other command under the closed seal.
-const seal =
-  command === "exam" ? sealOf(verifyExamFreeze(PACKAGE_ROOT)) : SEALED;
+// The exam's steps run under the seal its freeze gives; every other command under the closed seal. The look's steps need the freeze.
+const examFreeze = command === "exam" ? verifyExamFreeze(PACKAGE_ROOT) : null;
+if (fresh !== null && examFreeze !== null && !examFreeze.ok) {
+  process.stderr.write(
+    `polish: the exam's freeze does not verify: ${examFreeze.problems.slice(0, 10).join("; ")}\n`,
+  );
+  process.exit(4);
+}
+const seal = examFreeze === null ? SEALED : sealOf(examFreeze);
 
 // The seal before anything is opened or made, the log's folder included.
 try {
@@ -201,6 +218,19 @@ try {
   const listSha256 = createHash("sha256").update(data).digest("hex");
   const coins = loadCoins();
   if (examStep !== null) {
+    // The look's list: FRESH's files by SHA-256 (tools/polish-freeze.cjs --data), and the one-sided trades ruled.
+    const lookList = () => {
+      if (!existsSync(FRESH_LIST_FILE))
+        throw new StoreError("no polish/fresh.sha256");
+      const bytes = readFileSync(FRESH_LIST_FILE);
+      return {
+        list: readDataList(bytes.toString("utf8")),
+        listSha256: sha256(bytes),
+        known: KnownUnpaired.parse(
+          JSON.parse(readFileSync(FRESH_UNPAIRED_FILE, "utf8")),
+        ),
+      };
+    };
     const r = await runExamStep(
       examStep,
       {
@@ -214,17 +244,32 @@ try {
         design: EXAM_DESIGN,
         log: (event, fields) => log.info(fields, event),
       },
-      repro === null
-        ? null
-        : {
-            raw: repro.data.WAVEH_STORE,
-            list,
-            listSha256,
-            wavehRoot: repro.data.WAVEH_ROOT,
-            gate: gateOf(freeze),
-            workers,
-            pace,
-          },
+      {
+        repro:
+          repro === null
+            ? null
+            : {
+                raw: repro.data.WAVEH_STORE,
+                list,
+                listSha256,
+                wavehRoot: repro.data.WAVEH_ROOT,
+                gate: gateOf(freeze),
+                workers,
+                pace,
+              },
+        look:
+          fresh === null || examFreeze === null || !examFreeze.ok
+            ? null
+            : {
+                fresh: fresh.data.FRESH_STORE,
+                ...lookList(),
+                range: FRESH_RANGE,
+                seal,
+                freeze: { sha256: examFreeze.sha256, tag: examFreeze.tag },
+                workers,
+                pace,
+              },
+      },
     );
     log.info(
       { examStep, sha256: r.sha },
