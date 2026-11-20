@@ -1,5 +1,58 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — AI-RESEARCH reported): **AN AI MODEL CAN HELP
+THE TOOL BUT CANNOT HONESTLY HELP DECIDE A TRADE AT THIS PROJECT'S RATE.
+THE USES WORTH HAVING, AND THE OWNER'S FOUR CHOICES, GO TO THE TALK AFTER
+FRESH. ONE WORKING RULE NOW: A RULE AN AI SUGGESTS IS A TRY.**
+
+**What:**
+- **The report** is `docs/reviews/ai-assist-research-2026-11-20.md`
+  (AI-RESEARCH, Sonnet 5.5, xhigh; 09:28–09:45Z; 29 searches, 49 pages).
+  It was saved unchanged from its final message. It worked on the web only:
+  no code, no API call, no project or owner name sent anywhere; access
+  clean.
+- **Its findings:**
+  1. **No study shows a language model predicting short-horizon crypto
+     moves after costs.**
+     - The cleanest positive result (headlines to US stocks, 2021–2024)
+       decays year by year, dies at a 20 bps cost, and is empty in the
+       first 15 minutes.
+     - Live tests of AI agents on Hyperliquid perpetuals found no edge.
+  2. **Any back-test on the project's months is void.** The Claude 5.5
+     models' training data runs to June 2026, so only waves after the model
+     id is frozen are clean.
+  3. **A filter's value cannot be proven at about 30 trades a month.** The
+     gap needed is about 300 bps over a year (the project's own placebo
+     errors), and a model id lives about 12–14 months.
+  4. **The economic idea is sound in stocks:** news shocks drift, no-news
+     shocks revert (Chan 2003; Savor 2012). In a cascade, though, the news
+     rarely exists at +2 minutes, and 2025-10-10 had both a trigger and a
+     cascade.
+- **Its ranked uses:**
+  1. a research and review partner (as now);
+  2. a plain-language alert explainer, facts and links only, about $3 a
+     month, after the freeze;
+  3. optionally, an 8-week shadow pilot that measures only whether news
+     exists in time, whether repeated answers agree, latency and cost
+     ($14–39 a month), never gating a trade;
+  4. never an AI verdict in the entry path; never re-labelling the past.
+- **An outside-the-box lead:** public, dated calendars (token unlocks,
+  delistings, scheduled macro events) as a deterministic, look-ahead-free
+  feature. Availability and terms are not verified, and any new source
+  needs the owner's approval (Iron Rule 1).
+
+**Now (the supervisor's working rule, as the report advises):** any rule an
+AI suggests, the supervisor's included, is a try and goes in the try log
+like any other. It never goes straight onto data that has already been
+seen.
+
+**For the owner's talk after FRESH:**
+1. Iron Rule 1 for outbound calls to Anthropic's API, with public data only
+   and the key in `.env`.
+2. The alert explainer.
+3. The 8-week shadow pilot.
+4. A research item on calendar flags.
+
 2026-11-20 (the supervisor — the exam's fresh code review): **"AFTER THESE
 FIXES", NOT A REWORK: NO HIGH FINDING, NO SILENT WRONG VERDICT, NOTHING
 THAT OPENS FRESH EARLY OR TOUCHES THE LIVE PROGRAMS. THREE MEDIUM, TWELVE
