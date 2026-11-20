@@ -1,5 +1,37 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the exam's looks, under the owner's
+overnight go): **TWO LOOKS: LOOK 1 ON FRESH NOW, LOOK 2 ABOUT 2027-02-08.
+THE "ONE LATER LOOK" BRANCH IS REMOVED.**
+
+**Why now:**
+- **The owner's words already decide it.** "i would like to do shortcut but
+  also would like to do FRESH now, not to wait" (2026-11-19, about 22:10Z).
+  One later look would keep FRESH sealed until about 2027-02-08.
+- **POLISH-RULES-REVIEW found (preliminary, 04:08Z) that the branch is not
+  one line.** `OPTIONS.looks` only swaps the bars, while the days and the
+  range stay look 1's. So freezing it would run look 1's 100 days at the
+  182-day bars.
+- **Look 2 is a later build anyway.** FRESH_END and FRESH-2's range must
+  change, so P1/P12's "look 2's code byte-identical to look 1's list"
+  cannot hold as written.
+
+**What:**
+1. **The looks are two.**
+   - Look 1 runs on FRESH's deciding days at z 2.847 (LIKELY 2.360).
+   - Look 2 runs on those days plus FRESH-2's months at z 2.81 (LIKELY
+     2.437).
+   - The looks follow M11: only HOLDS or DOES NOT HOLD end the exam early.
+2. **The "one later look" branch** comes out of `OPTIONS`, rules.md and
+   P16.
+3. **P1/P12 are reworded.** Look 2 is a later build under its own freeze.
+   `rules.md` stays unchanged, and every look-1 file stays byte-identical
+   except those FRESH-2's range must change, which are named in the rules
+   (T2).
+4. **Still the owner's at the talk:**
+   - WITHHELD's option B (recommended) or A;
+   - Q4 (the default is no change).
+
 2026-11-20 (the supervisor — the reproduction's first run, under the
 owner's overnight go): **PARTS (b) AND (c) REPRODUCED EXACTLY. PART (a)
 DIFFERED IN ONE FILE OF 8,846, A ONE-OFF FAULT IN MEMORY. THE TRUSTED STORE
