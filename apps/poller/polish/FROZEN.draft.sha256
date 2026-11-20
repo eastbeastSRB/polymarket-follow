@@ -1,5 +1,5 @@
 # DRAFT, not a freeze: the exam's files of what runs (polish/rules.md P0)
-# written 2026-11-20T10:02:56.280Z from commit edf9ce5789a1f5439f70d210412de59ed7b249ff
+# written 2026-11-20T11:27:10.401Z from commit bd92571879a615c7e95a1a3b39440c5a32dd5b29
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; pino 10.4.0; lz4js 0.2.0
 # pnpm-lock.yaml sha256 62c1462948e0e8fb8b28c8490e442d4afe61d136aea1f3af808e6225d15f6e40
 539cc614e802fc15b55487b7a065c58bbd07d53518e5a4e02c2d9cc0986f76eb *dist/polish.js
@@ -122,7 +122,7 @@ a9cf1e92ce4c3d837c118faae2a0c689c000477422d582c8bcb4fc800bddb130 *node_modules/l
 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570 *polish/fresh-unpaired.json
 17de22e566fe56e37d38bc23e374adaad8d0bbe4721cad37578741d7337a2273 *polish/fresh.sha256
 fbf0c69d8d687bf9a2a73a6e4b22d2cb670506c05cfffbf79913994604c345af *polish/known-unpaired.json
-92f4ab49216dbe7e716ab15984804ecb7c96f3efc2e56c01cc3fb2422d9e1157 *polish/rules.md
+b1f9719a53afb5c2582b9dc380bd66f6df23446976fb65cc109a9a8c04e0b95c *polish/rules.md
 c5e1c0fa3459bf5d9faf08b18a7f7b8e5a6567b9c13afda08addb5453c391dbf *polish/tries.md
 b66a9bb0f165685cb9c9a64a9ef0109681e493ada5e65c9f5a85307b8e6c676c *waveh/data.sha256
 483aff8e3c65202a65c290701a0c451e2eb98c1671fd994665f60f3279ede890 *waveh/coins.json
