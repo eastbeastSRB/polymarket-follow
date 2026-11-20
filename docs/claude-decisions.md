@@ -1,5 +1,64 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the reproduction's first run, under the
+owner's overnight go): **PARTS (b) AND (c) REPRODUCED EXACTLY. PART (a)
+DIFFERED IN ONE FILE OF 8,846, A ONE-OFF FAULT IN MEMORY. THE TRUSTED STORE
+STANDS. FRESH'S STORE WILL BE BUILT TWICE AND MUST MATCH ITSELF BYTE FOR
+BYTE. THE REPRODUCTION RUNS AGAIN AT 06:00Z.**
+
+**The run:** `exam --step reproduce` from the detached worktree build of
+`0532fa8` (`92722635…`), started 00:30:24Z, ended 02:08:08Z, exit 6. Its
+outputs are kept in `ANALYZER\POLISH-RULES\repro-run1\` (`repro.json`,
+`repro.out`, the parts, the store), and copied to the supervisor's
+`verify/POLISH-RULES/`.
+- **(b), exact:**
+  - N on E: 65,533 priced, +94.6856778367026 ± 54.25885218671187;
+  - N on C: 16,754 priced, +211.26301264344045 ± 122.13521220804039;
+  - the 715 line on E (slices 0–19): 4,310 priced, +203.36 ± 79.08;
+  - every number equal to the printed outputs.
+- **(c), exact:** WAVE-H's 1,299 positions priced book first; 1,289 priced,
+  largest difference 0 bps.
+- **(a), one difference:** 14,563 files and 21.24 GB written.
+  - Apart from run metadata (the code's fingerprint, peaks, seconds,
+    times), the only difference is one fill file:
+    `node_fills_by_block/hourly/20260320/7.lz4`.
+  - The run read 43,220 lines, 347,870 records and 6 failed lines, plus a
+    gap of block numbers 929457116–117. The trusted store holds 43,216
+    lines, 347,880 records and 0 failed.
+  - Every column file is equal; the 10 lost records were not ones the
+    store keeps.
+
+**The diagnosis** (the supervisor's checks in `verify/POLISH-RULES/`):
+- **The source file and the decoder are sound.** The file's SHA-256 equals
+  its list (`d5018198…`). Three decodes with the analyzer's decoder give the
+  same bytes (`14a76839…`), 43,216 lines and 0 lines that fail JSON.parse.
+  The frame carries a content checksum, which the run also checked.
+- **So the decoded bytes changed in memory after the checksum,** in two
+  adjacent lines (about 7 KB), once.
+- **The trusted store has 0 failed and 0 slow lines in all 8,845 files.**
+  It and the run agree on every other file, and the gates G1–G6 passed. The
+  trusted store stands.
+- **No cause found:** no WHEA (hardware) event in 30 days, no system error
+  since 00:30Z, 15.8 GB of RAM free. A heavy `pnpm verify` of the builder
+  ran at the same time. The scanner is synchronous and copies a line that
+  spans blocks.
+
+**What:**
+1. **FRESH's store is built twice at step 1, and the two must be equal byte
+   for byte** (the manifest's files, `files.jsonl`, every column file),
+   using the reproduction's (a) comparison. A difference stops step 1 with
+   the list. Nothing is repaired in code; step 1 is run again.
+   - Why: FRESH has no reference store, and a fault like this one could
+     also change a number silently.
+   - Cost: about 75 minutes more at the look.
+2. **The reproduction runs again,** the same build and the same inputs,
+   detached, waiting until 06:00:30Z (`verify/POLISH-RULES/repro-0600.cmd`).
+   If its (a) is exact, the fault was a one-off.
+3. **Nothing heavy runs beside the look.** At look 1, no build, test or
+   other run on the machine.
+4. **For the owner:** a memory test of the PC (Windows Memory Diagnostic)
+   at a restart they choose. It is the owner's call.
+
 2026-11-19 (the supervisor — the exam's placebo and WITHHELD projection
 ran; three questions ruled under the owner's overnight go): **z FOR LOOK 1
 IS 2.847 (LIKELY 2.360). OPTION B, CUTTING THE DAYS WITHOUT BOOKS, BRINGS
