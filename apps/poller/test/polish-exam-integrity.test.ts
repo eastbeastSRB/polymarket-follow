@@ -209,6 +209,40 @@ describe(
       expect(pairingOf(lines, []).problems).toHaveLength(25);
     });
 
+    it("pairs a trade split across files only between files next in order, one taker against one maker", () => {
+      const withUnpaired = (u: Record<number, [string, string, number][]>) =>
+        o.store.files().map((f, i) => ({ ...f, unpaired: u[i] ?? [] }));
+      const pairing = (u: Record<number, [string, string, number][]>) =>
+        pairingOf(withUnpaired(u), []);
+      expect(
+        pairing({ 0: [["SOL", "900", 1]], 1: [["SOL", "900", -1]] }),
+      ).toMatchObject({ problems: [], straddled: 1, edges: [] });
+      // The first and the last file, not next in order.
+      expect(
+        pairing({ 0: [["SOL", "900", 1]], 2: [["SOL", "900", -1]] }).problems,
+      ).toEqual([at(F10, "SOL", 900, "taker"), at(F12, "SOL", 900, "maker")]);
+      // Two takers against two makers.
+      expect(
+        pairing({ 0: [["SOL", "900", 2]], 1: [["SOL", "900", -2]] }).problems,
+      ).toEqual([
+        `${F10} SOL 900: 2 takers unpaired`,
+        `${F11} SOL 900: 2 makers unpaired`,
+      ]);
+      // A taker in each file.
+      expect(
+        pairing({ 0: [["SOL", "900", 1]], 1: [["SOL", "900", 1]] }).problems,
+      ).toEqual([at(F10, "SOL", 900, "taker"), at(F11, "SOL", 900, "taker")]);
+      // Alone in the first file, one record is an edge; two are a problem.
+      expect(pairing({ 0: [["SOL", "901", 1]] })).toMatchObject({
+        problems: [],
+        edges: [at(F10, "SOL", 901, "taker")],
+      });
+      expect(pairing({ 0: [["SOL", "901", 2]] })).toMatchObject({
+        problems: [`${F10} SOL 901: 2 takers unpaired`],
+        edges: [],
+      });
+    });
+
     it("refuses a store not FRESH's whole, made from another list, by other code or under another WAVE-H freeze, or not of FRESH's files as listed, and pairs nothing then", () => {
       const withManifest = (edit: (m: Manifest) => void) => {
         const m = structuredClone(o.store.manifest);
@@ -249,6 +283,19 @@ describe(
         [
           integrityOf({ ...o, fill: [F10, F12, F11] }, []),
           `files.jsonl line 2 is not ${F12} as listed`,
+        ],
+        [
+          integrityOf(
+            {
+              ...o,
+              fill: [
+                ...o.fill,
+                blockFillKeys(H0 + 3 * HOUR_MS, H0 + 4 * HOUR_MS)[0]!,
+              ],
+            },
+            [],
+          ),
+          "files.jsonl: 3 lines, 4 files",
         ],
       ] as const) {
         expect(r.whole.problems, problem).toContain(problem);

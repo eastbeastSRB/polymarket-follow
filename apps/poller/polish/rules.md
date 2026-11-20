@@ -84,11 +84,17 @@ trade.*
 - **The discovery window**: every other exam position (t in
   [2026-08-31, 2026-11-07) or x_out reaching past a segment's end), printed
   apart, "not independent".
-- **Look 2** (two looks only, P12): segment 1 and segment 2′, t ≥
-  2026-11-07 and x_out < 2027-02-06T00:00Z (`LOOK2_END`), on FRESH and
-  FRESH-2, about 182 days, about 2027-02-08. Its code is a later build under
-  its own freeze, every file of look 1's list byte-identical and this file
-  unchanged.
+- **Look 2** (P12): segment 1 and segment 2′, t ≥ 2026-11-07 and x_out <
+  2027-02-06T00:00Z (`LOOK2_END`), on FRESH and FRESH-2, about 182 days,
+  about 2027-02-08. Its program is a later build under its own freeze
+  (decisions 2026-11-20 `5f01f05`; T2): this file unchanged, and every file
+  of look 1's list byte-identical but those FRESH-2's range and look 2's
+  step must change, each as its compiled file — `seal.ts` (FRESH_END),
+  `range.ts` (the range), `exam/design.ts` (segment 2′'s end, FRESH-2's
+  days without books), `exam/fresh.ts` (the exam's end, the data list),
+  `exam/steps.ts` (look 2's folder, bars and look 1's reading), `main.ts`
+  (the range and list it passes) — and FRESH-2's data list beside
+  `polish/fresh.sha256`.
 - Times as H1: "the 60 minutes up to t" is [t − 3,600,000, t], both ends in;
   every other window is [a, b); a UTC day is [00:00Z, +24 h).
 
@@ -140,8 +146,15 @@ trade.*
   715 line's and N's positions on the deciding days, before option B's cut,
   whose [x_in, x_out] meets it:
   - 2026-07-08: no `asset_ctxs` file, and no books;
-  - the archive's days without books by its listing of 2026-11-13
-    (`NO_BOOK_DAYS`): 2026-07-08 and 2026-07-12 → 17;
+  - the archive's days without books (`NO_BOOK_DAYS`, option B's days,
+    P11): the whole UTC days of FRESH whose 24 hourly `l2Book` folders the
+    archive's latest listing before the freeze shows without a book file,
+    from metadata alone (`node tools\waveh-fetch.cjs --fresh --books <the
+    day's 24 hourly keys of one always-listed coin> --plan`: "not in their
+    hour folder's listing 24"), written into `design.ts` at the freeze; by
+    the listing of 2026-11-13, which reached 2026-11-12: 2026-07-08 and
+    2026-07-12 → 17; 2026-11-13 → 15 by the listing the supervisor refreshes
+    before the freeze;
   - the thin `asset_ctxs` days (`THIN_CTXS_DAYS`), under half the median
     bytes of WAVE-H's 370 days (11,181,121.5 B), from the two manifests'
     sizes alone (the tool refuses a list that is not its own): 59 days,
@@ -302,17 +315,15 @@ pair, the max form); the days and coins of the priced positions.
 - **The rule for z** (D33 with T10; decisions 2026-11-19 `23823bb` Q2,
   `e217fa9`): one z for the exam whichever line decides — the larger of
   the textbook floor and both lines' larger flip's percentile at the look's
-  window length: HOLDS's z at the 99.75th (two looks; floor 2.81) or the
-  99.5th (one look; floor 2.58); LIKELY's z_L at the 98.75th (two looks;
-  floor 2.24) or the 97.5th (one look; floor 1.96). **DOES NOT HOLD keeps
-  HOLDS's z** (Q3).
-- **The bars** (`design.ts` BARS, placebo.json's exact doubles; P17):
-  - **two looks:** look 1 (the 100-day window) **z = 2.847**,
-    **z_L = 2.360** (both the 715 line's day flip); look 2 (182 days)
-    **z = 2.81** (the floor; the largest placebo 2.788), **z_L = 2.437**
-    (the 715 line's day flip);
-  - **one later look** (182 days): **z = 2.653**, **z_L = 2.213** (both the
-    715 line's day flip).
+  window length, Bonferroni over the two looks: HOLDS's z at the 99.75th
+  (floor 2.81), LIKELY's z_L at the 98.75th (floor 2.24). **DOES NOT HOLD
+  keeps HOLDS's z** (Q3).
+- **The bars** (`design.ts` BARS, placebo.json's exact doubles; P17): look 1
+  (the 100-day window) **z = 2.847**, **z_L = 2.360** (both the 715 line's
+  day flip); look 2 (182 days) **z = 2.81** (the floor; the largest placebo
+  2.788), **z_L = 2.437** (the 715 line's day flip). [placebo.json also
+  prints a row for one later look (z 2.653, z_L 2.213), a branch removed
+  before the freeze (decisions 2026-11-20 `5f01f05`); it decides nothing.]
 
 ## P11. The verdict
 
@@ -363,11 +374,10 @@ in P16.
 
 ## P12. The looks, F14
 
-- **[OPTION C] two looks (the default, plan 3.6)**: look 1 on P1's deciding
-  days at look 1's bars, as soon as the rules are reviewed and frozen; look
-  2 on look 2's days (P1) at look 2's bars, about 2027-02-08 | **one later
-  look**: one look on look 2's days at the one look's bars, about
-  2027-02-08; FRESH stays sealed until then.
+- **Two looks** (plan 3.6; decisions 2026-11-20 `5f01f05`): look 1 on P1's
+  deciding days at look 1's bars, as soon as the rules are reviewed and
+  frozen; look 2 on look 2's days (P1) at look 2's bars, about 2027-02-08,
+  a later build under its own freeze (P1).
 - **F14 as MARKET-1's M11** (decisions 2026-11-19 `e217fa9`, Q2): only
   **HOLDS or DOES NOT HOLD** at look 1 ends the exam; WITHHELD, TOO FEW TO
   TELL, LIKELY and NOT SETTLED let look 2 run, every reading printed by
@@ -477,16 +487,16 @@ at E); none decides anything.
   safety net (P4). [The 715 line on E, slices 0–19: 5,067 positions, 4,310
   priced, m 203.4, SE 79.1, 51 days, 33 coins; m_proj = 124.3. N: m_proj =
   C's 211.3 less one error 122.1 = 89.1.]
-- **[OPTION C] the looks**: two looks (default) | one later look. P(HOLDS)
-  = Φ((m_proj − max(z·SE, 50 − z·SE)) ÷ SE) and P(LIKELY or HOLDS) =
-  Φ((m_proj − max(z_L·SE, 50 − z·SE)) ÷ SE), SE the median window error at
-  the look's length, each look alone [placebo.json `power`]:
+- **The two looks' projections** (P12; not an option since decisions
+  2026-11-20 `5f01f05`): P(HOLDS) = Φ((m_proj − max(z·SE, 50 − z·SE)) ÷
+  SE) and P(LIKELY or HOLDS) = Φ((m_proj − max(z_L·SE, 50 − z·SE)) ÷ SE),
+  SE the median window error at the look's length, each look alone
+  [placebo.json `power`]:
 
-  | Option | Look | SE (715 / N) | 715: P(HOLDS) | 715: P(LIKELY or HOLDS) | N: P(HOLDS) | N: P(LIKELY or HOLDS) |
-  |---|---|---|---|---|---|---|
-  | two looks | look 1, 100 d | 109.6 / 77.0 | 4.3% | 11.0% | 4.6% | 11.5% |
-  | two looks | look 2, 182 d | 81.0 / 63.9 | 10.1% | 18.3% | 7.9% | 14.9% |
-  | one later look | 182 d | 81.0 / 63.9 | 13.2% | 24.9% | 10.4% | 20.7% |
+  | Look | SE (715 / N) | 715: P(HOLDS) | 715: P(LIKELY or HOLDS) | N: P(HOLDS) | N: P(LIKELY or HOLDS) |
+  |---|---|---|---|---|---|
+  | look 1, 100 d | 109.6 / 77.0 | 4.3% | 11.0% | 4.6% | 11.5% |
+  | look 2, 182 d | 81.0 / 63.9 | 10.1% | 18.3% | 7.9% | 14.9% |
 
   TOO FEW and the safety net on E's windows: 0 of the 715 line's 112
   (100-day) and 30 (182-day) windows; 0 of N's 260 and 178 on E ∪ C.
@@ -500,6 +510,7 @@ at E); none decides anything.
   |---|---|---|---|
   | A, kept | 5.14% (5.28%) | 11.6% | tape short 1.89, no trade 0.98, the ten months' funding gaps 2.41, F7's 07-08 0.07, left out 0, book short 0 |
   | A, and 11-13 → 15 without books | 6.40% (6.26%) | 19.6% | |
+  | A, and the thin days without marks | 5.15% (5.28%) | 11.6% | F7's funding 0.08 (07-08 and the projection's 14 thin days by size: 05-30, 08-08, 08-09, 08-27, 08-30, 11-07 → 15, 13 of them in THIN_CTXS_DAYS); the rest as A |
   | **B, cut** | **2.16% (0.00%)** | **1.8%** | the funding gaps alone; the safety net fires in 7.1% of windows |
   | B, 11-13 → 15 cut too | 2.34% (0.00%) | 4.5% | the net fires in 8.9% |
 
@@ -536,11 +547,9 @@ to the code (`test/polish-rules.test.ts`).
 | placebo draws | 100000 |
 | placebo windows | 100 182 |
 | floors, two looks | 2.81 2.24 |
-| floors, one look | 2.58 1.96 |
-| two looks, look 1 | 100 2.8466835996608553 2.3599581301310213 |
-| two looks, look 2 | 182 2.81 2.4374684250380376 |
-| one later look | 182 2.6532605728910306 2.212592737897925 |
+| look 1 | 100 2.8466835996608553 2.3599581301310213 |
+| look 2 | 182 2.81 2.4374684250380376 |
 | placebo.json | c25345f7a5c087c01d82114bf70cd54f7425ae66a25b43657c1379a076ac9575 |
-| options | twoLooks cut BASE |
+| options | cut BASE |
 | no-book days | 2026-07-08 2026-07-12 2026-07-13 2026-07-14 2026-07-15 2026-07-16 2026-07-17 |
 | thin days | 59 |

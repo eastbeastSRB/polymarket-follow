@@ -154,11 +154,14 @@ export function leftOutOf(
 
 /**
  * The safety net (D53b; T12): over the 715 line's positions on the deciding
- * days, after option B's cut, not left out — counted at the first look's
- * step 1, before any price — under 20 UTC days of t or 10 coins hands the
- * exam to N, at the same z, for every later look too.
+ * days, after option B's cut, those not left out — counted at the first
+ * look's step 1, before any price — under 20 UTC days of t or 10 coins
+ * hands the exam to N, at the same z, for every later look too.
  */
-export function safetyNet(ps: readonly { t: number; iid: number }[]) {
+export function safetyNet(
+  onDays: readonly { t: number; iid: number; left: string | null }[],
+) {
+  const ps = onDays.filter((p) => p.left === null);
   const days = new Set(ps.map((p) => dayOf(p.t))).size;
   const coins = new Set(ps.map((p) => p.iid)).size;
   const fires = days < SAFETY_NET.days || coins < SAFETY_NET.coins;

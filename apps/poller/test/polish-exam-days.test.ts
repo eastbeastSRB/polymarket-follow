@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadResearch, type Research } from "../src/paper/research.js";
-import { NO_BOOK_DAYS, SEGMENTS } from "../src/polish/exam/design.js";
+import { K, NO_BOOK_DAYS, SEGMENTS } from "../src/polish/exam/design.js";
 import {
   holesOf,
   inExam,
@@ -18,6 +18,12 @@ import {
   safetyNet,
   whereOf,
 } from "../src/polish/exam/fresh.js";
+import {
+  keyOf,
+  onDeciding,
+  touches,
+  type LookPosition,
+} from "../src/polish/exam/look.js";
 import { FRESH_END } from "../src/polish/seal.js";
 import { E, inPart } from "../src/polish/tries/parts.js";
 import { B0, place } from "../src/polish/tries/rules.js";
@@ -108,6 +114,13 @@ describe("the holes and the positions they leave out (D29, D30)", () => {
         { times: { first: 160 * S - 1, max: 200 * S, holes: [] } },
       ]),
     ).toEqual([]);
+    // 60 s exactly is a hole.
+    expect(
+      holesOf([
+        { times: { first: 0, max: 100 * S, holes: [] } },
+        { times: { first: 160 * S, max: 200 * S, holes: [] } },
+      ]),
+    ).toEqual([[100 * S, 160 * S]]);
     expect(holesOf([])).toEqual([]);
   });
 
@@ -131,19 +144,44 @@ describe("the holes and the positions they leave out (D29, D30)", () => {
     expect(leftOutOf(holes, p(t, h1 - 1))).toBe(entry);
     expect(leftOutOf(holes, p(t, h0 - MINUTE_MS))).toBeNull();
     expect(leftOutOf(holes, p(t, h0 - MINUTE_MS + 1))).toBe(entry);
-    expect(leftOutOf(holes, p(t - DAY_MS, t, h0 + 1))).toBe(
-      "a hole in the exit's minute",
-    );
+    const exit = "a hole in the exit's minute";
+    expect(leftOutOf(holes, p(t - DAY_MS, t, h0 + 1))).toBe(exit);
+    expect(leftOutOf(holes, p(t - DAY_MS, t, h1 - 1))).toBe(exit);
     expect(leftOutOf(holes, p(t - DAY_MS, t, h1))).toBeNull();
+    expect(leftOutOf(holes, p(t - DAY_MS, t, h0 - MINUTE_MS))).toBeNull();
+    expect(leftOutOf(holes, p(t - DAY_MS, t, h0 - MINUTE_MS + 1))).toBe(exit);
   });
 });
 
 describe("the safety net (D53b)", () => {
-  const grid = (days: number, coins: number) =>
+  // Each coin's position at its own minute of the day: days are counted by UTC day, not by instant.
+  const grid = (days: number, coins: number, left: string | null = null) =>
     Array.from({ length: days * coins }, (_, k) => ({
-      t: SEGMENTS[0].from + Math.floor(k / coins) * DAY_MS + HOUR_MS,
+      t:
+        SEGMENTS[0].from +
+        Math.floor(k / coins) * DAY_MS +
+        HOUR_MS +
+        (k % coins) * MINUTE_MS,
       iid: k % coins,
+      left,
     }));
+  it("counts only the positions not left out", () => {
+    const hole = "a hole in the hour up to t";
+    // A 20th day and a 10th coin seen only in left-out positions do not count.
+    const out = [
+      { t: SEGMENTS[0].from + 30 * DAY_MS, iid: 9, left: hole },
+      ...grid(1, 1, hole),
+    ];
+    expect(safetyNet([...grid(19, 9), ...out])).toEqual({
+      deciding: "N",
+      why: "the 715 line spans 19 UTC days and 9 coins on the deciding days; 20 and 10 are needed",
+      days: 19,
+      coins: 9,
+    });
+    expect(safetyNet(grid(20, 10, hole)).deciding).toBe("N");
+    expect(safetyNet([...grid(20, 10), ...out]).deciding).toBe("715");
+  });
+
   it("keeps the 715 line at 20 UTC days and 10 coins, and hands the exam to N under either", () => {
     expect(safetyNet(grid(20, 10))).toEqual({
       deciding: "715",
@@ -159,6 +197,62 @@ describe("the safety net (D53b)", () => {
     });
     expect(safetyNet(grid(20, 9)).deciding).toBe("N");
     expect(safetyNet([]).deciding).toBe("N");
+  });
+});
+
+describe("the deciding line's days (D16)", () => {
+  it("holds slices 0 to K − 1 in a deciding segment, after option B's cut", () => {
+    const p: LookPosition = {
+      slice: K - 1,
+      iid: 5,
+      t: SEGMENTS[0].from,
+      side: -1,
+      dir: 1,
+      xIn: SEGMENTS[0].from + 2 * MINUTE_MS,
+      xOut: SEGMENTS[0].from + HOLD,
+      method: "market",
+      accounts: [],
+      tid: "1",
+      where: "segment 1",
+      left: null,
+    };
+    expect(K).toBe(20);
+    expect(onDeciding(p)).toBe(true);
+    expect(onDeciding({ ...p, slice: 0, where: "segment 2" })).toBe(true);
+    expect(onDeciding({ ...p, slice: K })).toBe(false);
+    expect(onDeciding({ ...p, where: "cut: a day without books" })).toBe(false);
+    expect(onDeciding({ ...p, where: "discovery" })).toBe(false);
+    // Left out, it is still on the deciding days: the verdict counts it (D36).
+    expect(onDeciding({ ...p, left: "a hole in the hour up to t" })).toBe(true);
+  });
+});
+
+describe("the days of F7's list a position touches (D12)", () => {
+  it("meets a UTC day when [x_in, x_out] reaches into it, both ends in", () => {
+    const day = "2026-07-18";
+    const d0 = at(`${day}T00:00:00Z`);
+    expect(touches({ xIn: d0 - DAY_MS, xOut: d0 }, day)).toBe(true);
+    expect(touches({ xIn: d0 - DAY_MS, xOut: d0 - 1 }, day)).toBe(false);
+    expect(touches({ xIn: d0 + DAY_MS - 1, xOut: d0 + 2 * DAY_MS }, day)).toBe(
+      true,
+    );
+    expect(touches({ xIn: d0 + DAY_MS, xOut: d0 + 2 * DAY_MS }, day)).toBe(
+      false,
+    );
+  });
+});
+
+describe("a position's key in step 2's maps", () => {
+  it("tells apart two slices entering one coin at one instant, and every instant and coin", () => {
+    const p = { slice: 3, t: SEGMENTS[0].from, iid: 5 };
+    const keys = [
+      p,
+      { ...p, slice: 4 },
+      { ...p, t: p.t + 1 },
+      { ...p, iid: 6 },
+    ].map(keyOf);
+    expect(new Set(keys).size).toBe(4);
+    expect(keyOf({ ...p })).toBe(keys[0]);
   });
 });
 

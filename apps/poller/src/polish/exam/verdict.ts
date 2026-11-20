@@ -12,6 +12,9 @@
  */
 import { statOf } from "../tries/stats.js";
 import type { Research } from "../../paper/research.js";
+import type { Priced } from "../../waveh/price.js";
+import { ownOf } from "../tries/beside.js";
+import type { Data } from "../tries/data.js";
 import { DELTA, TOO_FEW, WITHHELD_SHARE } from "./design.js";
 
 export type Verdict =
@@ -41,6 +44,55 @@ export type Decided = {
   bookBoth: boolean;
   excess: number | null;
 };
+
+/** Both legs priced at the book (F8): the positions HOLDS's third condition reads. */
+export const bothAtTheBook = (pr: Pick<Priced, "legs">): boolean =>
+  pr.legs[0]?.source === "book" && pr.legs[1]?.source === "book";
+
+/**
+ * Step 2's deciding position (D36): one left out carries nothing else (its
+ * price null); any other its book-first price's net and depth short, both
+ * legs at the book or not, and HOLDS's excess by the owner's option (D28):
+ * over BASE as priced, or OWN on its gross on marks.
+ */
+export function decidedOf(
+  d: Pick<Data, "coins" | "pc" | "start">,
+  p: {
+    t: number;
+    iid: number;
+    dir: number;
+    xIn: number;
+    xOut: number;
+    left: string | null;
+  },
+  pr: Priced | null,
+  excess: "BASE" | "OWN",
+): Decided {
+  if (p.left !== null)
+    return {
+      t: p.t,
+      iid: p.iid,
+      leftOut: true,
+      net: null,
+      depthShort: false,
+      bookBoth: false,
+      excess: null,
+    };
+  return {
+    t: p.t,
+    iid: p.iid,
+    leftOut: false,
+    net: pr!.net,
+    depthShort: pr!.depthShort,
+    bookBoth: bothAtTheBook(pr!),
+    excess:
+      excess === "BASE"
+        ? pr!.excess
+        : pr!.grossOnMarks === null
+          ? null
+          : ownOf(d, p, pr!.grossOnMarks),
+  };
+}
 
 const mean = (xs: readonly number[]) =>
   xs.length === 0 ? null : xs.reduce((s, x) => s + x, 0) / xs.length;

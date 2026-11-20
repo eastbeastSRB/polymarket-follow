@@ -34,6 +34,7 @@ import {
   type Recipe,
 } from "../src/polish/exam/design.js";
 import {
+  byFlip,
   checkBeside,
   checkN,
   placeboLines,
@@ -91,16 +92,17 @@ const line = (
 const w4 = (l: Line) => (l as Line & { W4: number }).W4;
 
 describe("the placebo's flips (tries/beside.ts)", () => {
-  /** Three coins a day over 200 days, uneven nets. */
+  /** Three coins a day over 200 days, at 01:00, 12:00 and 23:00, uneven nets. */
   const ls = Array.from({ length: 600 }, (_, k) =>
     line({
-      t: E0 + Math.floor(k / 3) * DAY_MS + HOUR_MS * (1 + (k % 3)),
+      t: E0 + Math.floor(k / 3) * DAY_MS + HOUR_MS * (1 + 11 * (k % 3)),
       iid: SMALL[k % 3]!,
       tid: String(k),
       net: ((k * k) % 97) / 10 - 4,
     }),
   );
-  const span = { from: E0, to: E0 + 200 * DAY_MS };
+  // A span that is not whole days, as E's (its end 50 hours before E's): its last day a part day with its own sign.
+  const span = { from: E0, to: E0 + 200 * DAY_MS - 10 * HOUR_MS };
 
   it("flips each UTC day's sign with day flips: every printed number is an independent recomputation's", () => {
     const draws = 300;
@@ -343,6 +345,18 @@ describe("the windows' shares: TOO FEW and the safety net", () => {
       tooFew: null,
       safetyNet: null,
     });
+    // A window is [start, start + days): a position at its end is the next window's.
+    const edge = Array.from({ length: 21 }, (_, d) =>
+      line({ t: E0 + d * DAY_MS, iid: SMALL[d % 10]!, tid: String(d), net: 1 }),
+    );
+    expect(windowShares(edge, { from: E0, to: E0 + 20 * DAY_MS }, 20)).toEqual({
+      windows: 1,
+      tooFew: 0,
+      safetyNet: 0,
+    });
+    expect(
+      windowShares(edge.slice(1), { from: E0, to: E0 + 20 * DAY_MS }, 20),
+    ).toEqual({ windows: 1, tooFew: 1, safetyNet: 1 });
     expect(SAFETY_NET).toEqual({ days: 20, coins: 10 });
   });
 });
@@ -507,6 +521,36 @@ describe("the placebo's print", () => {
         draws: 50,
       }),
     ).toThrow(GateFailed);
+    // Each line's placebo on its own span, both flips: the 715 line's E alone, N's E ∪ C.
+    const pl = placeboLines(lines, r.deciding);
+    const both = (ls: readonly Line[], span: { from: number; to: number }) => {
+      const o = { seed: PLACEBO.seed, draws: 50, ...span };
+      return {
+        episode: placeboOf(d, ls, 0, { ...o, flip: "episode" }),
+        day: placeboOf(d, ls, 0, { ...o, flip: "day" }),
+      };
+    };
+    expect(p.placebo.l715).toEqual(both(pl.l715, SPANS.E));
+    expect(p.placebo.n20).toEqual(both(pl.n20, SPANS.EC));
+    expect(byFlip(d, pl.n10, SPANS.EC, 50)).toEqual(p.placebo.n10);
+    // N's E lines held to B0's, and N's placebo to beside.json's, inside the print itself.
+    const nE = lines.nE.map((l, k) =>
+      k === 0 ? { ...l, net: l.net! + 1 } : l,
+    );
+    expect(() =>
+      placeboPrint(d, { ...lines, nE }, { mean: 211, se: 122 }, beside, {
+        recipe: r,
+        draws: 50,
+      }),
+    ).toThrow("N's E lines are not B0's");
+    const off = structuredClone(beside);
+    off["100 days"]!.sd = off["100 days"]!.sd * (1 + Number.EPSILON);
+    expect(() =>
+      placeboPrint(d, lines, { mean: 211, se: 122 }, off, {
+        recipe: r,
+        draws: 50,
+      }),
+    ).toThrow("the placebo of N on all slices is not beside.json's");
   });
 });
 

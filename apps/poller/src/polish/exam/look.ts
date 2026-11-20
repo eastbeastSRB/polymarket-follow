@@ -92,6 +92,10 @@ export function linesOf(
   return { lines, unknown };
 }
 
+/** A position's key in step 2's maps: its slice, instant and coin (two slices may enter one coin at one instant, on either side). */
+export const keyOf = (p: { slice: number; t: number; iid: number }): string =>
+  `${p.slice} ${p.t} ${p.iid}`;
+
 /** On the deciding line's days (D16): slices 0 to K − 1, in a deciding segment (after option B's cut). */
 export const onDeciding = (p: LookPosition): boolean =>
   p.slice < K && (p.where === "segment 1" || p.where === "segment 2");
@@ -118,8 +122,8 @@ export function f7Of(range: Range, m: Manifest): Map<string, string[]> {
   return new Map([...out].sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
-/** Whether a position's [x_in, x_out] meets a UTC day. */
-const touches = (p: LookPosition, day: string) => {
+/** Whether a position's [x_in, x_out] meets a UTC day (F7's shares). */
+export const touches = (p: { xIn: number; xOut: number }, day: string) => {
   const from = Date.parse(`${day}T00:00:00Z`);
   return p.xIn < from + 1_440 * MINUTE_MS && p.xOut >= from;
 };

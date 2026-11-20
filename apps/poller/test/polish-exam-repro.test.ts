@@ -21,10 +21,16 @@ import {
   matchPlacebo,
   partOf,
 } from "../src/polish/exam/repro.js";
-import { heldFile } from "../src/polish/exam/steps.js";
+import { heldFile, reproEnd } from "../src/polish/exam/steps.js";
 import { extract } from "../src/polish/extract.js";
 import type { Range } from "../src/polish/range.js";
-import { openStore, partitionDir } from "../src/polish/store.js";
+import { GateFailed, exitOf } from "../src/polish/run.js";
+import {
+  Store,
+  openStore,
+  partitionDir,
+  type Manifest,
+} from "../src/polish/store.js";
 import { B0, place } from "../src/polish/tries/rules.js";
 import { E } from "../src/polish/tries/parts.js";
 import { CUTS_FILE } from "../src/polish/tries/steps.js";
@@ -153,6 +159,16 @@ describe("(a) the extraction made again", { timeout: 60_000 }, () => {
         )
       ).problems,
     ).toEqual(["the manifest's counts differs"]);
+    // A field the explored manifest lacks.
+    const s = openStore(path.join(explored, "store"));
+    const wider = new Store(
+      s.dir,
+      { ...s.manifest, extra: 1 } as unknown as Manifest,
+      s.id,
+    );
+    expect((await matchExtraction(a.manifest, wider, pace)).problems).toEqual([
+      "the manifests' fields differ",
+    ]);
   });
 });
 
@@ -218,6 +234,13 @@ describe("(b) N's numbers and the deciding line", () => {
     expect(
       matchPlacebo(got, { ...printed, positions: 5_066, days: 50, coins: 34 }),
     ).toEqual(["positions", "days", "coins"]);
+    expect(
+      matchPlacebo(got, {
+        ...printed,
+        priced: 4_311,
+        se: 79.08321017007256 * (1 + 2e-9),
+      }),
+    ).toEqual(["priced", "se"]);
     expect(matchPlacebo({ ...got, stat: null }, printed)).toEqual([
       "days",
       "coins",
@@ -327,6 +350,78 @@ describe("(c) the look's lines", () => {
       equal: false,
       problems: ["1 lines of the look, 2 positions"],
     });
+  });
+});
+
+describe("the reproduction's end (repro.json and the exit)", () => {
+  const head = {
+    step: "reproduce" as const,
+    identity: { code: "4".repeat(64) },
+    inputs: { list: "3".repeat(64) },
+  };
+  const b = (e: string[] = [], c: string[] = [], d: string[] = []) => ({
+    E: { differs: e },
+    C: { differs: c },
+    deciding: { differs: d },
+  });
+  const held = { equal: true };
+  const off = { equal: false };
+  const written = (root: string) =>
+    JSON.parse(readFileSync(path.join(root, "repro.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
+
+  it("writes passed only when (a), (b) and (c) all held", () => {
+    const root = tmp("repro-end");
+    const r = reproEnd(
+      root,
+      head,
+      { a: held, b: b(), c: held },
+      { written: "2026-11-20T00:00:00.000Z" },
+    );
+    const text = readFileSync(path.join(root, "repro.json"), "utf8");
+    expect(sha(Buffer.from(text))).toBe(r.sha);
+    expect(text.endsWith("}\n")).toBe(true);
+    expect(Object.keys(written(root))).toEqual([
+      "step",
+      "identity",
+      "inputs",
+      "passed",
+      "a",
+      "b",
+      "c",
+      "written",
+    ]);
+    expect(written(root)).toMatchObject({ ...head, passed: true });
+  });
+
+  it("writes passed false and stops (exit 6) naming each part that failed, every field of (b) counted", () => {
+    for (const [parts, named] of [
+      [{ a: off, b: b(), c: held }, "(a) the extraction"],
+      [{ a: held, b: b(["stat"]), c: held }, "(b) N's numbers"],
+      [{ a: held, b: b([], ["positions"]), c: held }, "(b) N's numbers"],
+      [{ a: held, b: b([], [], ["m"]), c: held }, "(b) N's numbers"],
+      [{ a: held, b: b(), c: off }, "(c) the look"],
+      [
+        { a: off, b: b([], ["left"]), c: off },
+        "(a) the extraction, (b) N's numbers, (c) the look",
+      ],
+    ] as const) {
+      const root = tmp("repro-end");
+      let error: unknown = null;
+      try {
+        reproEnd(root, head, parts, {});
+      } catch (err) {
+        error = err;
+      }
+      expect(error, named).toBeInstanceOf(GateFailed);
+      expect(exitOf(error).code).toBe(6);
+      expect((error as Error).message).toBe(
+        `the reproduction failed: ${named}; see repro.json`,
+      );
+      expect(written(root).passed, named).toBe(false);
+    }
   });
 });
 

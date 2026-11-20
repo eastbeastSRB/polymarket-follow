@@ -34,6 +34,7 @@ import {
   verifyExamFreeze,
 } from "../src/polish/exam/gate.js";
 import { readHeld } from "../src/polish/held.js";
+import { FRESH_RANGE, WAVEH_RANGE } from "../src/polish/range.js";
 import {
   FRESH_END,
   SEALED,
@@ -46,7 +47,7 @@ import { heldBooks } from "../src/polish/tries/books.js";
 import { HOUR_MS } from "../src/schedule.js";
 import { LZ4JS_FILES, PACKAGE_ROOT } from "../src/waveh/gate.js";
 import { DATA_END } from "../src/waveh/instants.js";
-import { bookKey } from "../src/waveh/keys.js";
+import { bookKey, keyDate } from "../src/waveh/keys.js";
 import { StoreError, readBookList } from "../src/waveh/store.js";
 import { lz4, sha, snapshot } from "./waveh-world.js";
 
@@ -105,6 +106,14 @@ describe("the seal, opened by the exam's gate", () => {
       "no date",
     );
     expect(FRESH_END).toBe(Date.parse("2026-11-16T00:00:00Z"));
+  });
+
+  it("passes, closed, a key dated at DATA END exactly: WAVE-H's last fill file, which the ten months' extraction reads", () => {
+    const last = WAVEH_RANGE.fill.at(-1)!;
+    expect(keyDate(last)).toBe(DATA_END);
+    expect(() => checkKey(last)).not.toThrow();
+    expect(() => checkKey(last, SEALED)).not.toThrow();
+    expect(() => checkKey(FRESH_RANGE.fill[0]!)).toThrow("after DATA END");
   });
 
   it("is never opened by WAVE-H's gate", () => {

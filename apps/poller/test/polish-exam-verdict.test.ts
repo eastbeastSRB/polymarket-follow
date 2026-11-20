@@ -27,6 +27,8 @@ import {
 } from "../src/polish/exam/design.js";
 import {
   NOT_ADVICE,
+  bothAtTheBook,
+  decidedOf,
   decides,
   examVerdict,
   verdictOf,
@@ -37,6 +39,7 @@ import { ownOf } from "../src/polish/tries/beside.js";
 import { statOf } from "../src/polish/tries/stats.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { loadCoins } from "../src/waveh/coins.js";
+import type { Priced } from "../src/waveh/price.js";
 
 let kit: Research;
 beforeAll(async () => {
@@ -104,6 +107,15 @@ describe("one look's verdict (D36–D42)", () => {
     const few = grid(3, 3, () => 300);
     few[0] = { ...few[0]!, leftOut: true, net: null };
     expect(verdictOf(kit, few, bars).verdict).toBe("WITHHELD");
+    // A position left out is never priced, whatever net it carries.
+    const out = grid(20, 10, () => 300);
+    out[0] = { ...out[0]!, leftOut: true };
+    expect(verdictOf(kit, out, bars)).toMatchObject({
+      leftOut: 1,
+      unpriced: 0,
+      priced: 199,
+      withheldShare: 1 / 200,
+    });
   });
 
   it("is TOO FEW TO TELL under 20 UTC days or 10 coins of priced positions, or with no error", () => {
@@ -159,6 +171,14 @@ describe("one look's verdict (D36–D42)", () => {
       withheldShare: 0,
       stat: null,
     });
+    // TOO FEW TO TELL comes before DOES NOT HOLD: m + z·SE = 20 on 19 days.
+    expect(
+      verdictOf(
+        kit,
+        grid(19, 10, () => 20),
+        bars,
+      ).verdict,
+    ).toBe("TOO FEW TO TELL");
   });
 
   it("is DOES NOT HOLD when m + z·SE < +50, at HOLDS's z, before HOLDS", () => {
@@ -309,32 +329,22 @@ describe("the looks (D43, D44: F14 as MARKET-1's M11)", () => {
 });
 
 describe("the bars and options the design holds (rules.md P10, P16)", () => {
-  it("takes each look's z and z_L at or above its textbook floor, from placebo.json; MARKET-1's line, minimums and limit", () => {
-    expect(BARS.twoLooks.map((b) => b.window)).toEqual([...PLACEBO.windows]);
-    expect(BARS.oneLook[0].window).toBe(182);
-    for (const b of BARS.twoLooks) {
+  it("takes each of the two looks' z and z_L at or above its textbook floor, from placebo.json; MARKET-1's line, minimums and limit", () => {
+    expect(BARS.map((b) => [b.look, b.window])).toEqual([
+      [1, PLACEBO.windows[0]],
+      [2, PLACEBO.windows[1]],
+    ]);
+    for (const b of BARS) {
       expect(b.z).toBeGreaterThanOrEqual(TEXTBOOK.twoLooks.holds);
       expect(b.zL).toBeGreaterThanOrEqual(TEXTBOOK.twoLooks.likely);
     }
-    expect(BARS.twoLooks[1].z).toBe(TEXTBOOK.twoLooks.holds);
-    expect(BARS.oneLook[0].z).toBeGreaterThanOrEqual(TEXTBOOK.oneLook.holds);
-    expect(BARS.oneLook[0].zL).toBeGreaterThanOrEqual(TEXTBOOK.oneLook.likely);
-    expect(
-      [...BARS.twoLooks, ...BARS.oneLook].map((b) => [
-        b.z.toFixed(3),
-        b.zL.toFixed(3),
-      ]),
-    ).toEqual([
+    expect(BARS[1].z).toBe(TEXTBOOK.twoLooks.holds);
+    expect(BARS.map((b) => [b.z.toFixed(3), b.zL.toFixed(3)])).toEqual([
       ["2.847", "2.360"],
       ["2.810", "2.437"],
-      ["2.653", "2.213"],
     ]);
     expect(PLACEBO_JSON).toMatch(/^[0-9a-f]{64}$/);
-    expect(OPTIONS).toEqual({
-      looks: "twoLooks",
-      noBookDays: "cut",
-      excess: "BASE",
-    });
+    expect(OPTIONS).toEqual({ noBookDays: "cut", excess: "BASE" });
     expect([DELTA, TOO_FEW.days, TOO_FEW.coins, WITHHELD_SHARE]).toEqual([
       DROP_BPS,
       MIN_DAYS,
@@ -369,5 +379,91 @@ describe("OWN at a position (D28, the owner's option D)", () => {
     expect(ownOf(d, l, 70)).toBeCloseTo(70 - -1 * 30, 9);
     pc.get(seven[5]!.name)![kOut] = NaN;
     expect(ownOf(d, l, 70)).toBeNull();
+  });
+});
+
+describe("a deciding position as step 2 reads it (D36, D28, F8)", () => {
+  it("passes its price's net and depth short, both legs at the book only when both are, and HOLDS's excess by the option; a left-out one nothing", () => {
+    const coins = loadCoins();
+    const start = Date.parse("2026-06-01T00:00:00Z");
+    const minutes = 3 * 1_440;
+    const xIn = start + 10 * HOUR_MS + 2 * MINUTE_MS;
+    const xOut = xIn + DAY_MS;
+    const kOut = (xOut - start) / MINUTE_MS;
+    // The other small coins move 10, 20, … bps: OWN is the gross on marks less dir × their mean.
+    const pc = new Map<string, Float64Array>();
+    coins.list.forEach((c, j) => {
+      const col = new Float64Array(minutes).fill(100);
+      col[kOut] = 100 * (1 + (10 * j) / 1e4);
+      pc.set(c.name, col);
+    });
+    const d = { coins, pc, start };
+    const p = {
+      t: xIn - 2 * MINUTE_MS,
+      iid: coins.list[0]!.assetId,
+      dir: 1,
+      xIn,
+      xOut,
+      left: null,
+    };
+    const leg = (source: "book" | "tape") => ({
+      source,
+      why: source === "tape" ? ("stale" as const) : null,
+      price: 100,
+      deepest: 1,
+      short: false,
+      at: [xIn],
+    });
+    const priced = (o: Partial<Priced> = {}): Priced => ({
+      net: 12,
+      unpriced: null,
+      gross: 20,
+      fees: 9,
+      funding: 1,
+      fundingMissing: 0,
+      grossOnMarks: 30,
+      excess: 25,
+      entryCost: 1,
+      legs: [leg("book"), leg("book")],
+      depthShort: true,
+      ...o,
+    });
+    expect(decidedOf(d, p, priced(), "BASE")).toEqual({
+      t: p.t,
+      iid: p.iid,
+      leftOut: false,
+      net: 12,
+      depthShort: true,
+      bookBoth: true,
+      excess: 25,
+    });
+    for (const legs of [
+      [leg("book"), leg("tape")],
+      [leg("tape"), leg("book")],
+      [leg("tape"), leg("tape")],
+      [leg("book"), null],
+    ] as const)
+      expect(
+        decidedOf(d, p, priced({ legs: [...legs] }), "BASE").bookBoth,
+      ).toBe(false);
+    expect(bothAtTheBook(priced())).toBe(true);
+    const own = decidedOf(d, p, priced(), "OWN").excess;
+    expect(own).toBe(ownOf(d, p, 30));
+    expect(own).not.toBeNull();
+    expect(own).not.toBe(25);
+    expect(decidedOf(d, p, priced({ grossOnMarks: null }), "OWN").excess).toBe(
+      null,
+    );
+    expect(
+      decidedOf(d, { ...p, left: "a hole in the hour up to t" }, null, "BASE"),
+    ).toEqual({
+      t: p.t,
+      iid: p.iid,
+      leftOut: true,
+      net: null,
+      depthShort: false,
+      bookBoth: false,
+      excess: null,
+    });
   });
 });

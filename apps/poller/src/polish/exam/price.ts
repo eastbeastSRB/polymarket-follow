@@ -34,6 +34,7 @@ import { checkKey, type Seal } from "../seal.js";
 import type { Data } from "../tries/data.js";
 import { priceAfter } from "../tries/prices.js";
 import { fundingBetween, settlementsOf } from "../tries/sweep.js";
+import { SEGMENTS } from "./design.js";
 
 /** H8's files at a leg (WAVE-H's `bookFound`): x's hour's and, in its first 10 s when that has none, the hour before's; the snapshot's age and its file. */
 export type BookFound = {
@@ -311,6 +312,10 @@ export function baseOver(
   }
   return sum.map((s, k) => (count[k]! > 0 ? s / count[k]! : NaN));
 }
+
+/** The exam's BASE for a coin (D27; rules.md P7): its 24-hour moves over the deciding segments' whole minutes, pooled. */
+export const examBase = (pc: Float64Array, start: number): number[] =>
+  baseOver(pc, start, SEGMENTS, 1_440);
 
 /** A position's BASE cell: its coin's BASE in the 4-hour block of x_in, null when none (H10). */
 export const baseCell = (

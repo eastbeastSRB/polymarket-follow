@@ -16,14 +16,17 @@ import {
   type Market,
   type Research,
 } from "../src/paper/research.js";
+import { SEGMENTS } from "../src/polish/exam/design.js";
 import {
   baseCell,
   baseOver,
   bookReader,
+  examBase,
   priceAtTheBook,
   pricedOf,
   type ExamSpot,
 } from "../src/polish/exam/price.js";
+import { FRESH_RANGE } from "../src/polish/range.js";
 import { SEALED, SealedError } from "../src/polish/seal.js";
 import type { Data } from "../src/polish/tries/data.js";
 import type { Forced } from "../src/polish/tries/forced.js";
@@ -440,6 +443,22 @@ describe("the book first, then the tape (D19–D24)", () => {
       ),
     ).toEqual({ atHour: "no file", before: null, age: null, file: null });
     expect(reads).toBe(0);
+    // In an hour's first 10 s with that hour listed missing: the hour before's live snapshot.
+    const h = Date.parse("2025-09-12T06:00:00Z");
+    const m = rawStore(
+      [{ coin: "SOL", hour: h - HOUR_MS, lines: [sol(h - 4_000)] }],
+      [{ coin: "SOL", hour: h }],
+    );
+    expect(
+      await bookReader(m.dir, { open: true }, m.list, SEALED, pace).find(
+        "SOL",
+        h + 3_000,
+      ),
+    ).toMatchObject({
+      atHour: "no file",
+      age: 7_000,
+      file: bookKey("SOL", h - HOUR_MS),
+    });
     // FRESH's months: refused while the exam's seal is closed, and while WAVE-H's gate is; read once both are open.
     const fresh = Date.parse("2026-07-20T10:00:00Z");
     const f = rawStore(
@@ -588,5 +607,35 @@ describe("BASE on the deciding days (D27)", () => {
     // A block with no minute has no BASE: its positions have no excess.
     expect(baseCell(pooled, start + 5 * HOUR_MS)).toBe(pooled[1]);
     expect(baseCell([NaN, 1, 2, 3, 4, 5], start + HOUR_MS)).toBeNull();
+    const first = baseOver(
+      pc,
+      start,
+      [{ from: seg1.from, to: seg1.from + DAY_MS + 4 * HOUR_MS }],
+      h,
+    );
+    expect(Number.isNaN(first[0]!)).toBe(false);
+    expect(first.slice(1).every((v) => Number.isNaN(v))).toBe(true);
+  });
+
+  it("is, for the exam, the two deciding segments pooled at 24 hours on FRESH's grid", () => {
+    const { start, minutes } = FRESH_RANGE.grid;
+    const pc = Float64Array.from({ length: minutes }, (_, k) =>
+      k % 997 === 0 ? NaN : 50 + (k * k) / 1e9,
+    );
+    // By hand, in baseOver's order: each segment's minutes j of [from, to − 24 h), j + 24 h's price present.
+    const sum = [0, 0, 0, 0, 0, 0];
+    const count = [0, 0, 0, 0, 0, 0];
+    for (const s of SEGMENTS)
+      for (let t = s.from; t < s.to - DAY_MS; t += MINUTE_MS) {
+        const i = (t - start) / MINUTE_MS;
+        const a = pc[i]!;
+        const b = pc[i + 1_440]!;
+        if (Number.isNaN(a) || Number.isNaN(b)) continue;
+        const block = Math.floor((t % DAY_MS) / (4 * HOUR_MS));
+        sum[block]! += (b / a - 1) * 1e4;
+        count[block]! += 1;
+      }
+    expect(examBase(pc, start)).toEqual(sum.map((s, k) => s / count[k]!));
+    expect(count.reduce((s, c) => s + c, 0)).toBeGreaterThan(140_000);
   });
 });

@@ -14,8 +14,10 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmdirSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -36,7 +38,7 @@ import {
   checkKey,
   type Seal,
 } from "../src/polish/seal.js";
-import { openStore } from "../src/polish/store.js";
+import { openStore, partitionDir } from "../src/polish/store.js";
 import { forcedFrom } from "../src/polish/tries/forced.js";
 import { fortyOf } from "../src/polish/writers.js";
 import { HOUR_MS } from "../src/schedule.js";
@@ -237,6 +239,8 @@ describe("FRESH's extraction under the seal (rules.md P2)", () => {
       await expect(
         run({ ...w, store: named }, root, undefined),
       ).rejects.toThrow("FRESH is sealed until the polishing's exam is frozen");
+      // Refused before anything is made: the root stays empty.
+      expect(readdirSync(root)).toEqual([]);
       await expect(run(w, root, undefined)).rejects.toThrow(
         "dated after DATA END",
       );
@@ -290,6 +294,25 @@ describe("FRESH's extraction under the seal (rules.md P2)", () => {
     const s = openStore(dir, OPEN);
     expect(s.seal).toEqual(OPEN);
     expect(s.files().map((f) => f.key)).toEqual(world().range.fill);
+    // A store outside FRESH whose minute table is a junction into it: each file it reads is sealed by its real path.
+    const view = path.join(tmp("view"), "store");
+    mkdirSync(view);
+    writeFileSync(
+      path.join(view, "manifest.json"),
+      readFileSync(path.join(dir, "manifest.json")),
+    );
+    const junction = path.join(view, "minute");
+    symlinkSync(path.join(dir, "minute"), junction, "junction");
+    try {
+      const p = s.manifest.partitions.find((x) => x.table === "minute")!;
+      const [name, want] = Object.entries(p.files)[0]!;
+      const rel = `${partitionDir(p.table, p.coin, p.month)}/${name}`;
+      expect(() => openStore(view).bytes(rel, want)).toThrow(SealedError);
+      expect(openStore(view, OPEN).bytes(rel, want).length).toBe(want.bytes);
+    } finally {
+      // The junction alone, never what it points at.
+      rmdirSync(junction);
+    }
   }, 60_000);
 });
 

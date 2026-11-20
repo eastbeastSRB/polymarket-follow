@@ -40,7 +40,7 @@ import { WAVEH_RANGE, type Range } from "../range.js";
 import { BuildsDiffer, ExamUnfrozen, GateFailed } from "../run.js";
 import { SEALED, type Seal } from "../seal.js";
 import { openStore, type Store } from "../store.js";
-import { Line, ownOf } from "../tries/beside.js";
+import { Line } from "../tries/beside.js";
 import { dataFrom } from "../tries/data.js";
 import { readGzLines } from "../tries/gzlines.js";
 import { C, E } from "../tries/parts.js";
@@ -49,15 +49,7 @@ import { ChoiceFile, meter } from "../tries/steps.js";
 import { priceAll } from "../tries/sweep.js";
 import { CutsFile } from "../tries/trylog.js";
 import { fortyOf } from "../writers.js";
-import {
-  BARS,
-  K,
-  M,
-  OPTIONS,
-  PLACEBO,
-  SEGMENTS,
-  type ExamDesign,
-} from "./design.js";
+import { BARS, K, M, OPTIONS, PLACEBO, type ExamDesign } from "./design.js";
 import { holesOf, integrityOf, safetyNet } from "./fresh.js";
 import {
   decidingPrints,
@@ -69,13 +61,14 @@ import {
 import {
   LINES,
   countsOf,
+  keyOf,
   linesOf,
   onDeciding,
   type LineName,
   type LookPosition,
 } from "./look.js";
 import { placeboPrint } from "./placebo.js";
-import { baseCell, baseOver, bookReader, priceAtTheBook } from "./price.js";
+import { baseCell, bookReader, examBase, priceAtTheBook } from "./price.js";
 import {
   N_FIELDS,
   differs,
@@ -84,7 +77,7 @@ import {
   matchPlacebo,
   partOf,
 } from "./repro.js";
-import { examVerdict, verdictOf, type Decided } from "./verdict.js";
+import { bothAtTheBook, decidedOf, examVerdict, verdictOf } from "./verdict.js";
 
 export const EXAM_STEPS = ["placebo", "reproduce", "1", "2"] as const;
 export type ExamStep = (typeof EXAM_STEPS)[number];
@@ -447,32 +440,51 @@ export async function reproduceStep(o: ReproInput) {
     o.pace,
   );
   m.phase("extraction");
+  return reproEnd(
+    o.root,
+    {
+      step: "reproduce",
+      identity,
+      inputs: {
+        ...o.design.explored,
+        placebo: o.design.placebo,
+        books: refs.books,
+        lookPositions: refs.positions,
+        list: o.listSha256,
+      },
+    },
+    { a: extraction, b: n, c: lookMatch },
+    { ...m.done(), written: new Date().toISOString() },
+  );
+}
+
+/**
+ * The reproduction's end (THE PLAN D47): `<EXAM_ROOT>\repro.json` written
+ * whole, `passed` only when (a), (b) and (c) all held (step 1 opens FRESH
+ * only on such a file of its own program); then exit 6 naming each part
+ * that failed.
+ */
+export function reproEnd(
+  root: string,
+  head: { step: "reproduce"; identity: object; inputs: object },
+  parts: {
+    a: { equal: boolean };
+    b: Record<"E" | "C" | "deciding", { differs: readonly string[] }>;
+    c: { equal: boolean };
+  },
+  tail: object,
+) {
+  const { a, b, c } = parts;
   const failed = [
-    extraction.equal ? null : "(a) the extraction",
-    n.E.differs.length + n.C.differs.length + n.deciding.differs.length > 0
+    a.equal ? null : "(a) the extraction",
+    b.E.differs.length + b.C.differs.length + b.deciding.differs.length > 0
       ? "(b) N's numbers"
       : null,
-    lookMatch.equal ? null : "(c) the look",
+    c.equal ? null : "(c) the look",
   ].filter((x) => x !== null);
-  const value = {
-    step: "reproduce",
-    identity,
-    inputs: {
-      ...o.design.explored,
-      placebo: o.design.placebo,
-      books: refs.books,
-      lookPositions: refs.positions,
-      list: o.listSha256,
-    },
-    passed: failed.length === 0,
-    a: extraction,
-    b: n,
-    c: lookMatch,
-    ...m.done(),
-    written: new Date().toISOString(),
-  };
-  const text = `${JSON.stringify(value, null, 1)}\n`;
-  writeWhole(path.join(o.root, "repro.json"), text);
+  const value = { ...head, passed: failed.length === 0, ...parts, ...tail };
+  const text = json(value);
+  writeWhole(path.join(root, "repro.json"), text);
   if (failed.length > 0)
     throw new GateFailed(
       `the reproduction failed: ${failed.join(", ")}; see repro.json`,
@@ -657,9 +669,7 @@ export async function stepOne(o: LookInput): Promise<never> {
       `FRESH's store failed its integrity: see ${LOOK1}\\${INTEGRITY}`,
     );
   const look = lookOf(o, store, rc);
-  const net = safetyNet(
-    look.lines["715"].filter((p) => onDeciding(p) && p.left === null),
-  );
+  const net = safetyNet(look.lines["715"].filter(onDeciding));
   const needed = booksOf(
     look.lines.N.filter((p) => onDeciding(p) && p.left === null),
     o.coins,
@@ -802,17 +812,12 @@ export async function stepTwo(o: LookInput) {
     );
   m.phase("positions");
   const { d, lines } = look;
-  const key = (p: LookPosition) => `${p.slice} ${p.t} ${p.iid}`;
+  const key = keyOf;
   const bases = new Map<number, number[]>();
   const baseAt = (p: LookPosition) => {
     let b = bases.get(p.iid);
     if (b === undefined) {
-      b = baseOver(
-        d.pc.get(coinName(o.coins, p.iid))!,
-        d.start,
-        SEGMENTS,
-        1_440,
-      );
+      b = examBase(d.pc.get(coinName(o.coins, p.iid))!, d.start);
       bases.set(p.iid, b);
     }
     return baseCell(b, p.xIn);
@@ -835,37 +840,12 @@ export async function stepTwo(o: LookInput) {
   const priced = new Map(toPrice.map((p, i) => [key(p), prices[i]!]));
   m.phase("book");
   const bookOf = (p: LookPosition) => priced.get(key(p))!.priced;
-  const decided = (p: LookPosition): Decided => {
-    if (p.left !== null)
-      return {
-        t: p.t,
-        iid: p.iid,
-        leftOut: true,
-        net: null,
-        depthShort: false,
-        bookBoth: false,
-        excess: null,
-      };
-    const pr = bookOf(p);
-    return {
-      t: p.t,
-      iid: p.iid,
-      leftOut: false,
-      net: pr.net,
-      depthShort: pr.depthShort,
-      bookBoth: pr.legs[0]?.source === "book" && pr.legs[1]?.source === "book",
-      excess:
-        OPTIONS.excess === "BASE"
-          ? pr.excess
-          : pr.grossOnMarks === null
-            ? null
-            : ownOf(d, p, pr.grossOnMarks),
-    };
-  };
+  const decided = (p: LookPosition) =>
+    decidedOf(d, p, p.left === null ? bookOf(p) : null, OPTIONS.excess);
   const deciding = lines[step1.deciding.line].filter(onDeciding);
-  const bars = BARS[OPTIONS.looks];
+  // Look 1 of the two (rules.md P12), at its bars.
   const verdict = verdictOf(o.kit, deciding.map(decided), {
-    ...bars[0],
+    ...BARS[0],
     excess: OPTIONS.excess,
   });
   // The report, computed before result.json is written: the lines beside, every exam position not left out at the tape in one sweep.
@@ -887,7 +867,7 @@ export async function stepTwo(o: LookInput) {
         unpriced: pr.unpriced,
         onMarks: pr.grossOnMarks,
       }),
-      bookBoth: pr.legs[0]?.source === "book" && pr.legs[1]?.source === "book",
+      bookBoth: bothAtTheBook(pr),
       short: pr.depthShort,
       where: p.where,
     };
@@ -991,11 +971,11 @@ export async function stepTwo(o: LookInput) {
       repro,
     },
     look: 1,
-    looks: bars.length,
+    looks: BARS.length,
     deciding: step1.deciding,
     options: OPTIONS,
     ...verdict,
-    exam: examVerdict([verdict.verdict], bars.length),
+    exam: examVerdict([verdict.verdict], BARS.length),
     positionsSha256: look.positionsSha256,
     written: new Date().toISOString(),
   });

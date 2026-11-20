@@ -72,19 +72,17 @@ describe("the exam's rules (polish/rules.md)", () => {
       "placebo draws": String(PLACEBO.draws),
       "placebo windows": PLACEBO.windows.join(" "),
       "floors, two looks": `${TEXTBOOK.twoLooks.holds} ${TEXTBOOK.twoLooks.likely}`,
-      "floors, one look": `${TEXTBOOK.oneLook.holds} ${TEXTBOOK.oneLook.likely}`,
-      "two looks, look 1": bar(BARS.twoLooks[0]),
-      "two looks, look 2": bar(BARS.twoLooks[1]),
-      "one later look": bar(BARS.oneLook[0]),
+      "look 1": bar(BARS[0]),
+      "look 2": bar(BARS[1]),
       "placebo.json": PLACEBO_JSON,
-      options: `${OPTIONS.looks} ${OPTIONS.noBookDays} ${OPTIONS.excess}`,
+      options: `${OPTIONS.noBookDays} ${OPTIONS.excess}`,
       "no-book days": NO_BOOK_DAYS.join(" "),
       "thin days": String(THIN_CTXS_DAYS.length),
     });
   });
 
   it("prints each bar in P10 (three decimals, a floor as it is), the headings P0 to P17 in order, and every open option marked", () => {
-    for (const b of [...BARS.twoLooks, ...BARS.oneLook])
+    for (const b of BARS)
       for (const [name, v] of [
         ["z", b.z],
         ["z_L", b.zL],
@@ -97,12 +95,10 @@ describe("the exam's rules (polish/rules.md)", () => {
     expect([...RULES.matchAll(/^## (P\d+)\. /gm)].map((m) => m[1])).toEqual(
       Array.from({ length: 18 }, (_, i) => `P${i}`),
     );
-    for (const option of [
-      "[OPTION A",
-      "[OPTION C]",
-      "[OPTION D, Q4]",
-      "[OPTION E]",
-    ])
+    for (const option of ["[OPTION A", "[OPTION D, Q4]", "[OPTION E]"])
       expect(RULES).toContain(option);
+    // The looks are two: no option of the looks (decisions 2026-11-20 `5f01f05`).
+    expect(RULES).not.toContain("[OPTION C]");
+    expect(RULES).not.toMatch(/one later look\*\*|\| one later look \|/);
   });
 });

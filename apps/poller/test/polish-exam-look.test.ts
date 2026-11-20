@@ -445,7 +445,7 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
   });
 
-  it("step 2 refuses positions that are not step 1's (exit 5), writing nothing", async () => {
+  it("step 2 refuses positions or a store that are not step 1's (exit 5), writing nothing", async () => {
     booksWorld(w.store);
     const file = path.join(root, LOOK1, STEP1);
     const text = readFileSync(file, "utf8");
@@ -462,9 +462,39 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       expect((e as Error).message).toMatch(
         /^the positions' SHA-256 is [0-9a-f]{64}, step 1's 0{64}$/,
       );
+      // A store other than step 1's.
+      const s = JSON.parse(text) as { identity: object };
+      writeFileSync(
+        file,
+        JSON.stringify({
+          ...s,
+          identity: { ...s.identity, freshStore: "1".repeat(64) },
+        }),
+      );
+      const f = await failure(stepTwo(input(root)));
+      expect(f).toBeInstanceOf(StoreError);
+      expect((f as Error).message).toMatch(
+        /^FRESH's store's manifest is [0-9a-f]{64}, step 1's 1{64}$/,
+      );
     } finally {
       writeFileSync(file, text);
     }
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
+  it("step 2 refuses when a line other than N differs from step 1's (the SHA-256 covers all four lines), writing nothing", async () => {
+    // The deciding cut at 4: the 715 line is C alone, N unchanged.
+    const e = await failure(
+      stepTwo(
+        input(root, {
+          design: { ...a.design, recipe: { ...LOOK_RECIPE, deciding: 4 } },
+        }),
+      ),
+    );
+    expect(e).toBeInstanceOf(StoreError);
+    expect((e as Error).message).toMatch(
+      /^the positions' SHA-256 is [0-9a-f]{64}, step 1's [0-9a-f]{64}$/,
+    );
     expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
   });
 
@@ -507,13 +537,16 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       verdict: "WITHHELD",
       sentence:
         "Withheld: 100.0% of the deciding positions were left out, unpriced or depth short, above the 10% limit; the data could not answer.",
-      bars: { ...BARS.twoLooks[0], excess: "BASE" },
+      bars: { ...BARS[0], excess: "BASE" },
       positions: 3,
       leftOut: 1,
       unpriced: 1,
       depthShort: 1,
       priced: 1,
       withheldShare: 1,
+      // B's excess over BASE: SOL trades at 150 throughout, so its gross on marks and its BASE are both 0. Its exit is at the tape.
+      excess: { mean: 0, n: 1, without: 0 },
+      atTheBook: { mean: null, n: 0 },
       exam: null,
       positionsSha256: step1.positionsSha256,
     });
@@ -562,12 +595,16 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
           notWalked: Record<string, number>;
           bySize: Record<string, { cost: { mean: number }; short: number }>;
         };
+        bySource: Record<string, { priced: number }>;
       };
       atTheTape: Record<string, { positions: number }>;
       placebo: unknown;
       books: unknown;
     };
     expect(report.deciding.line).toBe("N");
+    // B, the one priced, has its exit at the tape.
+    expect(report.deciding.bySource["both legs at the book"]!.priced).toBe(0);
+    expect(report.deciding.bySource["a leg at the tape"]!.priced).toBe(1);
     // B's entry book walked: $1,000 across its two ask levels against the mid of 150; E's book stale.
     const units = 3 + (1_000 - 3 * 150.1) / 150.3;
     expect(report.deciding.walks).toMatchObject({
