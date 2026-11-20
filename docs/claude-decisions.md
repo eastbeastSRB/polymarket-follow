@@ -1,5 +1,43 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the exam at "rules ready", under the owner's
+overnight go): **POLISH-RULES's BUILD IS DONE, ITS RULES REVIEW'S FIXES ARE
+IN, AND THE FRESH CODE REVIEW RUNS. ITS THREE LAST QUESTIONS ARE RULED
+YES.**
+
+**What:**
+- **Successor 5's commits**, each with `pnpm verify` green and the three
+  freezes verifying:
+  - `ecca416`, the breaks round: 314 breaks, 248 killed at once; 49 more
+    killed by new tests; 17 explained;
+  - `510c05b`, the rules review's fix round: look 2's freeze in P0/P1/P12
+    with the allow-list `LOOK2_ALLOWED` and `--look2 <tag>`; the
+    one-later-look branch removed; findings 2–13;
+  - `3435f72`, the draft list: 125 files, `1d3aeba8…dd71`;
+  - `5e5619f`, the docs.
+- **The supervisor's checks:**
+  - `pnpm verify` on `5e5619f` green (89 + 1 files, 814 + 5 tests; the
+    three freezes 0 differ), in `verify/POLISH-RULES/verify-5e5619f.out`;
+  - access clean.
+  - Its context peaked at 899k (93%), past the brief's stop at about 70%.
+    So the fresh code review reads its last three commits line by line.
+- **POLISH-CODE-REVIEW** (Sonnet 5.5, max) has started. Its brief is
+  `workers/POLISH-CODE-REVIEW/brief.md`. It re-runs the rules review's 47
+  breaks and P11 grid on HEAD, and runs no test or break until the
+  reproduction's second run ends.
+
+**The rulings on successor 5's questions:**
+1. **FRESH-2's funding grid** starts its own 20-day grid at FRESH_END, so
+   every line of `fresh.sha256` stays unchanged.
+2. **`polish/look1.sha256`** is an allowed added file at look 2's freeze.
+   It holds look 1's `step1.json` and `result.json`, so look 2's reading of
+   look 1 is mechanical.
+3. **If the refresh finds 2026-11-13 → 15 without books,** they join
+   `NO_BOOK_DAYS` before the freeze; P16's "B, 11-13 → 15 cut too" row
+   applies (2.34%, P 4.5%). The listing is metadata only, with the
+   download tool's `--fresh --plan --books`. The tool waits out 02:30–06:00Z
+   even in plan mode, so it runs after 06:00Z.
+
 2026-11-20 (POLISH-RULES — the exam built up to "rules ready", its breaks
 round and the rules review's fix round: the technical calls of successors 2
 to 5, within THE PLAN and its rulings): **THE EXAM'S RULES, PROGRAM AND
