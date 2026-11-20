@@ -238,14 +238,41 @@ function conservation(m: Manifest, lines: readonly FileCounts[]): string[] {
   return problems;
 }
 
-/** G0: every file the manifest names, whole; the inputs WAVE-H's list's, one line a fill file; the partitions every table needs; no record refused or misread; every row conserved. */
-export function g0(o: GatesInput, step1: Step1): GateResult {
+/** What G0's checks read: a store of any range, the list it must be made from, this program and WAVE-H's freeze, the range's fill files and coins (exam/fresh.ts holds FRESH's store to them). */
+export type WholeInput = Pick<
+  GatesInput,
+  | "store"
+  | "list"
+  | "listSha256"
+  | "wavehFrozen"
+  | "code"
+  | "fill"
+  | "coins"
+  | "forty"
+>;
+
+/**
+ * G0's checks on a store of `range`, every problem in G0's order: the store
+ * whole, of the range, made from the list (and WAVE-H's look too: `look` is
+ * its list's SHA-256, null for a range without a look) by this code under
+ * WAVE-H's freeze; every file the manifest names, whole; the partitions
+ * every table needs; one `files.jsonl` line a fill file, as listed; no
+ * record refused or misread; every row conserved.
+ */
+export function wholeOf(o: WholeInput, range: string, look: string | null) {
   const m = o.store.manifest;
   const problems: string[] = [];
-  if (m.range !== "WAVE-H" || m.partial !== null)
+  if (m.range !== range || m.partial !== null)
     problems.push(`the store is ${m.range}, ${m.partial ?? "whole"}`);
-  if (m.inputs.listSha256 !== o.listSha256 || step1.dataSha256 !== o.listSha256)
-    problems.push("the store or the look was made from another list");
+  if (
+    m.inputs.listSha256 !== o.listSha256 ||
+    (look !== null && look !== o.listSha256)
+  )
+    problems.push(
+      look === null
+        ? "the store was made from another list"
+        : "the store or the look was made from another list",
+    );
   if (m.code.wavehFrozen !== o.wavehFrozen)
     problems.push("the store was made under another WAVE-H freeze");
   if (m.code.fingerprint !== o.code)
@@ -310,7 +337,7 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
     problems.push(`files.jsonl: ${counters.misread} records misread`);
   problems.push(...conservation(m, lines));
   return {
-    pass: problems.length === 0,
+    problems,
     counters,
     files,
     bytes,
@@ -318,8 +345,13 @@ export function g0(o: GatesInput, step1: Step1): GateResult {
     tables: TABLES.map((t) => m.partitions.filter((p) => p.table === t).length),
     storeCode: m.code.fingerprint,
     thisCode: o.code,
-    ...listed(problems),
   };
+}
+
+/** G0: `wholeOf` on WAVE-H's store, its look made from the same list. */
+export function g0(o: GatesInput, step1: Step1): GateResult {
+  const { problems, ...whole } = wholeOf(o, "WAVE-H", step1.dataSha256);
+  return { pass: problems.length === 0, ...whole, ...listed(problems) };
 }
 
 /** WAVE-H's step-1 counts from the store (look.ts `lookStep1`, readMarkets): all but M's and slice 0's, which are G2's. */
@@ -669,71 +701,15 @@ export function g4(o: GatesInput, lib: Library, wave: readonly Outcome[]) {
  * archive, by the supervisor's ruling (decisions 2026-11-19, the gates on
  * the 10 months), printed as `known`. Any other record left unpaired fails,
  * and so does a listed one not found, each listed by file, coin and `tid`;
- * no tolerance. `day_ntl_vlm` beside, deciding nothing.
+ * no tolerance (`pairingOf`, on any range's files in order: exam/fresh.ts
+ * holds FRESH's to it). `day_ntl_vlm` beside, deciding nothing.
  */
 export function g5(
   o: GatesInput,
   lib: Library,
   known: KnownUnpaired,
 ): GateResult {
-  const problems: string[] = [];
-  const totals: Record<string, [number, number]> = {};
-  const open = new Map<string, { file: number; d: number }[]>();
-  for (const f of lib.files) {
-    for (const [coin, takers, makers] of f.pairs) {
-      const t = (totals[coin] ??= [0, 0]);
-      t[0] += takers;
-      t[1] += makers;
-    }
-    for (const [coin, tid, d] of f.unpaired) {
-      const k = `${coin} ${tid}`;
-      const list = open.get(k) ?? [];
-      list.push({ file: f.index, d });
-      open.set(k, list);
-    }
-  }
-  const lineOf = (key: string, k: string, d: number) =>
-    `${key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`;
-  const last = lib.files.length - 1;
-  let straddled = 0;
-  const edges: string[] = [];
-  // Each listed record by the line G5 prints for it; found unpaired, it leaves for `found`.
-  const ruled = new Map(
-    known.map((r) => [
-      lineOf(r.file, `${r.coin} ${r.tid}`, r.side === "taker" ? 1 : -1),
-      r,
-    ]),
-  );
-  const found: string[] = [];
-  for (const [k, list] of open) {
-    const [a, b] = list;
-    if (
-      list.length === 2 &&
-      b!.file === a!.file + 1 &&
-      Math.abs(a!.d) === 1 &&
-      a!.d + b!.d === 0
-    ) {
-      straddled += 1;
-      continue;
-    }
-    if (
-      list.length === 1 &&
-      Math.abs(a!.d) === 1 &&
-      (a!.file === 0 || a!.file === last)
-    ) {
-      edges.push(lineOf(lib.files[a!.file]!.key, k, a!.d));
-      continue;
-    }
-    for (const { file, d } of list) {
-      const line = lineOf(lib.files[file]!.key, k, d);
-      if (ruled.delete(line)) found.push(line);
-      else problems.push(line);
-    }
-  }
-  for (const r of ruled.values())
-    problems.push(
-      `${r.file} ${r.coin} ${r.tid}: listed as 1 ${r.side} unpaired, not found`,
-    );
+  const p = pairingOf(lib.files, known);
   // By coin and whole UTC day: the takers' notional (with the backstop's, and without) ÷ day_ntl_vlm at the next midnight.
   const m = o.store.manifest;
   const ratios: Record<
@@ -766,15 +742,78 @@ export function g5(
     ratios[coin] = byDay;
   }
   return {
-    pass: problems.length === 0,
-    totals,
-    straddled,
-    edge: edges.length,
-    edges,
-    known: found,
-    ...listed(problems),
+    pass: p.problems.length === 0,
+    totals: p.totals,
+    straddled: p.straddled,
+    edge: p.edges.length,
+    edges: p.edges,
+    known: p.found,
+    ...listed(p.problems),
     dayNtlVlm: { columns: ["with the backstop", "without"], ratios },
   };
+}
+
+/** G5's pairing of a range's input files (`files.jsonl`'s lines, in the range's order) against the list of one-sided trades accepted: every problem, the straddles, the edges listed and the listed records found. */
+export function pairingOf(files: readonly FileCounts[], known: KnownUnpaired) {
+  const problems: string[] = [];
+  const totals: Record<string, [number, number]> = {};
+  const open = new Map<string, { file: number; d: number }[]>();
+  for (const f of files) {
+    for (const [coin, takers, makers] of f.pairs) {
+      const t = (totals[coin] ??= [0, 0]);
+      t[0] += takers;
+      t[1] += makers;
+    }
+    for (const [coin, tid, d] of f.unpaired) {
+      const k = `${coin} ${tid}`;
+      const list = open.get(k) ?? [];
+      list.push({ file: f.index, d });
+      open.set(k, list);
+    }
+  }
+  const lineOf = (key: string, k: string, d: number) =>
+    `${key} ${k}: ${Math.abs(d)} ${d > 0 ? "taker" : "maker"}${Math.abs(d) > 1 ? "s" : ""} unpaired`;
+  const last = files.length - 1;
+  let straddled = 0;
+  const edges: string[] = [];
+  // Each listed record by the line G5 prints for it; found unpaired, it leaves for `found`.
+  const ruled = new Map(
+    known.map((r) => [
+      lineOf(r.file, `${r.coin} ${r.tid}`, r.side === "taker" ? 1 : -1),
+      r,
+    ]),
+  );
+  const found: string[] = [];
+  for (const [k, list] of open) {
+    const [a, b] = list;
+    if (
+      list.length === 2 &&
+      b!.file === a!.file + 1 &&
+      Math.abs(a!.d) === 1 &&
+      a!.d + b!.d === 0
+    ) {
+      straddled += 1;
+      continue;
+    }
+    if (
+      list.length === 1 &&
+      Math.abs(a!.d) === 1 &&
+      (a!.file === 0 || a!.file === last)
+    ) {
+      edges.push(lineOf(files[a!.file]!.key, k, a!.d));
+      continue;
+    }
+    for (const { file, d } of list) {
+      const line = lineOf(files[file]!.key, k, d);
+      if (ruled.delete(line)) found.push(line);
+      else problems.push(line);
+    }
+  }
+  for (const r of ruled.values())
+    problems.push(
+      `${r.file} ${r.coin} ${r.tid}: listed as 1 ${r.side} unpaired, not found`,
+    );
+  return { problems, totals, straddled, edges, found };
 }
 
 /** G6: each sample day's numbers from the store equal, cell by cell, those re-read from the raw files. */

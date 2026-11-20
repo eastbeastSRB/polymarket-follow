@@ -1,19 +1,61 @@
 /**
- * FRESH's positions on the exam's days (polish/rules.md P1, P4, P5, P8; THE
- * PLAN D4, D15, D16, D29, D30, D53b; decisions 2026-11-19, the 715 option
- * made safe, and "the exam's placebo and WITHHELD projection ran", Q1 and
- * T12): which days a position belongs to — a deciding segment, cut by
- * option B for a leg on a day without books, or the discovery window,
- * printed apart; the stretches of 60 s or more without a record that leave
- * a position out; and the safety net, read once at the first look's step 1,
- * that hands the exam to N when the 715 line's positions on the deciding
- * days span under 20 UTC days or 10 coins.
+ * FRESH's store and its positions on the exam's days (polish/rules.md P1,
+ * P2, P4, P5, P8; THE PLAN D4, D9, D15, D16, D29, D30, D53b; decisions
+ * 2026-11-19, the plan's questions ruled, Q7 (a), the 715 option made safe,
+ * and "the exam's placebo and WITHHELD projection ran", Q1 and T12): the
+ * store's integrity before any position; which days a position belongs to —
+ * a deciding segment, cut by option B for a leg on a day without books, or
+ * the discovery window, printed apart; the stretches of 60 s or more without
+ * a record that leave a position out; and the safety net, read once at the
+ * first look's step 1, that hands the exam to N when the 715 line's
+ * positions on the deciding days span under 20 UTC days or 10 coins.
  */
+import path from "node:path";
 import { ENTRY_DELAY_MS, HOLD_MS } from "../../market1/price.js";
 import { HOUR_MS, MINUTE_MS } from "../../schedule.js";
+import { PACKAGE_ROOT } from "../../waveh/gate.js";
+import {
+  pairingOf,
+  wholeOf,
+  type KnownUnpaired,
+  type WholeInput,
+} from "../gates.js";
+import { FRESH_RANGE } from "../range.js";
 import { FRESH_END } from "../seal.js";
 import type { FileCounts } from "../store.js";
 import { NO_BOOK_DAYS, SAFETY_NET, SEGMENTS } from "./design.js";
+
+/** FRESH's one-sided trades ruled by H0's route (Q7 (a)), in known-unpaired.json's form: `polish/fresh-unpaired.json`, empty at the freeze. */
+export const FRESH_UNPAIRED_FILE = path.join(
+  PACKAGE_ROOT,
+  "polish",
+  "fresh-unpaired.json",
+);
+
+/**
+ * D9, FRESH's store before any position: G0's checks (`wholeOf`: whole,
+ * FRESH's, made from `polish/fresh.sha256` by this very code under WAVE-H's
+ * freeze, every partition, `files.jsonl` FRESH's files as listed, no record
+ * refused or misread, every row conserved), then, when they pass, G5's
+ * pairing of FRESH's files (`pairingOf`: a straddle only between files next
+ * in order; a record left alone only in FRESH's first file, 2026-05-29 02h,
+ * or its last, 2026-11-15 23h, listed; any other record left unpaired fails
+ * unless `known`, fresh-unpaired.json, lists it). Every problem is kept: a
+ * failure stops step 1 (exit 6), every record listed, for H0's route.
+ */
+export function integrityOf(o: WholeInput, known: KnownUnpaired) {
+  const whole = wholeOf(o, FRESH_RANGE.name, null);
+  const pairing =
+    whole.problems.length === 0 ? pairingOf(o.store.files(), known) : null;
+  return {
+    pass:
+      whole.problems.length === 0 &&
+      pairing !== null &&
+      pairing.problems.length === 0,
+    whole,
+    pairing,
+  };
+}
 
 /** The exam's positions (D4): entries from 2026-05-30, closing before FRESH_END (entries of 2026-05-29 decide nothing; they still block, M5). Not the parts' 50-hour stop. */
 export const inExam = (t: number): boolean =>
