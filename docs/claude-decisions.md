@@ -1,5 +1,69 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — THE EXAM IS FROZEN): **`polish/FROZEN.sha256`,
+125 FILES, SHA-256 `bd3ac6d3af52c1e42cb2c08446cb89e0e9b7227199e1955c2cc0e03776e3f0fa`,
+COMMIT `13dc55c`, TAG `polish-freeze-1`. THE GATE SAYS OK. LOOK 1 ON FRESH
+BEGINS.**
+
+**How:**
+- **The final tree:** `a1bdf9c`, after POLISH-PREFREEZE's three commits.
+  - `f1b4350`: `design.ts`'s comment, P15 step 5's sentence, and tests c10
+    and c15, each killing its break.
+  - `8b15ef8`: the draft list, `aab29e44…8f69`. Only `design.js`'s and
+    rules.md's lines changed.
+  - `a1bdf9c`: the docs.
+- **The supervisor's checks:**
+  - the diff: `design.ts` changed only in a comment, and rules.md only by
+    the sentence;
+  - `pnpm verify` on `a1bdf9c` green: 89 + 1 files, 823 passed and 5
+    skipped; the three freezes 0 differ;
+  - the tree clean.
+- **The freeze:** `node tools/polish-freeze.cjs --final --tag 1` at
+  2026-11-20T13:48:37Z, exit 0. The tool built the program itself from the
+  clean tree.
+  - The final list's 125 hash lines equal the reviewed draft's.
+  - All 125 files verify on disk.
+  - `# tag polish-freeze-1`.
+- **The commit and the tag:** commit `13dc55c` (the list alone); annotated
+  tag `polish-freeze-1` on it. `git show polish-freeze-1:…/FROZEN.sha256`
+  hashes to `bd3ac6d3…f0fa`.
+- **The gate:** the frozen program's own `verifyExamFreeze` on the main
+  tree gives ok, 125 files, tag `polish-freeze-1`
+  (`verify/POLISH-LOOK1/gate-main.out`). git is on the detached launcher's
+  PATH.
+
+**What is frozen** (rules.md P0–P17):
+- **The recipe:** the 715 line decides (B0 + W4 at 715), with N's safety
+  net read once at look 1's step 1.
+- **The line:** K = 20, slices 0–19 pooled.
+- **The looks:** two. Look 1 at z 2.847 and LIKELY 2.360; look 2 at 2.81
+  and 2.437.
+- **The verdicts:** WITHHELD at 10%, TOO FEW below 20 days or 10 coins,
+  DOES NOT HOLD below δ +50 at HOLDS's z, HOLDS with BASE's excess and the
+  book-priced mean above 0, LIKELY, NOT SETTLED. Only HOLDS or DOES NOT
+  HOLD end the exam early (M11).
+- **The options:** B (the no-book days cut); BASE.
+- **The prints beside:** N and the 1,391 cut, "seeded, decides nothing".
+- **The data:** `fresh.sha256` (4,614 files); FRESH built twice and held
+  equal.
+
+**Noted for every later run:**
+- **The first `pnpm verify` after the tag reads 822 passed and 6 skipped.**
+  That is the sealed-root case skipping, not a lost test (821 + 6 before
+  POLISH-PREFREEZE's added test).
+- **After any re-freeze** (tag 2, by H0's route), a completed step 1 runs
+  again, because step 2 refuses another freeze's `step1.json`.
+
+**Next:** the owner pushes main and `polish-freeze-1`. Then look 1, from
+the run worktree checked out at the tag and built clean, its list
+verified, `placebo.json` copied into `ANALYZER\FRESH`:
+1. the reproduction by the frozen program;
+2. step 1;
+3. the books;
+4. step 2.
+
+Nothing heavy runs beside them.
+
 2026-11-20 (the supervisor — the fix round's fresh check): **"READY TO
 FREEZE". EVERY FINDING OF THE CODE REVIEW IS CLOSED AND SHOWN CLOSED. ONE
 LAST SMALL COMMIT (A STALE COMMENT, ONE RULES SENTENCE, TWO TEST
