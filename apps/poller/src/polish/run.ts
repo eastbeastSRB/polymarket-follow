@@ -30,9 +30,14 @@ import { SealedError } from "./seal.js";
 export class GateFailed extends Error {}
 /** The exam's freeze does not verify, so FRESH stays sealed (exit 4; the look's steps). */
 export class ExamUnfrozen extends Error {}
+/** FRESH's two builds at step 1 differ (exit 7): a fault in a build, never repaired in code. */
+export class BuildsDiffer extends Error {}
 
-/** The program's exit for an error, and its log line: 4 WAVE-H's freeze, or the exam's for the look's steps, does not verify; 5 not ready (a store file missing, differing or failing; a sealed path; the store not trusted; books needed; already run); 6 a gate or a check failed; 1 a crash. */
-export function exitOf(err: unknown): { code: 1 | 4 | 5 | 6; event: string } {
+/** The program's exit for an error, and its log line: 4 WAVE-H's freeze, or the exam's for the look's steps, does not verify; 5 not ready (a store file missing, differing or failing; a sealed path; the store not trusted; books needed; already run); 6 a gate or a check failed; 7 FRESH's two builds differ; 1 a crash. */
+export function exitOf(err: unknown): {
+  code: 1 | 4 | 5 | 6 | 7;
+  event: string;
+} {
   if (err instanceof FrozenDiffer)
     return { code: 4, event: "WAVE-H's freeze does not verify" };
   if (err instanceof ExamUnfrozen)
@@ -42,6 +47,8 @@ export function exitOf(err: unknown): { code: 1 | 4 | 5 | 6; event: string } {
   if (err instanceof BooksNeeded) return { code: 5, event: "books needed" };
   if (err instanceof AlreadyRun) return { code: 5, event: "already run" };
   if (err instanceof GateFailed) return { code: 6, event: "a gate failed" };
+  if (err instanceof BuildsDiffer)
+    return { code: 7, event: "FRESH's two builds differ" };
   return { code: 1, event: "crash" };
 }
 

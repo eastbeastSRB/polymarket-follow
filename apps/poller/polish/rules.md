@@ -104,7 +104,19 @@ trade.*
   route.
 - **The extraction** (D8): FRESH is extracted by the frozen extraction
   (`extract`'s pass, writers, contexts, funding and merge) with FRESH's range
-  into `<EXAM_ROOT>\store` (`ANALYZER\FRESH` at look 1).
+  into `<EXAM_ROOT>\store` (`ANALYZER\FRESH` at look 1), **and again**, from
+  its own parts, into `<EXAM_ROOT>\twin\store`. The two builds must be equal
+  byte for byte — the manifest but for the run's fields (the code, the
+  write's instant, the seconds, the peaks) and every file it names: each
+  column, the dictionaries, `files.jsonl` — by the reproduction's (a)
+  comparison, into `look1\builds.json`; the first build's integrity then
+  holds each of its files to its own manifest, so a byte differing in either
+  build is seen. A difference stops step 1 (exit 7) with the list. Nothing
+  is repaired in code: both builds are moved aside in a decisions entry and
+  step 1 runs again. Why (decisions 2026-11-20 `f306e49`, the reproduction's
+  first run): FRESH has no reference store, and a one-off change in memory,
+  as that run met in one file of 8,846, could otherwise change a number
+  silently.
 - **The store's integrity, before any position** (D9; decisions 2026-11-19,
   Q7 (a); `fresh.ts` integrityOf, written whole to `look1\integrity.json`):
   - G0's checks (`gates.ts` wholeOf): every file whole, every partition of
@@ -389,8 +401,10 @@ In `look1\report.json`, written after `result.json` (D46, D52;
 
 ## P14. Prints
 
-- **Step 1's** (`look1\step1.json`; D48; none an outcome): the records by
-  day and the block numbers missing; the holes; the `asset_ctxs` rows of the
+- **Step 1's** (`look1\builds.json`, the two builds compared;
+  `look1\integrity.json`; `look1\step1.json`; D48; none an outcome): the
+  records by day and the block numbers missing; the holes; the `asset_ctxs`
+  rows of the
   small coins by day and the days read as absent; the minutes priced by the
   trade fallback, and without a price, by coin and day; the funding rows by
   coin and window; each line's positions by where they stand (segment 1,
@@ -417,7 +431,9 @@ for steps 1 and 2 `FRESH_STORE` (`…\FRESH\store`, read only). Exit codes: 0
 done; 1 a crash; 2 bad settings or a heap flag; 4 WAVE-H's freeze, or for
 steps 1–2 the exam's, does not verify; 5 not ready (sealed, a file missing
 or differing, `repro.json` not passed, books needed, already run); 6 a check
-failed (the reproduction, FRESH's integrity, a held number).
+failed (the reproduction, FRESH's integrity, a held number); 7 FRESH's two
+builds at step 1 differ (P2). **No build, test or other heavy run on the
+machine during the look's runs** (decisions 2026-11-20 `f306e49`).
 
 1. **`placebo`** (before the freeze): P10, into `<EXAM_ROOT>\placebo.json`;
    every input held to the design's SHA-256.
@@ -431,11 +447,12 @@ failed (the reproduction, FRESH's integrity, a held number).
    WAVE-H's 1,299 positions equal to the look's lines (each bps field
    within 1e-9). `repro.json` names this program; exit 6 when a part fails.
 3. **`1`** (the exam's gate open; `repro.json` passed by this very
-   program): FRESH's extraction (P2), its integrity (exit 6 on a failure),
-   the lines placed, the safety net read, the counts (P14), the books
-   needed; `look1\step1.json` written whole; then exit 5, books needed. A
-   data defect seen here: H0's route, then `step1.json` is removed by hand
-   in the same decisions entry and step 1 runs again.
+   program): FRESH's extraction, twice, the two builds compared (P2; exit
+   7 on a difference), the first's integrity (exit 6 on a failure), the
+   lines placed, the safety net read, the counts (P14), the books needed;
+   `look1\step1.json` written whole; then exit 5, books needed. A data
+   defect seen here: H0's route, then `step1.json` is removed by hand in
+   the same decisions entry and step 1 runs again.
 4. **The books**: `node tools\waveh-fetch.cjs --fresh --books
    <EXAM_ROOT>\look1\books-needed.txt`, under the download's guards.
 5. **`2`**: a second step 2 refuses (already run); every needed book file

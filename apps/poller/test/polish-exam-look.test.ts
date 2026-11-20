@@ -12,6 +12,7 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   renameSync,
@@ -31,17 +32,25 @@ import {
 } from "../src/polish/exam/design.js";
 import {
   BOOKS_NEEDED,
+  BUILDS,
   INTEGRITY,
   LOOK1,
   POSITIONS,
   REPORT,
   RESULT,
   STEP1,
+  TWIN,
   stepOne,
   stepTwo,
   type LookInput,
 } from "../src/polish/exam/steps.js";
-import { ExamUnfrozen, GateFailed, exitOf } from "../src/polish/run.js";
+import { partFile } from "../src/polish/part.js";
+import {
+  BuildsDiffer,
+  ExamUnfrozen,
+  GateFailed,
+  exitOf,
+} from "../src/polish/run.js";
 import { SEALED, type Seal } from "../src/polish/seal.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { PACKAGE_ROOT } from "../src/waveh/gate.js";
@@ -146,6 +155,18 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       ].join("\n")}\n`,
     );
     expect(keys).toContain("market_data/20260718/1/l2Book/SOL.lz4");
+    // Built twice, each from its own parts, and the two equal byte for byte.
+    const builds = read(BUILDS);
+    expect(builds).toMatchObject({ equal: true, problems: [], more: 0 });
+    expect(builds.files).toBeGreaterThan(100);
+    expect(builds.twin).toBe(
+      sha(readFileSync(path.join(root, TWIN, "store", "manifest.json"))),
+    );
+    expect(
+      readFileSync(path.join(root, TWIN, "store", "files.jsonl")).equals(
+        readFileSync(path.join(root, "store", "files.jsonl")),
+      ),
+    ).toBe(true);
     expect(read(INTEGRITY)).toMatchObject({
       pass: true,
       whole: { problems: [], storeCode: CODE, thisCode: CODE },
@@ -171,6 +192,7 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       cuts: a.design.explored.cuts,
       recipe: LOOK_RECIPE,
     });
+    expect(s.builds).toBe(sha(readFileSync(path.join(root, LOOK1, BUILDS))));
     expect(s.integrity).toBe(
       sha(readFileSync(path.join(root, LOOK1, INTEGRITY))),
     );
@@ -357,6 +379,39 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     ]);
     expect(existsSync(path.join(r, LOOK1, STEP1))).toBe(false);
     expect(existsSync(path.join(r, LOOK1, BOOKS_NEEDED))).toBe(false);
+  });
+
+  it("stops when FRESH's two builds differ (exit 7), the difference listed, before the integrity and step1.json", async () => {
+    const r = tmp("look-root");
+    reproFile(r);
+    // The second build's part of one file already there, a count in it changed: a consistent fault the first build has not.
+    const part = readFileSync(partFile(path.join(root, "parts"), 3));
+    const key = Buffer.from('"records":');
+    let end = part.indexOf(key) + key.length;
+    expect(end).toBeGreaterThan(key.length);
+    while (part[end]! >= 0x30 && part[end]! <= 0x39) end++;
+    const changed = Buffer.from(part);
+    changed[end - 1] = 0x30 + ((part[end - 1]! - 0x30 + 1) % 10);
+    const twinPart = partFile(path.join(r, TWIN, "parts"), 3);
+    mkdirSync(path.dirname(twinPart), { recursive: true });
+    writeFileSync(twinPart, changed);
+    const e = await failure(stepOne(input(r)));
+    expect(e).toBeInstanceOf(BuildsDiffer);
+    expect(exitOf(e)).toEqual({ code: 7, event: "FRESH's two builds differ" });
+    expect((e as Error).message).toBe(
+      "FRESH's two builds differ: see look1\\builds.json",
+    );
+    const b = JSON.parse(readFileSync(path.join(r, LOOK1, BUILDS), "utf8")) as {
+      equal: boolean;
+      problems: string[];
+    };
+    expect(b.equal).toBe(false);
+    expect(b.problems).toEqual([
+      "the manifest's files differs",
+      "files.jsonl: differs from the manifest",
+    ]);
+    expect(existsSync(path.join(r, LOOK1, INTEGRITY))).toBe(false);
+    expect(existsSync(path.join(r, LOOK1, STEP1))).toBe(false);
   });
 
   it("the built program refuses step 1 without FRESH's raw store, or with another folder (exit 2)", () => {

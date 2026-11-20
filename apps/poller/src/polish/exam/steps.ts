@@ -37,7 +37,7 @@ import { topTakerOf, type KnownUnpaired } from "../gates.js";
 import { Tape, marketsFrom } from "../legs.js";
 import { GATES, GATES_FILE, positionsOf } from "../library.js";
 import { WAVEH_RANGE, type Range } from "../range.js";
-import { ExamUnfrozen, GateFailed } from "../run.js";
+import { BuildsDiffer, ExamUnfrozen, GateFailed } from "../run.js";
 import { SEALED, type Seal } from "../seal.js";
 import { openStore, type Store } from "../store.js";
 import { Line, ownOf } from "../tries/beside.js";
@@ -499,6 +499,9 @@ export const LOOK1 = "look1";
 export const STEP1 = "step1.json";
 export const BOOKS_NEEDED = "books-needed.txt";
 export const INTEGRITY = "integrity.json";
+export const BUILDS = "builds.json";
+/** The second build's root in the exam's folder: its own parts and store. */
+export const TWIN = "twin";
 export const RESULT = "result.json";
 export const POSITIONS = "positions.jsonl.gz";
 export const REPORT = "report.json";
@@ -570,9 +573,13 @@ function lookOf(
 /**
  * `exam --step 1` (THE PLAN D47; D8, D9, D48, D53b; T11, T12), counts only,
  * before any price: the look's gate and the inputs held; FRESH's
- * extraction under the open seal into `<EXAM_ROOT>\store`; its integrity
- * into `look1\integrity.json`, a failure stopping here (exit 6, every
- * record listed, for H0's route); the lines placed; the safety net, read
+ * extraction under the open seal into `<EXAM_ROOT>\store`, and again, from
+ * its own parts, into `<EXAM_ROOT>\twin\store`; the two held equal byte for
+ * byte by the reproduction's (a) comparison into `look1\builds.json`, a
+ * difference stopping here (exit 7; nothing repaired: both builds moved
+ * aside, step 1 again); the first's integrity into `look1\integrity.json`,
+ * a failure stopping here (exit 6, every record listed, for H0's route);
+ * the lines placed; the safety net, read
  * once, here, naming the deciding line; the counts; the book files that N's
  * legs on the deciding days need (a superset of the 715 line's) into
  * `look1\books-needed.txt`; `look1\step1.json` written whole; then exit 5,
@@ -589,24 +596,42 @@ export async function stepOne(o: LookInput): Promise<never> {
   const { identity } = identityOf(o);
   const rc = ruleAndCuts(o);
   const forty = [...fortyOf(o.coins)];
-  await extract({
-    store: o.fresh,
-    root: o.root,
-    list: o.list,
-    listName: "polish/fresh.sha256",
-    listSha256: o.listSha256,
-    range: o.range,
-    workers: o.workers,
-    code: o.code,
-    wavehFrozen: o.wavehFrozen,
-    forty,
-    small: o.coins.list.map((c) => c.name),
-    pace: o.pace,
-    log: o.log,
-    seal: o.seal,
-  });
+  const extractInto = (root: string) =>
+    extract({
+      store: o.fresh,
+      root,
+      list: o.list,
+      listName: "polish/fresh.sha256",
+      listSha256: o.listSha256,
+      range: o.range,
+      workers: o.workers,
+      code: o.code,
+      wavehFrozen: o.wavehFrozen,
+      forty,
+      small: o.coins.list.map((c) => c.name),
+      pace: o.pace,
+      log: o.log,
+      seal: o.seal,
+    });
+  // Twice, each from its own parts: FRESH has no reference store, so only a second build can show a fault in one (decisions 2026-11-20, the reproduction's first run).
+  await extractInto(o.root);
+  await extractInto(path.join(o.root, TWIN));
   m.phase("extraction");
   const store = openStore(path.join(o.root, STORE), o.seal);
+  const twin = openStore(path.join(o.root, TWIN, STORE), o.seal);
+  const builds = await matchExtraction(store.manifest, twin, o.pace);
+  const buildsText = json({
+    store: store.id,
+    twin: twin.id,
+    ...builds,
+    written: new Date().toISOString(),
+  });
+  writeWhole(path.join(dir, BUILDS), buildsText);
+  m.phase("builds");
+  if (!builds.equal)
+    throw new BuildsDiffer(
+      `FRESH's two builds differ: see ${LOOK1}\\${BUILDS}`,
+    );
   const integrity = integrityOf(
     {
       store,
@@ -670,6 +695,7 @@ export async function stepOne(o: LookInput): Promise<never> {
         cuts: o.design.explored.cuts,
         recipe: o.design.recipe,
       },
+      builds: sha256(buildsText),
       integrity: sha256(integrityText),
       deciding: {
         line: net.deciding,

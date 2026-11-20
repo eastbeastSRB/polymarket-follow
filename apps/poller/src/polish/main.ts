@@ -17,7 +17,8 @@
  * FRESH_STORE (FRESH's raw store, read only) for the look's steps. Exit
  * codes: 0 done, 1 a crash, 2 bad settings, 4 WAVE-H's freeze, or for the
  * look's steps the exam's, does not verify, 5 not ready (books needed
- * among them), 6 a gate or a step's check failed. Every line goes to the
+ * among them), 6 a gate or a step's check failed, 7 FRESH's two builds at
+ * step 1 differ. Every line goes to the
  * log, `<ANALYZER_ROOT>\logs\polish-<day>.log` (the exam's in EXAM_ROOT);
  * stderr says only why the program stopped before its log was open.
  */
