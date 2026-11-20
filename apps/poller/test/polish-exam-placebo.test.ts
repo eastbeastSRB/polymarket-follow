@@ -24,6 +24,7 @@ import {
   K,
   M,
   PLACEBO,
+  PLACEBO_JSON,
   RECIPE,
   SAFETY_NET,
   SEGMENTS,
@@ -515,6 +516,7 @@ describe("the design (rules.md)", () => {
       explored: EXPLORED,
       recipe: RECIPE,
       draws: 100_000,
+      placebo: PLACEBO_JSON,
     });
     expect(PLACEBO).toEqual({
       seed: 20_261_118,
@@ -624,6 +626,7 @@ async function stepWorld() {
     },
     recipe: r,
     draws: 40,
+    placebo: "0".repeat(64),
   };
   const input = (root: string, d = design): ExamInput => ({
     analyzer,

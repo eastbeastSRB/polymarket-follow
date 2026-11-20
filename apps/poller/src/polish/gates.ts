@@ -376,19 +376,26 @@ export function byDayOf(files: readonly FileCounts[]) {
   return { days, blocks: { missing, back } };
 }
 
+/** The highest taker fee rate by month over the files, in bps to four places (H14's base-tier check), a SIZING file's records from TEST's start (a month's first instant: WAVE-H's late ones) left out: G1's, and the exam's report on FRESH. */
+export function topTakerOf(files: readonly FileCounts[], end: number) {
+  const top = new Map<string, number>();
+  for (const f of files)
+    for (const [month, rate] of f.topTaker)
+      if (!boundOf(f, end).sizing || month < monthOf(TEST_START))
+        top.set(month, Math.max(top.get(month) ?? -Infinity, rate));
+  return Object.fromEntries(
+    [...top].map(([month, r]) => [month, Math.round(r * 1e8) / 1e4]),
+  );
+}
+
 /** WAVE-H's step-1 counts from the store (look.ts `lookStep1`, readMarkets): all but M's and slice 0's, which are G2's. */
 function stepCounts(o: GatesInput, lib: Library) {
   const { days, blocks } = byDayOf(lib.files);
-  const top = new Map<string, number>();
   const sizingCoins = new Set<string>();
   let late = 0;
   for (const f of lib.files) {
     const b = boundOf(f, o.store.manifest.end);
     for (const [hour, n] of f.byHour) if (hour >= b.until) late += n;
-    // A SIZING file's records from TEST's start (a month's first instant) are WAVE-H's late ones.
-    for (const [month, rate] of f.topTaker)
-      if (!b.sizing || month < monthOf(TEST_START))
-        top.set(month, Math.max(top.get(month) ?? -Infinity, rate));
     if (b.sizing)
       for (const [coin, , , first] of f.pairs)
         if (first < TEST_START && o.coins.byName.has(coin))
@@ -427,9 +434,7 @@ function stepCounts(o: GatesInput, lib: Library) {
     early: lib.early,
     legs: Object.fromEntries([...lib.legs].sort()),
     blocks,
-    topTakerBps: Object.fromEntries(
-      [...top].map(([month, r]) => [month, Math.round(r * 1e8) / 1e4]),
-    ),
+    topTakerBps: topTakerOf(lib.files, o.store.manifest.end),
     counted: lib.counted.length,
     sizingCoins: [...sizingCoins].sort(),
     ctxs,

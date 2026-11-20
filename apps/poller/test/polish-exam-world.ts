@@ -21,13 +21,13 @@ import { GATE_NAMES } from "../src/polish/library.js";
 import { blockFillKeys, type Range } from "../src/polish/range.js";
 import { B0 } from "../src/polish/tries/rules.js";
 import { CUTS_FILE } from "../src/polish/tries/steps.js";
-import { ctxsKey, fundingKey } from "../src/waveh/keys.js";
+import { bookKey, ctxsKey, fundingKey } from "../src/waveh/keys.js";
 import { DATA_END } from "../src/waveh/instants.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { manifestList } from "../src/waveh/store.js";
 import { addr, byBlock, trade } from "./polish-world.js";
 import { sha, writeStore } from "./polish-tries-store.js";
-import { CTXS_HEAD, makeStore, scratch } from "./waveh-world.js";
+import { CTXS_HEAD, lz4, makeStore, scratch } from "./waveh-world.js";
 
 /** An instant of July 2026: `at("18T01:00:00")`. */
 export const at = (s: string) => Date.parse(`2026-07-${s}Z`);
@@ -237,6 +237,78 @@ export function analyzerWorld() {
       choice: sha(choice),
     },
     recipe: LOOK_RECIPE,
+    placebo: sha(PLACEBO_TEXT),
   };
   return { analyzer, cutsFile, design };
+}
+
+/** The placebo.json step 2 copies into its report, from EXAM_ROOT. */
+export const PLACEBO_TEXT = `${JSON.stringify({
+  placebo: { l715: "percentiles" },
+  z: { twoLooks: [] },
+})}\n`;
+
+/** A book snapshot line in the archive's shape: bids, then asks, each [px, sz]. */
+const snapshot = (
+  coin: string,
+  time: number,
+  bids: [number, number][],
+  asks: [number, number][],
+) =>
+  JSON.stringify({
+    time: "x",
+    raw: {
+      channel: "l2Book",
+      data: {
+        coin,
+        time,
+        levels: [bids, asks].map((side) =>
+          side.map(([px, sz]) => ({ px: String(px), sz: String(sz), n: 1 })),
+        ),
+      },
+    },
+  });
+
+/**
+ * FRESH's books for step 2, into the raw store with its books.jsonl: SOL's
+ * hour at B's entry, a snapshot 5 s before it (live) whose asks hold $1,000
+ * across two levels; HYPE's at E's entry, 20 s before it (stale); the
+ * hours of B's and E's exits missing from the archive.
+ */
+export function booksWorld(store: string) {
+  const lines: string[] = [];
+  const put = (coin: string, hour: number, text: string) => {
+    const key = bookKey(coin, hour);
+    const bytes = lz4(text);
+    const file = path.join(store, ...key.split("/"));
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, bytes);
+    lines.push(
+      JSON.stringify({ key, bytes: bytes.length, sha256: sha(bytes) }),
+    );
+  };
+  put(
+    "SOL",
+    at("18T01:00:00"),
+    snapshot(
+      "SOL",
+      at("18T01:01:55"),
+      [[149.9, 10]],
+      [
+        [150.1, 3],
+        [150.3, 10],
+      ],
+    ),
+  );
+  put(
+    "HYPE",
+    at("18T08:00:00"),
+    snapshot("HYPE", at("18T08:01:40"), [[39.9, 100]], [[40.1, 100]]),
+  );
+  for (const [coin, hour] of [
+    ["SOL", at("19T01:00:00")],
+    ["HYPE", at("19T08:00:00")],
+  ] as const)
+    lines.push(JSON.stringify({ key: bookKey(coin, hour), missing: true }));
+  writeFileSync(path.join(store, "books.jsonl"), `${lines.join("\n")}\n`);
 }

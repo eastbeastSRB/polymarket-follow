@@ -10,18 +10,29 @@
  * not N's (exit 6). Run in `pnpm verify`'s order: one test runs the build.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { gunzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadResearch, type Research } from "../src/paper/research.js";
-import { SAFETY_NET } from "../src/polish/exam/design.js";
+import { BARS, OPTIONS, SAFETY_NET } from "../src/polish/exam/design.js";
 import {
   BOOKS_NEEDED,
   INTEGRITY,
   LOOK1,
+  POSITIONS,
+  REPORT,
+  RESULT,
   STEP1,
   stepOne,
+  stepTwo,
   type LookInput,
 } from "../src/polish/exam/steps.js";
 import { ExamUnfrozen, GateFailed, exitOf } from "../src/polish/run.js";
@@ -36,8 +47,10 @@ import {
   HOLE,
   LOOK_RANGE,
   LOOK_RECIPE,
+  PLACEBO_TEXT,
   analyzerWorld,
   at,
+  booksWorld,
   rawWorld,
 } from "./polish-exam-world.js";
 import { sha } from "./polish-tries-store.js";
@@ -88,6 +101,7 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     range: LOOK_RANGE,
     seal: OPEN,
     freeze: FREEZE,
+    gate: { open: true },
     known: [],
     workers: 0,
     pace: () => Promise.resolve(),
@@ -360,4 +374,187 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       expect(r.stderr, why).toContain(why);
     }
   }, 60_000);
+
+  it("step 2 refuses until FRESH's books.jsonl answers every book file step 1 listed (exit 5), writing nothing", async () => {
+    writeFileSync(path.join(root, "placebo.json"), PLACEBO_TEXT);
+    const e = await failure(stepTwo(input(root)));
+    expect(e).toBeInstanceOf(BooksNeeded);
+    expect(exitOf(e).code).toBe(5);
+    expect((e as Error).message).toBe(
+      "4 of 4 book files not answered by FRESH's books.jsonl",
+    );
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
+  it("step 2 refuses positions that are not step 1's (exit 5), writing nothing", async () => {
+    booksWorld(w.store);
+    const file = path.join(root, LOOK1, STEP1);
+    const text = readFileSync(file, "utf8");
+    writeFileSync(
+      file,
+      JSON.stringify({
+        ...(JSON.parse(text) as object),
+        positionsSha256: "0".repeat(64),
+      }),
+    );
+    try {
+      const e = await failure(stepTwo(input(root)));
+      expect(e).toBeInstanceOf(StoreError);
+      expect((e as Error).message).toMatch(
+        /^the positions' SHA-256 is [0-9a-f]{64}, step 1's 0{64}$/,
+      );
+    } finally {
+      writeFileSync(file, text);
+    }
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
+  it("step 2 prices N's legs on the deciding days book first and writes result.json before anything about an outcome is logged or written, then the positions and the report", async () => {
+    const files = () =>
+      [RESULT, POSITIONS, REPORT].map((f) =>
+        existsSync(path.join(root, LOOK1, f)),
+      );
+    const events: { event: string; fields: object; files: boolean[] }[] = [];
+    const r = await stepTwo(
+      input(root, {
+        log: (event, fields) => events.push({ event, fields, files: files() }),
+      }),
+    );
+    const at = events.findIndex((e) => e.event === "result");
+    expect(events[at]!.files).toEqual([true, false, false]);
+    for (const e of events.slice(0, at)) {
+      expect(e.files).toEqual([false, false, false]);
+      expect(JSON.stringify(e.fields)).not.toMatch(/verdict|net|WITHHELD/);
+    }
+    expect(events.at(-1)).toMatchObject({
+      event: "done",
+      files: [true, true, true],
+    });
+    const resultBytes = readFileSync(path.join(root, LOOK1, RESULT));
+    expect(sha(resultBytes)).toBe(r.sha);
+    const step1 = read(STEP1);
+    // B priced (its entry at the book, its exit at the tape, depth short), E unpriced (a stale book, no trade), D left out.
+    expect(JSON.parse(resultBytes.toString("utf8"))).toMatchObject({
+      step: "2",
+      identity: {
+        books: sha(readFileSync(path.join(w.store, "books.jsonl"))),
+        step1: sha(readFileSync(path.join(root, LOOK1, STEP1))),
+        exam: FREEZE,
+      },
+      look: 1,
+      looks: 2,
+      deciding: { line: "N", days: 1, coins: 1 },
+      options: OPTIONS,
+      verdict: "WITHHELD",
+      sentence:
+        "Withheld: 100.0% of the deciding positions were left out, unpriced or depth short, above the 10% limit; the data could not answer.",
+      bars: { ...BARS.twoLooks[0], excess: "BASE" },
+      positions: 3,
+      leftOut: 1,
+      unpriced: 1,
+      depthShort: 1,
+      priced: 1,
+      withheldShare: 1,
+      exam: null,
+      positionsSha256: step1.positionsSha256,
+    });
+    const lines = gunzipSync(readFileSync(path.join(root, LOOK1, POSITIONS)))
+      .toString("utf8")
+      .split("\n")
+      .filter((l) => l !== "")
+      .map(
+        (l) =>
+          JSON.parse(l) as {
+            slice: number;
+            in715: boolean;
+            left: string | null;
+            priced: { unpriced: string | null; depthShort: boolean } | null;
+            legs: { source: string; why: string | null }[];
+          },
+      );
+    expect(
+      lines.map((l) => [
+        l.slice,
+        l.in715,
+        l.left,
+        l.priced?.unpriced ?? null,
+        l.priced?.depthShort ?? null,
+        l.legs.map((g) => `${g.source} ${g.why}`),
+      ]),
+    ).toEqual([
+      [3, true, null, null, true, ["book null", "tape no book file"]],
+      [4, false, "a hole in the hour up to t", null, null, []],
+      [
+        7,
+        false,
+        null,
+        "no book and no trade at the entry",
+        false,
+        ["none stale", "none no book file"],
+      ],
+    ]);
+    const report = JSON.parse(
+      readFileSync(path.join(root, LOOK1, REPORT), "utf8"),
+    ) as {
+      deciding: {
+        line: string;
+        walks: {
+          entries: number;
+          notWalked: Record<string, number>;
+          bySize: Record<string, { cost: { mean: number }; short: number }>;
+        };
+      };
+      atTheTape: Record<string, { positions: number }>;
+      placebo: unknown;
+      books: unknown;
+    };
+    expect(report.deciding.line).toBe("N");
+    // B's entry book walked: $1,000 across its two ask levels against the mid of 150; E's book stale.
+    const units = 3 + (1_000 - 3 * 150.1) / 150.3;
+    expect(report.deciding.walks).toMatchObject({
+      entries: 2,
+      notWalked: { stale: 1 },
+    });
+    expect(report.deciding.walks.bySize["$1,000"]!.cost.mean).toBeCloseTo(
+      (1_000 / units / 150 - 1) * 1e4,
+      9,
+    );
+    expect(
+      ["$1,000", "$10,000", "$50,000"].map(
+        (k) => report.deciding.walks.bySize[k]!.short,
+      ),
+    ).toEqual([0, 1, 1]);
+    expect(report.atTheTape["B0, 147 slices"]!.positions).toBe(3);
+    expect(
+      report.atTheTape["the days cut (N, slices 0-19), not independent"]!
+        .positions,
+    ).toBe(1);
+    expect(report.placebo).toEqual({
+      sha256: a.design.placebo,
+      ...(JSON.parse(PLACEBO_TEXT) as object),
+    });
+    expect(report.books).toEqual({
+      needed: 4,
+      missing: 2,
+      read: 2,
+      lines: 2,
+      failed: 0,
+    });
+  });
+
+  it("refuses a second step 2 (exit 5, already run); H15's recovery, result.json moved aside, gives the same result", async () => {
+    const e = await failure(stepTwo(input(root)));
+    expect(e).toBeInstanceOf(AlreadyRun);
+    expect(exitOf(e)).toEqual({ code: 5, event: "already run" });
+    const file = path.join(root, LOOK1, RESULT);
+    const first = path.join(root, LOOK1, "result.first.json");
+    renameSync(file, first);
+    await stepTwo(input(root));
+    const kept = (f: string) => {
+      const v = JSON.parse(readFileSync(f, "utf8")) as Record<string, unknown>;
+      delete v.written;
+      return v;
+    };
+    expect(kept(file)).toEqual(kept(first));
+  });
 });

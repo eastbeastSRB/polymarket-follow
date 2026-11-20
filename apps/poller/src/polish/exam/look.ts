@@ -27,8 +27,9 @@ import { inExam, leftOutOf, whereOf } from "./fresh.js";
 export const LINES = ["715", "N", "1391", "B0"] as const;
 export type LineName = (typeof LINES)[number];
 
-/** A position of a line on FRESH: WAVE-H's spot, where it stands (D4, option B), and why it is left out (D30), null when it is not. */
+/** A position of a line on FRESH: WAVE-H's spot, its entry fill's `tid`, where it stands (D4, option B), and why it is left out (D30), null when it is not. */
 export type LookPosition = Spot & {
+  tid: string;
   where: ReturnType<typeof whereOf>;
   left: string | null;
 };
@@ -69,6 +70,7 @@ export function linesOf(
         xOut: s.xOut,
         method: e.fill.method,
         accounts: e.accounts,
+        tid: e.fill.tid,
         where: whereOf(at, OPTIONS.noBookDays === "cut"),
         left: leftOutOf(holes, at),
       };

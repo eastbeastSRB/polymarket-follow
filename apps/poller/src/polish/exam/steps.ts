@@ -16,10 +16,10 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { gunzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { z } from "zod";
 import type { Research } from "../../paper/research.js";
-import type { Coins } from "../../waveh/coins.js";
+import { coinName, type Coins } from "../../waveh/coins.js";
 import { sha256, type Gate } from "../../waveh/gate.js";
 import { BooksNeeded, booksOf } from "../../waveh/legs.js";
 import { markAt } from "../../waveh/report.js";
@@ -33,26 +33,49 @@ import {
 import { countedFrom } from "../counted.js";
 import { trustedStore } from "../explore.js";
 import { STORE, extract } from "../extract.js";
-import type { KnownUnpaired } from "../gates.js";
+import { topTakerOf, type KnownUnpaired } from "../gates.js";
 import { Tape, marketsFrom } from "../legs.js";
 import { GATES, GATES_FILE, positionsOf } from "../library.js";
 import { WAVEH_RANGE, type Range } from "../range.js";
 import { ExamUnfrozen, GateFailed } from "../run.js";
 import { SEALED, type Seal } from "../seal.js";
 import { openStore, type Store } from "../store.js";
-import { Line } from "../tries/beside.js";
+import { Line, ownOf } from "../tries/beside.js";
 import { dataFrom } from "../tries/data.js";
 import { readGzLines } from "../tries/gzlines.js";
 import { C, E } from "../tries/parts.js";
 import type { Rule } from "../tries/rules.js";
 import { ChoiceFile, meter } from "../tries/steps.js";
+import { priceAll } from "../tries/sweep.js";
 import { CutsFile } from "../tries/trylog.js";
 import { fortyOf } from "../writers.js";
-import { K, M, PLACEBO, PLACEBO_JSON, type ExamDesign } from "./design.js";
+import {
+  BARS,
+  K,
+  M,
+  OPTIONS,
+  PLACEBO,
+  SEGMENTS,
+  type ExamDesign,
+} from "./design.js";
 import { holesOf, integrityOf, safetyNet } from "./fresh.js";
-import { LINES, countsOf, linesOf, onDeciding } from "./look.js";
+import {
+  decidingPrints,
+  lineOf,
+  statLine,
+  tapeLine,
+  walksOf,
+} from "./lines.js";
+import {
+  LINES,
+  countsOf,
+  linesOf,
+  onDeciding,
+  type LineName,
+  type LookPosition,
+} from "./look.js";
 import { placeboPrint } from "./placebo.js";
-import { bookReader, priceAtTheBook } from "./price.js";
+import { baseCell, baseOver, bookReader, priceAtTheBook } from "./price.js";
 import {
   N_FIELDS,
   differs,
@@ -61,8 +84,9 @@ import {
   matchPlacebo,
   partOf,
 } from "./repro.js";
+import { examVerdict, verdictOf, type Decided } from "./verdict.js";
 
-export const EXAM_STEPS = ["placebo", "reproduce", "1"] as const;
+export const EXAM_STEPS = ["placebo", "reproduce", "1", "2"] as const;
 export type ExamStep = (typeof EXAM_STEPS)[number];
 
 /** A file of ours, as the steps write each: indented JSON and a newline. */
@@ -334,7 +358,7 @@ export async function reproduceStep(o: ReproInput) {
     JSON.parse(
       heldFile(
         path.join(o.root, "placebo.json"),
-        PLACEBO_JSON,
+        o.design.placebo,
         "placebo.json in EXAM_ROOT",
       ).toString("utf8"),
     ),
@@ -435,7 +459,7 @@ export async function reproduceStep(o: ReproInput) {
     identity,
     inputs: {
       ...o.design.explored,
-      placebo: PLACEBO_JSON,
+      placebo: o.design.placebo,
       books: refs.books,
       lookPositions: refs.positions,
       list: o.listSha256,
@@ -456,7 +480,7 @@ export async function reproduceStep(o: ReproInput) {
   return { sha: sha256(text), out: value };
 }
 
-/** What the look's steps read beside the exam's inputs (THE PLAN D47, D50): FRESH's raw store and its list (`polish/fresh.sha256`), its range, the seal the exam's freeze opens and that freeze, the one-sided trades ruled (`polish/fresh-unpaired.json`), the extraction's workers and pace. */
+/** What the look's steps read beside the exam's inputs (THE PLAN D47, D50): FRESH's raw store and its list (`polish/fresh.sha256`), its range, the seal the exam's freeze opens and that freeze, WAVE-H's gate (its book code's), the one-sided trades ruled (`polish/fresh-unpaired.json`), the extraction's workers and pace. */
 export type LookInput = ExamInput & {
   fresh: string;
   list: DataList;
@@ -464,16 +488,20 @@ export type LookInput = ExamInput & {
   range: Range;
   seal: Seal;
   freeze: { sha256: string; tag: string };
+  gate: Gate;
   known: KnownUnpaired;
   workers: number;
   pace: () => Promise<void>;
 };
 
-/** Look 1's folder in the exam's, and step 1's files in it. */
+/** Look 1's folder in the exam's, and the files its steps write there. */
 export const LOOK1 = "look1";
 export const STEP1 = "step1.json";
 export const BOOKS_NEEDED = "books-needed.txt";
 export const INTEGRITY = "integrity.json";
+export const RESULT = "result.json";
+export const POSITIONS = "positions.jsonl.gz";
+export const REPORT = "report.json";
 
 /** What the look reads of repro.json (our own file: one that does not parse throws). */
 const ReproFile = z.object({
@@ -668,6 +696,291 @@ export async function stepOne(o: LookInput): Promise<never> {
   );
 }
 
+/** What step 2 reads of step1.json (our own file: one that does not parse throws). */
+const Step1File = z.object({
+  identity: z.object({ freshStore: z.string() }),
+  deciding: z.object({
+    line: z.enum(["715", "N"]),
+    why: z.string().nullable(),
+    days: z.number(),
+    coins: z.number(),
+  }),
+  positionsSha256: z.string().regex(SHA256),
+});
+/** What the report copies of placebo.json: every line's percentiles by flip and window, and the bars. */
+const PlaceboFile = z.object({ placebo: z.unknown(), z: z.unknown() });
+
+/**
+ * `exam --step 2` (THE PLAN D47; D19–D28, D31, D36–D46, D52; T11, T12):
+ * the look's gate; a second step 2 refused (already run); every book file
+ * step 1 listed answered by FRESH's `books.jsonl` (a file or missing) before
+ * any store file is read, else books needed (exit 5); FRESH's store step
+ * 1's, and the lines recomputed and held to step 1's SHA-256 (exit 5
+ * otherwise). Then N's positions on the deciding days, not left out,
+ * priced book first (the deciding line's among them; T11), BASE pooled
+ * over the segments; the deciding line step 1 named (the safety net, read
+ * once, T12), its left-out positions in the set; the verdict at look 1's
+ * bars and the owner's options. Everything is computed first (a crash
+ * there is no look); then `result.json`, written whole before anything
+ * about an outcome is logged or written, then `positions.jsonl.gz` and
+ * `report.json` (H15: a failure between the writes is recovered by moving
+ * result.json aside, by H0's route, and one more step 2, which must give
+ * the same result).
+ */
+export async function stepTwo(o: LookInput) {
+  const m = meter(o.log);
+  const repro = lookGate(o);
+  const dir = path.join(o.root, LOOK1);
+  if (existsSync(path.join(dir, RESULT)))
+    throw new AlreadyRun(`${LOOK1}\\${RESULT} exists`);
+  if (!existsSync(path.join(dir, STEP1)))
+    throw new StoreError(`no ${LOOK1}\\${STEP1}: step 1 runs first`);
+  const step1Bytes = readFileSync(path.join(dir, STEP1));
+  const step1 = Step1File.parse(JSON.parse(step1Bytes.toString("utf8")));
+  const needed = readFileSync(path.join(dir, BOOKS_NEEDED), "utf8")
+    .split("\n")
+    .filter((k) => k !== "");
+  const bookText = path.join(o.fresh, "books.jsonl");
+  const bookBytes = existsSync(bookText) ? readFileSync(bookText) : null;
+  const books =
+    bookBytes === null
+      ? { files: new Map<string, string>(), missing: new Set<string>() }
+      : readBookList(bookBytes.toString("utf8"));
+  const lacking = needed.filter(
+    (k) => !books.files.has(k) && !books.missing.has(k),
+  );
+  if (lacking.length > 0)
+    throw new BooksNeeded(
+      `${lacking.length} of ${needed.length} book files not answered by FRESH's books.jsonl`,
+    );
+  const { identity } = identityOf(o);
+  const rc = ruleAndCuts(o);
+  const placebo = PlaceboFile.parse(
+    JSON.parse(
+      heldFile(
+        path.join(o.root, "placebo.json"),
+        o.design.placebo,
+        "placebo.json in EXAM_ROOT",
+      ).toString("utf8"),
+    ),
+  );
+  const store = openStore(path.join(o.root, STORE), o.seal);
+  if (store.id !== step1.identity.freshStore)
+    throw new StoreError(
+      `FRESH's store's manifest is ${store.id}, step 1's ${step1.identity.freshStore}`,
+    );
+  const look = lookOf(o, store, rc);
+  if (look.positionsSha256 !== step1.positionsSha256)
+    throw new StoreError(
+      `the positions' SHA-256 is ${look.positionsSha256}, step 1's ${step1.positionsSha256}`,
+    );
+  m.phase("positions");
+  const { d, lines } = look;
+  const key = (p: LookPosition) => `${p.slice} ${p.t} ${p.iid}`;
+  const bases = new Map<number, number[]>();
+  const baseAt = (p: LookPosition) => {
+    let b = bases.get(p.iid);
+    if (b === undefined) {
+      b = baseOver(
+        d.pc.get(coinName(o.coins, p.iid))!,
+        d.start,
+        SEGMENTS,
+        1_440,
+      );
+      bases.set(p.iid, b);
+    }
+    return baseCell(b, p.xIn);
+  };
+  const reader = bookReader(o.fresh, o.gate, books, o.seal, o.pace);
+  const tape = new Tape(store);
+  const toPrice = lines.N.filter((p) => onDeciding(p) && p.left === null);
+  const prices = await priceAtTheBook(
+    d,
+    reader.find,
+    (coin, buy, x) => tape.at(coin, buy, x),
+    toPrice.map((p) => ({
+      iid: p.iid,
+      dir: p.dir,
+      xIn: p.xIn,
+      xOut: p.xOut,
+      base: baseAt(p),
+    })),
+  );
+  const priced = new Map(toPrice.map((p, i) => [key(p), prices[i]!]));
+  m.phase("book");
+  const bookOf = (p: LookPosition) => priced.get(key(p))!.priced;
+  const decided = (p: LookPosition): Decided => {
+    if (p.left !== null)
+      return {
+        t: p.t,
+        iid: p.iid,
+        leftOut: true,
+        net: null,
+        depthShort: false,
+        bookBoth: false,
+        excess: null,
+      };
+    const pr = bookOf(p);
+    return {
+      t: p.t,
+      iid: p.iid,
+      leftOut: false,
+      net: pr.net,
+      depthShort: pr.depthShort,
+      bookBoth: pr.legs[0]?.source === "book" && pr.legs[1]?.source === "book",
+      excess:
+        OPTIONS.excess === "BASE"
+          ? pr.excess
+          : pr.grossOnMarks === null
+            ? null
+            : ownOf(d, p, pr.grossOnMarks),
+    };
+  };
+  const deciding = lines[step1.deciding.line].filter(onDeciding);
+  const bars = BARS[OPTIONS.looks];
+  const verdict = verdictOf(o.kit, deciding.map(decided), {
+    ...bars[0],
+    excess: OPTIONS.excess,
+  });
+  // The report, computed before result.json is written: the lines beside, every exam position not left out at the tape in one sweep.
+  const atBook = (n: LineName) =>
+    lines[n].filter((p) => onDeciding(p) && p.left === null);
+  const bookLine = (ps: readonly LookPosition[]) =>
+    statLine(
+      o.kit,
+      ps.flatMap((p) => {
+        const net = bookOf(p).net;
+        return net === null ? [] : [{ t: p.t, iid: p.iid, x: net }];
+      }),
+    );
+  const rows = atBook(step1.deciding.line).map((p) => {
+    const pr = bookOf(p);
+    return {
+      line: lineOf(p, step1.deciding.line, {
+        net: pr.net,
+        unpriced: pr.unpriced,
+        onMarks: pr.grossOnMarks,
+      }),
+      bookBoth: pr.legs[0]?.source === "book" && pr.legs[1]?.source === "book",
+      short: pr.depthShort,
+      where: p.where,
+    };
+  });
+  const walks = await walksOf(d, atBook(step1.deciding.line), reader.find);
+  m.phase("walks");
+  const sweep = lines.B0.filter((p) => p.left === null);
+  const nets = await priceAll(
+    d,
+    sweep.map((p) => ({ iid: p.iid, dir: p.dir, xIn: p.xIn, xOut: p.xOut })),
+    o.pace,
+  );
+  const atTape = new Map(sweep.map((p, i) => [key(p), nets[i]!]));
+  const tapeOf = (ps: readonly LookPosition[]) =>
+    tapeLine(
+      o.kit,
+      ps.filter((p) => p.left === null),
+      atTape,
+      key,
+    );
+  const onDays = (p: LookPosition) =>
+    p.where === "segment 1" || p.where === "segment 2";
+  m.phase("tape");
+  const topTakerBps = topTakerOf(look.files, store.manifest.end);
+  const read = [...reader.read.values()];
+  const report = {
+    print:
+      "beside the verdict, deciding nothing (polish/rules.md P13): the deciding line's prints; the W4 lines on the deciding days, book first; every line at the tape; the discovery window and the days cut, not independent",
+    identity,
+    deciding: {
+      line: step1.deciding.line,
+      ...decidingPrints(d, rows),
+      walks,
+    },
+    sliceZero: bookLine(
+      atBook(step1.deciding.line).filter((p) => p.slice === 0),
+    ),
+    bookFirst: Object.fromEntries(
+      (["715", "N", "1391"] as const).map((n) => [n, bookLine(atBook(n))]),
+    ),
+    atTheTape: {
+      "the deciding line": tapeOf(
+        lines[step1.deciding.line].filter(onDeciding),
+      ),
+      ...Object.fromEntries(
+        (["715", "N", "1391", "B0"] as const).map((n) => [
+          `${n}, 147 slices`,
+          tapeOf(lines[n].filter(onDays)),
+        ]),
+      ),
+      "B0, slices 0-19": tapeOf(lines.B0.filter(onDeciding)),
+      "the discovery window (N, slices 0-19), not independent": tapeOf(
+        lines.N.filter((p) => p.slice < K && p.where === "discovery"),
+      ),
+      "the days cut (N, slices 0-19), not independent": tapeOf(
+        lines.N.filter(
+          (p) => p.slice < K && p.where === "cut: a day without books",
+        ),
+      ),
+    },
+    placebo: { sha256: o.design.placebo, ...placebo },
+    baseTier: {
+      topTakerBps,
+      alarms: Object.entries(topTakerBps)
+        .filter(([, bps]) => bps > 4.5)
+        .map(([month, bps]) => `ALARM ${month}: a taker paid ${bps} bps`),
+    },
+    books: {
+      needed: needed.length,
+      missing: needed.filter((k) => books.missing.has(k)).length,
+      read: read.length,
+      lines: read.reduce((s, f) => s + f.lines, 0),
+      failed: read.reduce((s, f) => s + f.failed, 0),
+    },
+  };
+  const in715 = new Set(lines["715"].map(key));
+  const in1391 = new Set(lines["1391"].map(key));
+  const positions = gzipSync(
+    `${lines.N.filter(onDeciding)
+      .map((p) =>
+        JSON.stringify({
+          in715: in715.has(key(p)),
+          in1391: in1391.has(key(p)),
+          ...p,
+          ...(priced.get(key(p)) ?? { priced: null, legs: [] }),
+        }),
+      )
+      .join("\n")}\n`,
+  );
+  const reportText = json({ ...report, ...m.done() });
+  // R7: the result exists before anything about an outcome is written or logged.
+  const resultText = json({
+    step: "2",
+    identity: {
+      ...identity,
+      exam: o.freeze,
+      freshList: o.listSha256,
+      freshStore: store.id,
+      books: bookBytes === null ? null : sha256(bookBytes),
+      step1: sha256(step1Bytes),
+      repro,
+    },
+    look: 1,
+    looks: bars.length,
+    deciding: step1.deciding,
+    options: OPTIONS,
+    ...verdict,
+    exam: examVerdict([verdict.verdict], bars.length),
+    positionsSha256: look.positionsSha256,
+    written: new Date().toISOString(),
+  });
+  writeWhole(path.join(dir, RESULT), resultText);
+  o.log("result", { verdict: verdict.verdict });
+  writeWhole(path.join(dir, POSITIONS), positions);
+  writeWhole(path.join(dir, REPORT), reportText);
+  o.log("done", { verdict: verdict.verdict });
+  return { sha: sha256(resultText), out: verdict };
+}
+
 /** Runs one exam step by its name; the reproduction and the look with their own settings. */
 export function runExamStep(
   step: ExamStep,
@@ -685,8 +998,9 @@ export function runExamStep(
         throw new GateFailed("the reproduction needs its own settings");
       return reproduceStep({ ...o, ...more.repro });
     case "1":
+    case "2":
       if (more.look === null)
         throw new GateFailed("the look needs its own settings");
-      return stepOne({ ...o, ...more.look });
+      return (step === "1" ? stepOne : stepTwo)({ ...o, ...more.look });
   }
 }

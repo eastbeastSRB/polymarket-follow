@@ -158,9 +158,12 @@ export type ExamDesign = {
   explored: { [k in keyof typeof EXPLORED]: string };
   recipe: Recipe;
   draws: number;
+  /** placebo.json in EXAM_ROOT, by SHA-256: the reproduction's line and the report's percentiles. */
+  placebo: string;
 };
 export const EXAM_DESIGN: ExamDesign = {
   explored: EXPLORED,
   recipe: RECIPE,
   draws: PLACEBO.draws,
+  placebo: PLACEBO_JSON,
 };

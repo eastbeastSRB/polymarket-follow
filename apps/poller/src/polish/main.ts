@@ -123,7 +123,10 @@ if (exam !== null && !exam.success) refuse(issues(exam.error));
 const repro =
   examStep === "reproduce" ? ReproSettings.safeParse(process.env) : null;
 if (repro !== null && !repro.success) refuse(issues(repro.error));
-const fresh = examStep === "1" ? FreshSettings.safeParse(process.env) : null;
+const fresh =
+  examStep === "1" || examStep === "2"
+    ? FreshSettings.safeParse(process.env)
+    : null;
 if (fresh !== null && !fresh.success) refuse(issues(fresh.error));
 const parsed =
   command === "exam" ? null : ExtractSettings.safeParse(process.env);
@@ -266,6 +269,7 @@ try {
                 range: FRESH_RANGE,
                 seal,
                 freeze: { sha256: examFreeze.sha256, tag: examFreeze.tag },
+                gate: gateOf(freeze),
                 workers,
                 pace,
               },
