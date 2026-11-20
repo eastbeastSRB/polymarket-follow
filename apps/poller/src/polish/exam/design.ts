@@ -45,6 +45,25 @@ export const SEGMENTS = [
   },
   { from: Date.parse("2026-11-07T00:00:00Z"), to: FRESH_END },
 ] as const;
+/**
+ * F7's whole UTC days without books, by the archive's listing of 2026-11-13
+ * (the metadata), fixed at the freeze: under option B a deciding position
+ * with a leg on one is cut from the deciding days and printed apart, in
+ * step 1 (the safety net's count) and step 2 alike; a day the book fetch
+ * later finds without books is not cut, its legs going to the tape
+ * (decisions 2026-11-19, "the exam's placebo and WITHHELD projection ran",
+ * Q1).
+ */
+export const NO_BOOK_DAYS = [
+  "2026-07-08",
+  "2026-07-12",
+  "2026-07-13",
+  "2026-07-14",
+  "2026-07-15",
+  "2026-07-16",
+  "2026-07-17",
+] as const;
+
 /** MARKET-FIND's discovery window, printed apart, "not independent". */
 export const DISCOVERY = {
   from: Date.parse("2026-08-31T00:00:00Z"),

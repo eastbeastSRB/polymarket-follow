@@ -122,16 +122,22 @@ export function entriesAt(d: Data, M: number) {
   return { slices, all: entriesOf(slices) };
 }
 
-/** Places a rule on a part: its entries in the part, those its filters keep (the E cuts), its exits. */
+/**
+ * Places a rule on a part: its entries in the part, those its filters keep
+ * (the E cuts), its exits. The part is E or C (`inPart`), or any test of
+ * the entry's instant (the exam's FRESH: polish/rules.md P1, THE PLAN D15).
+ */
 export function place(
   d: Data,
   rule: Rule,
-  part: Part,
+  part: Part | ((t: number) => boolean),
   M: number,
   cuts: CutsFile["cuts"],
 ): Placed {
   const { slices, all } = entriesAt(d, rule.M2 ? 2 * M : M);
-  const entries = all.filter((e) => inPart(part, e.fill.t));
+  const enters =
+    typeof part === "function" ? part : (t: number) => inPart(part, t);
+  const entries = all.filter((e) => enters(e.fill.t));
   const left: Record<string, number> = {};
   const count = (why: string) => (left[why] = (left[why] ?? 0) + 1);
   let kept = entries;
