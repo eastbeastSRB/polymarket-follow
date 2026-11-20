@@ -22,7 +22,13 @@ import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadResearch, type Research } from "../src/paper/research.js";
-import { BARS, OPTIONS, SAFETY_NET } from "../src/polish/exam/design.js";
+import {
+  BARS,
+  NO_BOOK_DAYS,
+  OPTIONS,
+  SAFETY_NET,
+  THIN_CTXS_DAYS,
+} from "../src/polish/exam/design.js";
 import {
   BOOKS_NEEDED,
   INTEGRITY,
@@ -231,17 +237,15 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       "2026-07-19": [0, 1440],
     });
     const f7 = c.f7 as Record<string, { why: string[] }>;
-    expect(Object.keys(f7)).toEqual([
-      "2026-07-08",
-      "2026-07-12",
-      "2026-07-13",
-      "2026-07-14",
-      "2026-07-15",
-      "2026-07-16",
-      "2026-07-17",
-      "2026-07-18",
-      "2026-07-19",
-    ]);
+    // The design's days without books and thin days, and this world's two days without a usable asset_ctxs file.
+    expect(Object.keys(f7)).toEqual(
+      [...NO_BOOK_DAYS, ...THIN_CTXS_DAYS, "2026-07-18", "2026-07-19"].sort(),
+    );
+    expect(f7[THIN_CTXS_DAYS[0]!]).toEqual({
+      why: ["a thin asset_ctxs file (under half WAVE-H's median bytes)"],
+      "715": { positions: 0, share: 0 },
+      N: { positions: 0, share: 0 },
+    });
     expect(f7["2026-07-08"]).toEqual({
       why: ["no books (the archive's listing of 2026-11-13)"],
       "715": { positions: 0, share: 0 },

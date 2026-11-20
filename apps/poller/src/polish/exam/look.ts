@@ -20,7 +20,14 @@ import { priceColumn } from "../tries/prices.js";
 import { B0, place, type Rule } from "../tries/rules.js";
 import { fundingBetween, settlementsOf } from "../tries/sweep.js";
 import type { CutsFile } from "../tries/trylog.js";
-import { K, M, NO_BOOK_DAYS, OPTIONS, type Recipe } from "./design.js";
+import {
+  K,
+  M,
+  NO_BOOK_DAYS,
+  OPTIONS,
+  THIN_CTXS_DAYS,
+  type Recipe,
+} from "./design.js";
 import { inExam, leftOutOf, whereOf } from "./fresh.js";
 
 /** The exam's lines (rules.md P4, P13): the recipe's 715, N's 336, the 1,391 cut beside, and B0. */
@@ -91,8 +98,9 @@ export const onDeciding = (p: LookPosition): boolean =>
 
 /**
  * F7's days (rules.md P2, D12), each with why: the range's grid days
- * without an `asset_ctxs` file, the days read as absent (D11), and the
- * archive's days without books (NO_BOOK_DAYS).
+ * without an `asset_ctxs` file, the days read as absent (D11), the thin
+ * days (THIN_CTXS_DAYS), and the archive's days without books
+ * (NO_BOOK_DAYS).
  */
 export function f7Of(range: Range, m: Manifest): Map<string, string[]> {
   const out = new Map<string, string[]>();
@@ -103,6 +111,8 @@ export function f7Of(range: Range, m: Manifest): Map<string, string[]> {
     if (!days.has(isoDay(t))) add(isoDay(t), "no asset_ctxs file");
   for (const [day, why] of Object.entries(m.counts.ctxsAbsent ?? {}))
     add(day, `asset_ctxs read as absent: ${why}`);
+  for (const day of THIN_CTXS_DAYS)
+    add(day, "a thin asset_ctxs file (under half WAVE-H's median bytes)");
   for (const day of NO_BOOK_DAYS)
     add(day, "no books (the archive's listing of 2026-11-13)");
   return new Map([...out].sort(([a], [b]) => (a < b ? -1 : 1)));
