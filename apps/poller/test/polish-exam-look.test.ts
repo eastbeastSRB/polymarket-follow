@@ -229,6 +229,15 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       "1391": 0,
       B0: 1,
     });
+    // On the deciding days (slices 0-19 in a segment, after option B's cut): N's B, D and E; the 715 line's B; the 1,391 cut's C is slice 40.
+    expect(s.counts.onDeciding).toEqual({ "715": 1, N: 3, "1391": 0, B0: 3 });
+    // P15's 5% tripwire on the deciding line, N: D left out and E's funding without a price, of its 3.
+    expect(s.counts.tripwire).toEqual({
+      of: 3,
+      leftOut: 1,
+      fundingWithoutPrice: 1,
+      share: 2 / 3,
+    });
   });
 
   it("counts the files, the holes, the days of asset_ctxs, the minutes by the trade fallback and without a price, and F7's days with their shares", () => {

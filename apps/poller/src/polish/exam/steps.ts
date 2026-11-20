@@ -704,6 +704,7 @@ export async function stepOne(o: LookInput): Promise<never> {
     files: look.files,
     holes: look.holes,
     lines: look.lines,
+    deciding: net.deciding,
     range: o.range,
     coins: o.coins,
     forty,

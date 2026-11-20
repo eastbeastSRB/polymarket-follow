@@ -45,6 +45,7 @@ import {
   zTable,
   type ByFlip,
 } from "../src/polish/exam/placebo.js";
+import { verifyExamFreeze } from "../src/polish/exam/gate.js";
 import { placeboStep, type ExamInput } from "../src/polish/exam/steps.js";
 import { GATE_NAMES } from "../src/polish/library.js";
 import { GateFailed } from "../src/polish/run.js";
@@ -768,7 +769,23 @@ describe("the built program's exam command", () => {
       timeout: 60_000,
     });
 
-  it("refuses a missing or unknown step and bad settings (exit 2), a sealed root (exit 5), a store not trusted (exit 5)", () => {
+  // The seal is open only on a verified, tagged freeze: the test asks the gate as the program does, so it passes before and after the freeze.
+  const sealOpen = verifyExamFreeze(PACKAGE_ROOT).ok;
+
+  it.runIf(!sealOpen)(
+    "refuses, while the exam is not frozen, a root inside the analyzer's FRESH folder (exit 5)",
+    () => {
+      const sealed = runIt(["exam", "--step", "placebo"], {
+        ANALYZER_ROOT: tmp("exam-analyzer"),
+        EXAM_ROOT: path.join(tmp("exam-at"), "ANALYZER", "FRESH"),
+      });
+      expect(sealed.status).toBe(5);
+      expect(sealed.stderr).toContain("FRESH is sealed");
+    },
+    60_000,
+  );
+
+  it("refuses a missing or unknown step and bad settings (exit 2), a store not trusted (exit 5), logging whether the seal is open", () => {
     const analyzer = tmp("exam-analyzer");
     const ok = { ANALYZER_ROOT: analyzer, EXAM_ROOT: tmp("exam-root") };
     for (const [args, env, why] of [
@@ -791,12 +808,6 @@ describe("the built program's exam command", () => {
       expect(r.status, why).toBe(2);
       expect(r.stderr, why).toContain(why);
     }
-    const sealed = runIt(["exam", "--step", "placebo"], {
-      ...ok,
-      EXAM_ROOT: path.join(tmp("exam-at"), "ANALYZER", "FRESH"),
-    });
-    expect(sealed.status).toBe(5);
-    expect(sealed.stderr).toContain("FRESH is sealed");
     const untrusted = runIt(["exam", "--step", "placebo"], ok);
     expect(untrusted.status).toBe(5);
     const log = readFileSync(
@@ -808,7 +819,7 @@ describe("the built program's exam command", () => {
       "utf8",
     );
     expect(log).toContain("start exam");
-    expect(log).toContain('"examSealOpen":false');
+    expect(log).toContain(`"examSealOpen":${sealOpen}`);
     expect(log).toContain("dist/schedule.js");
   }, 60_000);
 });

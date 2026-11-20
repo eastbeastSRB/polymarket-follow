@@ -136,10 +136,12 @@ export const touches = (p: { xIn: number; xOut: number }, day: string) => {
  * the small coins by day and the days read as absent; the minutes priced by
  * the trade fallback, and those without a price, by coin and day; the
  * funding rows by coin and window; each line's positions by where they
- * stand; on the deciding days, the left out by reason and the positions not
- * left out whose funding has a settlement without a minute price; F7's days,
- * each with the share of the 715 line's and N's positions on the deciding
- * days, before option B's cut, that it touches.
+ * stand; on the deciding days, each line's positions, the left out by
+ * reason and the positions not left out whose funding has a settlement
+ * without a minute price; for the deciding line, P15's 5% tripwire: those
+ * two counts over its positions on the deciding days, their share (null
+ * with none); F7's days, each with the share of the 715 line's and N's
+ * positions on the deciding days, before option B's cut, that it touches.
  */
 export function countsOf(o: {
   d: Data;
@@ -147,6 +149,8 @@ export function countsOf(o: {
   files: readonly FileCounts[];
   holes: readonly [number, number][];
   lines: Record<LineName, LookPosition[]>;
+  /** The line the safety net named, whose share P15's tripwire reads. */
+  deciding: "715" | "N";
   range: Range;
   coins: Coins;
   forty: readonly string[];
@@ -179,6 +183,20 @@ export function countsOf(o: {
   };
   const byLine = <T>(f: (n: LineName) => T) =>
     Object.fromEntries(LINES.map((n) => [n, f(n)]));
+  const onDays = (n: LineName) => lines[n].filter(onDeciding);
+  const fundingWithoutPrice = (n: LineName) =>
+    onDays(n).filter((p) => p.left === null && unpricedFunding(p)).length;
+  const tripwire = (n: LineName) => {
+    const of = onDays(n).length;
+    const leftOut = onDays(n).filter((p) => p.left !== null).length;
+    const unpriced = fundingWithoutPrice(n);
+    return {
+      of,
+      leftOut,
+      fundingWithoutPrice: unpriced,
+      share: of === 0 ? null : (leftOut + unpriced) / of,
+    };
+  };
   const beforeTheCut = (n: LineName) =>
     lines[n].filter((p) => p.slice < K && p.where !== "discovery");
   const sharesOf = (day: string) =>
@@ -205,13 +223,10 @@ export function countsOf(o: {
     prices: { columns: ["by the trade fallback", "no price"], byCoin: prices },
     funding: o.m.counts.funding,
     positions: byLine((n) => tally(lines[n], (p) => p.where)),
-    left: byLine((n) => tally(lines[n].filter(onDeciding), (p) => p.left)),
-    fundingWithoutPrice: byLine(
-      (n) =>
-        lines[n].filter(
-          (p) => onDeciding(p) && p.left === null && unpricedFunding(p),
-        ).length,
-    ),
+    onDeciding: byLine((n) => onDays(n).length),
+    left: byLine((n) => tally(onDays(n), (p) => p.left)),
+    fundingWithoutPrice: byLine(fundingWithoutPrice),
+    tripwire: tripwire(o.deciding),
     f7: Object.fromEntries(
       [...f7Of(o.range, o.m)].map(([day, why]) => [
         day,
