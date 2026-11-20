@@ -2,7 +2,7 @@
  * The exam's rules hold the design's numbers (polish/rules.md P17;
  * src/polish/exam/design.ts): the table at rules.md's end, row by row,
  * equal to the code's constants, no row missing or extra; the bars in P10's
- * prose; the headings P0 to P17 in order; each open option marked.
+ * prose; the headings P0 to P17 in order; each option filled by the owner.
  */
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -97,7 +97,7 @@ describe("the exam's rules (polish/rules.md)", () => {
     expect(named).toHaveLength(9);
   });
 
-  it("prints each bar in P10 (three decimals, a floor as it is), the headings P0 to P17 in order, and every open option marked", () => {
+  it("prints each bar in P10 (three decimals, a floor as it is), the headings P0 to P17 in order, and every option filled", () => {
     for (const b of BARS)
       for (const [name, v] of [
         ["z", b.z],
@@ -111,8 +111,20 @@ describe("the exam's rules (polish/rules.md)", () => {
     expect([...RULES.matchAll(/^## (P\d+)\. /gm)].map((m) => m[1])).toEqual(
       Array.from({ length: 18 }, (_, i) => `P${i}`),
     );
-    for (const option of ["[OPTION A", "[OPTION D, Q4]", "[OPTION E]"])
-      expect(RULES).toContain(option);
+    // The owner filled every option (decisions 2026-11-19 `710338f`,
+    // 2026-11-20 `04b6b13`), and no marker stands unfilled.
+    for (const option of ["A", "D, Q4", "E"])
+      expect(RULES).toContain(
+        `[OPTION ${option}, filled by the owner, decisions `,
+      );
+    const markers = [...RULES.matchAll(/\[OPTION [A-Z][^\]]*\]/g)].map(
+      (m) => m[0],
+    );
+    expect(markers.length).toBeGreaterThan(0);
+    for (const marker of markers)
+      expect(marker).toMatch(
+        /^\[OPTION [A-Z](, Q\d+)?, filled by the owner, decisions /,
+      );
     // The looks are two: no option of the looks (decisions 2026-11-20 `5f01f05`).
     expect(RULES).not.toContain("[OPTION C]");
     expect(RULES).not.toMatch(/one later look\*\*|\| one later look \|/);

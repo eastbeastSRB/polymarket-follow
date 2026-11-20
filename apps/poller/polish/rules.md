@@ -1,9 +1,10 @@
 # The exam's rules (polish/rules.md)
 
 The polishing's last step: one exam, on FRESH's months, of the rule the
-exploration chose on WAVE-H's ten months. Written before the freeze, final
-but for the owner's marked options (`[OPTION …]`), which are filled in at the
-owner's talk; then fresh reviews, the freeze (P0), and look 1. The plan:
+exploration chose on WAVE-H's ten months. Written before the freeze, final:
+the owner's marked options (`[OPTION …]`) are all filled (decisions
+2026-11-19 `710338f`, 2026-11-20 `04b6b13`); then fresh reviews, the freeze
+(P0), and look 1. The plan:
 `docs/reviews/wave-polish-plan-2026-11-17.md`, sections 3 and 4, with its
 review; the decisions it rests on, newest first: 2026-11-19 "the exam's
 placebo and WITHHELD projection ran" (`e217fa9`), the owner's "the 715 cut
@@ -314,12 +315,16 @@ FRESH's store (`exam/price.ts`; D19–D24):
   BASE, and its positions no excess. BASE's minutes are the segments' whole
   minutes under either option of P11. **The excess** = the gross on marks −
   dir × BASE.
-- **[OPTION D, Q4] HOLDS's second condition**: the mean excess over BASE
-  above 0 (**default**, H10, the review's recommendation) | OWN's mean above
-  0 (the gross on marks less dir × the other small coins' mean move over the
-  same instants, at least 5 coins; `tries/beside.ts` ownOf). [The review: OWN
-  shows 92% (E) and 97% (C) of N's gross is the other small coins' own
-  move.]
+- **[OPTION D, Q4, filled by the owner, decisions 2026-11-20 `04b6b13`]:
+  HOLDS's second condition**:
+  - **Chosen, BASE:** the mean excess over BASE above 0 (H10, the review's
+    recommendation).
+  - Not chosen, OWN: OWN's mean above 0 (the gross on marks less dir × the
+    other small coins' mean move over the same instants, at least 5 coins;
+    `tries/beside.ts` ownOf).
+
+  [The review: OWN shows 92% (E) and 97% (C) of N's gross is the other small
+  coins' own move.]
 
 ## P8. Left out
 
@@ -419,14 +424,17 @@ The first that holds is the reading. **The sentences, written in advance**
 - Every verdict prints H12's line: "Holds and does not hold are verdicts on
   this test, never instructions to trade."
 
-**[OPTION E] The days without books** (decisions 2026-11-19 `e217fa9`,
-Q1): **cut (B, the recommended default)** — a deciding position with x_in
-or x_out on a day of NO_BOOK_DAYS (P2) is cut from the deciding days and
-printed apart, "not independent", in step 1 (the safety net's count) and
-step 2 alike; a day the book fetch later finds without books is not cut,
-its legs going to the tape; it costs about 9 of the 100 entry days | kept
-(A) — those legs go to the tape. The projection of WITHHELD by option is
-in P16.
+**[OPTION E, filled by the owner, decisions 2026-11-20 `04b6b13`]: the days
+without books** (decisions 2026-11-19 `e217fa9`, Q1):
+
+- **Chosen, B, cut:** a deciding position with x_in or x_out on a day of
+  NO_BOOK_DAYS (P2) is cut from the deciding days and printed apart, "not
+  independent", in step 1 (the safety net's count) and step 2 alike; a day
+  the book fetch later finds without books is not cut, its legs going to
+  the tape; it costs about 9 of the 100 entry days.
+- Not chosen, A, kept: those legs go to the tape.
+
+The projection of WITHHELD by option is in P16.
 
 ## P12. The looks, F14
 
@@ -554,10 +562,11 @@ Each option's numbers are prints from before the freeze, from E ∪ C (N) or
 E alone (the 715 line, labelled seeded and optimistic: chosen after looking
 at E); none decides anything.
 
-- **[OPTION A] the recipe — filled**: the 715 line decides, with N by the
-  safety net (P4). [The 715 line on E, slices 0–19: 5,067 positions, 4,310
-  priced, m 203.4, SE 79.1, 51 days, 33 coins; m_proj = 124.3. N: m_proj =
-  C's 211.3 less one error 122.1 = 89.1.]
+- **[OPTION A, filled by the owner, decisions 2026-11-19 `710338f`]: the
+  recipe**: the 715 line decides, with N by the safety net (P4). [The 715
+  line on E, slices 0–19: 5,067 positions, 4,310 priced, m 203.4, SE 79.1,
+  51 days, 33 coins; m_proj = 124.3. N: m_proj = C's 211.3 less one error
+  122.1 = 89.1.]
 - **The two looks' projections** (P12; not an option since decisions
   2026-11-20 `5f01f05`): P(HOLDS) = Φ((m_proj − max(z·SE, 50 − z·SE)) ÷
   SE) and P(LIKELY or HOLDS) = Φ((m_proj − max(z_L·SE, 50 − z·SE)) ÷ SE),
@@ -571,7 +580,11 @@ at E); none decides anything.
 
   TOO FEW and the safety net on E's windows: 0 of the 715 line's 112
   (100-day) and 30 (182-day) windows; 0 of N's 260 and 178 on E ∪ C.
-- **[OPTION E] WITHHELD's days without books**: cut (B, default) | kept (A).
+- **[OPTION E, filled by the owner, decisions 2026-11-20 `04b6b13`]:
+  WITHHELD's days without books**:
+  - **Chosen, B, cut** (P11).
+  - Not chosen, A, kept.
+
   The projected WITHHELD share of the 715 line on FRESH [withheld.json
   `8e8249d7…`, 2026-11-19 23:43Z; E alone, E's rates, each 100-day window of
   E laid onto the deciding days, 112 windows; the model reproduces the
@@ -592,8 +605,10 @@ at E); none decides anything.
   gives them (P2): the refresh of 2026-11-20 found 2026-11-13 → 15 with
   books, so they stay 2026-07-08 and 2026-07-12 → 17 (decisions 2026-11-20,
   option B's listing refreshed).
-- **[OPTION D, Q4] HOLDS's second condition**: the excess over BASE
-  (default) | OWN (P7).
+- **[OPTION D, Q4, filled by the owner, decisions 2026-11-20 `04b6b13`]:
+  HOLDS's second condition** (P7):
+  - **Chosen, BASE:** the excess over BASE.
+  - Not chosen, OWN.
 
 ## P17. The design's numbers
 
