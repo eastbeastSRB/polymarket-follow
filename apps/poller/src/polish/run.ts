@@ -112,6 +112,24 @@ export const ExamSettings = z
     },
   );
 
+/** The reproduction's settings beside the exam's (THE PLAN D47, D50): WAVEH_STORE, WAVE-H's raw store (its fill files the extraction reads again, its books), and WAVEH_ROOT, WAVE-H's folder of the look; both read only, neither inside the exam's folder. */
+export const ReproSettings = z
+  .object({ WAVEH_STORE: absolute, WAVEH_ROOT: absolute, EXAM_ROOT: absolute })
+  .refine((s) => tail(s.WAVEH_STORE) === "wave-h/store", {
+    message: "is not WAVE-H's raw store (…\\WAVE-H\\store)",
+    path: ["WAVEH_STORE"],
+  })
+  .refine(
+    (s) =>
+      [s.WAVEH_STORE, s.WAVEH_ROOT].every(
+        (f) => !inside(s.EXAM_ROOT, f) && !inside(f, s.EXAM_ROOT),
+      ),
+    {
+      message: "must lie outside EXAM_ROOT, and EXAM_ROOT outside them",
+      path: ["WAVEH_STORE"],
+    },
+  );
+
 /** The compiled program's files, `dist/polish.js` and `dist/polish/`: their paths and hashes, hashed again. */
 export function fingerprintOf(packageRoot: string): string {
   const files: string[] = [];

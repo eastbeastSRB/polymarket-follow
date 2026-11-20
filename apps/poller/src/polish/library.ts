@@ -17,6 +17,7 @@ import {
 } from "../waveh/instants.js";
 import { waveSpots } from "../waveh/positions.js";
 import { bySlice } from "../waveh/slices.js";
+import type { Counted } from "../waveh/fills.js";
 import { SHA256 } from "../waveh/store.js";
 import { countedFrom, type CountedSet } from "./counted.js";
 import type { GatesInput } from "./gates.js";
@@ -54,7 +55,7 @@ export function libraryOf(o: GatesInput): Library {
 }
 
 /** G2's positions, as WAVE-H's look finds them (look.ts `lookStep1`). */
-export function positionsOf(lib: Library, M: number) {
+export function positionsOf(lib: { counted: readonly Counted[] }, M: number) {
   const slice0 = bySlice(lib.counted, M)[0]!;
   const spots = waveSpots(0, slice0, TEST_START, TEST_END).filter(
     (s) => s.xOut < DATA_END,

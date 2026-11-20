@@ -40,6 +40,7 @@ import {
   ExtractSettings,
   GateFailed,
   LookSettings,
+  ReproSettings,
   exitOf,
   fingerprintOf,
 } from "./run.js";
@@ -111,6 +112,9 @@ if (command === "exam" && examStep === null)
   refuse(`exam needs --step ${EXAM_STEPS.join(" | ")}`);
 const exam = command === "exam" ? ExamSettings.safeParse(process.env) : null;
 if (exam !== null && !exam.success) refuse(issues(exam.error));
+const repro =
+  examStep === "reproduce" ? ReproSettings.safeParse(process.env) : null;
+if (repro !== null && !repro.success) refuse(issues(repro.error));
 const parsed =
   command === "exam" ? null : ExtractSettings.safeParse(process.env);
 if (parsed !== null && !parsed.success) refuse(issues(parsed.error));
@@ -129,7 +133,13 @@ if (day !== null) {
 /** The folders the command reads or writes, its log's first. */
 const folders =
   exam !== null
-    ? [exam.data.EXAM_ROOT, exam.data.ANALYZER_ROOT]
+    ? [
+        exam.data.EXAM_ROOT,
+        exam.data.ANALYZER_ROOT,
+        ...(repro === null
+          ? []
+          : [repro.data.WAVEH_STORE, repro.data.WAVEH_ROOT]),
+      ]
     : [
         settings!.ANALYZER_ROOT,
         settings!.WAVEH_STORE,
@@ -191,17 +201,31 @@ try {
   const listSha256 = createHash("sha256").update(data).digest("hex");
   const coins = loadCoins();
   if (examStep !== null) {
-    const r = await runExamStep(examStep, {
-      analyzer: exam!.data.ANALYZER_ROOT,
-      root: exam!.data.EXAM_ROOT,
-      coins,
-      kit: await loadResearch(),
-      code: fingerprint,
-      wavehFrozen: freeze.sha256,
-      cutsFile: CUTS_FILE,
-      design: EXAM_DESIGN,
-      log: (event, fields) => log.info(fields, event),
-    });
+    const r = await runExamStep(
+      examStep,
+      {
+        analyzer: exam!.data.ANALYZER_ROOT,
+        root: exam!.data.EXAM_ROOT,
+        coins,
+        kit: await loadResearch(),
+        code: fingerprint,
+        wavehFrozen: freeze.sha256,
+        cutsFile: CUTS_FILE,
+        design: EXAM_DESIGN,
+        log: (event, fields) => log.info(fields, event),
+      },
+      repro === null
+        ? null
+        : {
+            raw: repro.data.WAVEH_STORE,
+            list,
+            listSha256,
+            wavehRoot: repro.data.WAVEH_ROOT,
+            gate: gateOf(freeze),
+            workers,
+            pace,
+          },
+    );
     log.info(
       { examStep, sha256: r.sha },
       `done: the exam's ${examStep} step written`,

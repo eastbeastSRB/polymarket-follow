@@ -519,8 +519,8 @@ const BPS_FIELDS = [
   "entryCost",
 ] as const;
 
-/** Two lines of positions compared: the bps fields within the tolerance, all else equal. */
-function compareLine(
+/** Two lines of positions compared: the bps fields within the tolerance, all else equal (G3; the exam's reproduction). */
+export function compareLine(
   mine: unknown,
   ref: unknown,
 ): { equal: boolean; bps: number } {
