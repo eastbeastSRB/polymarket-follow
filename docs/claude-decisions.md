@@ -1,5 +1,33 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — option B's listing refreshed): **2026-11-13 →
+15 HAVE THEIR BOOKS. `NO_BOOK_DAYS` STAYS 2026-07-08 AND 07-12 → 17.**
+
+**What:**
+- **The listing:** the archive listed SOL's 24 hourly `l2Book` keys for
+  each of 2026-11-13, 11-14 and 11-15, metadata only. The command was
+  `node tools/waveh-fetch.cjs --fresh --plan --books <the day's 24 keys>
+  --store F:\polymarket-follow-research\FRESH\store --heartbeat <the
+  collector's>`.
+- **When:** 05:48:03Z, 06:00:23Z and 06:00:57Z. The tool waits out the
+  02:30–06:00Z window even with `--plan`, so the first run waited until
+  06:00Z.
+- **The result:** "listed 24 … not in their hour folder's listing 0" each
+  day. Nothing was fetched or written. The outputs and key files are in
+  `verify/POLISH-RULES/listing-2026111{3,4,5}.out` and `books-*.txt`.
+
+**So:**
+- **`NO_BOOK_DAYS`** (option B's days) is 2026-07-08 and 2026-07-12 → 17,
+  as it is.
+- **P16's "11-13 → 15 without books" rows** describe a case that did not
+  happen. Its placeholder row ("[printed after the listing's refresh]")
+  becomes "not needed: the listing of 2026-11-20 found 11-13 → 15 with
+  books".
+- **P2's sentence** names this listing.
+- **P16's operating numbers:** B 2.16%, P(WITHHELD) 1.8%; A 5.14%, 11.6%.
+- **Timing:** the text edits go in the code review's fix round, with the
+  draft list written again.
+
 2026-11-20 (the supervisor — the exam at "rules ready", under the owner's
 overnight go): **POLISH-RULES's BUILD IS DONE, ITS RULES REVIEW'S FIXES ARE
 IN, AND THE FRESH CODE REVIEW RUNS. ITS THREE LAST QUESTIONS ARE RULED
