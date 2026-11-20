@@ -206,25 +206,11 @@ export function linesBeside(
     const id = episode.get(f)!;
     if (!first.has(id)) first.set(id, i);
   }
-  // OWN: the gross on marks less dir × the other small coins' mean move over the same instants.
-  const smallNames = d.coins.list.map((c) => c.name);
   const own: Item[] = [];
   for (const l of ls) {
     if (l.onMarks === null) continue;
-    let s = 0;
-    let n = 0;
-    for (const name of smallNames) {
-      if (d.coins.byName.get(name)!.assetId === l.iid) continue;
-      const pc = d.pc.get(name)!;
-      const m =
-        (priceAfter(pc, d.start, l.xOut) / priceAfter(pc, d.start, l.xIn) - 1) *
-        1e4;
-      if (Number.isNaN(m)) continue;
-      s += m;
-      n += 1;
-    }
-    if (n >= 5)
-      own.push({ t: l.t, iid: l.iid, x: l.onMarks - l.dir * (s / n) });
+    const x = ownOf(d, l, l.onMarks);
+    if (x !== null) own.push({ t: l.t, iid: l.iid, x });
   }
   return {
     all: statOf(kit, items),
@@ -241,6 +227,32 @@ export function linesBeside(
     eventLevel: statOf(kit, [...first.values()]),
     own: statOf(kit, own),
   };
+}
+
+/**
+ * MARKET-1's OWN at a position (F17; the owner's option D for the exam's
+ * HOLDS): the gross on marks less dir × the other small coins' mean move
+ * over the same instants, of those with both prices, at least 5; null
+ * otherwise.
+ */
+export function ownOf(
+  d: Pick<Data, "coins" | "pc" | "start">,
+  l: { iid: number; dir: number; xIn: number; xOut: number },
+  onMarks: number,
+): number | null {
+  let s = 0;
+  let n = 0;
+  for (const c of d.coins.list) {
+    if (c.assetId === l.iid) continue;
+    const pc = d.pc.get(c.name)!;
+    const m =
+      (priceAfter(pc, d.start, l.xOut) / priceAfter(pc, d.start, l.xIn) - 1) *
+      1e4;
+    if (Number.isNaN(m)) continue;
+    s += m;
+    n += 1;
+  }
+  return n >= 5 ? onMarks - l.dir * (s / n) : null;
 }
 
 /** F19's K: on E ∪ C, the two-way SE of the line pooled over slices 0…K−1 for each K; the smallest K whose SE is within 3% of all slices'. */

@@ -71,6 +71,42 @@ export const TEXTBOOK = {
   oneLook: { holds: 2.58, likely: 1.96 },
 } as const;
 
+/**
+ * HOLDS's z and LIKELY's z_L at each look (rules.md P10; THE PLAN D33 with
+ * T10; decisions 2026-11-19, "the exam's placebo and WITHHELD projection
+ * ran"): the larger of the textbook floor and the placebo's percentile of
+ * the 715 line and of N, both flips, at the look's window, copied from
+ * `placebo.json` (`ANALYZER\POLISH-RULES`, SHA-256 PLACEBO_JSON), its fields
+ * `z.twoLooks[i]` and `z.oneLook[0]`, `holds.z` and `likely.z`. DOES NOT
+ * HOLD keeps HOLDS's z (Q3).
+ */
+export const BARS = {
+  twoLooks: [
+    { look: 1, window: 100, z: 2.8466835996608553, zL: 2.3599581301310213 },
+    { look: 2, window: 182, z: 2.81, zL: 2.4374684250380376 },
+  ],
+  oneLook: [
+    { look: 1, window: 182, z: 2.6532605728910306, zL: 2.212592737897925 },
+  ],
+} as const;
+export const PLACEBO_JSON =
+  "c25345f7a5c087c01d82114bf70cd54f7425ae66a25b43657c1379a076ac9575";
+
+/**
+ * The owner's options still open (rules.md P16), set at the talk before the
+ * freeze, every branch built and tested (T6): [OPTION C] the looks, two
+ * (the plan's recommendation, 3.6) or one later look; [OPTION E] the days
+ * without books, cut from the deciding days (B, the recommended default;
+ * decisions 2026-11-19, the placebo and projection ran) or kept (A);
+ * [OPTION D, Q4] HOLDS's second condition, the excess over BASE (the
+ * default) or OWN.
+ */
+export const OPTIONS: {
+  looks: keyof typeof BARS;
+  noBookDays: "cut" | "kept";
+  excess: "BASE" | "OWN";
+} = { looks: "twoLooks", noBookDays: "cut", excess: "BASE" };
+
 /** The spans the placebo's windows lie in, the exploration's entries' (besideOf's): E's (the 715 line's, E alone) and E ∪ C's (N's). */
 export const SPANS = {
   E: { from: E.start, to: E.end - STOP_MS },
