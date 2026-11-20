@@ -1,5 +1,48 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the collector's first crash): **THE COLLECTOR
+STOPPED AT 07:07:12Z WITH A NATIVE HEAP-CORRUPTION EXIT (0xC0000374) AND
+ITS WATCHDOG RESTARTED IT AT 07:13:29Z. WITH THE REPRODUCTION'S ONE-OFF
+MISREAD, IT POINTS TO THE PC'S MEMORY UNDER HEAVY LOAD. THE OWNER IS ASKED
+FOR A MEMORY TEST BEFORE LOOK 1.**
+
+**What happened:**
+- **The old process** (pid 22356, running since the PC's restart on
+  2026-11-14 14:12Z) logged normally to 07:01:06Z: the hour files
+  compressed and checked, audits 86–89 of 90. Its last heartbeat was at
+  07:07:04Z.
+- **It ended at 07:07:12Z** with return code 3221226356 = 0xC0000374
+  (STATUS_HEAP_CORRUPTION), with no log line. That is a crash inside the
+  native process, not an error of the program's own code.
+- **The watchdog** ("polymarket-follow poller check", every 5 minutes)
+  relaunched it at 07:13:29Z (pid 4456). Both connections are open, the
+  heartbeat is fresh, and the audits are back to 88 of 90.
+- **The recordings have a gap of about 6 minutes**, 07:07 → 07:13Z.
+- **No Application Error, WHEA or System event** was logged around it.
+
+**Why it matters:**
+- It is the collector's first crash. The only other starts (2026-11-10,
+  -11, -12, -14) were deploys and the owner's restart.
+- **It is the second sign of a memory fault on the same night.** The
+  reproduction's first run read 6 lines of one file wrong, after the
+  checksum. Both came during the night's heaviest load: builders' and
+  reviewers' tests, 361 deliberate breaks, two reproductions with peaks of
+  8.4 GB.
+- **Non-ECC memory that fails under load** fits both. A software cause is
+  not ruled out, but the two came from different programs.
+
+**What:**
+1. **The owner is asked** to run Windows Memory Diagnostic (a restart) at a
+   time they choose, before look 1. The tasks start again at sign-in, as on
+   2026-11-14.
+2. **Until then, heavy runs are kept light:** one test or break run at a
+   time, at most 2 vitest workers. POLISH-CODE-REVIEW was told so.
+3. **The double build of FRESH and "nothing heavy beside the look" stay.**
+   If the memory test finds errors, look 1 waits for the owner's fix.
+4. **MARKET-1's run at 10:30Z** reads the recordings with the gap. Its
+   frozen coverage rules handle a gap; the supervisor checks its log after
+   the run.
+
 2026-11-20 (the supervisor — the reproduction's second run): **EVERY PART
 PASSED. THE FIRST RUN'S ONE DIFFERING FILE WAS A ONE-OFF FAULT.**
 
