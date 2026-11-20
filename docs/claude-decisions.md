@@ -1,5 +1,93 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (POLISH-RULES — the exam built up to "rules ready", its breaks
+round and the rules review's fix round: the technical calls of successors 2
+to 5, within THE PLAN and its rulings): **THE EXAM'S RULES, PROGRAM AND
+DRAFT FREEZE LIST ARE BUILT AND FIXED, EACH COMMIT GREEN; EVERY DELIBERATE
+BREAK OF WHAT DECIDES IS KILLED OR SHOWN EQUIVALENT. NOT FROZEN; FRESH STAYS
+SEALED.**
+
+**What is built** (architecture, "The exam"; `apps/poller/polish/rules.md`
+P0–P17, final but the owner's two marked options, B or A and BASE or OWN):
+`exam --step placebo | reproduce | 1 | 2`; the seal's opening by a tagged
+freeze; the freeze tool `tools/polish-freeze.cjs` (the draft, `--final
+--tag <n>`, `--look2`, `--data`) and FRESH's data list `polish/fresh.sha256`;
+the draft list. The commits: `614262e`, `6fd8458`, `6e8f57b` (successor 2);
+`60a7ecc`, `486c7fb`, `0532fa8`, `3e2b421` (successor 3); `de93a83`,
+`fd4cb55`, `b979021`, `4e2b276`, `3f01a28`, `abfa530`, `09eaf57`
+(successor 4); `ecca416` the breaks round, `510c05b` the fix round, the
+draft list `3435f72` (125 files, `1d3aeba8…dd71`), and these docs
+(successor 5).
+
+**The breaks round** (`ecca416`): 314 one-line breaks of what decides in
+commits 1–9c, each against the exam's test files in scratch copies of
+`09eaf57`: 248 killed at once; of the 66 survivors, 49 killed by new tests
+(run again after them, re-aimed where a fix moved the text) and 17 shown
+equivalent, fail-closed or prints, each explained in POLISH-RULES's
+progress. The fix round's 13 breaks: all killed. POLISH-RULES-REVIEW's own
+47 breaks and its P11 grid are run again on the fix commit (`3b98568`, Q6).
+
+**The technical calls:**
+- **The seal** is the exam's own field (`{ examFrozen }`), so WAVE-H's gate
+  (`{ open }`) never passes for it; closed is every reader's default; a key
+  dated at or after FRESH_END is refused, open or closed. The freeze opens
+  it only when the list verifies and the git tag its one tag line names
+  holds this very list (Q1).
+- **One z whichever line decides** (T10): the larger of the textbook floor,
+  the 715 line's E-only percentile and N's E ∪ C percentile, each at the
+  look's length and the larger flip; LIKELY's alike. BARS are
+  `placebo.json`'s exact doubles (rules.md prints three decimals).
+  `placebo.json`'s SHA-256 is part of the design, read from EXAM_ROOT.
+  `placebo.ts` keeps the removed one-later-look row's floors for
+  `placebo.json`'s row alone, so its output is unchanged.
+- **The books are fetched for N's slices 0–19 legs** on the deciding days
+  (T11), a superset of the 715 line's.
+- **The safety net counts the 715 line's positions not left out, after
+  option B's cut** (the filter inside `safetyNet` since the breaks round).
+  Option B matches a leg's UTC day.
+- **The day flip** draws each UTC day of the span its own sign; the episode
+  flip stays the default, draw for draw.
+- **The price:** the deciding line's funding is the exploration's
+  settlement code, its unpriced reason "funding without a price"; BASE is
+  the two segments' whole minutes pooled at 24 hours (`examBase`), under
+  either option.
+- **The reproduction's (b)** holds the exam's own placement of the 715 line
+  to `placebo.json`'s line; its end (`reproEnd`) writes `passed` only when
+  (a), (b) and (c) all held, then exits 6 naming each part.
+- **The WITHHELD projection's model** reads a leg's tape chance by its own
+  tape and carries the ten months' one funding-gap day (2025-07-18) at E's
+  rate; `withheld.mjs` now also prints "B as ruled, 11-13 → 15 without
+  books, not cut", run by the supervisor after the listing's refresh.
+- **FRESH's integrity** reuses G0's and G5's own checks (`wholeOf`,
+  `pairingOf`), their output on the ten months unchanged.
+- **Step 1** writes the two builds' comparison and the integrity as their
+  own files before `step1.json`; it extracts each time it runs; after a
+  difference both builds are moved aside. The positions' SHA-256 covers all
+  four lines. It prints the counted fills and other liquidation legs by
+  month, kind and method, and names `books-needed.txt` by SHA-256, which
+  step 2 holds before its books check.
+- **Step 2** builds its deciding set by `decidedOf` (the excess by the
+  option, both legs at the book, a left-out position nothing else);
+  computes the report before `result.json` and writes it after; keys its
+  maps by slice, instant and coin (`keyOf`); labels the W4 lines beside the
+  deciding one "seeded, decides nothing".
+- **Exit codes:** 4 the exam's freeze not verifying for steps 1–2; 5 books
+  needed or already run; 7 the two builds differ.
+- **The freeze tool:** `--data` requires FRESH's manifest to be exactly
+  FRESH_RANGE's keys and refuses thin days other than `design.ts`'s; the
+  list's head, its tag (`--tag <n>`) and the closure's check are tested
+  functions; `--look2 <tag>` compares the hash lines with the tag's list
+  (comments aside) and refuses a file changed or added outside
+  `LOOK2_ALLOWED`, and any file gone.
+- **Look 2** (rules.md P1): FRESH-2's funding on its own 20-day grid from
+  FRESH_END, so every line of `fresh.sha256` reappears unchanged (DATA
+  END's grid would change 38 of them); look 1's `step1.json` and
+  `result.json` held to `polish/look1.sha256`, an allowed added file; P17's
+  look-1 rows marked.
+- **rules.md is formatted by hand and frozen** (`apps/poller/polish` in
+  `.prettierignore`); its P17 table and P1's allow-list are held to the code
+  by `polish-rules.test.ts`.
+
 2026-11-20 (the supervisor — the exam's fresh rules review, under the
 owner's overnight go): **"MAY FREEZE AFTER THESE FIXES": NO HIGH FINDING,
 THREE MEDIUM, TEN LOW, NONE CHANGING THE DESIGN, THE STATISTIC OR THE BARS.
