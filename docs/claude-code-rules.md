@@ -226,6 +226,10 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 
 - **`pnpm verify` = build + lint + test + format:check, in CI's order;**
   running fewer is how a green session still breaks CI.
+- **A file added to the tree while `pnpm verify` runs is read by its later
+  steps** (format:check runs after vitest), so an unrelated draft can fail
+  the verify of the commit before it. Draft new files outside the tree
+  until the verify ends (POLISH-RULES, 2026-11-20).
 - **Git normalises line endings to LF** (`.gitattributes`); Prettier expects
   LF.
 - **Write scripts to a file with the Write tool** (`.mjs` or `.cjs`) —
