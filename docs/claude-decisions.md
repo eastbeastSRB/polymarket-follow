@@ -1,5 +1,53 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the code review's fix round done): **POLISH-FIX
+CLOSED EVERY FINDING RULED. THE REHEARSAL THROUGH MAIN.TS PASSED, AND ON THE
+PRE-FIX COMMIT IT STOPS AT M1. THE FRESH FIX-CHECK RUNS.**
+
+**What:**
+- **POLISH-FIX's commits** (08:33–10:21Z; context 608k; access clean), each
+  with `pnpm verify` green and the three freezes verifying:
+  - `31bab2e`: M1, the seal into the reproduction, `reproExtraction`
+    tested open and closed;
+  - `742b4de`: M2, `onDeciding` and the tripwire's `{of, leftOut,
+    fundingWithoutPrice, share}`; M3, the test follows the gate;
+  - `21f270b`: L1 (w1, w14, w17) and L3. Step 2 refuses another program's
+    or freeze's `step1.json`, and holds the builds and integrity files;
+  - `0837596`: L2 and L6;
+  - `0e8ffb4`: L7, L10, L11 and the two names;
+  - `edf9ce5`: L4 (`NO_BOOK_LISTING`), the rules' listing text, and L5
+    (THE PLAN saved as `docs/reviews/polish-rules-plan-2026-11-19.md`, its
+    SHA-256 equal to its source);
+  - `c7e95a5`: the draft list, 125 files, `b47e9ac3…25b8c9`;
+  - `6a8e541`: the docs.
+- **Its 15 breaks of its own guards:** all killed.
+- **The rehearsal:** a script in `workers/POLISH-FIX/rehearsal/`.
+  - The setup is a synthetic world, a synthetic freeze and tag, and
+    `main.ts`'s three steps into `…\ANALYZER\FRESH`.
+  - The results: reproduce exit 0; step 1 exit 5 (books needed; the twin
+    builds equal; integrity passed); step 2 exit 0.
+  - On `99dd76c` (before the fix) it stops at the reproduction: "FRESH is
+    sealed".
+  - It rehearses the wiring, the gate and the seal, not the frozen bytes.
+- **The supervisor's checks:**
+  - `pnpm verify` on `6a8e541`: green (89 + 1 files, 822 tests; the three
+    freezes 0 differ), in `verify/POLISH-RULES/verify-6a8e541.out`;
+  - access clean.
+
+**The rulings on its questions:**
+1. No P17 row for `NO_BOOK_LISTING`. The look test and P2 hold it.
+2. The rehearsal's scripts stay outside the repository until look 2's
+   build runs them again.
+
+**Next:**
+1. POLISH-FIX-CHECK (Sonnet 5.5, max), started 10:32Z.
+2. The owner's two choices: WITHHELD's B or A, and BASE or OWN.
+3. The options filled in. In the same commit, the markers' test (L12), a
+   rebuild and the draft list again.
+4. The freeze: `--final --tag 1`, the commit and the tag, which the owner
+   pushes.
+5. Look 1.
+
 2026-11-20 (POLISH-FIX — the code review's fix round, as ruled; its
 technical calls): **M1–M3, L1–L7, L10 AND L11 ARE FIXED IN SIX GREEN
 COMMITS, THE PLAN IS SAVED INTO docs/reviews, AND THE DRAFT LIST IS WRITTEN
