@@ -41,7 +41,8 @@ export const lineOf = (
   onMarks: x.onMarks,
 });
 
-const itemsOf = (ls: readonly Line[]): Item[] =>
+/** The exploration's lines as M10's items: each priced line's net at its entry's instant and coin. */
+export const itemsOf = (ls: readonly Line[]): Item[] =>
   ls.flatMap((l) => (l.net === null ? [] : [{ t: l.t, iid: l.iid, x: l.net }]));
 
 /** A line's statistic (M10's two-way) over its priced nets, and the two best days' share of its gain (D52; null unless the gain is above 0). */

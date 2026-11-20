@@ -16,7 +16,7 @@
  *   shares over every whole-day window.
  * No mean of an unflipped C net is printed.
  */
-import { normalUpper, type Item } from "../../market1/stats.js";
+import { normalUpper } from "../../market1/stats.js";
 import type { Research } from "../../paper/research.js";
 import { dayOf } from "../../paper/stats.js";
 import { DAY_MS } from "../../schedule.js";
@@ -35,6 +35,7 @@ import {
   TOO_FEW,
   type Recipe,
 } from "./design.js";
+import { itemsOf } from "./lines.js";
 
 /** W4's feature on a line (B0's E lines carry it), or null. */
 export const w4Of = (l: Line): number | null =>
@@ -309,9 +310,6 @@ export function checkBeside(
       `the placebo of N on all slices is not beside.json's: ${differ.join("; ")}`,
     );
 }
-
-const itemsOf = (ls: readonly Line[]): Item[] =>
-  ls.flatMap((l) => (l.net === null ? [] : [{ t: l.t, iid: l.iid, x: l.net }]));
 
 /**
  * The placebo's whole print: the checks, the lines' placebos, z, and for

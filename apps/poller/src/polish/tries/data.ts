@@ -13,7 +13,7 @@ import type { Coins } from "../../waveh/coins.js";
 import type { Counted } from "../../waveh/fills.js";
 import type { FundingRow } from "../../waveh/funding.js";
 import { TAPE_MS } from "../../waveh/price.js";
-import { countedFrom } from "../counted.js";
+import { countedFrom, type CountedSet } from "../counted.js";
 import {
   Tape,
   fundingOf,
@@ -86,9 +86,14 @@ export function levelsAt(
   return out;
 }
 
-/** The trusted store's data: the counted fills and the forced fills held to them, the 40 coins' price columns, the 38 coins' funding. */
-export function dataFrom(store: Store, coins: Coins, kit: Research): Data {
-  const { counted } = countedFrom(store, coins);
+/** The trusted store's data: the counted fills (`set`, when the caller has read them) and the forced fills held to them, the 40 coins' price columns, the 38 coins' funding. */
+export function dataFrom(
+  store: Store,
+  coins: Coins,
+  kit: Research,
+  set: CountedSet = countedFrom(store, coins),
+): Data {
+  const { counted } = set;
   const m = store.manifest;
   const tape = new Tape(store);
   const funding = new Map(

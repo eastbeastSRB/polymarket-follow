@@ -152,17 +152,25 @@ export function verdictOf(
     bars.excess === "BASE"
       ? "the excess over BASE"
       : "the move net of the other small coins (OWN)";
-  const sentence = {
-    WITHHELD: `Withheld: ${(100 * share).toFixed(1)}% of the deciding positions were left out, unpriced or depth short, above the 10% limit; the data could not answer.`,
-    "TOO FEW TO TELL":
-      bounds === null
-        ? "Too few to tell: no error could be computed."
-        : `Too few to tell: the priced positions span ${stat!.days} UTC days and ${stat!.markets} coins; ${TOO_FEW.days} and ${TOO_FEW.coins} are needed.`,
-    "DOES NOT HOLD": `Does not hold: even m + z·SE = ${bps(bounds?.doesNotHold ?? 0)} bps a position is below the owner's line of +${DELTA}.`,
-    HOLDS: `Holds: m − z·SE = ${bps(bounds?.holds ?? 0)} bps a position is above 0, with ${over} and the positions priced at the book both above 0.`,
-    LIKELY: `Likely, not proven: m − z_L·SE = ${bps(bounds?.likely ?? 0)} bps a position is above 0 at the 95% bar, and m − z·SE = ${bps(bounds?.holds ?? 0)} is not above 0 at the 99% bar. Very probably real, not yet proven; it decides nothing that HOLDS decides.`,
-    "NOT SETTLED": `No mean result as large as ${bps(bounds?.doesNotHold ?? 0)} bps a position was seen.`,
-  }[verdict];
+  // The chosen verdict's sentence alone (rules.md P11): past TOO FEW TO TELL, every verdict has its bounds.
+  const sentence = ((): string => {
+    switch (verdict) {
+      case "WITHHELD":
+        return `Withheld: ${(100 * share).toFixed(1)}% of the deciding positions were left out, unpriced or depth short, above the 10% limit; the data could not answer.`;
+      case "TOO FEW TO TELL":
+        return bounds === null
+          ? "Too few to tell: no error could be computed."
+          : `Too few to tell: the priced positions span ${stat!.days} UTC days and ${stat!.markets} coins; ${TOO_FEW.days} and ${TOO_FEW.coins} are needed.`;
+      case "DOES NOT HOLD":
+        return `Does not hold: even m + z·SE = ${bps(bounds!.doesNotHold)} bps a position is below the owner's line of +${DELTA}.`;
+      case "HOLDS":
+        return `Holds: m − z·SE = ${bps(bounds!.holds)} bps a position is above 0, with ${over} and the positions priced at the book both above 0.`;
+      case "LIKELY":
+        return `Likely, not proven: m − z_L·SE = ${bps(bounds!.likely)} bps a position is above 0 at the 95% bar, and m − z·SE = ${bps(bounds!.holds)} is not above 0 at the 99% bar. Very probably real, not yet proven; it decides nothing that HOLDS decides.`;
+      case "NOT SETTLED":
+        return `No mean result as large as ${bps(bounds!.doesNotHold)} bps a position was seen.`;
+    }
+  })();
   return {
     verdict,
     sentence,

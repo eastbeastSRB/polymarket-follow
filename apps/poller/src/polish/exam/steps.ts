@@ -13,6 +13,9 @@
  * - `1` (look 1, the exam's seal open, the reproduction passed by this
  *   program): FRESH extracted and held whole, its lines placed and counted,
  *   the safety net read, the book files needed listed; then exit 5.
+ * - `2` (look 1, after the books): the lines held to step 1's, the deciding
+ *   line priced book first, the verdict at look 1's bars; `result.json`,
+ *   then `positions.jsonl.gz` and `report.json`.
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -246,7 +249,7 @@ export async function placeboStep(o: ExamInput) {
     ...m.done(),
     written: new Date().toISOString(),
   };
-  const text = `${JSON.stringify(value, null, 1)}\n`;
+  const text = json(value);
   writeWhole(path.join(o.root, "placebo.json"), text);
   return { sha: sha256(text), out: value };
 }
@@ -380,17 +383,17 @@ export async function reproduceStep(o: ReproInput) {
       ),
     ),
   ).cuts;
-  const json = (name: string, want: string) =>
+  const exploredJson = (name: string, want: string) =>
     JSON.parse(readFileSync(explored(o, name, want), "utf8")) as unknown;
-  const choiceFile = json("choice.json", o.design.explored.choice);
+  const choiceFile = exploredJson("choice.json", o.design.explored.choice);
   const rule = ChoiceFile.parse(choiceFile).rule as Rule;
   const nOnE = ChoiceN.parse(choiceFile).N;
-  const nOnC = CEvaluations.parse(json("c.json", o.design.explored.c))
+  const nOnC = CEvaluations.parse(exploredJson("c.json", o.design.explored.c))
     .evaluations[0];
   if (nOnC?.rule !== "N")
     throw new GateFailed("c.json's first evaluation is not N's");
-  const b = Calibration.parse(json("e.json", o.design.explored.e)).calibration
-    .rebasedBy;
+  const b = Calibration.parse(exploredJson("e.json", o.design.explored.e))
+    .calibration.rebasedBy;
   const placebo = PlaceboLine.parse(
     JSON.parse(
       heldFile(
@@ -592,18 +595,19 @@ function ruleAndCuts(o: ExamInput) {
   return { rule, cuts };
 }
 
-/** FRESH's lines from its store (D13–D17, D29, D30): its data, files and holes, each line's positions, and their SHA-256, which step 2 holds to step 1's. */
+/** FRESH's lines from its store (D13–D17, D29, D30): its data (its counted fills read once, their legs step 1's print), files and holes, each line's positions, and their SHA-256, which step 2 holds to step 1's. */
 function lookOf(
   o: LookInput,
   store: Store,
   { rule, cuts }: ReturnType<typeof ruleAndCuts>,
 ) {
-  const d = dataFrom(store, o.coins, o.kit);
+  const set = countedFrom(store, o.coins);
+  const d = dataFrom(store, o.coins, o.kit, set);
   const files = store.files();
   const holes = holesOf(files);
   const { lines, unknown } = linesOf(d, holes, rule, cuts, o.design.recipe);
   const positionsSha256 = sha256(JSON.stringify(lines));
-  return { d, files, holes, lines, unknown, positionsSha256 };
+  return { d, files, holes, lines, unknown, positionsSha256, legs: set.legs };
 }
 
 /**
@@ -711,7 +715,7 @@ export async function stepOne(o: LookInput): Promise<never> {
     range: o.range,
     coins: o.coins,
     forty,
-    legs: countedFrom(store, o.coins).legs,
+    legs: look.legs,
   });
   m.phase("positions");
   const neededText = `${needed.join("\n")}\n`;
@@ -872,7 +876,6 @@ export async function stepTwo(o: LookInput) {
     );
   m.phase("positions");
   const { d, lines } = look;
-  const key = keyOf;
   const bases = new Map<number, number[]>();
   const baseAt = (p: LookPosition) => {
     let b = bases.get(p.iid);
@@ -897,9 +900,9 @@ export async function stepTwo(o: LookInput) {
       base: baseAt(p),
     })),
   );
-  const priced = new Map(toPrice.map((p, i) => [key(p), prices[i]!]));
+  const priced = new Map(toPrice.map((p, i) => [keyOf(p), prices[i]!]));
   m.phase("book");
-  const bookOf = (p: LookPosition) => priced.get(key(p))!.priced;
+  const bookOf = (p: LookPosition) => priced.get(keyOf(p))!.priced;
   const decided = (p: LookPosition) =>
     decidedOf(d, p, p.left === null ? bookOf(p) : null, OPTIONS.excess);
   const deciding = lines[step1.deciding.line].filter(onDeciding);
@@ -940,13 +943,13 @@ export async function stepTwo(o: LookInput) {
     sweep.map((p) => ({ iid: p.iid, dir: p.dir, xIn: p.xIn, xOut: p.xOut })),
     o.pace,
   );
-  const atTape = new Map(sweep.map((p, i) => [key(p), nets[i]!]));
+  const atTape = new Map(sweep.map((p, i) => [keyOf(p), nets[i]!]));
   const tapeOf = (ps: readonly LookPosition[]) =>
     tapeLine(
       o.kit,
       ps.filter((p) => p.left === null),
       atTape,
-      key,
+      keyOf,
     );
   const onDays = (p: LookPosition) =>
     p.where === "segment 1" || p.where === "segment 2";
@@ -1008,16 +1011,16 @@ export async function stepTwo(o: LookInput) {
       failed: read.reduce((s, f) => s + f.failed, 0),
     },
   };
-  const in715 = new Set(lines["715"].map(key));
-  const in1391 = new Set(lines["1391"].map(key));
+  const in715 = new Set(lines["715"].map(keyOf));
+  const in1391 = new Set(lines["1391"].map(keyOf));
   const positions = gzipSync(
     `${lines.N.filter(onDeciding)
       .map((p) =>
         JSON.stringify({
-          in715: in715.has(key(p)),
-          in1391: in1391.has(key(p)),
+          in715: in715.has(keyOf(p)),
+          in1391: in1391.has(keyOf(p)),
           ...p,
-          ...(priced.get(key(p)) ?? { priced: null, legs: [] }),
+          ...(priced.get(keyOf(p)) ?? { priced: null, legs: [] }),
         }),
       )
       .join("\n")}\n`,

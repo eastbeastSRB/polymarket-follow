@@ -14,6 +14,7 @@ import path from "node:path";
 import { ENTRY_DELAY_MS, HOLD_MS } from "../../market1/price.js";
 import { HOUR_MS, MINUTE_MS } from "../../schedule.js";
 import { PACKAGE_ROOT } from "../../waveh/gate.js";
+import { isoDay } from "../../waveh/instants.js";
 import {
   pairingOf,
   wholeOf,
@@ -68,7 +69,6 @@ export function integrityOf(o: WholeInput, known: KnownUnpaired) {
 export const inExam = (t: number): boolean =>
   t >= SEGMENTS[0].from && t + ENTRY_DELAY_MS + HOLD_MS < FRESH_END;
 
-const dayOf = (x: number) => new Date(x).toISOString().slice(0, 10);
 const noBook = new Set<string>(NO_BOOK_DAYS);
 
 /**
@@ -83,7 +83,7 @@ export function whereOf(
 ): "segment 1" | "segment 2" | "cut: a day without books" | "discovery" {
   const i = SEGMENTS.findIndex((s) => p.t >= s.from && p.xOut < s.to);
   if (i < 0) return "discovery";
-  if (cut && (noBook.has(dayOf(p.xIn)) || noBook.has(dayOf(p.xOut))))
+  if (cut && (noBook.has(isoDay(p.xIn)) || noBook.has(isoDay(p.xOut))))
     return "cut: a day without books";
   return i === 0 ? "segment 1" : "segment 2";
 }
@@ -164,7 +164,7 @@ export function safetyNet(
   net: { days: number; coins: number },
 ) {
   const ps = onDays.filter((p) => p.left === null);
-  const days = new Set(ps.map((p) => dayOf(p.t))).size;
+  const days = new Set(ps.map((p) => isoDay(p.t))).size;
   const coins = new Set(ps.map((p) => p.iid)).size;
   const fires = days < net.days || coins < net.coins;
   return {

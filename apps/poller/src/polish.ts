@@ -5,7 +5,8 @@
  *
  *   node dist/polish.js extract [--workers n] [--day YYYY-MM-DD]
  *   node dist/polish.js gates
- *   node dist/polish.js explore
+ *   node dist/polish.js explore [--step <name>]
+ *   node dist/polish.js exam --step placebo | reproduce | 1 | 2
  *
  * This file only starts the program (`polish/main.js`, which has the
  * commands, settings and exit codes) in a worker thread whose heap ceiling
