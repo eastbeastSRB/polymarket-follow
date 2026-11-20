@@ -39,7 +39,7 @@ import { GATES, GATES_FILE, positionsOf } from "../library.js";
 import { WAVEH_RANGE, type Range } from "../range.js";
 import { BuildsDiffer, ExamUnfrozen, GateFailed } from "../run.js";
 import { SEALED, type Seal } from "../seal.js";
-import { openStore, type Store } from "../store.js";
+import { openStore, type Manifest, type Store } from "../store.js";
 import { Line } from "../tries/beside.js";
 import { dataFrom } from "../tries/data.js";
 import { readGzLines } from "../tries/gzlines.js";
@@ -251,13 +251,14 @@ export async function placeboStep(o: ExamInput) {
   return { sha: sha256(text), out: value };
 }
 
-/** What the reproduction reads beside the exam's inputs (THE PLAN D47, D50): WAVE-H's raw store and its data list, the look's folder, WAVE-H's gate, the extraction's workers and pace. */
+/** What the reproduction reads beside the exam's inputs (THE PLAN D47, D50): WAVE-H's raw store and its data list, the look's folder, WAVE-H's gate, the seal the exam's freeze gives (open at look 1, whose EXAM_ROOT is `ANALYZER\FRESH`), the extraction's workers and pace. */
 export type ReproInput = ExamInput & {
   raw: string;
   list: DataList;
   listSha256: string;
   wavehRoot: string;
   gate: Gate;
+  seal: Seal;
   workers: number;
   pace: () => Promise<void>;
 };
@@ -305,6 +306,49 @@ const PlaceboLine = z.object({
   }),
 });
 
+/** (a): the frozen extraction of `range` from WAVE-H's raw store into `<EXAM_ROOT>\repro\`, under the step's seal (look 1's `ANALYZER\FRESH\repro` is sealed by name until the exam's freeze opens it), held to the explored store's manifest. */
+export async function reproExtraction(
+  o: Pick<
+    ReproInput,
+    | "root"
+    | "raw"
+    | "list"
+    | "listSha256"
+    | "workers"
+    | "code"
+    | "wavehFrozen"
+    | "coins"
+    | "seal"
+    | "pace"
+    | "log"
+  >,
+  explored: Manifest,
+  range: Range,
+) {
+  const root = path.join(o.root, REPRO);
+  await extract({
+    store: o.raw,
+    root,
+    list: o.list,
+    listName: "waveh/data.sha256",
+    listSha256: o.listSha256,
+    range,
+    workers: o.workers,
+    code: o.code,
+    wavehFrozen: o.wavehFrozen,
+    forty: [...fortyOf(o.coins)],
+    small: o.coins.list.map((c) => c.name),
+    pace: o.pace,
+    log: o.log,
+    seal: o.seal,
+  });
+  return matchExtraction(
+    explored,
+    openStore(path.join(root, STORE), o.seal),
+    o.pace,
+  );
+}
+
 /** A file read whole and held to a SHA-256 (else not ready, exit 5). */
 export function heldFile(file: string, want: string, name: string): Buffer {
   if (!existsSync(file)) throw new StoreError(`no ${name}`);
@@ -319,9 +363,9 @@ export function heldFile(file: string, want: string, name: string): Buffer {
  * SHA-256 first (the design's, gates.json's references, placebo.json's in
  * EXAM_ROOT); (b) N on E and C, and the deciding line on E; (c) WAVE-H's
  * positions repriced book first against the look; (a) the frozen extraction
- * of the ten months into `<EXAM_ROOT>\repro\` against the explored store;
- * then `repro.json` written whole, naming this program; exit 6 when a part
- * fails.
+ * of the ten months into `<EXAM_ROOT>\repro\`, under the exam's seal,
+ * against the explored store; then `repro.json` written whole, naming this
+ * program; exit 6 when a part fails.
  */
 export async function reproduceStep(o: ReproInput) {
   const m = meter(o.log);
@@ -418,27 +462,7 @@ export async function reproduceStep(o: ReproInput) {
   );
   const lookMatch = matchLook(spots, prices, look);
   m.phase("look");
-  const root = path.join(o.root, REPRO);
-  await extract({
-    store: o.raw,
-    root,
-    list: o.list,
-    listName: "waveh/data.sha256",
-    listSha256: o.listSha256,
-    range: WAVEH_RANGE,
-    workers: o.workers,
-    code: o.code,
-    wavehFrozen: o.wavehFrozen,
-    forty: [...fortyOf(o.coins)],
-    small: o.coins.list.map((c) => c.name),
-    pace: o.pace,
-    log: o.log,
-  });
-  const extraction = await matchExtraction(
-    store.manifest,
-    openStore(path.join(root, STORE)),
-    o.pace,
-  );
+  const extraction = await reproExtraction(o, store.manifest, WAVEH_RANGE);
   m.phase("extraction");
   return reproEnd(
     o.root,

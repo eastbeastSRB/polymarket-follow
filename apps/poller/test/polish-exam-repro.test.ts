@@ -1,14 +1,21 @@
 /**
  * The exam's reproduction (src/polish/exam/repro.ts, steps.ts; polish/rules.md
  * P15; THE PLAN D47): (a) a store made again by the extraction, equal to the
- * explored one but for the run's own fields, and every file read back; (b)
+ * explored one but for the run's own fields, and every file read back, in
+ * look 1's folder (`…\ANALYZER\FRESH\repro`) only under the open seal; (b)
  * a rule's numbers on a part as the choice and c steps print them, held to
  * a printed copy field by field, and the deciding line to placebo.json's;
  * (c) the look's lines, each bps within 1e-9 and every other field equal;
  * the step's held inputs; the built program's settings.
  */
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -21,10 +28,15 @@ import {
   matchPlacebo,
   partOf,
 } from "../src/polish/exam/repro.js";
-import { heldFile, reproEnd } from "../src/polish/exam/steps.js";
+import {
+  heldFile,
+  reproEnd,
+  reproExtraction,
+} from "../src/polish/exam/steps.js";
 import { extract } from "../src/polish/extract.js";
 import type { Range } from "../src/polish/range.js";
 import { GateFailed, exitOf } from "../src/polish/run.js";
+import { SEALED, SealedError } from "../src/polish/seal.js";
 import {
   Store,
   openStore,
@@ -89,7 +101,8 @@ describe("(a) the extraction made again", { timeout: 60_000 }, () => {
       list: manifestList(
         readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
       ),
-      listName: "manifest.jsonl",
+      // As the reproduction names its list.
+      listName: "waveh/data.sha256",
       listSha256: "3".repeat(64),
       range,
       workers: 0,
@@ -169,6 +182,48 @@ describe("(a) the extraction made again", { timeout: 60_000 }, () => {
     expect((await matchExtraction(a.manifest, wider, pace)).problems).toEqual([
       "the manifests' fields differ",
     ]);
+  });
+
+  it("makes the store again in look 1's folder, …\\ANALYZER\\FRESH\\repro, only under the open seal: closed, nothing is made", async () => {
+    const { store } = makeStore(files, false);
+    const explored = tmp("repro-explored");
+    await run(store, explored, "4".repeat(64));
+    const manifest = openStore(path.join(explored, "store")).manifest;
+    const root = path.join(tmp("repro-at"), "ANALYZER", "FRESH");
+    const o = {
+      root,
+      raw: store,
+      list: manifestList(
+        readFileSync(path.join(store, "manifest.jsonl"), "utf8"),
+      ),
+      listSha256: "3".repeat(64),
+      workers: 0,
+      code: "6".repeat(64),
+      wavehFrozen: "5".repeat(64),
+      coins,
+      pace: () => Promise.resolve(),
+      log: () => {},
+    };
+    const closed = await reproExtraction(
+      { ...o, seal: SEALED },
+      manifest,
+      range,
+    ).catch((e: unknown) => e);
+    expect(closed).toBeInstanceOf(SealedError);
+    expect((closed as Error).message).toBe(
+      `${path.join(root, "repro")}: FRESH is sealed until the polishing's exam is frozen`,
+    );
+    expect(existsSync(root)).toBe(false);
+    expect(
+      await reproExtraction(
+        { ...o, seal: { examFrozen: true } },
+        manifest,
+        range,
+      ),
+    ).toMatchObject({ equal: true, problems: [], more: 0 });
+    expect(existsSync(path.join(root, "repro", "store", "manifest.json"))).toBe(
+      true,
+    );
   });
 });
 

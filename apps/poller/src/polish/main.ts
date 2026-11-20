@@ -258,6 +258,7 @@ try {
                 listSha256,
                 wavehRoot: repro.data.WAVEH_ROOT,
                 gate: gateOf(freeze),
+                seal,
                 workers,
                 pace,
               },
