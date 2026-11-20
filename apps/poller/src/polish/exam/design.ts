@@ -3,7 +3,9 @@
  * (POLISH-RULES's plan, D1–D53, as ruled: decisions 2026-11-19, "the plan's
  * eight questions ruled", "the 715 option made safe" and the owner's "the
  * 715 cut decides the exam on FRESH, with the safety net"). A test holds
- * rules.md's numbers to these.
+ * rules.md's numbers to these. THE PLAN, whose D-, T- and Q-numbers the
+ * exam's comments cite, is `docs/reviews/polish-rules-plan-2026-11-19.md`
+ * (T10–T12: rules.md's head).
  */
 import { FRESH_END } from "../seal.js";
 import { C, E, STOP_MS } from "../tries/parts.js";
@@ -46,13 +48,13 @@ export const SEGMENTS = [
   { from: Date.parse("2026-11-07T00:00:00Z"), to: FRESH_END },
 ] as const;
 /**
- * F7's whole UTC days without books, by the archive's listing of 2026-11-13
- * (the metadata), fixed at the freeze: under option B a deciding position
- * with a leg on one is cut from the deciding days and printed apart, in
- * step 1 (the safety net's count) and step 2 alike; a day the book fetch
- * later finds without books is not cut, its legs going to the tape
- * (decisions 2026-11-19, "the exam's placebo and WITHHELD projection ran",
- * Q1).
+ * F7's whole UTC days without books, by the archive's listing of
+ * NO_BOOK_LISTING (the metadata), fixed at the freeze: under option B a
+ * deciding position with a leg on one is cut from the deciding days and
+ * printed apart, in step 1 (the safety net's count) and step 2 alike; a day
+ * the book fetch later finds without books is not cut, its legs going to the
+ * tape (decisions 2026-11-19, "the exam's placebo and WITHHELD projection
+ * ran", Q1).
  */
 export const NO_BOOK_DAYS = [
   "2026-07-08",
@@ -63,6 +65,8 @@ export const NO_BOOK_DAYS = [
   "2026-07-16",
   "2026-07-17",
 ] as const;
+/** The date of the listing NO_BOOK_DAYS come from, printed with each of them (rules.md P2): it reached 2026-11-12; the refresh of 2026-11-20 found 2026-11-13 → 15 with books (decisions 2026-11-20, option B's listing refreshed). */
+export const NO_BOOK_LISTING = "2026-11-13";
 
 /**
  * F7's thin `asset_ctxs` days of FRESH (rules.md P2, D12): under half the

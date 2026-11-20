@@ -13,7 +13,11 @@ made safe" (`0379582`), "POLISH-RULES's plan, its eight questions ruled"
 "HOLDS stays at 99%; … LIKELY", the exploration's Final review verified;
 2026-11-17 "THE POLISHING PLAN APPROVED" (F1–F19). The D-numbers, T-numbers
 and Q-numbers are POLISH-RULES's plan ("THE PLAN", D1–D53, its technical
-calls and questions), which `23823bb` ruled and the code's comments cite.
+calls T1–T9 and questions Q1–Q8, saved as
+`docs/reviews/polish-rules-plan-2026-11-19.md`), which `23823bb` ruled and
+the code's comments cite; the later calls T10–T12 are in decisions
+2026-11-20, "the exam built up to rules ready" (T10, T11), and 2026-11-19
+`e217fa9` (T12).
 Where a rule names WAVE-H
 (`apps/poller/waveh/rules.md`, H0–H15) or MARKET-1
 (`apps/poller/market1/rules.md`, M1–M13), the exam means it word for word
@@ -198,12 +202,14 @@ trade.*
   - the archive's days without books (`NO_BOOK_DAYS`, option B's days,
     P11): the whole UTC days of FRESH whose 24 hourly `l2Book` folders the
     archive's latest listing before the freeze shows without a book file,
-    from metadata alone (`node tools\waveh-fetch.cjs --fresh --books <the
-    day's 24 hourly keys of one always-listed coin> --plan`: "not in their
-    hour folder's listing 24"), written into `design.ts` at the freeze; by
-    the listing of 2026-11-13, which reached 2026-11-12: 2026-07-08 and
-    2026-07-12 → 17; 2026-11-13 → 15 by the listing the supervisor refreshes
-    before the freeze;
+    from metadata alone (`node tools\waveh-fetch.cjs --fresh --plan --books
+    <a file of the day's 24 hourly keys of one always-listed coin> --store
+    <FRESH_STORE> --heartbeat <the collector's heartbeat>`: "not in their
+    hour folder's listing 24"), written into `design.ts` at the freeze with
+    the listing's date (`NO_BOOK_LISTING`); by the listing of 2026-11-13,
+    which reached 2026-11-12: 2026-07-08 and 2026-07-12 → 17; the listing of
+    2026-11-20 found 2026-11-13 → 15 with books (decisions 2026-11-20,
+    option B's listing refreshed);
   - the thin `asset_ctxs` days (`THIN_CTXS_DAYS`), under half (5,590,560.75
     B) the median bytes of WAVE-H's 370 days (11,181,121.5 B), from the two
     manifests' sizes alone (the tool refuses a list that is not its own): 59
@@ -472,11 +478,13 @@ In `look1\report.json`, written after `result.json` (D46, D52;
   and the days read as absent; the minutes priced by the trade fallback,
   and without a price, by coin and day; the funding rows by coin and
   window; each line's positions by where they stand (segment 1, segment 2,
-  cut, discovery); on the deciding days, the left out by reason and the
-  positions whose funding has a settlement without a minute price; the
-  books needed, `books-needed.txt` named by SHA-256 (step 2 holds the file
-  to it, exit 5); F7's list with its shares; the deciding line and why; the
-  positions' SHA-256.
+  cut, discovery); on the deciding days, each line's positions, the left
+  out by reason and the positions whose funding has a settlement without a
+  minute price, and for the deciding line P15's 5% tripwire (`tripwire`:
+  of, left out, funding without a price, their share); the books needed,
+  `books-needed.txt` named by SHA-256 (step 2 holds the file to it, exit
+  5); F7's list with its shares; the deciding line and why; the positions'
+  SHA-256.
 - **Step 2's**: `result.json` (the identity, the verdict and its numbers,
   the bars and options, the exam's reading so far, the positions' SHA-256);
   `positions.jsonl.gz` (N's positions on the deciding days, the 715 and
@@ -526,7 +534,8 @@ sentence, not a verdict rule; decisions 2026-11-20 `3b98568`, Q4).
    defect seen here: H0's route, then `step1.json` is removed by hand in
    the same decisions entry and step 1 runs again.
 4. **The books**: `node tools\waveh-fetch.cjs --fresh --books
-   <EXAM_ROOT>\look1\books-needed.txt`, under the download's guards.
+   <EXAM_ROOT>\look1\books-needed.txt --store <FRESH_STORE> --heartbeat
+   <the collector's heartbeat>`, under the download's guards.
 5. **`2`**: a second step 2 refuses (already run); every needed book file
    answered by FRESH's `books.jsonl` (a file or missing) before any store
    file is read, else exit 5; FRESH's store step 1's and the positions
@@ -575,13 +584,14 @@ at E); none decides anything.
   | A, and the thin days without marks | 5.15% (5.28%) | 11.6% | F7's funding 0.08 (07-08 and the projection's 14 thin days by size: 05-30, 08-08, 08-09, 08-27, 08-30, 11-07 → 15, 13 of them in THIN_CTXS_DAYS); the rest as A |
   | **B, cut** | **2.16% (0.00%)** | **1.8%** | the funding gaps alone; the safety net fires in 7.1% of windows |
   | B, 11-13 → 15 cut too | 2.34% (0.00%) | 4.5% | the net fires in 8.9% |
-  | B as ruled, 11-13 → 15 without books, not cut | [printed after the listing's refresh] | | their legs at the tape |
+  | B as ruled, 11-13 → 15 without books, not cut | not needed: the listing of 2026-11-20 found 11-13 → 15 with books | | |
 
   [Rejected: only book-short legs counted (6.3%); a threshold of 15% or
   20% (5.4%, 0.0%). N beside on E ∪ C: A 5.36%, P 11.2%; B 2.52%, P 0.0%.]
   The days B cuts are `NO_BOOK_DAYS` as the latest listing before the freeze
-  gives them (P2): the supervisor refreshes it for 2026-11-13 → 15 before
-  the freeze, and `design.ts`, P2, this table and P17 are written from it.
+  gives them (P2): the refresh of 2026-11-20 found 2026-11-13 → 15 with
+  books, so they stay 2026-07-08 and 2026-07-12 → 17 (decisions 2026-11-20,
+  option B's listing refreshed).
 - **[OPTION D, Q4] HOLDS's second condition**: the excess over BASE
   (default) | OWN (P7).
 

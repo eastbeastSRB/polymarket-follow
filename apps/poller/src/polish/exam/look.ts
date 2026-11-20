@@ -24,6 +24,7 @@ import {
   K,
   M,
   NO_BOOK_DAYS,
+  NO_BOOK_LISTING,
   OPTIONS,
   THIN_CTXS_DAYS,
   type Recipe,
@@ -118,7 +119,7 @@ export function f7Of(range: Range, m: Manifest): Map<string, string[]> {
   for (const day of THIN_CTXS_DAYS)
     add(day, "a thin asset_ctxs file (under half WAVE-H's median bytes)");
   for (const day of NO_BOOK_DAYS)
-    add(day, "no books (the archive's listing of 2026-11-13)");
+    add(day, `no books (the archive's listing of ${NO_BOOK_LISTING})`);
   return new Map([...out].sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
