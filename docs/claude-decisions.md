@@ -1,5 +1,105 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (POLISH-FIX — the code review's fix round, as ruled; its
+technical calls): **M1–M3, L1–L7, L10 AND L11 ARE FIXED IN SIX GREEN
+COMMITS, THE PLAN IS SAVED INTO docs/reviews, AND THE DRAFT LIST IS WRITTEN
+AGAIN (125 FILES, `b47e9ac3…b8c9`). A REHEARSAL OF `main.ts`'s REPRODUCE →
+1 → 2 ON A SYNTHETIC WORLD, UNDER A SYNTHETIC TAG, PASSED; THE SAME
+REHEARSAL ON THE CODE BEFORE M1 STOPS AT M1. NOT FROZEN; FRESH STAYS
+SEALED.**
+
+**What** (each commit with `pnpm verify` green in the same command, by
+pathspec, the three freezes verifying after; 814 → 822 tests + 5 skipped):
+- `31bab2e` M1: the reproduction is given the exam's seal.
+- `742b4de` M2, M3: step 1 prints the 5% tripwire's quotient; the
+  built program's test follows the gate.
+- `21f270b` L1, L3: the 715 line deciding through step 2, `placebo.json`
+  held, `step1.json` needed; step 2 holds step 1's program, freeze and
+  check files.
+- `0837596` L2, L6: (c) holds the look's WAVE-H lines equal in number; the
+  gate names a git that cannot run.
+- `0e8ffb4` L7, L10, L11, the `key` alias and the `json` shadow.
+- `edf9ce5` L4, L5 and the rules: `NO_BOOK_LISTING`; P2, P14, P15 and P16
+  written from the code and the 2026-11-20 listing;
+  `docs/reviews/polish-rules-plan-2026-11-19.md`.
+- `c7e95a5` the draft list from a clean tree, committed alone.
+
+**The rehearsal** (Q5; scripts in POLISH-FIX's scratch folder `rh-src\`,
+not a repository test; about an hour of the three-hour box):
+- **The setup:** a `git archive` of `edf9ce5`, its `node_modules`
+  junctions into the repository's, no pnpm. A vitest file run there wrote
+  the world:
+  - WAVE-H's "ten months" as nine days, 2025-12-27 → 2026-01-05;
+  - eight waves in slices 1–8, its trusted store made by the extraction;
+  - its gates, `choice.json`, `c.json`, `e.json` and `placebo.json`
+    computed by the exam's own `partOf`;
+  - FRESH as the look test's world.
+- **The patch:** `design.ts` (the explored hashes, `PLACEBO_JSON`, the
+  cuts 3 / 2 / 4) and `range.ts` (the two ranges), the data lists and
+  `cuts.json`; a build; WAVE-H's list line for the new data list; a
+  synthetic `polish/FROZEN.sha256` (125 files, `# tag polish-freeze-1`),
+  committed and tagged. Both gates said ok, and the seal was open.
+- **The runs:** `node dist\polish.js exam --step reproduce`, then `1`, the
+  books copied in, then `2`, with EXAM_ROOT `…\ANALYZER\FRESH` and
+  FRESH_STORE `…\FRESH\store`.
+  - reproduce exit 0: `repro.json` passed; (a) 2,243 files equal, (b)
+    exact, (c) on 0 lines.
+  - step 1 exit 5: the twin builds equal, the integrity passed, N by the
+    net, the tripwire 1 + 1 of 3, 4 books.
+  - step 2 exit 0: WITHHELD, as the look test.
+  - The log says `examSealOpen` true at each start.
+- **The control:** the same on `99dd76c`. reproduce exits 5, "…\FRESH\repro:
+  FRESH is sealed", which is M1, and steps 1 and 2 then refuse.
+- **What it is not:** a rehearsal of the frozen bytes. The explored hashes
+  and the ranges cannot match a synthetic world, so it rehearses
+  `main.ts`'s wiring, the gate and the seal. It runs again in minutes.
+
+**The technical calls:**
+1. **M1:** `seal` is required in `ReproInput`. (a) is
+   `reproExtraction(o, explored, range)`, with `range` a required parameter
+   (the step passes WAVEH_RANGE), not a default. WAVE-H's own books are
+   still read under the closed seal.
+2. **M2:** `tripwire` = `{of, leftOut, fundingWithoutPrice, share}`. Share
+   = (left out + funding without a price) ÷ of, and null with no
+   position. `positions` stays by where over all slices (P14), with
+   `onDeciding` beside it. P14 names both prints.
+3. **M3:** the sealed-root case is `it.runIf(!verifyExamFreeze(PACKAGE_ROOT).ok)`,
+   and the log's `examSealOpen` is expected equal to the gate.
+4. **L1:** `ExamDesign.safetyNet`, with EXAM_DESIGN's = SAFETY_NET.
+   - `safetyNet` takes its floors as a parameter, and step1.json's inputs
+     name them.
+   - placebo.ts's projection keeps SAFETY_NET, so `placebo.json` is
+     unchanged.
+5. **L3:** the builds and integrity hashes are **held**, not dropped: every
+   file step 1 names by SHA-256, step 2 reads held, as `books-needed.txt`.
+   The program check compares the code and the freeze's SHA-256; the tag
+   line is inside the list, so the tag follows.
+6. **L4:** `NO_BOOK_LISTING` = "2026-11-13", the listing that found the
+   seven days; the refresh of 2026-11-20 found none, so F7's print is
+   unchanged. No P17 row: the look test holds the printed date.
+7. **L5:** the saved section holds D1–D53, T1–T9 and Q1–Q8. T10–T12 came
+   after it, so rules.md's head points to their decisions entries
+   (2026-11-20 POLISH-RULES's for T10 and T11; 2026-11-19 `e217fa9` for
+   T12). The copy is exact (the copied part's SHA-256 equals the source's,
+   `75823228…9100`).
+8. **L6:** git's own refusal carries a numeric exit status ("the tag … does
+   not hold …"). A git that never ran or was stopped has none ("git could
+   not show the tag's list (…)"). It is tested with the PATH emptied
+   (`vi.stubEnv`).
+9. **L7:** `itemsOf` is exported by `lines.ts`. `dataFrom` takes the
+   counted set its caller read (default `countedFrom`), so the
+   exploration's callers are unchanged.
+10. **L11, one step further:** P2's listing command also lacked `--store`
+    and `--heartbeat` (the tool refuses without them), so it is fixed with
+    P15's.
+11. **Left, as ruled:** `LOOK1` and `BARS[0]` (freeze 2); L8's other names,
+    L9 and L12 (the option markers' test changes on the freeze day); no
+    file renamed.
+
+The last `pnpm verify`, in the draft's own command on `edf9ce5`'s clean
+tree: 89 + 1 files, 822 + 5 tests. Nothing of FRESH, `ANALYZER\FRESH` or
+`repro*` was opened. No network, no run on real data.
+
 2026-11-20 (the supervisor — AI-RESEARCH reported): **AN AI MODEL CAN HELP
 THE TOOL BUT CANNOT HONESTLY HELP DECIDE A TRADE AT THIS PROJECT'S RATE.
 THE USES WORTH HAVING, AND THE OWNER'S FOUR CHOICES, GO TO THE TALK AFTER

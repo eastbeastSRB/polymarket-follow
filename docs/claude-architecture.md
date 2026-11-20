@@ -747,13 +747,15 @@ answers (`polish-tries-world.ts`: 16 coins, a wave every 2 days, a planted
 edge after forced sells), synthetic stores and synthetic lz4 books; the
 five steps end to end on the gates world (`polish-gates.test.ts`).
 
-## The exam (built 2026-11-19/20 by POLISH-RULES and its successors 2–5, its rules reviewed by POLISH-RULES-REVIEW and fixed 2026-11-20; its rules ready but the owner's two marked options; not frozen; FRESH sealed)
+## The exam (built 2026-11-19/20 by POLISH-RULES and its successors 2–5, its rules reviewed by POLISH-RULES-REVIEW and fixed 2026-11-20, its code reviewed by POLISH-CODE-REVIEW and fixed by POLISH-FIX 2026-11-20; its rules ready but the owner's two marked options; not frozen; FRESH sealed)
 
 **What it is.** `node dist\polish.js exam --step placebo | reproduce | 1 | 2`:
 the polishing's one exam on FRESH (the plan's section 3; decisions
 2026-11-19, POLISH-RULES's plan and its questions ruled, the owner's 715
 cut with the safety net, the placebo and WITHHELD projection ran; decisions
-2026-11-20, the reproduction's first run). Its rules are
+2026-11-20, the reproduction's first run). THE PLAN, whose D-, T- and
+Q-numbers the code cites, is `docs/reviews/polish-rules-plan-2026-11-19.md`
+(T10–T12: rules.md's head). Its rules are
 `apps/poller/polish/rules.md` (P0–P17), final but the owner's two marked
 options (P16: WITHHELD's days without books, B or A; Q4's excess, BASE or
 OWN), which the talk before the freeze fills in; the looks are two (look 1
@@ -776,8 +778,11 @@ with its SHA-256 (`dist/polish.js`, `dist/polish/`, the 31 compiled files
 of WAVE-H, MARKET-1 and the paper experiment the program reaches, each
 equal to its own freeze, `research/`, lz4js's three files, `polish/`,
 WAVE-H's data list, coins and sizing) and holds exactly one line `# tag
-polish-freeze-<n>` whose git tag holds this very list, byte for byte. A
-key dated at or after FRESH_END is refused, open or closed. Steps 1 and 2
+polish-freeze-<n>` whose git tag holds this very list, byte for byte; a
+git that cannot run (not on the PATH, or timed out) is named as such, and
+the seal stays closed. A key dated at or after FRESH_END is refused, open
+or closed. Every exam step runs under the seal the freeze gives, the
+reproduction too (look 1's is into `ANALYZER\FRESH\repro`). Steps 1 and 2
 stop before anything is opened when the exam's freeze does not verify
 (exit 4). `dist/schedule.js` and `dist/log.js` stay shared and unfrozen,
 their hashes in each start's log line.
@@ -785,11 +790,14 @@ their hashes in each start's log line.
 **The modules.**
 - `design.ts`: every number the rules fix, one home (K = 20, M = 147, the
   recipe's cuts 715 deciding, 336 N's and 1,391 beside, the safety net's 20
-  days and 10 coins, the two segments, the days without books, F7's 59 thin
-  `asset_ctxs` days, δ = +50, WITHHELD's 10%, TOO FEW's 20 and 10, the
-  placebo's seed and draws, the textbook floors, `BARS` (z and z_L of each
+  days and 10 coins, the two segments, the days without books and their
+  listing's date (`NO_BOOK_LISTING`), F7's 59 thin `asset_ctxs` days, δ =
+  +50, WITHHELD's 10%, TOO FEW's 20 and 10, the placebo's seed and draws,
+  the textbook floors, `BARS` (z and z_L of each
   of the two looks, from `placebo.json`), `OPTIONS` (the owner's two, at
-  their defaults), the exploration files' SHA-256s);
+  their defaults), the exploration files' SHA-256s); `EXAM_DESIGN`, what
+  the steps hold their inputs to (the explored files, the recipe, the
+  safety net, the draws, `placebo.json`), a test's world passing its own;
   `test/polish-rules.test.ts` holds rules.md's P17 to it row by row.
 - `fresh.ts`: FRESH's integrity (G0's `wholeOf` and G5's `pairingOf` on
   FRESH's files; a record alone only in FRESH's first or last file;
@@ -797,13 +805,16 @@ their hashes in each start's log line.
   closing before FRESH_END); `whereOf` (segment 1 or 2, cut by option B
   for a leg on a day without books, or the discovery window); `holesOf`
   and `leftOutOf` (60 s without a record of any coin, in the hour up to t
-  or a leg's minute); `safetyNet` (the 715 line's positions not left out).
+  or a leg's minute); `safetyNet` (the 715 line's positions not left out,
+  at the design's floors).
 - `look.ts`: the four lines (715, N, 1391, B0), placed by the
   exploration's `place` with `inExam`, each position with where it stands
   and why it is left out; `onDeciding` (slices 0–19 in a segment); `keyOf`
   (step 2's map key: slice, instant, coin); F7's days; step 1's counts,
   none an outcome (the counted fills and other liquidation legs by month,
-  kind and method among them).
+  kind and method among them; each line's positions on the deciding days;
+  the deciding line's 5% tripwire, `tripwire`: of, left out, funding
+  without a price, their share).
 - `placebo.ts`: the placebo gate (N's E lines held to B0's at W4 ≥ 336; the
   three cuts recomputed by the kit's type-7 quantile; N at K = 147 equal to
   `beside.json`'s to the bit; both flips on the 715 line from E alone and
@@ -819,9 +830,10 @@ their hashes in each start's log line.
   in its order (WITHHELD, TOO FEW TO TELL, DOES NOT HOLD, HOLDS, LIKELY,
   NOT SETTLED) with its sentence; `examVerdict` (F14 as MARKET-1's M11:
   only HOLDS or DOES NOT HOLD end the exam before its last look).
-- `repro.ts`: the reproduction's three comparisons; `lines.ts`: the prints
-  beside; `steps.ts`: the four steps (`reproEnd`: `repro.json`'s `passed`
-  and exit 6).
+- `repro.ts`: the reproduction's three comparisons ((c) holds the look's
+  WAVE-H lines equal in number to the positions); `lines.ts`: the prints
+  beside; `steps.ts`: the four steps (`reproExtraction`: (a) under the
+  step's seal; `reproEnd`: `repro.json`'s `passed` and exit 6).
 
 Changed outside `exam/`, each pinned by a test: `seal.ts` (the opening;
 FRESH_END), the readers that take the seal (`held.ts`, `store.ts`,
@@ -844,8 +856,8 @@ machine during the look's:
 | `placebo` | before the freeze | `placebo.json` |
 | `reproduce` | before FRESH opens; again at look 1 by the frozen program | `repro\` (the ten months extracted again), `repro.json` |
 | `1` | the seal open, `repro.json` passed by this very program | `parts\`, `store\` (FRESH's store), `twin\` (its second build), `look1\builds.json`, `integrity.json`, `books-needed.txt`, `step1.json` (naming the books file by SHA-256); then exit 5, books needed |
-| the books | after step 1, its counts read (rules.md P15's 5% tripwire) | `node tools\waveh-fetch.cjs --fresh --books <EXAM_ROOT>\look1\books-needed.txt` |
-| `2` | every needed book answered, `books-needed.txt` held to step 1's SHA-256 | `look1\result.json` (written before anything about an outcome is logged), then `positions.jsonl.gz`, `report.json` |
+| the books | after step 1, its counts read (rules.md P15's 5% tripwire, `counts.tripwire.share`) | `node tools\waveh-fetch.cjs --fresh --books <EXAM_ROOT>\look1\books-needed.txt --store <FRESH_STORE> --heartbeat <the collector's heartbeat>` |
+| `2` | `step1.json` this program's under this freeze; `builds.json`, `integrity.json` and `books-needed.txt` held to its SHA-256s; every needed book answered | `look1\result.json` (written before anything about an outcome is logged), then `positions.jsonl.gz`, `report.json` |
 
 `placebo.json` (`c25345f7…`) is copied into EXAM_ROOT before the
 reproduction and step 2, which hold it to its SHA-256.
@@ -869,17 +881,24 @@ rules.md P1) refuses a list that differs from that tag's outside
 bytes and SHA-256s alone, the range's keys each once) and prints F7's thin
 days (under half the median bytes of WAVE-H's 370), writing nothing unless
 they are `design.ts`'s. Option B's days (`NO_BOOK_DAYS`) are written at the
-freeze from the archive's latest listing (`waveh-fetch.cjs --fresh --books
-<keys> --plan`, metadata only; rules.md P2).
+freeze from the archive's latest listing (`waveh-fetch.cjs --fresh --plan
+--books <keys> --store … --heartbeat …`, metadata only; rules.md P2): the
+listing of 2026-11-13, the refresh of 2026-11-20 finding 2026-11-13 → 15
+with books.
 
 **Its runs so far:** the placebo (2026-11-19,
 `ANALYZER\POLISH-RULES\placebo.json`, `c25345f7…`); the WITHHELD projection (`withheld.json`, `8e8249d7…`);
 `--data` (2026-11-20, `polish/fresh.sha256`, `17de22e5…`); the
 reproduction's first run (2026-11-20: (b) and (c) exact, (a) one file of
 8,846 read differently, a one-off fault in memory; decisions 2026-11-20),
-and its second from 06:00:30Z (the supervisor's). The tests:
+and its second (06:00–07:34Z: every part passed, decisions 2026-11-20).
+The tests:
 `test/polish-exam-*.test.ts` (the freeze in a temporary git repository;
 FRESH worlds of a few days, `polish-exam-world.ts`; the prints beside,
 `polish-exam-lines`), `polish-freeze.test.ts`, `polish-rules.test.ts`; a
 breaks round of 314 deliberate breaks and the fix round's 13 (decisions
-2026-11-20, the exam built up to rules ready).
+2026-11-20, the exam built up to rules ready). A rehearsal of `main.ts`'s
+reproduce → 1 → 2 on a synthetic world, in a scratch repository whose
+design and ranges are patched to it and whose synthetic list a tag holds,
+passed (2026-11-20, POLISH-FIX; its scripts outside the repository,
+decisions 2026-11-20, the code review's fix round).
