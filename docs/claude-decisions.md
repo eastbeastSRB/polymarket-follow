@@ -1,5 +1,38 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the owner — the memory test): **ONLY IF NEEDED. IT BECOMES
+NEEDED WHEN ANOTHER GUARD TRIPS: A SECOND CRASH, A DIFFERENCE BETWEEN
+FRESH'S TWO BUILDS, OR A REPRODUCTION THAT DIFFERS AGAIN.**
+
+**The owner, about 08:15Z:** "will do that if needed... didn't have this
+problems so far".
+
+**The facts on the machine** (read-only `Win32_PhysicalMemory`, 08:1xZ):
+- four 8 GB DDR4 modules: Kingston KF3600C17D4/8GX in A1 and B1,
+  KHX3600C17D4/8GX in A2 and B2;
+- two part numbers, so likely two kits;
+- all four run at 3,600 MT/s (their XMP speed);
+- 12.3 GB of 31.9 GB free at the time.
+
+Four modules at XMP speed, from two kits, is a common setup that passes
+normal use and can slip under long heavy load. The night of 2026-11-19/20
+was this PC's heaviest load so far. A rare software fault, or chance, is
+not ruled out: both events were Node processes.
+
+**Why waiting is safe:**
+- **The exam's guards catch a fault in the data or the code's reading of
+  it:**
+  - FRESH is built twice and must be equal byte for byte;
+  - the frozen program runs the reproduction again at look 1;
+  - the look's Final review recomputes its result with independent code.
+- **The supervisor keeps heavy runs light,** with one test run at a time
+  and few workers.
+
+**The trigger:** any of the three guards trips, or the collector crashes
+again. Then the owner runs Windows Memory Diagnostic before the work goes
+on. If it finds errors, the usual remedy is a slower memory setting in the
+BIOS, which is the owner's call. The supervisor changes no system setting.
+
 2026-11-20 (the supervisor — the collector's first crash): **THE COLLECTOR
 STOPPED AT 07:07:12Z WITH A NATIVE HEAP-CORRUPTION EXIT (0xC0000374) AND
 ITS WATCHDOG RESTARTED IT AT 07:13:29Z. WITH THE REPRODUCTION'S ONE-OFF
