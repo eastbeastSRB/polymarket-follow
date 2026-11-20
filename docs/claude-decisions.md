@@ -1,5 +1,60 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the exam's fresh code review): **"AFTER THESE
+FIXES", NOT A REWORK: NO HIGH FINDING, NO SILENT WRONG VERDICT, NOTHING
+THAT OPENS FRESH EARLY OR TOUCHES THE LIVE PROGRAMS. THREE MEDIUM, TWELVE
+LOW. ITS SEVEN QUESTIONS ARE RULED. THE FIX ROUND GOES TO A FRESH
+POLISH-FIX, THEN A FIX-CHECK.**
+
+**What:**
+- **The review** is `docs/reviews/polish-code-review-2026-11-20.md`
+  (POLISH-CODE-REVIEW, Sonnet 5.5, max; 05:43–08:35Z; context peak 832k).
+  It was saved unchanged from its final message.
+- **Access was clean.** Nothing of FRESH, no `repro*`, and its runs were
+  light (one at a time, 2 vitest workers).
+- **Its checks:**
+  - 77 breaks, 72 killed: all of the rules review's 47; 15 of its 19
+    wiring breaks; 10 of 11 survivor re-breaks;
+  - the P11 grid: 30,000 sets, 0 differences;
+  - four differentials against brute force, 0 differences;
+  - the whole suite in a clean copy: 814 tests;
+  - a freeze rehearsal in a scratch repository (tag 1, gate ok, 125 files
+    equal to the draft).
+- **The medium findings:**
+  - **M1:** `reproduceStep` is given no seal, so look 1's reproduction into
+    `ANALYZER\FRESH` would be refused.
+  - **M2:** step 1 prints no denominator for P15's 5% tripwire.
+  - **M3:** a test pins the pre-freeze state, so the first verify after the
+    tag goes red.
+
+**The rulings:**
+1. **Q1, yes.** M1–M3 and L1–L3 are fixed before the freeze, then `pnpm
+   verify`, the draft list again, and a fresh fix-check. The frozen program
+   reproduces at look 1 anyway (D47).
+2. **Q2, yes.** L7 (duplicates), L10 (one sentence built), L11 (stale
+   headers, the fetch command in P15), the `key` alias and the `json`
+   shadow. There are no file renames.
+3. **Q3:** FRESH-2 is fetched into `…\FRESH\store`, and the allow-list is
+   unchanged. `look.ts`'s listing date moves to one `design.ts` constant now
+   (L4). `LOOK1` and `BARS[0]` become parameters at freeze 2, which
+   `steps.js` may change.
+4. **Q4, yes.** THE PLAN is saved as
+   `docs/reviews/polish-rules-plan-2026-11-19.md` and indexed (L5).
+5. **Q5, yes, time-boxed.** A rehearsal of `main.ts`'s reproduce → step 1
+   → step 2 on a small synthetic world named as FRESH's keys, in a scratch
+   git repository with a synthetic tag. It would have caught M1. If it
+   cannot be built in about three hours of the fix round, the builder says
+   why and it moves to look 2's build.
+6. **Q6, no.** Step 1's order stays (the twin build, then the integrity).
+   Plan for the likely exit 6 at the pairing check: about 75% chance of at
+   least one one-sided trade on FRESH, ruled by H0's route.
+7. **Q7:** B or A and BASE or OWN stay the owner's at the talk.
+   - The recommendations are B and BASE.
+   - On the freeze day, the option markers' test (L12) changes in the same
+     commit as the answers.
+   - The listing's result (decisions `f4ccf50`: 11-13 → 15 have books)
+     goes into P2 and P16's placeholder row in the same fix round.
+
 2026-11-20 (the owner — the memory test): **ONLY IF NEEDED. IT BECOMES
 NEEDED WHEN ANOTHER GUARD TRIPS: A SECOND CRASH, A DIFFERENCE BETWEEN
 FRESH'S TWO BUILDS, OR A REPRODUCTION THAT DIFFERS AGAIN.**
