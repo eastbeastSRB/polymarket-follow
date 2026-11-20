@@ -11,7 +11,8 @@ NOT SETTLED (2026-11-17). The polishing (a sharpened rule chosen on WAVE-H's
 10 months, then one exam on FRESH's months) chose its rule on 2026-11-19:
 B0 + W4, with the owner's 715 cut deciding and a safety net to N. Its exam
 is built up to "rules ready" (2026-11-20, POLISH-RULES), its fresh code
-review's fixes are in (2026-11-20, POLISH-FIX) and a new draft list is
+review's fixes are in and checked ("ready to freeze", 2026-11-20,
+POLISH-FIX-CHECK), the owner's options are filled and a new draft list is
 written. It is not frozen, and FRESH stays sealed.** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
@@ -57,12 +58,17 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
       so `NO_BOOK_DAYS` stays 2026-07-08 and 07-12 → 17 (P2, P16).
     - The fresh rules review and the fresh code review ("after these
       fixes", `docs/reviews/polish-code-review-2026-11-20.md`) are ruled
-      and fixed (decisions 2026-11-20, "the code review's fix round").
+      and fixed (decisions 2026-11-20, "the code review's fix round"); the
+      fix round's fresh check says ready to freeze
+      (`docs/reviews/polish-fix-check-2026-11-20.md`).
+    - The owner's options are all filled (rules.md P16; decisions
+      2026-11-19 `710338f`, 2026-11-20 `04b6b13`): the 715 cut with the
+      safety net; option E B, the days without books cut; Q4 BASE.
     - A rehearsal of `main.ts`'s reproduce → 1 → 2 on a synthetic world
       under a synthetic tag passed; on the code before the fix it stops at
       M1 (its scripts in POLISH-FIX's scratch and worker folders).
     - The draft list `polish/FROZEN.draft.sha256`: 125 files,
-      `b47e9ac3…b8c9` (`c7e95a5`; a draft, not a freeze).
+      `aab29e44…8f69` (`8b15ef8`; a draft, not a freeze).
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07). The
   analyzer reads only local files.
@@ -71,20 +77,16 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **A fresh fix-check of POLISH-FIX's round** (decisions 2026-11-20, the
-   exam's fresh code review: "then a fix-check"). After any code or rules
-   change, the draft list again: `node tools/polish-freeze.cjs` after
-   `pnpm verify` on a clean tree, committed alone.
-2. **The owner's talk before the freeze** (rules.md P16, each option with
-   its numbers): the days without books (option B, cut, recommended; or A,
-   kept); Q4 (the excess over BASE, the default; or OWN). The marked
-   options are then filled in, and the option markers' test
-   (`polish-rules.test.ts`) changes in the same commit.
-3. **The freeze:** `node tools/polish-freeze.cjs --final --tag 1` from a
-   clean tree, the commit tagged `polish-freeze-1` (the owner pushes the
-   tag); `git` checked from the launcher's environment. Only a verified
-   list held by its tag opens FRESH.
-4. **Look 1** (rules.md P15), the supervisor's runs, one at a time, with
+1. **The freeze** (the owner's talk is done; the fix-check said ready):
+   `node tools/polish-freeze.cjs --final --tag 1` from a clean tree, the
+   commit tagged `polish-freeze-1` (the owner pushes the tag); `git`
+   checked from the launcher's environment. Only a verified list held by
+   its tag opens FRESH. After the tag, `pnpm verify` should count 822
+   passed + 6 skipped, the frozen state's normal count (the fix-check's
+   821 + 6, decisions 2026-11-20, plus c15's one new test; unfrozen 823 +
+   5). After any re-freeze, a completed step 1 runs again (rules.md P15,
+   step 5).
+2. **Look 1** (rules.md P15), the supervisor's runs, one at a time, with
    nothing heavy beside them: `placebo.json` copied into `ANALYZER\FRESH`;
    `reproduce` by the frozen program into `ANALYZER\FRESH`; step 1 (FRESH
    built twice and held equal, its integrity, the counts, read with
@@ -96,30 +98,31 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
    report and a Final review with independent code. Look 2 about
    2027-02-08, a later build under its own freeze (rules.md P1), with the
    rehearsal again before it.
-5. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
+3. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
    MARKET-1 run is live (rules.md M2).
-6. **The daily runs:** the supervisor checks each program's log, budget and
+4. **The daily runs:** the supervisor checks each program's log, budget and
    page; no running number is read as evidence before a look.
-7. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
+5. **D1** (the classifier v2's blind test, after 2026-11-21) and **D2**
    (R8's B2 confirmation, after 2026-11-30), each with its own share of the
    remaining 80 a minute.
-8. **MARKET-1's second arm** after the polishing's freeze, with the
+6. **MARKET-1's second arm** after the polishing's freeze, with the
    polished rule (decisions 2026-11-17, the polishing plan's answers, 7).
-9. **Small collector follow-ups, when convenient:** drop the boards'
+7. **Small collector follow-ups, when convenient:** drop the boards'
    `consistent` flag; a coverage mark for books that arrive late; the
    backup task's trigger from UTC; the page's fee-category alarm.
-10. **The v1 plan** (the plan page), early December.
+8. **The v1 plan** (the plan page), early December.
 
-## Last session (2026-11-20, POLISH-FIX)
+## Last session (2026-11-20, POLISH-PREFREEZE)
 
-The fresh code review's fix round, as ruled (decisions 2026-11-20): M1 the
-reproduction given the exam's seal (`31bab2e`); M2 the 5% tripwire's
-quotient in step 1's counts and M3 the built program's test following the
-gate (`742b4de`); L1 the design's safety-net seam with the 715 line
-deciding through step 2, and L3 step 2 holding step 1's program, freeze and
-check files (`21f270b`); L2 and L6 (`0837596`); L7, L10, L11 (`0e8ffb4`);
-L4 and L5 with the rules' P2, P14, P15 and P16, THE PLAN saved
-(`edf9ce5`); the draft list again (`c7e95a5`: 125 files, `b47e9ac3…b8c9`);
-the rehearsal and its control; these docs. Each commit with `pnpm verify`
-green in the same command (822 + 5 tests at the end) and the three freezes
-verified after. Nothing of FRESH was opened.
+The last small commit before the exam's freeze, as the fix-check's items
+1–4 were ruled (decisions 2026-11-20, "the fix round's fresh check"):
+`design.ts`'s `OPTIONS` comment says the options are filled (comment
+only) and rules.md P15 step 5 says step 2 refuses another program's or
+freeze's `step1.json` (`f1b4350`); two test-only assertions, c10 (DOES
+NOT HOLD's sentence with SE above 0) and c15 (the tripwire's share null
+with no position), each shown to kill its break in a scratch copy; the
+draft list again (`8b15ef8`: 125 files, `aab29e44…8f69`; against
+`750b5c64…6a8a` only `dist/polish/exam/design.js` and `polish/rules.md`
+differ); these docs. Each commit with `pnpm verify` green in the same
+command (823 + 5 tests) and the three freezes verified after (74, 64, 61:
+0 differ). Nothing of FRESH was opened.

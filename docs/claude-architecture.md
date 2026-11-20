@@ -747,7 +747,7 @@ answers (`polish-tries-world.ts`: 16 coins, a wave every 2 days, a planted
 edge after forced sells), synthetic stores and synthetic lz4 books; the
 five steps end to end on the gates world (`polish-gates.test.ts`).
 
-## The exam (built 2026-11-19/20 by POLISH-RULES and its successors 2–5, its rules reviewed by POLISH-RULES-REVIEW and fixed 2026-11-20, its code reviewed by POLISH-CODE-REVIEW and fixed by POLISH-FIX 2026-11-20; its rules ready but the owner's two marked options; not frozen; FRESH sealed)
+## The exam (built 2026-11-19/20 by POLISH-RULES and its successors 2–5, its rules reviewed by POLISH-RULES-REVIEW and fixed 2026-11-20, its code reviewed by POLISH-CODE-REVIEW and fixed by POLISH-FIX 2026-11-20; its rules ready, every marked option filled by the owner; not frozen; FRESH sealed)
 
 **What it is.** `node dist\polish.js exam --step placebo | reproduce | 1 | 2`:
 the polishing's one exam on FRESH (the plan's section 3; decisions
@@ -756,9 +756,9 @@ cut with the safety net, the placebo and WITHHELD projection ran; decisions
 2026-11-20, the reproduction's first run). THE PLAN, whose D-, T- and
 Q-numbers the code cites, is `docs/reviews/polish-rules-plan-2026-11-19.md`
 (T10–T12: rules.md's head). Its rules are
-`apps/poller/polish/rules.md` (P0–P17), final but the owner's two marked
-options (P16: WITHHELD's days without books, B or A; Q4's excess, BASE or
-OWN), which the talk before the freeze fills in; the looks are two (look 1
+`apps/poller/polish/rules.md` (P0–P17), final, every marked option filled
+by the owner (P16; decisions 2026-11-20 `04b6b13`: WITHHELD's days without
+books cut, B; Q4's excess over BASE); the looks are two (look 1
 on FRESH's 100 deciding days, look 2 about 2027-02-08, a later build under
 its own freeze whose terms P1 fixes). The code is `src/polish/exam/`, under
 the code's fingerprint, imported by no extraction module. Settings, no
@@ -794,8 +794,8 @@ their hashes in each start's log line.
   listing's date (`NO_BOOK_LISTING`), F7's 59 thin `asset_ctxs` days, δ =
   +50, WITHHELD's 10%, TOO FEW's 20 and 10, the placebo's seed and draws,
   the textbook floors, `BARS` (z and z_L of each
-  of the two looks, from `placebo.json`), `OPTIONS` (the owner's two, at
-  their defaults), the exploration files' SHA-256s); `EXAM_DESIGN`, what
+  of the two looks, from `placebo.json`), `OPTIONS` (the owner's two, as
+  filled: cut and BASE), the exploration files' SHA-256s); `EXAM_DESIGN`, what
   the steps hold their inputs to (the explored files, the recipe, the
   safety net, the draws, `placebo.json`), a test's world passing its own;
   `test/polish-rules.test.ts` holds rules.md's P17 to it row by row.
