@@ -5,6 +5,7 @@
  * prose; the headings P0 to P17 in order; each open option marked.
  */
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -61,7 +62,7 @@ describe("the exam's rules (polish/rules.md)", () => {
       "safety net days": String(SAFETY_NET.days),
       "safety net coins": String(SAFETY_NET.coins),
       "segment 1": `${iso(SEGMENTS[0].from)} ${iso(SEGMENTS[0].to)}`,
-      "segment 2": `${iso(SEGMENTS[1].from)} ${iso(SEGMENTS[1].to)}`,
+      "segment 2, look 1": `${iso(SEGMENTS[1].from)} ${iso(SEGMENTS[1].to)}`,
       discovery: `${iso(DISCOVERY.from)} ${iso(DISCOVERY.to)}`,
       "look 2 end": iso(LOOK2_END),
       delta: String(DELTA),
@@ -71,14 +72,29 @@ describe("the exam's rules (polish/rules.md)", () => {
       "placebo seed": String(PLACEBO.seed),
       "placebo draws": String(PLACEBO.draws),
       "placebo windows": PLACEBO.windows.join(" "),
-      "floors, two looks": `${TEXTBOOK.twoLooks.holds} ${TEXTBOOK.twoLooks.likely}`,
+      floors: `${TEXTBOOK.holds} ${TEXTBOOK.likely}`,
       "look 1": bar(BARS[0]),
       "look 2": bar(BARS[1]),
       "placebo.json": PLACEBO_JSON,
       options: `${OPTIONS.noBookDays} ${OPTIONS.excess}`,
-      "no-book days": NO_BOOK_DAYS.join(" "),
-      "thin days": String(THIN_CTXS_DAYS.length),
+      "no-book days, look 1": NO_BOOK_DAYS.join(" "),
+      "thin days, look 1": String(THIN_CTXS_DAYS.length),
     });
+  });
+
+  it("names in P1 exactly the files the freeze tool lets look 2's freeze change (LOOK2_ALLOWED)", () => {
+    const at = RULES.indexOf("**What may differ, by file**");
+    const end = RULES.indexOf("Every other file of the list", at);
+    expect(at).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(at);
+    const named = [...RULES.slice(at, end).matchAll(/`([a-z0-9/.-]+)`/g)]
+      .map((m) => m[1]!)
+      .filter((f) => f.includes("/"));
+    const tool = createRequire(import.meta.url)(
+      path.join(PACKAGE_ROOT, "..", "..", "tools", "polish-freeze.cjs"),
+    ) as { LOOK2_ALLOWED: string[] };
+    expect(named).toEqual(tool.LOOK2_ALLOWED);
+    expect(named).toHaveLength(9);
   });
 
   it("prints each bar in P10 (three decimals, a floor as it is), the headings P0 to P17 in order, and every open option marked", () => {

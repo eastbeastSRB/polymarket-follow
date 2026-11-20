@@ -153,11 +153,8 @@ export const PLACEBO = {
   draws: 100_000,
   windows: [100, 182],
 } as const;
-/** The textbook floors (F1; decisions 2026-11-19): HOLDS's 99% two-sided, LIKELY's 95%, Bonferroni over two looks. */
-export const TEXTBOOK = {
-  twoLooks: { holds: 2.81, likely: 2.24 },
-  oneLook: { holds: 2.58, likely: 1.96 },
-} as const;
+/** The textbook floors (F1; decisions 2026-11-19): HOLDS's 99% two-sided, LIKELY's 95%, Bonferroni over the two looks. */
+export const TEXTBOOK = { holds: 2.81, likely: 2.24 } as const;
 
 /**
  * HOLDS's z and LIKELY's z_L at each of the two looks (rules.md P10, P12;

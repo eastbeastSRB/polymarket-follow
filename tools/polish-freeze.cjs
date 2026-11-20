@@ -13,8 +13,15 @@
  * the repository:
  *
  *   node tools/polish-freeze.cjs            the draft, polish/FROZEN.draft.sha256
- *   node tools/polish-freeze.cjs --final    the freeze, polish/FROZEN.sha256
+ *   node tools/polish-freeze.cjs --final [--tag <n>] [--look2 <look 1's tag>]
+ *                                           the freeze, polish/FROZEN.sha256
  *   node tools/polish-freeze.cjs --data <FRESH's manifest.jsonl> <WAVE-H's manifest.jsonl>
+ *
+ * --tag <n> writes the line "# tag polish-freeze-<n>" (1 when not given): a
+ * re-freeze by H0's route takes the next number (rules.md P0). --look2 is
+ * look 2's freeze (rules.md P1): it refuses a list that differs from the
+ * list the named tag holds anywhere but in LOOK2_ALLOWED's files, a file
+ * changed, added or gone.
  *
  * --data writes polish/fresh.sha256 (rules.md P2; THE PLAN D7, D12, T3):
  * every file FRESH's range reads (FRESH_RANGE: 4,102 fill files, 170
@@ -103,6 +110,67 @@ const freshList = (lines) =>
     .map((l) => `${l.sha256} *${l.key}`)
     .join("\n")}\n`;
 
+/** The files look 2's freeze may change or add against the list look 1 ran under (rules.md P1, 2.; a test holds rules.md's list to this one). */
+const LOOK2_ALLOWED = [
+  "dist/polish/seal.js",
+  "dist/polish/range.js",
+  "dist/polish/main.js",
+  "dist/polish/exam/design.js",
+  "dist/polish/exam/fresh.js",
+  "dist/polish/exam/steps.js",
+  "polish/fresh2.sha256",
+  "polish/look1.sha256",
+  "polish/fresh-unpaired.json",
+];
+
+/** Look 2's differences from look 1's list outside LOOK2_ALLOWED, each named: a file changed or added but not allowed, and any file gone. */
+function outsideLook2(before, after) {
+  const out = [];
+  for (const [f, hash] of after)
+    if (!LOOK2_ALLOWED.includes(f) && before.get(f) !== hash)
+      out.push(`${before.has(f) ? "changed" : "added"}: ${f}`);
+  for (const f of before.keys()) if (!after.has(f)) out.push(`gone: ${f}`);
+  return out;
+}
+
+/** The closure's files against the three freezes (EXAM_CLOSURE): each in one of them and equal to every list naming it; every problem, none when they hold. */
+function closureProblems(closure, lists, hashOf) {
+  const problems = [];
+  for (const f of closure) {
+    const got = hashOf(f);
+    const naming = lists.filter(([, list]) => list.has(f));
+    if (naming.length === 0)
+      problems.push(`${f} is in none of the three freezes`);
+    for (const [name, list] of naming)
+      if (list.get(f) !== got) problems.push(`${f} differs from ${name}`);
+  }
+  return problems;
+}
+
+/** The list's comment lines: what it is, from which commit and toolchain, the files required by name not yet written (a draft), and in a final list alone its tag line. */
+function headOf(o) {
+  return [
+    `# ${o.tag === null ? "DRAFT, not a freeze" : "FROZEN"}: the exam's files of what runs (polish/rules.md P0)`,
+    `# written ${o.written} from commit ${o.commit}${o.dirty ? " (the tree was not clean)" : ""}`,
+    `# node ${o.versions.node}; typescript ${o.versions.typescript}; zod ${o.versions.zod}; pino ${o.versions.pino}; lz4js ${o.versions.lz4js}`,
+    `# pnpm-lock.yaml sha256 ${o.lock}`,
+    ...(o.absent.length > 0
+      ? [`# not yet written, required by name: ${o.absent.join(", ")}`]
+      : []),
+    ...(o.tag === null ? [] : [`# tag polish-freeze-${o.tag}`]),
+  ];
+}
+
+/** The tag number of `--tag <n>`: 1 when not given; a positive integer, else refused. */
+function tagOf(argv) {
+  const at = argv.indexOf("--tag");
+  if (at === -1) return 1;
+  const n = argv[at + 1];
+  if (n === undefined || !/^[1-9][0-9]*$/.test(n))
+    throw new Error(`--tag needs a number from 1, not ${n ?? "nothing"}`);
+  return Number(n);
+}
+
 /** Why --final writes nothing, or null: a tree that is not clean (`git status --porcelain`'s text), or a file the exam reads by name missing. */
 function finalRefusal(status, present) {
   if (status !== "") return "the tree is not clean: commit first, then freeze";
@@ -151,6 +219,11 @@ async function main() {
     return;
   }
   const final = process.argv.includes("--final");
+  const tag = final ? tagOf(process.argv) : null;
+  const look2At = process.argv.indexOf("--look2");
+  const look2 = look2At === -1 ? null : process.argv[look2At + 1];
+  if (look2 !== null && (!final || look2 === undefined))
+    throw new Error("--look2 <look 1's tag> goes with --final");
   const git = (...args) =>
     execFileSync("git", args, { cwd: PKG, encoding: "utf8" }).trim();
   if (final) {
@@ -180,15 +253,11 @@ async function main() {
     f,
     listOf(fs.readFileSync(path.join(PKG, f), "utf8")),
   ]);
-  for (const f of EXAM_CLOSURE) {
-    const got = sha256(fs.readFileSync(path.join(PKG, f)));
-    const naming = lists.filter(([, list]) => list.has(f));
-    if (naming.length === 0)
-      throw new Error(`${f} is in none of the three freezes: nothing written`);
-    for (const [name, list] of naming)
-      if (list.get(f) !== got)
-        throw new Error(`${f} differs from ${name}: nothing written`);
-  }
+  const closure = closureProblems(EXAM_CLOSURE, lists, (f) =>
+    sha256(fs.readFileSync(path.join(PKG, f))),
+  );
+  if (closure.length > 0)
+    throw new Error(`${closure.join("; ")}: nothing written`);
   const absent = EXAM_FILES.filter((f) => !files.includes(f));
   const version = (pkg) =>
     JSON.parse(
@@ -197,22 +266,33 @@ async function main() {
         "utf8",
       ),
     ).version;
-  const commit = git("rev-parse", "HEAD");
-  const dirty = git("status", "--porcelain");
   const lock = fs.readFileSync(path.join(PKG, "..", "..", "pnpm-lock.yaml"));
-  const head = [
-    `# ${final ? "FROZEN" : "DRAFT, not a freeze"}: the exam's files of what runs (polish/rules.md P0)`,
-    `# written ${new Date().toISOString()} from commit ${commit}${dirty ? " (the tree was not clean)" : ""}`,
-    `# node ${process.version}; typescript ${version("typescript")}; zod ${version("zod")}; pino ${version("pino")}; lz4js ${version("lz4js")}`,
-    `# pnpm-lock.yaml sha256 ${sha256(lock)}`,
-    ...(absent.length > 0
-      ? [`# not yet written, required by name: ${absent.join(", ")}`]
-      : []),
-    ...(final ? [`# tag polish-freeze-1`] : []),
-  ];
+  const head = headOf({
+    tag,
+    written: new Date().toISOString(),
+    commit: git("rev-parse", "HEAD"),
+    dirty: git("status", "--porcelain") !== "",
+    versions: {
+      node: process.version,
+      typescript: version("typescript"),
+      zod: version("zod"),
+      pino: version("pino"),
+      lz4js: version("lz4js"),
+    },
+    lock: sha256(lock),
+    absent,
+  });
   const lines = files.map(
     (f) => `${sha256(fs.readFileSync(path.join(PKG, f)))} *${f}`,
   );
+  if (look2 !== null) {
+    const before = listOf(git("show", `${look2}:./polish/FROZEN.sha256`));
+    const outside = outsideLook2(before, listOf(lines.join("\n")));
+    if (outside.length > 0)
+      throw new Error(
+        `look 2's list differs from ${look2}'s outside the files rules.md P1 allows: ${outside.join("; ")}: nothing written`,
+      );
+  }
   const out = path.join(
     PKG,
     "polish",
@@ -225,7 +305,17 @@ async function main() {
   );
 }
 
-module.exports = { checkKeys, finalRefusal, freshList, thinDays };
+module.exports = {
+  LOOK2_ALLOWED,
+  checkKeys,
+  closureProblems,
+  finalRefusal,
+  freshList,
+  headOf,
+  outsideLook2,
+  tagOf,
+  thinDays,
+};
 
 if (require.main === module)
   main().catch((err) => {

@@ -683,9 +683,11 @@ export async function stepOne(o: LookInput): Promise<never> {
     range: o.range,
     coins: o.coins,
     forty,
+    legs: countedFrom(store, o.coins).legs,
   });
   m.phase("positions");
-  writeWhole(path.join(dir, BOOKS_NEEDED), `${needed.join("\n")}\n`);
+  const neededText = `${needed.join("\n")}\n`;
+  writeWhole(path.join(dir, BOOKS_NEEDED), neededText);
   const positions = Object.fromEntries(
     LINES.map((n) => [n, look.lines[n].length]),
   );
@@ -717,6 +719,7 @@ export async function stepOne(o: LookInput): Promise<never> {
       positions,
       featureUnknown: look.unknown,
       booksNeeded: needed.length,
+      booksNeededSha256: sha256(neededText),
       counts,
       ...m.done(),
       written: new Date().toISOString(),
@@ -742,6 +745,7 @@ const Step1File = z.object({
     coins: z.number(),
   }),
   positionsSha256: z.string().regex(SHA256),
+  booksNeededSha256: z.string().regex(SHA256),
 });
 /** What the report copies of placebo.json: every line's percentiles by flip and window, and the bars. */
 const PlaceboFile = z.object({ placebo: z.unknown(), z: z.unknown() });
@@ -773,7 +777,12 @@ export async function stepTwo(o: LookInput) {
     throw new StoreError(`no ${LOOK1}\\${STEP1}: step 1 runs first`);
   const step1Bytes = readFileSync(path.join(dir, STEP1));
   const step1 = Step1File.parse(JSON.parse(step1Bytes.toString("utf8")));
-  const needed = readFileSync(path.join(dir, BOOKS_NEEDED), "utf8")
+  const needed = heldFile(
+    path.join(dir, BOOKS_NEEDED),
+    step1.booksNeededSha256,
+    `${LOOK1}\\${BOOKS_NEEDED}`,
+  )
+    .toString("utf8")
     .split("\n")
     .filter((k) => k !== "");
   const bookText = path.join(o.fresh, "books.jsonl");
@@ -895,7 +904,7 @@ export async function stepTwo(o: LookInput) {
   const read = [...reader.read.values()];
   const report = {
     print:
-      "beside the verdict, deciding nothing (polish/rules.md P13): the deciding line's prints; the W4 lines on the deciding days, book first; every line at the tape; the discovery window and the days cut, not independent",
+      "beside the verdict, deciding nothing (polish/rules.md P13): the deciding line's prints; the W4 lines on the deciding days, book first, those beside the deciding one seeded (their cuts chosen after looking at E); every line at the tape; the discovery window and the days cut, not independent",
     identity,
     deciding: {
       line: step1.deciding.line,
@@ -906,7 +915,12 @@ export async function stepTwo(o: LookInput) {
       atBook(step1.deciding.line).filter((p) => p.slice === 0),
     ),
     bookFirst: Object.fromEntries(
-      (["715", "N", "1391"] as const).map((n) => [n, bookLine(atBook(n))]),
+      (["715", "N", "1391"] as const).map((n) => [
+        n === step1.deciding.line
+          ? `${n}, deciding`
+          : `${n}, beside: seeded, decides nothing`,
+        bookLine(atBook(n)),
+      ]),
     ),
     atTheTape: {
       "the deciding line": tapeOf(

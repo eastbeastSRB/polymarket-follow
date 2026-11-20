@@ -55,8 +55,13 @@ trade.*
   or after FRESH_END is refused even open (`seal.ts`).
 - **After the freeze nothing changes**, but by H0's route: a defect is
   written in a dated decisions entry before any fix; the fix, its tests and
-  a new list tagged `polish-freeze-<n + 1>`; the reason the fix cannot have
-  been chosen by what was seen.
+  a new list tagged `polish-freeze-<n + 1>` (`--final --tag <n + 1>`); the
+  reason the fix cannot have been chosen by what was seen. **One named
+  exception: look 2's freeze** (P1), whose list may differ from the list
+  look 1 ran under only in the files P1 names, for the changes P1 names;
+  the tool refuses any other difference, and a fresh worker reads the two
+  lists' differing lines before look 2 runs. A defect found after look 1
+  still goes by H0's route.
 - **Every output names its identity first** (D51): the program's
   fingerprint; WAVE-H's freeze; the exam's freeze and its tag (steps 1–2);
   the ten months' trusted store and its gates by SHA-256; the exploration's
@@ -84,17 +89,58 @@ trade.*
 - **The discovery window**: every other exam position (t in
   [2026-08-31, 2026-11-07) or x_out reaching past a segment's end), printed
   apart, "not independent".
-- **Look 2** (P12): segment 1 and segment 2′, t ≥ 2026-11-07 and x_out <
-  2027-02-06T00:00Z (`LOOK2_END`), on FRESH and FRESH-2, about 182 days,
-  about 2027-02-08. Its program is a later build under its own freeze
-  (decisions 2026-11-20 `5f01f05`; T2): this file unchanged, and every file
-  of look 1's list byte-identical but those FRESH-2's range and look 2's
-  step must change, each as its compiled file — `seal.ts` (FRESH_END),
-  `range.ts` (the range), `exam/design.ts` (segment 2′'s end, FRESH-2's
-  days without books), `exam/fresh.ts` (the exam's end, the data list),
-  `exam/steps.ts` (look 2's folder, bars and look 1's reading), `main.ts`
-  (the range and list it passes) — and FRESH-2's data list beside
-  `polish/fresh.sha256`.
+- **Look 2** (P12): on segment 1 and segment 2′ — t ≥ 2026-11-07 and
+  x_out < 2027-02-06T00:00Z (`LOOK2_END`) — about 182 days, about
+  2027-02-08, at look 2's bars (P10). Its program is a later build under
+  its own freeze (decisions 2026-11-20 `5f01f05`, `3b98568`; T2), and this
+  file does not change at that freeze, so its terms are fixed here:
+  1. **The freeze:** a list written by `node tools\polish-freeze.cjs --final
+     --tag <n> --look2 <look 1's tag>` from a clean tree after look 1, n the
+     next free number, tagged `polish-freeze-<n>`.
+  2. **What may differ, by file** (the tool's `LOOK2_ALLOWED`; a test holds
+     this list equal to it): `dist/polish/seal.js`, `dist/polish/range.js`,
+     `dist/polish/main.js`, `dist/polish/exam/design.js`,
+     `dist/polish/exam/fresh.js`, `dist/polish/exam/steps.js`,
+     `polish/fresh2.sha256` (added), `polish/look1.sha256` (added),
+     `polish/fresh-unpaired.json` (only for a record look 1's step 1 ruled
+     by H0's route). Every other file of the list, this file among them,
+     stays byte for byte: `--look2` refuses a list that differs from `git
+     show <look 1's tag>:./polish/FROZEN.sha256` (from `apps/poller`)
+     anywhere else, a file changed, added or gone.
+  3. **What those files may change:** the range and its end (FRESH_END to
+     `LOOK2_END`), the data lists' names, look 2's folder (`look2\`), the
+     index into the bars (look 2's), F7's lists of FRESH-2's days, and the
+     reading of look 1's files (5.); **never** the recipe (B0 + W4, its
+     cuts, M, K), the price, the verdict, the statistic, the bars' values,
+     δ, the 10%, 20 and 10, the floors or the options. P17's rows marked
+     "look 1" (segment 2, the days without books, the thin days) are look
+     1's own: at freeze 2 `design.ts` takes look 2's and the test holds
+     those rows to look 1's values written here; every other row stays
+     equal.
+  4. **FRESH-2's data:** the fill hours [2026-11-16 00h, 2027-02-06 00h)
+     (82 days, 1,968 files), their `asset_ctxs` days, and the 38 coins'
+     funding windows on a 20-day grid of FRESH-2's own from FRESH_END, so
+     that FRESH's window cut at FRESH_END stays as it is and every line of
+     `fresh.sha256` reappears unchanged (DATA END's grid would fetch that
+     window again whole and change 38 of FRESH's lines); listed in
+     `polish/fresh2.sha256` by `--data` from
+     FRESH-2's manifest (names, bytes, SHA-256; the exact key set, each
+     once). Until freeze 2 nothing of FRESH-2 is read: `checkKey` refuses a
+     key at or after FRESH_END, open or closed.
+  5. **Look 2 reads look 1:** `look1\step1.json` (the deciding line, chosen
+     once by the safety net, T12: the net is not read again) and
+     `look1\result.json` (look 1's reading, for F14), each held to the
+     SHA-256 look 1's decisions entry records and freeze 2 lists in
+     `polish/look1.sha256`; both named in look 2's identity.
+  6. **Look 2's store and checks:** the whole range [2026-05-29 02h,
+     2027-02-06 00h) in one store (M5's blocking, W4's hour, funding and the
+     minute grid span the join), built twice and held equal (exit 7), its
+     integrity (G0, G5), the reproduction again by look 2's program; F7's
+     lists (days without books, thin days) from freeze 2's metadata, and
+     option B, if chosen, cuts look 2's listed days by the same rule.
+  7. **After an early verdict** (HOLDS or DOES NOT HOLD at look 1; P12),
+     look 2 is optional: if run, it prints "after the verdict" and changes
+     nothing (decisions 2026-11-20 `3b98568`, Q2).
 - Times as H1: "the 60 minutes up to t" is [t − 3,600,000, t], both ends in;
   every other window is [a, b); a UTC day is [00:00Z, +24 h).
 
@@ -137,7 +183,10 @@ trade.*
 
   A failure stops step 1 (exit 6), every record listed, for the supervisor's
   ruling by H0's route: a re-freeze of `fresh-unpaired.json`, then step 1
-  again. Never a waiver in code.
+  again. Never a waiver in code. F9's tape-completeness gates (G1's counts
+  against WAVE-H's own step 1, G6's sample days re-read by WAVE-H's own
+  readers) are the ten months' only: FRESH has no WAVE-H run to hold them
+  to, and the two builds, G0's and G5's checks and step 1's counts stand in.
 - **An `asset_ctxs` day** of FRESH whose rows fail WAVE-H's 1% rule, or
   whose header lacks a column, is read as absent (no context that day),
   listed in the store's manifest and counted in F7's list; never a stop
@@ -155,12 +204,13 @@ trade.*
     the listing of 2026-11-13, which reached 2026-11-12: 2026-07-08 and
     2026-07-12 → 17; 2026-11-13 → 15 by the listing the supervisor refreshes
     before the freeze;
-  - the thin `asset_ctxs` days (`THIN_CTXS_DAYS`), under half the median
-    bytes of WAVE-H's 370 days (11,181,121.5 B), from the two manifests'
-    sizes alone (the tool refuses a list that is not its own): 59 days,
-    2026-05-30, 08-08, 08-27, 08-30, then 09-15 → 11-15 but 09-17, 09-19,
-    09-20, 09-21, 10-03, 11-03 and 11-04 — every day of segment 2 among
-    them;
+  - the thin `asset_ctxs` days (`THIN_CTXS_DAYS`), under half (5,590,560.75
+    B) the median bytes of WAVE-H's 370 days (11,181,121.5 B), from the two
+    manifests' sizes alone (the tool refuses a list that is not its own): 59
+    days, 2026-05-30, 08-08, 08-27, 08-30, then 09-15 → 11-15 but 09-17,
+    09-19, 09-20, 09-21, 10-03, 11-03 and 11-04 — every day of segment 2
+    among them [POLISH-RULES-REVIEW: no FRESH day lies between 5,467,409 B,
+    the largest thin, and 7,250,154 B, the smallest not];
   - any day read as absent, and any day without its file.
 
   Nothing that decides reads `asset_ctxs` but through the minute price
@@ -376,14 +426,15 @@ in P16.
 
 - **Two looks** (plan 3.6; decisions 2026-11-20 `5f01f05`): look 1 on P1's
   deciding days at look 1's bars, as soon as the rules are reviewed and
-  frozen; look 2 on look 2's days (P1) at look 2's bars, about 2027-02-08,
-  a later build under its own freeze (P1).
+  frozen; look 2 on look 2's days at look 2's bars, about 2027-02-08, a
+  later build under its own freeze whose terms P1 fixes.
 - **F14 as MARKET-1's M11** (decisions 2026-11-19 `e217fa9`, Q2): only
   **HOLDS or DOES NOT HOLD** at look 1 ends the exam; WITHHELD, TOO FEW TO
   TELL, LIKELY and NOT SETTLED let look 2 run, every reading printed by
   name; at the last look its reading stands, LIKELY included (Q4: LIKELY
-  counts as NOT SETTLED for F14). A later look prints beside the verdict.
-  `verdict.ts` examVerdict.
+  counts as NOT SETTLED for F14). After an early verdict look 2 is
+  optional: if run, it prints "after the verdict" and never changes it
+  (decisions 2026-11-20 `3b98568`, Q2; P1, 7.). `verdict.ts` examVerdict.
 - The safety net is read once, at look 1's step 1 (P4).
 
 ## P13. Lines beside, deciding nothing
@@ -400,11 +451,12 @@ In `look1\report.json`, written after `result.json` (D46, D52;
 - the $1,000, $10,000 and $50,000 walks at the deciding line's entry books:
   the cost against the mid and the extra over $1,000's;
 - slice 0 alone; the 715 line, N and the 1,391 cut on slices 0–19 of the
-  deciding days, book first; at the tape: the deciding line (the same
-  positions), each W4 line and B0 on all 147 slices of the deciding days,
-  B0 on slices 0–19, the discovery window and the days cut (N, slices 0–19),
-  "not independent"; each with n, m ± SE (M10's two-way), the days, the
-  coins and the two best days' share of the gain;
+  deciding days, book first, each line but the deciding one keyed "…,
+  beside: seeded, decides nothing" (P4); at the tape: the deciding line
+  (the same positions), each W4 line and B0 on all 147 slices of the
+  deciding days, B0 on slices 0–19, the discovery window and the days cut
+  (N, slices 0–19), "not independent"; each with n, m ± SE (M10's two-way),
+  the days, the coins and the two best days' share of the gain;
 - placebo.json's percentiles of both flips and its bars, copied;
 - the base-tier fee check by month (H14: the highest taker fee rate a
   month, an alarm above 4.5 bps); the book files read.
@@ -413,15 +465,18 @@ In `look1\report.json`, written after `result.json` (D46, D52;
 
 - **Step 1's** (`look1\builds.json`, the two builds compared;
   `look1\integrity.json`; `look1\step1.json`; D48; none an outcome): the
-  records by day and the block numbers missing; the holes; the `asset_ctxs`
-  rows of the
-  small coins by day and the days read as absent; the minutes priced by the
-  trade fallback, and without a price, by coin and day; the funding rows by
-  coin and window; each line's positions by where they stand (segment 1,
-  segment 2, cut, discovery); on the deciding days, the left out by reason
-  and the positions whose funding has a settlement without a minute price;
-  the books needed; F7's list with its shares; the deciding line and why;
-  the positions' SHA-256.
+  records by day and the block numbers missing; the holes; the counted fills
+  and the 38 coins' other liquidation legs by month, kind and method
+  (WAVE-H's H15 print: a drift of the `liquidation` object shows here
+  before the positions do); the `asset_ctxs` rows of the small coins by day
+  and the days read as absent; the minutes priced by the trade fallback,
+  and without a price, by coin and day; the funding rows by coin and
+  window; each line's positions by where they stand (segment 1, segment 2,
+  cut, discovery); on the deciding days, the left out by reason and the
+  positions whose funding has a settlement without a minute price; the
+  books needed, `books-needed.txt` named by SHA-256 (step 2 holds the file
+  to it, exit 5); F7's list with its shares; the deciding line and why; the
+  positions' SHA-256.
 - **Step 2's**: `result.json` (the identity, the verdict and its numbers,
   the bars and options, the exam's reading so far, the positions' SHA-256);
   `positions.jsonl.gz` (N's positions on the deciding days, the 715 and
@@ -443,7 +498,14 @@ steps 1–2 the exam's, does not verify; 5 not ready (sealed, a file missing
 or differing, `repro.json` not passed, books needed, already run); 6 a check
 failed (the reproduction, FRESH's integrity, a held number); 7 FRESH's two
 builds at step 1 differ (P2). **No build, test or other heavy run on the
-machine during the look's runs** (decisions 2026-11-20 `f306e49`).
+machine during the look's runs** (decisions 2026-11-20 `f306e49`). Before
+the reproduction and step 2, `placebo.json` (`c25345f7…`, P10) is copied
+into EXAM_ROOT, where both hold it to its SHA-256 (exit 5 otherwise). At
+step 1 the supervisor reads its counts (P14) before the books are fetched:
+**if the deciding line's positions on the deciding days that are left out
+or have funding without a price exceed 5% of them, that is a data defect**,
+ruled by H0's route before the fetch, since the share cannot fall later (a
+sentence, not a verdict rule; decisions 2026-11-20 `3b98568`, Q4).
 
 1. **`placebo`** (before the freeze): P10, into `<EXAM_ROOT>\placebo.json`;
    every input held to the design's SHA-256.
@@ -513,16 +575,24 @@ at E); none decides anything.
   | A, and the thin days without marks | 5.15% (5.28%) | 11.6% | F7's funding 0.08 (07-08 and the projection's 14 thin days by size: 05-30, 08-08, 08-09, 08-27, 08-30, 11-07 → 15, 13 of them in THIN_CTXS_DAYS); the rest as A |
   | **B, cut** | **2.16% (0.00%)** | **1.8%** | the funding gaps alone; the safety net fires in 7.1% of windows |
   | B, 11-13 → 15 cut too | 2.34% (0.00%) | 4.5% | the net fires in 8.9% |
+  | B as ruled, 11-13 → 15 without books, not cut | [printed after the listing's refresh] | | their legs at the tape |
 
   [Rejected: only book-short legs counted (6.3%); a threshold of 15% or
   20% (5.4%, 0.0%). N beside on E ∪ C: A 5.36%, P 11.2%; B 2.52%, P 0.0%.]
+  The days B cuts are `NO_BOOK_DAYS` as the latest listing before the freeze
+  gives them (P2): the supervisor refreshes it for 2026-11-13 → 15 before
+  the freeze, and `design.ts`, P2, this table and P17 are written from it.
 - **[OPTION D, Q4] HOLDS's second condition**: the excess over BASE
   (default) | OWN (P7).
 
 ## P17. The design's numbers
 
 `design.ts` holds each number below; a test reads this table and holds it
-to the code (`test/polish-rules.test.ts`).
+to the code (`test/polish-rules.test.ts`). The rows marked "look 1" are
+look 1's own (P1, 3.): at look 2's freeze `design.ts` takes look 2's, and
+the test holds these rows to the values written here; every other row
+stays equal. The no-book days are written from the latest listing before
+the freeze (P2).
 
 | Name | Value |
 |---|---|
@@ -536,7 +606,7 @@ to the code (`test/polish-rules.test.ts`).
 | safety net days | 20 |
 | safety net coins | 10 |
 | segment 1 | 2026-05-30T00:00:00.000Z 2026-08-31T00:00:00.000Z |
-| segment 2 | 2026-11-07T00:00:00.000Z 2026-11-16T00:00:00.000Z |
+| segment 2, look 1 | 2026-11-07T00:00:00.000Z 2026-11-16T00:00:00.000Z |
 | discovery | 2026-08-31T00:00:00.000Z 2026-11-07T00:00:00.000Z |
 | look 2 end | 2027-02-06T00:00:00.000Z |
 | delta | 50 |
@@ -546,10 +616,10 @@ to the code (`test/polish-rules.test.ts`).
 | placebo seed | 20261118 |
 | placebo draws | 100000 |
 | placebo windows | 100 182 |
-| floors, two looks | 2.81 2.24 |
+| floors | 2.81 2.24 |
 | look 1 | 100 2.8466835996608553 2.3599581301310213 |
 | look 2 | 182 2.81 2.4374684250380376 |
 | placebo.json | c25345f7a5c087c01d82114bf70cd54f7425ae66a25b43657c1379a076ac9575 |
 | options | cut BASE |
-| no-book days | 2026-07-08 2026-07-12 2026-07-13 2026-07-14 2026-07-15 2026-07-16 2026-07-17 |
-| thin days | 59 |
+| no-book days, look 1 | 2026-07-08 2026-07-12 2026-07-13 2026-07-14 2026-07-15 2026-07-16 2026-07-17 |
+| thin days, look 1 | 59 |

@@ -425,10 +425,8 @@ describe("z and the projection (rules.md P10, P16)", () => {
       l715: { episode: 2.9, day: 3.0 },
       n20: { episode: 2.95, day: 0 },
     });
-    expect(TEXTBOOK).toEqual({
-      twoLooks: { holds: 2.81, likely: 2.24 },
-      oneLook: { holds: 2.58, likely: 1.96 },
-    });
+    // The two looks' floors; the one later look's (2.58, 1.96, above) only for placebo.json's row of the removed branch.
+    expect(TEXTBOOK).toEqual({ holds: 2.81, likely: 2.24 });
   });
 
   it("projects P(HOLDS) and P(LIKELY or HOLDS) by F13, DOES NOT HOLD keeping HOLDS's z", () => {

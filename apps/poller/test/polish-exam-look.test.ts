@@ -206,6 +206,9 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     expect(s.positions).toEqual({ "715": 2, N: 5, "1391": 1, B0: 5 });
     expect(s.featureUnknown).toEqual({ "715": {}, N: {}, "1391": {}, B0: {} });
     expect(s.booksNeeded).toBe(4);
+    expect(s.booksNeededSha256).toBe(
+      sha(readFileSync(path.join(root, LOOK1, BOOKS_NEEDED))),
+    );
     expect(s.positionsSha256).toMatch(/^[0-9a-f]{64}$/);
     expect(s.counts.positions).toEqual({
       "715": { "segment 1": 2 },
@@ -232,6 +235,11 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     const c = read(STEP1).counts;
     expect(c.files).toBe(LOOK_RANGE.fill.length);
     expect(c.blocks).toEqual({ missing: {}, back: 0 });
+    // The waves' 13 liquidations, each the account's own leg and its counterparty's, in July 2026.
+    expect(c.legs).toEqual({
+      "2026-07|counted|market": 13,
+      "2026-07|counterparty|market": 13,
+    });
     expect(Object.keys(c.days as object)).toEqual([
       "2026-07-17",
       "2026-07-18",
@@ -434,6 +442,24 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     }
   }, 60_000);
 
+  it("step 2 refuses a books-needed.txt that is not step 1's (exit 5), writing nothing", async () => {
+    writeFileSync(path.join(root, "placebo.json"), PLACEBO_TEXT);
+    const file = path.join(root, LOOK1, BOOKS_NEEDED);
+    const text = readFileSync(file, "utf8");
+    // One key fewer: the file is not the one step 1 named.
+    writeFileSync(file, text.split("\n").slice(1).join("\n"));
+    try {
+      const e = await failure(stepTwo(input(root)));
+      expect(e).toBeInstanceOf(StoreError);
+      expect((e as Error).message).toMatch(
+        /^look1\\books-needed\.txt: SHA-256 [0-9a-f]{64}, the exam's [0-9a-f]{64}$/,
+      );
+    } finally {
+      writeFileSync(file, text);
+    }
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
   it("step 2 refuses until FRESH's books.jsonl answers every book file step 1 listed (exit 5), writing nothing", async () => {
     writeFileSync(path.join(root, "placebo.json"), PLACEBO_TEXT);
     const e = await failure(stepTwo(input(root)));
@@ -598,10 +624,17 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
         bySource: Record<string, { priced: number }>;
       };
       atTheTape: Record<string, { positions: number }>;
+      bookFirst: Record<string, unknown>;
       placebo: unknown;
       books: unknown;
     };
     expect(report.deciding.line).toBe("N");
+    // The W4 lines book first: those beside the deciding N labelled seeded (P4).
+    expect(Object.keys(report.bookFirst)).toEqual([
+      "715, beside: seeded, decides nothing",
+      "N, deciding",
+      "1391, beside: seeded, decides nothing",
+    ]);
     // B, the one priced, has its exit at the tape.
     expect(report.deciding.bySource["both legs at the book"]!.priced).toBe(0);
     expect(report.deciding.bySource["a leg at the tape"]!.priced).toBe(1);

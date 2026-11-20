@@ -130,7 +130,9 @@ export const touches = (p: { xIn: number; xOut: number }, day: string) => {
 
 /**
  * Step 1's counts (D48), none an outcome: the fill files' records by day
- * and the block numbers missing; the holes (D29); the `asset_ctxs` rows of
+ * and the block numbers missing; the holes (D29); the counted fills and the
+ * 38 coins' other liquidation legs by month, kind and method (WAVE-H's
+ * H15 print, `countedFrom`'s); the `asset_ctxs` rows of
  * the small coins by day and the days read as absent; the minutes priced by
  * the trade fallback, and those without a price, by coin and day; the
  * funding rows by coin and window; each line's positions by where they
@@ -148,6 +150,7 @@ export function countsOf(o: {
   range: Range;
   coins: Coins;
   forty: readonly string[];
+  legs: ReadonlyMap<string, number>;
 }) {
   const { d, lines } = o;
   const prices: Record<string, Record<string, [number, number]>> = {};
@@ -192,6 +195,7 @@ export function countsOf(o: {
   return {
     files: o.files.length,
     ...byDayOf(o.files),
+    legs: Object.fromEntries([...o.legs].sort(([a], [b]) => (a < b ? -1 : 1))),
     holes: o.holes.map(([a, b]) => [
       new Date(a).toISOString(),
       new Date(b).toISOString(),

@@ -335,10 +335,10 @@ describe("the bars and options the design holds (rules.md P10, P16)", () => {
       [2, PLACEBO.windows[1]],
     ]);
     for (const b of BARS) {
-      expect(b.z).toBeGreaterThanOrEqual(TEXTBOOK.twoLooks.holds);
-      expect(b.zL).toBeGreaterThanOrEqual(TEXTBOOK.twoLooks.likely);
+      expect(b.z).toBeGreaterThanOrEqual(TEXTBOOK.holds);
+      expect(b.zL).toBeGreaterThanOrEqual(TEXTBOOK.likely);
     }
-    expect(BARS[1].z).toBe(TEXTBOOK.twoLooks.holds);
+    expect(BARS[1].z).toBe(TEXTBOOK.holds);
     expect(BARS.map((b) => [b.z.toFixed(3), b.zL.toFixed(3)])).toEqual([
       ["2.847", "2.360"],
       ["2.810", "2.437"],

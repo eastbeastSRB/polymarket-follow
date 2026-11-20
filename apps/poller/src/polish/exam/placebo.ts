@@ -175,14 +175,38 @@ export function windowShares(
   };
 }
 
-/** A look's window length, and which percentiles its HOLDS and LIKELY bars read. */
+/**
+ * A look's window length, which percentiles its HOLDS and LIKELY bars read,
+ * and their textbook floors: the two looks', and the one later look's that
+ * placebo.json also prints (its floors 99% and 95% at one look), a branch
+ * removed before the freeze that decides nothing (rules.md P10; decisions
+ * 2026-11-20, the exam's looks: two).
+ */
 const LOOKS = {
   twoLooks: [
-    { look: "look 1", days: 100, holds: "p9975", likely: "p9875" },
-    { look: "look 2", days: 182, holds: "p9975", likely: "p9875" },
+    {
+      look: "look 1",
+      days: 100,
+      holds: "p9975",
+      likely: "p9875",
+      floor: TEXTBOOK,
+    },
+    {
+      look: "look 2",
+      days: 182,
+      holds: "p9975",
+      likely: "p9875",
+      floor: TEXTBOOK,
+    },
   ],
   oneLook: [
-    { look: "one later look", days: 182, holds: "p995", likely: "p975" },
+    {
+      look: "one later look",
+      days: 182,
+      holds: "p995",
+      likely: "p975",
+      floor: { holds: 2.58, likely: 1.96 },
+    },
   ],
 } as const;
 
@@ -211,7 +235,7 @@ export function zTable(lines: Record<string, ByFlip>) {
             f.day[`${l.days} days`]![p] ?? -Infinity,
           ]),
         );
-      const floor = TEXTBOOK[option];
+      const floor = l.floor;
       return {
         look: l.look,
         window: l.days,

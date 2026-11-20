@@ -18,7 +18,7 @@ import { FRESH_RANGE } from "../src/polish/range.js";
 import { loadCoins } from "../src/waveh/coins.js";
 import { ctxsKey, fundingKey } from "../src/waveh/keys.js";
 import { readDataList } from "../src/waveh/store.js";
-import { cleanScratch, scratch } from "./waveh-world.js";
+import { cleanScratch, scratch, sha } from "./waveh-world.js";
 
 afterAll(cleanScratch, 120_000);
 
@@ -31,7 +31,28 @@ const TOOL = path.join(
   "tools",
   "polish-freeze.cjs",
 );
+type Head = {
+  tag: number | null;
+  written: string;
+  commit: string;
+  dirty: boolean;
+  versions: Record<string, string>;
+  lock: string;
+  absent: string[];
+};
 const tool = createRequire(import.meta.url)(TOOL) as {
+  LOOK2_ALLOWED: string[];
+  headOf: (o: Head) => string[];
+  tagOf: (argv: readonly string[]) => number;
+  closureProblems: (
+    closure: readonly string[],
+    lists: [string, Map<string, string>][],
+    hashOf: (f: string) => string,
+  ) => string[];
+  outsideLook2: (
+    before: Map<string, string>,
+    after: Map<string, string>,
+  ) => string[];
   checkKeys: (lines: readonly Line[], keys: readonly string[]) => void;
   finalRefusal: (
     status: string,
@@ -162,6 +183,103 @@ describe("the exam's freeze tool: --data's checks", () => {
   });
 });
 
+describe("the exam's freeze tool: the lists' heads, the closure, the tag and look 2's freeze", () => {
+  it("writes the tag line in a final list alone, its number from --tag (1 when not given)", () => {
+    const o = {
+      written: "2026-11-20T00:00:00.000Z",
+      commit: "c".repeat(40),
+      dirty: false,
+      versions: {
+        node: "v24",
+        typescript: "6",
+        zod: "4",
+        pino: "10",
+        lz4js: "0.2.0",
+      },
+      lock: "l".repeat(64),
+      absent: [],
+    };
+    const draft = tool.headOf({ ...o, tag: null });
+    expect(draft[0]).toBe(
+      "# DRAFT, not a freeze: the exam's files of what runs (polish/rules.md P0)",
+    );
+    expect(draft.some((l) => l.startsWith("# tag"))).toBe(false);
+    const final = tool.headOf({ ...o, tag: 2, dirty: true, absent: ["x"] });
+    expect(final[0]).toBe(
+      "# FROZEN: the exam's files of what runs (polish/rules.md P0)",
+    );
+    expect(final[1]).toContain("(the tree was not clean)");
+    expect(final.at(-2)).toBe("# not yet written, required by name: x");
+    expect(final.at(-1)).toBe("# tag polish-freeze-2");
+    expect(tool.tagOf(["--final"])).toBe(1);
+    expect(tool.tagOf(["--final", "--tag", "3"])).toBe(3);
+    for (const bad of [["--tag"], ["--tag", "0"], ["--tag", "2b"]])
+      expect(() => tool.tagOf(bad)).toThrow("--tag needs a number from 1");
+  });
+
+  it("holds each closure file to the freezes naming it: in one of them, and equal to every one", () => {
+    const lists: [string, Map<string, string>][] = [
+      [
+        "waveh/FROZEN.sha256",
+        new Map([
+          ["a", "1"],
+          ["b", "2"],
+        ]),
+      ],
+      [
+        "market1/FROZEN.sha256",
+        new Map([
+          ["b", "2"],
+          ["c", "3"],
+        ]),
+      ],
+    ];
+    const hashes: Record<string, string> = { a: "1", b: "2", c: "3", d: "4" };
+    const hashOf = (f: string) => hashes[f]!;
+    expect(tool.closureProblems(["a", "b", "c"], lists, hashOf)).toEqual([]);
+    expect(tool.closureProblems(["d"], lists, hashOf)).toEqual([
+      "d is in none of the three freezes",
+    ]);
+    expect(tool.closureProblems(["b"], lists, () => "9")).toEqual([
+      "b differs from waveh/FROZEN.sha256",
+      "b differs from market1/FROZEN.sha256",
+    ]);
+  });
+
+  it("lets look 2's list differ from look 1's only in the allowed files, changed or added, never gone", () => {
+    const before = new Map([
+      ["dist/polish/seal.js", "1"],
+      ["dist/polish/exam/verdict.js", "2"],
+      ["polish/rules.md", "3"],
+    ]);
+    const same = new Map(before);
+    expect(tool.outsideLook2(before, same)).toEqual([]);
+    const allowed = new Map([
+      ...before,
+      ["dist/polish/seal.js", "9"],
+      ["polish/fresh2.sha256", "8"],
+      ["polish/look1.sha256", "7"],
+    ]);
+    expect(tool.outsideLook2(before, allowed)).toEqual([]);
+    const other = new Map([
+      ...before,
+      ["dist/polish/exam/verdict.js", "9"],
+      ["polish/rules.md", "9"],
+      ["polish/new.json", "6"],
+    ]);
+    expect(tool.outsideLook2(before, other)).toEqual([
+      "changed: dist/polish/exam/verdict.js",
+      "changed: polish/rules.md",
+      "added: polish/new.json",
+    ]);
+    const gone = new Map(before);
+    gone.delete("dist/polish/seal.js");
+    expect(tool.outsideLook2(before, gone)).toEqual([
+      "gone: dist/polish/seal.js",
+    ]);
+  });
+});
+
 describe("the exam's freeze tool: --data run whole, refusing", () => {
   const tmp = (name: string) => {
     const d = mkdtempSync(path.join(tmpdir(), `polish-${name}-`));
@@ -174,17 +292,18 @@ describe("the exam's freeze tool: --data run whole, refusing", () => {
     return f;
   };
   const run = (fresh: string, waveh: string) => {
+    // By SHA-256: a diff of two 300 KB buffers would hang the reporter.
     const before = existsSync(FRESH_LIST_FILE)
-      ? readFileSync(FRESH_LIST_FILE)
+      ? sha(readFileSync(FRESH_LIST_FILE))
       : null;
     const r = spawnSync(process.execPath, [TOOL, "--data", fresh, waveh], {
       encoding: "utf8",
       timeout: 60_000,
     });
     const after = existsSync(FRESH_LIST_FILE)
-      ? readFileSync(FRESH_LIST_FILE)
+      ? sha(readFileSync(FRESH_LIST_FILE))
       : null;
-    expect(after).toEqual(before);
+    expect(after).toBe(before);
     return r;
   };
   const waveh = manifest([line(day("2025-06-01"), 1_000)]);
