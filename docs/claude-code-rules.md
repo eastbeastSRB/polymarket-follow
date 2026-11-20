@@ -202,6 +202,25 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   data that arrived after it).
 - **Tests use synthetic data;** a real reply saved as a fixture is trimmed to
   what the test needs and dated.
+- **Read vitest's file counts, not only its exit code.** A fork can die of a
+  native access violation (exit 3221225477) on a heavy worker-thread test
+  under load; that file then counts as neither passed nor failed. When
+  passed + failed + skipped falls short of the file count, run it again once
+  (POLISH-RULES, 2026-11-20).
+- **Compare two large buffers by their hash in a test,** never by
+  `expect(a).toEqual(b)`: vitest's diff of two big buffers hangs the
+  reporter until the time limit (POLISH-RULES, 2026-11-20).
+- **An exact floating boundary such as m − z·SE = 0 may be unreachable by
+  any input:** test the direction on both sides with a margin instead
+  (POLISH-RULES, 2026-11-20).
+- **A deliberate break whose program writes files leaves side effects that
+  restoring the source does not undo.** After a round, check every tracked
+  file of the scratch copy against its commit. A re-run of breaks includes
+  the newly added test files. A test that plants a consistent fault in a
+  reused part reaches checks that the reuse would otherwise hide
+  (POLISH-RULES, 2026-11-20).
+- **Never move or rename a file that a running command still reads** (a
+  commit message file during its verify; POLISH-RULES, 2026-11-20).
 
 ## Research studies (round 2, 2026-11-11)
 
