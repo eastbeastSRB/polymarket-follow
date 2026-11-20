@@ -1,5 +1,36 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the reproduction's second run): **EVERY PART
+PASSED. THE FIRST RUN'S ONE DIFFERING FILE WAS A ONE-OFF FAULT.**
+
+**The run:** `exam --step reproduce` from the same worktree build of
+`0532fa8` (`92722635…`) and the same inputs, started 06:00:42Z
+(`verify/POLISH-RULES/repro-0600.cmd`), ended 07:34:38Z, **exit 0**.
+`repro.json` (`6477d2c5…`) has `passed: true`.
+- **(a):** equal. 14,563 files with no problem, including
+  `node_fills_by_block/hourly/20260320/7.lz4`, which run 1 read with 6
+  failed lines.
+- **(b):** exact.
+  - N on E: +94.6856778367026.
+  - N on C: +211.26301264344045.
+  - The 715 line on E: +203.3589718434901.
+  - No differences.
+- **(c):** equal; WAVE-H's 1,289 prices, largest difference 0 bps.
+- **Times:** 5,636 s in all (extraction 4,570 s); peak 8.4 GB.
+
+**So:**
+- The trusted store and the pre-freeze code reproduce each other exactly.
+- Run 1's fault (decisions 2026-11-20, the reproduction's first run) was
+  a one-off. It came while a builder's `pnpm verify` ran beside it; this
+  run had nothing heavy beside it.
+- The double build of FRESH and the rule "nothing heavy beside the look"
+  stay.
+- The frozen program runs the reproduction again at look 1 (D47).
+
+**Disk:** run 1's outputs (`ANALYZER\POLISH-RULES\repro-run1\`, about 68
+GB) and this run's parts are deleted after the code review is accepted.
+They are derived files, re-creatable.
+
 2026-11-20 (the supervisor — option B's listing refreshed): **2026-11-13 →
 15 HAVE THEIR BOOKS. `NO_BOOK_DAYS` STAYS 2026-07-08 AND 07-12 → 17.**
 
