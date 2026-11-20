@@ -16,3 +16,5 @@ apps/poller/experiment
 apps/poller/market1
 # WAVE-H's frozen files (its rules, coins, sizing, the store's list): hashed at its freeze.
 apps/poller/waveh
+# The exam's frozen files (its rules, cuts, lists of FRESH's files and one-sided trades): hashed at its freeze.
+apps/poller/polish
