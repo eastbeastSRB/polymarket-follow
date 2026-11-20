@@ -178,11 +178,11 @@ export const PLACEBO_JSON =
   "c25345f7a5c087c01d82114bf70cd54f7425ae66a25b43657c1379a076ac9575";
 
 /**
- * The owner's options still open (rules.md P16), set at the talk before the
- * freeze, every branch built and tested (T6): [OPTION E] the days without
- * books, cut from the deciding days (B, the recommended default; decisions
- * 2026-11-19, the placebo and projection ran) or kept (A); [OPTION D, Q4]
- * HOLDS's second condition, the excess over BASE (the default) or OWN.
+ * The owner's options (rules.md P16), filled by the owner (decisions
+ * 2026-11-19 `710338f`, the recipe; 2026-11-20 `04b6b13`, these two), every
+ * branch built and tested (T6): [OPTION E] the days without books, cut from
+ * the deciding days (B, filled) or kept (A); [OPTION D, Q4] HOLDS's second
+ * condition, the excess over BASE (filled) or OWN.
  */
 export const OPTIONS: {
   noBookDays: "cut" | "kept";

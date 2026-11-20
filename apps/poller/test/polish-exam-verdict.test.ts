@@ -220,9 +220,15 @@ describe("one look's verdict (D36–D42)", () => {
     const v = verdictOf(kit, set, { ...bars, z: cut + 0.01, zL: cut - 0.01 });
     expect(v.verdict).toBe("NOT SETTLED");
     expect(v.bounds!.doesNotHold).toBeGreaterThan(50);
-    expect(
-      verdictOf(kit, set, { ...bars, z: cut - 0.01, zL: cut - 0.02 }).verdict,
-    ).toBe("DOES NOT HOLD");
+    const z = cut - 0.01;
+    const below = verdictOf(kit, set, { ...bars, z, zL: cut - 0.02 });
+    expect(below.verdict).toBe("DOES NOT HOLD");
+    // Its sentence prints m + z·SE, which SE above 0 sets apart from m − z·SE.
+    const upper = (st.mean + z * st.se!).toFixed(1);
+    expect((st.mean - z * st.se!).toFixed(1)).not.toBe(upper);
+    expect(below.sentence).toBe(
+      `Does not hold: even m + z·SE = ${upper} bps a position is below the owner's line of +50.`,
+    );
   });
 
   it("HOLDS needs m − z·SE > 0, the mean excess above 0 and the positions at the book at both ends above 0; LIKELY the same at z_L", () => {

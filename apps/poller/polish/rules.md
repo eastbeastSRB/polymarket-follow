@@ -553,7 +553,10 @@ sentence, not a verdict rule; decisions 2026-11-20 `3b98568`, Q4).
    `positions.jsonl.gz`, then `report.json`. **H15's recovery**: after a
    failure between the writes, `result.json` is moved aside
    (`result.first.json`) in a decisions entry and step 2 runs again; the
-   same `positionsSha256`, verdict and numbers, else a code defect.
+   same `positionsSha256`, verdict and numbers, else a code defect. Step 2
+   refuses a `step1.json` written by another program or under another
+   freeze, and holds `builds.json` and `integrity.json` to the SHA-256s step
+   1 wrote (exit 5), so after any re-freeze a completed step 1 runs again.
 6. **Then** the report and a Final review with independent code.
 
 ## P16. The owner's options and the projections

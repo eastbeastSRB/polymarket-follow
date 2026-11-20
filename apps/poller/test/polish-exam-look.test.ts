@@ -34,6 +34,7 @@ import {
   SAFETY_NET,
   THIN_CTXS_DAYS,
 } from "../src/polish/exam/design.js";
+import { countsOf } from "../src/polish/exam/look.js";
 import {
   BOOKS_NEEDED,
   BUILDS,
@@ -829,5 +830,34 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       "1391, beside: seeded, decides nothing",
     ]);
     expect(report.atTheTape["the deciding line"]!.positions).toBe(1);
+  });
+});
+
+describe("P15's tripwire (countsOf)", () => {
+  it("has no share (null) when the deciding line has no position on the deciding days", () => {
+    type Counts = Parameters<typeof countsOf>[0];
+    // No coin, file, day or position: nothing but the empty shapes is read.
+    const c = countsOf({
+      d: {} as Counts["d"],
+      m: { counts: { ctxsByDay: {}, funding: {} } } as unknown as Counts["m"],
+      files: [],
+      holes: [],
+      lines: { "715": [], N: [], "1391": [], B0: [] },
+      deciding: "715",
+      range: {
+        days: [],
+        grid: { start: 0 },
+        end: 0,
+      } as unknown as Counts["range"],
+      coins,
+      forty: [],
+      legs: new Map(),
+    });
+    expect(c.tripwire).toEqual({
+      of: 0,
+      leftOut: 0,
+      fundingWithoutPrice: 0,
+      share: null,
+    });
   });
 });
