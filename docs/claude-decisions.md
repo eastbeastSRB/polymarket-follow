@@ -1,5 +1,66 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the exam's fresh rules review, under the
+owner's overnight go): **"MAY FREEZE AFTER THESE FIXES": NO HIGH FINDING,
+THREE MEDIUM, TEN LOW, NONE CHANGING THE DESIGN, THE STATISTIC OR THE BARS.
+ITS SIX QUESTIONS ARE RULED YES; THE FIX ROUND GOES TO POLISH-RULES.**
+
+**What:**
+- **The review** is `docs/reviews/polish-rules-review-2026-11-20.md`
+  (POLISH-RULES-REVIEW, Sonnet 5.5, max; context peak 765k), on `09eaf57`
+  and decisions `5f01f05`.
+  - The harness refused the subagent's own report file, so the supervisor
+    saved its final message unchanged.
+  - Access was clean: no FRESH data, no `ANALYZER\FRESH`, no `repro*`,
+    nothing of C for the 715 line. Its real-data reads (E only, two
+    manifests, the exam's two outputs) ran 04:11–04:20Z at below-normal
+    priority, on the supervisor's words of 04:09Z and 04:15Z.
+- **What it recomputed with its own code, all equal:**
+  - the 715 line's E-only placebo: to the digit with the exploration's draw
+    order; within 0.013 on its own random stream;
+  - the 715 line on E: 5,067 / 4,310, +203.359 ± 79.083;
+  - W4's three cuts;
+  - the funding-gap share, 2.41%;
+  - the thin-day worst case, 129 and 201;
+  - P16's projection table and the three bars;
+  - `fresh.sha256` against FRESH's manifest, 4,614 of 4,614;
+  - the 59 thin days;
+  - the draft list against a clean build, 125 of 125;
+  - `verdictOf` against its own P11 on 30,000 made-up sets, 0
+    differences.
+- **Its breaks:** 47; 40 killed, 7 survived (v1, v2, p2, n2, m3, d3b, h3),
+  all in wiring or edges that no test pins.
+- **The medium findings:**
+  1. look 2's freeze must be written into the rules now;
+  2. option B's no-book days rest on a listing that reached 2026-11-12;
+  3. step 2's hand-off into the verdict is not pinned by a test.
+
+**The rulings:**
+1. **Q1, yes.** P0, P1 and P12 carry look 2's freeze as the review's nine
+   items, with a mechanical allow-list check in the freeze tool. Only the
+   named files may differ from freeze 1's list, for the named kinds of
+   change, and a test holds the allow-list in rules.md equal to the tool's.
+2. **Q2, yes.** After an early verdict at look 1, look 2 is optional and
+   printed "after the verdict"; it never changes the verdict (as M11 prints
+   MARKET-1's later looks).
+3. **Q3, yes.** Before the freeze, the supervisor refreshes option B's
+   list with a metadata-only listing for 2026-11-13 → 15. `NO_BOOK_DAYS`,
+   P2, P16 and P17 are written from it, and the missing row is printed. B
+   stays the recommended default.
+4. **Q4, yes, as a sentence.** At step 1, if the deciding line's left-out
+   plus funding-without-price share is above 5%, the supervisor rules on
+   it as a data defect by H0's route before the books are fetched. It is
+   not a new verdict rule.
+5. **Q5, yes.** Findings 5–9 and 11 go in now: the "seeded, decides
+   nothing" labels, the placebo copy into EXAM_ROOT, the freeze tool's
+   `--tag <n>`, the counted-fills print, the books-needed SHA-256, and the
+   median's wording. So does finding 13's sentence.
+6. **Q6, yes.** Its 47 breaks and the P11 grid are run again on the fix
+   commit, before the code review, outside 06:00Z until the supervisor's
+   word.
+7. **Q7 (B or A; BASE or OWN)** stays the owner's at the talk. The
+   recommendations are B after the refresh, and BASE.
+
 2026-11-20 (the supervisor — the exam's looks, under the owner's
 overnight go): **TWO LOOKS: LOOK 1 ON FRESH NOW, LOOK 2 ABOUT 2027-02-08.
 THE "ONE LATER LOOK" BRANCH IS REMOVED.**
