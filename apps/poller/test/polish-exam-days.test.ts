@@ -10,7 +10,13 @@
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadResearch, type Research } from "../src/paper/research.js";
-import { K, NO_BOOK_DAYS, SEGMENTS } from "../src/polish/exam/design.js";
+import {
+  EXAM_DESIGN,
+  K,
+  NO_BOOK_DAYS,
+  SAFETY_NET,
+  SEGMENTS,
+} from "../src/polish/exam/design.js";
 import {
   holesOf,
   inExam,
@@ -154,6 +160,8 @@ describe("the holes and the positions they leave out (D29, D30)", () => {
 });
 
 describe("the safety net (D53b)", () => {
+  const net = (ps: Parameters<typeof safetyNet>[0]) =>
+    safetyNet(ps, SAFETY_NET);
   // Each coin's position at its own minute of the day: days are counted by UTC day, not by instant.
   const grid = (days: number, coins: number, left: string | null = null) =>
     Array.from({ length: days * coins }, (_, k) => ({
@@ -172,31 +180,48 @@ describe("the safety net (D53b)", () => {
       { t: SEGMENTS[0].from + 30 * DAY_MS, iid: 9, left: hole },
       ...grid(1, 1, hole),
     ];
-    expect(safetyNet([...grid(19, 9), ...out])).toEqual({
+    expect(net([...grid(19, 9), ...out])).toEqual({
       deciding: "N",
       why: "the 715 line spans 19 UTC days and 9 coins on the deciding days; 20 and 10 are needed",
       days: 19,
       coins: 9,
     });
-    expect(safetyNet(grid(20, 10, hole)).deciding).toBe("N");
-    expect(safetyNet([...grid(20, 10), ...out]).deciding).toBe("715");
+    expect(net(grid(20, 10, hole)).deciding).toBe("N");
+    expect(net([...grid(20, 10), ...out]).deciding).toBe("715");
   });
 
   it("keeps the 715 line at 20 UTC days and 10 coins, and hands the exam to N under either", () => {
-    expect(safetyNet(grid(20, 10))).toEqual({
+    expect(net(grid(20, 10))).toEqual({
       deciding: "715",
       why: null,
       days: 20,
       coins: 10,
     });
-    expect(safetyNet(grid(19, 10))).toEqual({
+    expect(net(grid(19, 10))).toEqual({
       deciding: "N",
       why: "the 715 line spans 19 UTC days and 10 coins on the deciding days; 20 and 10 are needed",
       days: 19,
       coins: 10,
     });
-    expect(safetyNet(grid(20, 9)).deciding).toBe("N");
-    expect(safetyNet([]).deciding).toBe("N");
+    expect(net(grid(20, 9)).deciding).toBe("N");
+    expect(net([]).deciding).toBe("N");
+  });
+
+  it("reads its floors from the design it is given (the step passes EXAM_DESIGN's, SAFETY_NET's)", () => {
+    expect(EXAM_DESIGN.safetyNet).toBe(SAFETY_NET);
+    expect(SAFETY_NET).toEqual({ days: 20, coins: 10 });
+    expect(safetyNet(grid(1, 1), { days: 1, coins: 1 })).toEqual({
+      deciding: "715",
+      why: null,
+      days: 1,
+      coins: 1,
+    });
+    expect(safetyNet(grid(1, 1), { days: 2, coins: 1 })).toEqual({
+      deciding: "N",
+      why: "the 715 line spans 1 UTC days and 1 coins on the deciding days; 2 and 1 are needed",
+      days: 1,
+      coins: 1,
+    });
   });
 });
 

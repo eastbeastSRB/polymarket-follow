@@ -693,7 +693,10 @@ export async function stepOne(o: LookInput): Promise<never> {
       `FRESH's store failed its integrity: see ${LOOK1}\\${INTEGRITY}`,
     );
   const look = lookOf(o, store, rc);
-  const net = safetyNet(look.lines["715"].filter(onDeciding));
+  const net = safetyNet(
+    look.lines["715"].filter(onDeciding),
+    o.design.safetyNet,
+  );
   const needed = booksOf(
     look.lines.N.filter((p) => onDeciding(p) && p.left === null),
     o.coins,
@@ -731,6 +734,7 @@ export async function stepOne(o: LookInput): Promise<never> {
         choice: o.design.explored.choice,
         cuts: o.design.explored.cuts,
         recipe: o.design.recipe,
+        safetyNet: o.design.safetyNet,
       },
       builds: sha256(buildsText),
       integrity: sha256(integrityText),
@@ -762,7 +766,13 @@ export async function stepOne(o: LookInput): Promise<never> {
 
 /** What step 2 reads of step1.json (our own file: one that does not parse throws). */
 const Step1File = z.object({
-  identity: z.object({ freshStore: z.string() }),
+  identity: z.object({
+    code: z.string(),
+    exam: z.object({ sha256: z.string() }),
+    freshStore: z.string(),
+  }),
+  builds: z.string().regex(SHA256),
+  integrity: z.string().regex(SHA256),
   deciding: z.object({
     line: z.enum(["715", "N"]),
     why: z.string().nullable(),
@@ -777,20 +787,22 @@ const PlaceboFile = z.object({ placebo: z.unknown(), z: z.unknown() });
 
 /**
  * `exam --step 2` (THE PLAN D47; D19–D28, D31, D36–D46, D52; T11, T12):
- * the look's gate; a second step 2 refused (already run); every book file
- * step 1 listed answered by FRESH's `books.jsonl` (a file or missing) before
- * any store file is read, else books needed (exit 5); FRESH's store step
- * 1's, and the lines recomputed and held to step 1's SHA-256 (exit 5
- * otherwise). Then N's positions on the deciding days, not left out,
- * priced book first (the deciding line's among them; T11), BASE pooled
- * over the segments; the deciding line step 1 named (the safety net, read
- * once, T12), its left-out positions in the set; the verdict at look 1's
- * bars and the owner's options. Everything is computed first (a crash
- * there is no look); then `result.json`, written whole before anything
- * about an outcome is logged or written, then `positions.jsonl.gz` and
- * `report.json` (H15: a failure between the writes is recovered by moving
- * result.json aside, by H0's route, and one more step 2, which must give
- * the same result).
+ * the look's gate; a second step 2 refused (already run); `step1.json`
+ * this very program's under this freeze, and `builds.json` and
+ * `integrity.json` the files it names by SHA-256 (else not ready, exit 5);
+ * every book file step 1 listed answered by FRESH's `books.jsonl` (a file
+ * or missing) before any store file is read, else books needed (exit 5);
+ * FRESH's store step 1's, and the lines recomputed and held to step 1's
+ * SHA-256 (exit 5 otherwise). Then N's positions on the deciding days, not
+ * left out, priced book first (the deciding line's among them; T11), BASE
+ * pooled over the segments; the deciding line step 1 named (the safety
+ * net, read once, T12), its left-out positions in the set; the verdict at
+ * look 1's bars and the owner's options. Everything is computed first (a
+ * crash there is no look); then `result.json`, written whole before
+ * anything about an outcome is logged or written, then `positions.jsonl.gz`
+ * and `report.json` (H15: a failure between the writes is recovered by
+ * moving result.json aside, by H0's route, and one more step 2, which must
+ * give the same result).
  */
 export async function stepTwo(o: LookInput) {
   const m = meter(o.log);
@@ -802,6 +814,20 @@ export async function stepTwo(o: LookInput) {
     throw new StoreError(`no ${LOOK1}\\${STEP1}: step 1 runs first`);
   const step1Bytes = readFileSync(path.join(dir, STEP1));
   const step1 = Step1File.parse(JSON.parse(step1Bytes.toString("utf8")));
+  // Steps 1 and 2 are one program under one freeze; step 1's checks' files are the ones it named.
+  if (
+    step1.identity.code !== o.code ||
+    step1.identity.exam.sha256 !== o.freeze.sha256
+  )
+    throw new StoreError(
+      `${LOOK1}\\${STEP1} is not this program's under this freeze: code ${step1.identity.code}, freeze ${step1.identity.exam.sha256}; this program's ${o.code}, ${o.freeze.sha256}`,
+    );
+  heldFile(path.join(dir, BUILDS), step1.builds, `${LOOK1}\\${BUILDS}`);
+  heldFile(
+    path.join(dir, INTEGRITY),
+    step1.integrity,
+    `${LOOK1}\\${INTEGRITY}`,
+  );
   const needed = heldFile(
     path.join(dir, BOOKS_NEEDED),
     step1.booksNeededSha256,

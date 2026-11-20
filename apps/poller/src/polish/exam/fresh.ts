@@ -23,7 +23,7 @@ import {
 import { FRESH_RANGE } from "../range.js";
 import { FRESH_END } from "../seal.js";
 import type { FileCounts } from "../store.js";
-import { NO_BOOK_DAYS, SAFETY_NET, SEGMENTS } from "./design.js";
+import { NO_BOOK_DAYS, SEGMENTS } from "./design.js";
 
 /** FRESH's data list (rules.md P2, D7; T3): `polish/fresh.sha256`, data.sha256's form, written from FRESH's manifest by tools/polish-freeze.cjs. */
 export const FRESH_LIST_FILE = path.join(
@@ -155,20 +155,22 @@ export function leftOutOf(
 /**
  * The safety net (D53b; T12): over the 715 line's positions on the deciding
  * days, after option B's cut, those not left out — counted at the first
- * look's step 1, before any price — under 20 UTC days of t or 10 coins
- * hands the exam to N, at the same z, for every later look too.
+ * look's step 1, before any price — under the net's UTC days of t or coins
+ * (the design's: SAFETY_NET, 20 and 10) hands the exam to N, at the same
+ * z, for every later look too.
  */
 export function safetyNet(
   onDays: readonly { t: number; iid: number; left: string | null }[],
+  net: { days: number; coins: number },
 ) {
   const ps = onDays.filter((p) => p.left === null);
   const days = new Set(ps.map((p) => dayOf(p.t))).size;
   const coins = new Set(ps.map((p) => p.iid)).size;
-  const fires = days < SAFETY_NET.days || coins < SAFETY_NET.coins;
+  const fires = days < net.days || coins < net.coins;
   return {
     deciding: fires ? ("N" as const) : ("715" as const),
     why: fires
-      ? `the 715 line spans ${days} UTC days and ${coins} coins on the deciding days; ${SAFETY_NET.days} and ${SAFETY_NET.coins} are needed`
+      ? `the 715 line spans ${days} UTC days and ${coins} coins on the deciding days; ${net.days} and ${net.coins} are needed`
       : null,
     days,
     coins,

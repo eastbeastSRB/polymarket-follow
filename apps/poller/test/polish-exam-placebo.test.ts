@@ -558,6 +558,7 @@ describe("the design (rules.md)", () => {
     expect(EXAM_DESIGN).toEqual({
       explored: EXPLORED,
       recipe: RECIPE,
+      safetyNet: SAFETY_NET,
       draws: 100_000,
       placebo: PLACEBO_JSON,
     });
@@ -668,6 +669,7 @@ async function stepWorld() {
       cPositions,
     },
     recipe: r,
+    safetyNet: SAFETY_NET,
     draws: 40,
     placebo: "0".repeat(64),
   };

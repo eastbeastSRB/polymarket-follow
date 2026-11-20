@@ -216,6 +216,8 @@ export const EXPLORED = {
 export type ExamDesign = {
   explored: { [k in keyof typeof EXPLORED]: string };
   recipe: Recipe;
+  /** Step 1's safety net: under these days or coins, N decides. */
+  safetyNet: { days: number; coins: number };
   draws: number;
   /** placebo.json in EXAM_ROOT, by SHA-256: the reproduction's line and the report's percentiles. */
   placebo: string;
@@ -223,6 +225,7 @@ export type ExamDesign = {
 export const EXAM_DESIGN: ExamDesign = {
   explored: EXPLORED,
   recipe: RECIPE,
+  safetyNet: SAFETY_NET,
   draws: PLACEBO.draws,
   placebo: PLACEBO_JSON,
 };

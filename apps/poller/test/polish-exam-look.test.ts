@@ -7,7 +7,10 @@
  * stops with books needed (exit 5); its refusals: the exam's seal closed
  * (exit 4), the reproduction not passed by this program, step 1 already
  * run (exit 5), FRESH's store failing its integrity (exit 6), cuts.json
- * not N's (exit 6). Run in `pnpm verify`'s order: one test runs the build.
+ * not N's (exit 6). Step 2 on it, N deciding, and on a design whose safety
+ * net the 715 line spans, the 715 line deciding; its refusals of step 1's
+ * files, of another program or freeze, and of placebo.json (exit 5). Run in
+ * `pnpm verify`'s order: one test runs the build.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -16,6 +19,7 @@ import {
   mkdtempSync,
   readFileSync,
   renameSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -191,6 +195,7 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       choice: a.design.explored.choice,
       cuts: a.design.explored.cuts,
       recipe: LOOK_RECIPE,
+      safetyNet: SAFETY_NET,
     });
     expect(s.builds).toBe(sha(readFileSync(path.join(root, LOOK1, BUILDS))));
     expect(s.integrity).toBe(
@@ -533,6 +538,83 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
     expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
   });
 
+  it("step 2 refuses without step1.json (exit 5), writing nothing", async () => {
+    const file = path.join(root, LOOK1, STEP1);
+    renameSync(file, `${file}.away`);
+    try {
+      const e = await failure(stepTwo(input(root)));
+      expect(e).toBeInstanceOf(StoreError);
+      expect(exitOf(e).code).toBe(5);
+      expect((e as Error).message).toBe(
+        "no look1\\step1.json: step 1 runs first",
+      );
+    } finally {
+      renameSync(`${file}.away`, file);
+    }
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
+  it("step 2 refuses a step1.json of other code or under another freeze, and a builds.json or integrity.json not the one step1.json names (exit 5), writing nothing", async () => {
+    const file = path.join(root, LOOK1, STEP1);
+    const text = readFileSync(file, "utf8");
+    const s = JSON.parse(text) as {
+      identity: { code: string; exam: { sha256: string; tag: string } };
+    };
+    try {
+      for (const identity of [
+        { ...s.identity, code: "7".repeat(64) },
+        { ...s.identity, exam: { ...FREEZE, sha256: "8".repeat(64) } },
+      ]) {
+        writeFileSync(file, JSON.stringify({ ...s, identity }));
+        const e = await failure(stepTwo(input(root)));
+        expect(e).toBeInstanceOf(StoreError);
+        expect(exitOf(e).code).toBe(5);
+        expect((e as Error).message).toBe(
+          `look1\\step1.json is not this program's under this freeze: code ${identity.code}, freeze ${identity.exam.sha256}; this program's ${CODE}, ${FREEZE.sha256}`,
+        );
+      }
+    } finally {
+      writeFileSync(file, text);
+    }
+    for (const name of [BUILDS, INTEGRITY]) {
+      const f = path.join(root, LOOK1, name);
+      const bytes = readFileSync(f);
+      const changed = Buffer.concat([bytes, Buffer.from("\n")]);
+      writeFileSync(f, changed);
+      try {
+        const e = await failure(stepTwo(input(root)));
+        expect(e, name).toBeInstanceOf(StoreError);
+        expect((e as Error).message).toBe(
+          `look1\\${name}: SHA-256 ${sha(changed)}, the exam's ${sha(bytes)}`,
+        );
+      } finally {
+        writeFileSync(f, bytes);
+      }
+    }
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
+  it("step 2 refuses a placebo.json in EXAM_ROOT missing or not the design's (exit 5), writing nothing", async () => {
+    const file = path.join(root, "placebo.json");
+    const other = PLACEBO_TEXT.replace("percentiles", "other percentiles");
+    try {
+      rmSync(file);
+      const e = await failure(stepTwo(input(root)));
+      expect(e).toBeInstanceOf(StoreError);
+      expect(exitOf(e).code).toBe(5);
+      expect((e as Error).message).toBe("no placebo.json in EXAM_ROOT");
+      writeFileSync(file, other);
+      const f = await failure(stepTwo(input(root)));
+      expect(f).toBeInstanceOf(StoreError);
+      expect((f as Error).message).toBe(
+        `placebo.json in EXAM_ROOT: SHA-256 ${sha(other)}, the exam's ${a.design.placebo}`,
+      );
+    } finally {
+      writeFileSync(file, PLACEBO_TEXT);
+    }
+    expect(existsSync(path.join(root, LOOK1, RESULT))).toBe(false);
+  });
+
   it("step 2 prices N's legs on the deciding days book first and writes result.json before anything about an outcome is logged or written, then the positions and the report", async () => {
     const files = () =>
       [RESULT, POSITIONS, REPORT].map((f) =>
@@ -694,5 +776,58 @@ describe("the look's step 1 (exam --step 1)", { timeout: 120_000 }, () => {
       return v;
     };
     expect(kept(file)).toEqual(kept(first));
+  });
+
+  it("with the 715 line at the design's safety-net floors, step 1 names it and step 2 decides on it, N beside", async () => {
+    // The design's net at 1 day and 1 coin, which the 715 line's B alone spans (rules.md P4's 20 and 10 are SAFETY_NET's).
+    const design = { ...a.design, safetyNet: { days: 1, coins: 1 } };
+    const r = tmp("look-root");
+    reproFile(r);
+    writeFileSync(path.join(r, "placebo.json"), PLACEBO_TEXT);
+    const e = await failure(stepOne(input(r, { design })));
+    expect(e).toBeInstanceOf(BooksNeeded);
+    const s = JSON.parse(
+      readFileSync(path.join(r, LOOK1, STEP1), "utf8"),
+    ) as Record<string, unknown> & {
+      inputs: object;
+      counts: { tripwire: unknown };
+    };
+    expect(s.inputs).toMatchObject({ safetyNet: { days: 1, coins: 1 } });
+    expect(s.deciding).toEqual({ line: "715", why: null, days: 1, coins: 1 });
+    expect(s.counts.tripwire).toEqual({
+      of: 1,
+      leftOut: 0,
+      fundingWithoutPrice: 0,
+      share: 0,
+    });
+    // FRESH's books.jsonl answers N's legs since the tests above; the 715 line's are among them.
+    await stepTwo(input(r, { design }));
+    // B alone decides: priced, its entry at the book, its exit at the tape, depth short.
+    expect(
+      JSON.parse(readFileSync(path.join(r, LOOK1, RESULT), "utf8")),
+    ).toMatchObject({
+      deciding: { line: "715", why: null, days: 1, coins: 1 },
+      verdict: "WITHHELD",
+      positions: 1,
+      leftOut: 0,
+      unpriced: 0,
+      depthShort: 1,
+      priced: 1,
+      withheldShare: 1,
+    });
+    const report = JSON.parse(
+      readFileSync(path.join(r, LOOK1, REPORT), "utf8"),
+    ) as {
+      deciding: { line: string };
+      bookFirst: Record<string, unknown>;
+      atTheTape: Record<string, { positions: number }>;
+    };
+    expect(report.deciding.line).toBe("715");
+    expect(Object.keys(report.bookFirst)).toEqual([
+      "715, deciding",
+      "N, beside: seeded, decides nothing",
+      "1391, beside: seeded, decides nothing",
+    ]);
+    expect(report.atTheTape["the deciding line"]!.positions).toBe(1);
   });
 });
