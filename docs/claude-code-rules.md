@@ -219,6 +219,20 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   the newly added test files. A test that plants a consistent fault in a
   reused part reaches checks that the reuse would otherwise hide
   (POLISH-RULES, 2026-11-20).
+- **A built-program test of a seal or gate asks the gate itself** and runs
+  its "sealed" case only while the gate says not ok, so the test passes
+  both before and after the freeze's tag (POLISH-FIX, 2026-11-20).
+- **To test "the program is missing" (git not on the PATH):**
+  `vi.stubEnv("PATH", "")`, then `vi.unstubAllEnvs()` in a `finally`.
+  `execFileSync` then fails with ENOENT and no numeric status, while the
+  program's own refusal has one (POLISH-FIX, 2026-11-20).
+- **A rehearsal on synthetic data rehearses the wiring, not the bytes:**
+  run it once on the defect's own commit as its control, so it is shown to
+  catch what it is for (POLISH-FIX, 2026-11-20).
+- **In a break runner, record each kill with vitest's
+  `--reporter=json --outputFile=`** (piped output is empty), and run a
+  break on the whole file when its test depends on an earlier test's state
+  (`-t` alone can fail on its own) (POLISH-FIX, 2026-11-20).
 - **Never move or rename a file that a running command still reads** (a
   commit message file during its verify; POLISH-RULES, 2026-11-20).
 
