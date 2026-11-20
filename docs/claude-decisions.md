@@ -1,5 +1,34 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the owner — the exam's last two options, before its freeze):
+**OPTION E: B, THE DAYS WITHOUT BOOKS ARE CUT. OPTION D (Q4): BASE, NO
+CHANGE. EVERY MARKED OPTION IS NOW FILLED.**
+
+The owner, about 10:40Z: "yeah man, let's continue, i agree with all your
+recommendation", on the supervisor's recommendation (B and BASE, the
+message of about 10:35Z).
+
+**What:**
+1. **[OPTION E] WITHHELD's days without books: B, cut.** A deciding
+   position with x_in or x_out on a UTC day in `NO_BOOK_DAYS` (2026-07-08
+   and 2026-07-12 → 17; the listing of 2026-11-20 found 11-13 → 15 with
+   books) is cut from the deciding days and printed apart.
+   - On E's rates, P(WITHHELD) is 1.8% against A's 11.6%.
+   - The cost is about 10% of the line's positions, and P(HOLDS) at look 1
+     moves from 4.3% to 3.9%.
+2. **[OPTION D, Q4] HOLDS's second condition: BASE, no change.** The mean
+   excess over each coin's BASE is above 0. OWN is printed beside the
+   verdict, deciding nothing.
+3. **Already filled:**
+   - [OPTION A]: the 715 line decides, with the safety net (decisions
+     2026-11-19 `710338f`);
+   - the looks: two (decisions 2026-11-20 `5f01f05`).
+4. **The code's defaults already are these:** `OPTIONS = { noBookDays:
+   "cut", excess: "BASE" }`. Only rules.md marks the two options filled.
+   - In the same commit, the markers' test (`polish-rules.test.ts`, the
+     code review's L12) and the draft list are written again.
+   - The fix-check covers that commit.
+
 2026-11-20 (the supervisor — the code review's fix round done): **POLISH-FIX
 CLOSED EVERY FINDING RULED. THE REHEARSAL THROUGH MAIN.TS PASSED, AND ON THE
 PRE-FIX COMMIT IT STOPS AT M1. THE FRESH FIX-CHECK RUNS.**
