@@ -1,5 +1,55 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — the fix round's fresh check): **"READY TO
+FREEZE". EVERY FINDING OF THE CODE REVIEW IS CLOSED AND SHOWN CLOSED. ONE
+LAST SMALL COMMIT (A STALE COMMENT, ONE RULES SENTENCE, TWO TEST
+ASSERTIONS, THE DOCS SWEEP), THEN THE FREEZE.**
+
+**What:**
+- **The check** is `docs/reviews/polish-fix-check-2026-11-20.md`
+  (POLISH-FIX-CHECK, Sonnet 5.5, max; the first worker 10:32–10:40Z, its
+  successor 10:40–13:00Z; context peak 483k; access clean). It was saved
+  unchanged from its final message.
+- **What it found:**
+  - **M1–M3, L1–L7, L10, L11 and L12:** each closed. For each, it read the
+    fix, a test pins it, a break of it is killed, and a run shows it
+    working.
+  - **The rehearsal:** HEAD runs reproduce → step 1 → step 2. `99dd76c`, and
+    HEAD with the closed seal handed in, stop at "FRESH is sealed".
+  - **A real `--final --tag 1`** in a scratch repository: the list equals
+    the draft, 125 of 125. The gate says no before the tag and ok after.
+    The whole suite on the frozen copy: 821 passed, 6 skipped.
+  - **The draft list** (`750b5c64…6a8a`) equals a clean build of
+    `0f42405`, 125 of 125. The three live freezes are untouched.
+  - **Breaks:** 112, of which 106 were killed. sv9 and w19 are equivalent;
+    c10, c12, c13 and c15 are test gaps that cannot change a verdict (c12
+    and c13 would stop look 1 loudly, and the rehearsal catches them).
+  - **The P11 grid:** 30,000 sets, 0 differences. The old against new
+    verdict: 120,000 calls, 0 differences.
+
+**The rulings on its questions:**
+1. **Yes, one small commit before the freeze:**
+   - `design.ts`'s stale comment about the options;
+   - P15 step 5's sentence that step 2 refuses another program's or
+     freeze's `step1.json` and holds `builds.json` and `integrity.json`;
+   - the two test-only assertions (c10: DOES NOT HOLD's sentence in a world
+     with SE above 0; c15: the tripwire's share null with no position);
+   - the docs sweep's leftovers (architecture's options lines,
+     current-task's draft-list and talk lines);
+   - then `pnpm verify` and the draft list again.
+
+   The supervisor checks it: the compiled `design.js` differs only in the
+   comment, rules.md only by the sentence, and the list again equals a
+   clean build.
+2. **Yes:** the rehearsal scripts stay outside the repository and are run
+   again at look 2's build.
+3. **Yes:** the freeze-day decisions entry says the first `pnpm verify`
+   after the tag reads 821 passed and 6 skipped. That is the sealed-root
+   case skipping, not a lost test.
+4. **Yes:** the look-1 runbook says that after any re-freeze, a completed
+   step 1 runs again, because step 2 refuses another freeze's
+   `step1.json`.
+
 2026-11-20 (the owner — the exam's last two options, before its freeze):
 **OPTION E: B, THE DAYS WITHOUT BOOKS ARE CUT. OPTION D (Q4): BASE, NO
 CHANGE. EVERY MARKED OPTION IS NOW FILLED.**
