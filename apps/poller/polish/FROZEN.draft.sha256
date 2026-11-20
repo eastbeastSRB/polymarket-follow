@@ -1,21 +1,21 @@
 # DRAFT, not a freeze: the exam's files of what runs (polish/rules.md P0)
-# written 2026-11-20T02:34:11.621Z from commit abfa53052107dbfa3ce04f18b21c68d026d12a91
+# written 2026-11-20T05:11:11.334Z from commit 510c05b3ece14ff81b2ee8d4f09c9cb7395bc1ab
 # node v24.13.0; typescript 6.0.3; zod 4.6.7; pino 10.4.0; lz4js 0.2.0
 # pnpm-lock.yaml sha256 62c1462948e0e8fb8b28c8490e442d4afe61d136aea1f3af808e6225d15f6e40
 b1e4410cebf42611782717667dd562b89453eacbc6d563c13edcfcb9a74bad5f *dist/polish.js
 d7ff0c9d2131131e0d4e6bd1b6ae3da29db17e154bbaf586d07b131edf060945 *dist/polish/counted.js
 6393f59eec6bd7db554cac01e818afd02ff977866e36f29193656067690aceb1 *dist/polish/ctxs.js
 49f7e85e5acdd5056fd9f33afddacfb50c725be094b5c398bfa19c3b2b464a66 *dist/polish/days.js
-0cb6a8616157ec5f8ec4f3c31c87da8b18a133ee97611c0345de0a373616b1e9 *dist/polish/exam/design.js
-b3f381d50a86272befd8dc2db34f46b996295dee29a43d219de6c2319d600b6d *dist/polish/exam/fresh.js
+a9efe638c191fb58cd511f16331a902452a92e34c43f46021e926db263c70694 *dist/polish/exam/design.js
+f6878d38b04083f26c892e0e22f0a8d51067b449709ea5f296b119937f7c319c *dist/polish/exam/fresh.js
 c991206d375cefae2b0d10880f488dd0334c66e0fd5c24c4d261d1b45e9f8ed5 *dist/polish/exam/gate.js
 c24fa140161a16525b59c2fcef44da2bcb56e72194909f99af096895d86fb4a5 *dist/polish/exam/lines.js
-a9b8b1dedf9c510dd4731bc818f1e91e3bb47af5379828382c793731eb5fe852 *dist/polish/exam/look.js
-db7b795aee73d8e802a24643d7fb661bf0eb253bf102ad5b4b431fa0a2c5574a *dist/polish/exam/placebo.js
-ca77f1ddab22aeb6154d2b5a5608077a4e578aec05c0ca2c19457aea3f84f35e *dist/polish/exam/price.js
+187864ca5ab83ff9b878ce5be7a462fc3ac2ebd928c52ce07c1e1aefb05d0586 *dist/polish/exam/look.js
+5ed642ac81f1d4f90352b314c75cf6dcb5e54709ed6d5c7559b0dcebd4fe4ed9 *dist/polish/exam/placebo.js
+eb48edc2d3c14e74d0c17650009bd993f0279274d672fbb78296d442e6f62fbc *dist/polish/exam/price.js
 72cb200b533212af72119a0126423e3bd0249edd2168d8423143ce7bd80e5e2d *dist/polish/exam/repro.js
-a6481761a115afac333aa2e39ca1b71f36765981444328a5e755f9e507ff9359 *dist/polish/exam/steps.js
-e5552bb99c0e0e8428e7f3aa05b38ea7008e757bb4c8f7367c4a9e4a4818803c *dist/polish/exam/verdict.js
+feed9ee65ac269829a7ce97b2ac2a69eb28c2b59b15118b9268a45e2e7b3611c *dist/polish/exam/steps.js
+7a559e6b7506649cf6da825d20152e0701d70f9da5709b0033121dafcc254b2b *dist/polish/exam/verdict.js
 53d922a1db0c2af913d5b80f0fca2b71e44f3a33439308015496c47858cc51be *dist/polish/explore.js
 a0846a3c1f5eed014754f7e5353e6f5d4d1aaa07b05998a8aa57906ff49cee2a *dist/polish/extract.js
 9a023ac6e2bcca2239e8af682ddb91e1defc327884b419e49f2ca074088aea75 *dist/polish/gates.js
@@ -122,7 +122,7 @@ a9cf1e92ce4c3d837c118faae2a0c689c000477422d582c8bcb4fc800bddb130 *node_modules/l
 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570 *polish/fresh-unpaired.json
 17de22e566fe56e37d38bc23e374adaad8d0bbe4721cad37578741d7337a2273 *polish/fresh.sha256
 fbf0c69d8d687bf9a2a73a6e4b22d2cb670506c05cfffbf79913994604c345af *polish/known-unpaired.json
-edd98e94c4e50ed6ad1c01c190ecc84efb4a6bc902a74542d516d6cab659c2b1 *polish/rules.md
+a0d401ab8aab15594f826f092cba3364eeb292816f76db6cebce7610746641a0 *polish/rules.md
 c5e1c0fa3459bf5d9faf08b18a7f7b8e5a6567b9c13afda08addb5453c391dbf *polish/tries.md
 b66a9bb0f165685cb9c9a64a9ef0109681e493ada5e65c9f5a85307b8e6c676c *waveh/data.sha256
 483aff8e3c65202a65c290701a0c451e2eb98c1671fd994665f60f3279ede890 *waveh/coins.json
