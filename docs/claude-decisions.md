@@ -1,5 +1,73 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-20 (the supervisor — LOOK 1 PAUSED, FRESH UNOPENED): **LOOK 1'S
+REPRODUCTION BY THE FROZEN PROGRAM WAS STOPPED TWICE BY A SINGLE FLIPPED BIT
+IN THE PC'S MEMORY, AND ITS OWN CHECK CAUGHT BOTH. THE OWNER PAUSES THE EXAM
+FOR A FEW DAYS; THE MEMORY TEST COMES FIRST WHEN THE OWNER IS BACK.**
+
+**What happened:**
+- **Run 1** started 13:49:41Z and crashed (exit 1) at 14:44:36Z, file
+  ~6,150 of 8,845: "a u64 column cannot hold 574225594.5".
+- **Run 2** started 15:13:01Z, after a real Windows restart at 15:09:20Z. It
+  crashed (exit 1) at 16:08:54Z, file ~6,925: "a u64 column cannot hold
+  4900056.84375".
+- Both crashes came from `bytesOf`'s check on a TAPE `tid` half.
+- **Each value is one bit from a whole number** (the supervisor's
+  `verify/POLISH-LOOK1/crash1/bitflip-any.mjs`, output in `crash2/`):
+  - 574225594.5 is mantissa bit 22 from 574225594;
+  - 4900056.84375 is exponent bit 55 from 1254414552.
+
+  `u64Of` cannot give a non-whole half from digits.
+- **Not code and not data:**
+  - The reader (scan, writers, part, tables, pass, worker, lz4) has not
+    changed since `6fd8458`, which is inside `0532fa8`. That program's
+    reproduction passed this morning on the same inputs.
+  - The two runs failed at different files.
+- **The pattern:** today's faults were:
+  1. the morning reproduction's file misread once;
+  2. the collector's 0xC0000374 at 07:07Z;
+  3. these two flips.
+- **The machine:** 4×8 GB DDR4 from two kits (KF3600C17D4/8GX ×2,
+  KHX3600C17D4/8GX ×2) at the XMP 3600. The system log has no WHEA events
+  (non-ECC). No memory test was ever run. The run's process used about
+  4.5 GB, so memory was not full.
+- **Nothing wrong was kept:**
+  - FRESH was never opened. `ANALYZER\FRESH` holds only `logs\` and
+    `placebo.json`.
+  - The two half-written folders were moved to
+    `ANALYZER\look1-repro-crash1\` and `ANALYZER\look1-repro-crash2\`.
+  - The evidence is in the supervisor folder, `verify/POLISH-LOOK1/crash1/`
+    and `crash2/`.
+
+**The owner's rulings:**
+- **The RAM stays at 3600:** no BIOS change.
+- **A restart before a memory test**, then "memory test if it is break
+  again": it broke again.
+- **"don't start step 1 … we will make a pause few days … when am back we
+  will do FRESH check."**
+
+**The collector:**
+- The restart left an ~8 min gap (15:04–15:12Z). The boot start exited 3,
+  because a 95 s heartbeat (under 2 min) and pid 4456, reused by mongod,
+  read as a live holder. The 5-minute "poller check" brought it back at
+  15:12:39Z.
+- Its price audits dip under the runs, timing only (otherMiss 0): hourly
+  minimum 70 at 01Z (the passing reproduction), 75 at 14Z, 71 at 15Z.
+
+**When the owner is back:**
+1. The memory test (Windows Memory Diagnostic, about 30–60 min; the
+   owner's rule).
+2. A restart.
+3. The reproduction again.
+4. On its pass: step 1, the books, step 2.
+
+Step 1's gate needs only a passed `repro.json` by the program's fingerprint
+(`4c9e5c9d…`), with no time limit, so the run worktree's dist is never
+rebuilt in the pause. The books never expire: the archive's `l2Book` runs
+from 2023-04-15. Step 1 builds FRESH twice and step 2's result is
+recomputed by independent code at the look's review, so a flip there shows
+as a difference, never as a verdict.
+
 2026-11-20 (the supervisor — THE EXAM IS FROZEN): **`polish/FROZEN.sha256`,
 125 FILES, SHA-256 `bd3ac6d3af52c1e42cb2c08446cb89e0e9b7227199e1955c2cc0e03776e3f0fa`,
 COMMIT `13dc55c`, TAG `polish-freeze-1`. THE GATE SAYS OK. LOOK 1 ON FRESH

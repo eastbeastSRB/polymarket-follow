@@ -10,10 +10,10 @@ history, is FROZEN (2026-11-16, tag `waveh-freeze-1`) and its one look says
 NOT SETTLED (2026-11-17). The polishing (a sharpened rule chosen on WAVE-H's
 10 months, then one exam on FRESH's months) chose its rule on 2026-11-19:
 B0 + W4, with the owner's 715 cut deciding and a safety net to N. Its exam
-is built up to "rules ready" (2026-11-20, POLISH-RULES), its fresh code
-review's fixes are in and checked ("ready to freeze", 2026-11-20,
-POLISH-FIX-CHECK), the owner's options are filled and a new draft list is
-written. It is not frozen, and FRESH stays sealed.** The plan is the plan
+is FROZEN (2026-11-20, `polish/FROZEN.sha256`, tag `polish-freeze-1`).
+Look 1 is PAUSED by the owner for a few days: its reproduction by the
+frozen program was stopped twice by a single flipped bit in the PC's
+memory, each caught by the program's own check. FRESH is unopened.** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -67,8 +67,16 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
     - A rehearsal of `main.ts`'s reproduce → 1 → 2 on a synthetic world
       under a synthetic tag passed; on the code before the fix it stops at
       M1 (its scripts in POLISH-FIX's scratch and worker folders).
-    - The draft list `polish/FROZEN.draft.sha256`: 125 files,
-      `aab29e44…8f69` (`8b15ef8`; a draft, not a freeze).
+    - **The freeze:** `polish/FROZEN.sha256`, 125 files, `bd3ac6d3…f0fa`,
+      commit `13dc55c`, annotated tag `polish-freeze-1` (pushed). The gate
+      says ok. The frozen state's `pnpm verify` counts 822 passed + 6
+      skipped.
+    - **Look 1's reproduction** by the frozen program, from the run
+      worktree `E:\coding\polymarket-follow-polish-run` (detached at the
+      tag, fingerprint `4c9e5c9d…`): two runs crashed (exit 1), each on a
+      single-bit flip in a `tid` half (decisions 2026-11-20, "LOOK 1
+      PAUSED"). Their folders are `ANALYZER\look1-repro-crash1\` and
+      `…-crash2\`; `ANALYZER\FRESH` holds `logs\` and `placebo.json` only.
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07). The
   analyzer reads only local files.
@@ -77,18 +85,15 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The freeze** (the owner's talk is done; the fix-check said ready):
-   `node tools/polish-freeze.cjs --final --tag 1` from a clean tree, the
-   commit tagged `polish-freeze-1` (the owner pushes the tag); `git`
-   checked from the launcher's environment. Only a verified list held by
-   its tag opens FRESH. After the tag, `pnpm verify` should count 822
-   passed + 6 skipped, the frozen state's normal count (the fix-check's
-   821 + 6, decisions 2026-11-20, plus c15's one new test; unfrozen 823 +
-   5). After any re-freeze, a completed step 1 runs again (rules.md P15,
-   step 5).
+1. **The pause** (the owner, 2026-11-20): nothing heavy and no step 1
+   until the owner is back. Then the memory test (Windows Memory
+   Diagnostic; the owner's rule, "if it is break again") and a Windows
+   restart. Step 1's gate needs only a passed `repro.json` by the
+   program's fingerprint, so the run worktree's dist is never rebuilt
+   meanwhile. The archive's books never expire.
 2. **Look 1** (rules.md P15), the supervisor's runs, one at a time, with
-   nothing heavy beside them: `placebo.json` copied into `ANALYZER\FRESH`;
-   `reproduce` by the frozen program into `ANALYZER\FRESH`; step 1 (FRESH
+   nothing heavy beside them: `reproduce` by the frozen program into
+   `ANALYZER\FRESH` again; step 1 (FRESH
    built twice and held equal, its integrity, the counts, read with
    `counts.tripwire.share` against the 5%; exit 5, books needed; about 75%
    chance of one exit 6 at the pairing check first, by H0's route); the
@@ -112,17 +117,19 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
    backup task's trigger from UTC; the page's fee-category alarm.
 8. **The v1 plan** (the plan page), early December.
 
-## Last session (2026-11-20, POLISH-PREFREEZE)
+## Last session (2026-11-20, the supervisor)
 
-The last small commit before the exam's freeze, as the fix-check's items
-1–4 were ruled (decisions 2026-11-20, "the fix round's fresh check"):
-`design.ts`'s `OPTIONS` comment says the options are filled (comment
-only) and rules.md P15 step 5 says step 2 refuses another program's or
-freeze's `step1.json` (`f1b4350`); two test-only assertions, c10 (DOES
-NOT HOLD's sentence with SE above 0) and c15 (the tripwire's share null
-with no position), each shown to kill its break in a scratch copy; the
-draft list again (`8b15ef8`: 125 files, `aab29e44…8f69`; against
-`750b5c64…6a8a` only `dist/polish/exam/design.js` and `polish/rules.md`
-differ); these docs. Each commit with `pnpm verify` green in the same
-command (823 + 5 tests) and the three freezes verified after (74, 64, 61:
-0 differ). Nothing of FRESH was opened.
+The exam was frozen (`13dc55c`, tag `polish-freeze-1`; decisions `f9e6012`).
+
+Look 1's reproduction ran twice from the run worktree and crashed twice,
+each time on a single flipped bit in a `tid` half: mantissa bit 22, then
+exponent bit 55 (the supervisor's `verify/POLISH-LOOK1/crash1/bitflip-any.mjs`).
+
+- **The fault is the machine's, not the code's or the data's:** the reader
+  code has not changed since the reproduction that passed this morning on
+  the same inputs.
+- **A real Windows restart** (15:09Z) between the runs did not cure it.
+- **The owner** keeps the RAM at 3600 and paused the exam for a few days.
+
+Recorded: decisions "LOOK 1 PAUSED", and the plan page's polishing row and
+Q4 line. Nothing of FRESH was opened.
