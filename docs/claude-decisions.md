@@ -1,5 +1,62 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-24 (the supervisor — LOOK 1: THE REPRODUCTION PASSED, STEP 1 DONE,
+BEFORE ANY PRICE): **THE FROZEN PROGRAM REPRODUCED THE TEN MONTHS EXACTLY.
+FRESH WAS OPENED AND BUILT TWICE, AND THE TWO BUILDS ARE EQUAL; ITS
+INTEGRITY PASSED. THE 715 LINE DECIDES ON 25 DAYS AND 38 COINS (THE SAFETY
+NET DID NOT FIRE), WITH 3,078 POSITIONS AND NONE LEFT OUT. THE BOOKS ARE
+BEING FETCHED; STEP 2 COMES NEXT.** Written before step 2, so the counts are
+dated before any price.
+
+**The pause and the restart:**
+- The owner was back on 2026-11-24.
+- Windows Memory Diagnostic (the standard test), 08:27–09:06Z: "detected
+  no errors".
+- The four days 11-21 → 24: the collector, the paper experiment and
+  MARKET-1 ran with no crash and no error (the supervisor folder's
+  `verify/PAUSE-CHECK/`).
+- The paper's two daily warnings, "two settlements in one hour" for iid 23
+  INTC-USD and iid 29 SNDK-USD, are the venue's stock splits
+  (`/instruments`: `split_phase` "live"). The frozen reader refuses those
+  days, by design.
+
+**The reproduction** (from the run worktree at `polish-freeze-1`,
+fingerprint `4c9e5c9d…`):
+- **The run:** started 11:18:44Z and passed at 12:13:07Z (exit 0;
+  repro.json `3ace5b32…67c8`).
+- **Reusing finished parts:** run 2's 6,946 whole parts were moved back.
+  The pass skips a part whose header names the same input, SHA-256 and code
+  (`pass.ts`), so 1,899 files were done, in 739 s. (a) holds every store
+  file to the explored manifest byte for byte, so a reused part cannot
+  pass wrongly. The owner asked whether the work could be read "in junk".
+- **(a) equal:** 14,563 files, 21,251,178,093 B.
+- **(b), differs []:**
+  - N on E: +94.686 ± 54.26;
+  - N on C: +211.263 ± 122.14;
+  - the 715 line on E: +203.36 ± 79.08 (4,310 priced).
+- **(c) equal:** 1,299 lines; the largest difference is 0 bps.
+- **Against repro-run2.json of 2026-11-20:** 0 differences (the
+  supervisor's `verify/POLISH-LOOK1/repro-compare.cjs`).
+
+**Step 1** (started 12:16:46Z; exit 5, books needed, at 13:44:45Z):
+- **The two builds:** `look1/builds.json` (`8a6c108d…f8f2`): equal, 7,843
+  files, 12,554,255,469 B, no problem.
+- **Integrity:** `look1/integrity.json` (`5b2c28f8…f7e8`): pass. Every counter is 0, and the 40 coins' pairing is exact, with no
+  straddled pair and no unpaired trade, so H0's route was not needed.
+- **The deciding line** (`look1/step1.json`, `af2d9e15…abade`): "715",
+  why null, 25 days, 38 coins. The safety net (20 days, 10 coins) did not
+  fire.
+- **Positions:** 715: 50,121, of which 3,078 on the deciding days. Beside:
+  1,391 cut 1,262, N 5,930, B0 12,591.
+- **The tripwire:** of 3,078, leftOut 0, fundingWithoutPrice 0, share 0.
+- **Books needed:** 3,180 files (`books-needed.txt`, `a71660ad…f766`).
+
+**Next:**
+1. **The books:** `tools/waveh-fetch.cjs --fresh --books`, started
+   13:48:44Z, detached at idle, under the tool's own gate.
+2. **Step 2:** `result.json` first.
+3. The look's report and its Final review with independent code.
+
 2026-11-20 (the supervisor — LOOK 1 PAUSED, FRESH UNOPENED): **LOOK 1'S
 REPRODUCTION BY THE FROZEN PROGRAM WAS STOPPED TWICE BY A SINGLE FLIPPED BIT
 IN THE PC'S MEMORY, AND ITS OWN CHECK CAUGHT BOTH. THE OWNER PAUSES THE EXAM
