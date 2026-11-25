@@ -1,5 +1,69 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — LOOK 1'S VERDICT): **WITHHELD. 11.6% OF THE
+715 LINE'S 3,078 DECIDING POSITIONS WERE LEFT OUT: 78 UNPRICED AND 278
+DEPTH SHORT, ABOVE THE 10% LIMIT. THE 3,000 PRICED POSITIONS AVERAGE +4.5 ±
+91.7 BPS (25 DAYS, 38 COINS, z 0.05). BY THE FROZEN RULES (M11) THE EXAM
+GOES ON TO LOOK 2. ITS REPORT AND FINAL REVIEW WITH INDEPENDENT CODE COME
+NEXT, AFTER THE OWNER'S WORD.**
+
+**The run:**
+- **The books:** `tools/waveh-fetch.cjs --fresh --books`.
+  - Day 1: 13:48–14:49Z, 1,979 files. It stopped for the day (exit 4) on
+    three audit pauses at the US stock open: 40, 79 and 64 of 90, all
+    timing.
+  - Day 2: 00:00:59–00:26:05Z, 1,140 files, exit 0.
+  - In all: 3,119 fetched, and 61 not in their hour folder's listing.
+- **Step 2:** 00:28:30–00:42:36Z, exit 0. `look1/result.json`
+  `b7bdc5cd…2881`, `report.json` `d9629892…475b`, `positions.jsonl.gz`
+  `fd8e85ba…5659`. It names the exam's freeze `bd3ac6d3…f0fa`
+  (`polish-freeze-1`), step1 `af2d9e15…abade` and repro `3ace5b32…67c8`.
+
+**The verdict** (result.json): WITHHELD, "the data could not answer".
+- The deciding line is 715: 25 days, 38 coins; options cut and BASE.
+- The bars: z 2.847 (LIKELY 2.360).
+- **The positions:** 3,078; leftOut 0; unpriced 78; depthShort 278; priced
+  3,000; withheldShare 0.11566.
+- **The priced stat:** +4.459 ± 91.70 (seDay; seMarket 25.79).
+- **The bounds:** holds −256.6, likely −212.0, does not hold +265.5. So,
+  priced as it is, the line would read NOT SETTLED, neither HOLDS nor
+  DOES NOT HOLD.
+- **Beside:** the BASE excess +15.04 (n 3,000); at the book −32.54
+  (n 2,082).
+
+**The prints beside** (report.json; P13: they decide nothing):
+- **By month:** 2026-06 +1.6 (9 days); 07 −73.0 (3); 08 −267.0 (6); 11
+  +110.7 (7).
+- **By side:** the forced sells +83.4 ± 61.5 (n 2,715, 21 days, z 1.36);
+  the forced buys −747.5 (n 285).
+- **N, seeded:** −35.4 ± 72.6 (5,826 priced, 59 days).
+- **The 1,391 cut, seeded:** +68.2 ± 182.3 (1,230 priced, 13 days).
+- **At the tape:** −2.1 ± 96.1 (2,745 priced).
+- The two best days' share of the line's sum: 11.2.
+
+**The supervisor's own check** (`verify/POLISH-LOOK1/result-check.cjs` on
+`positions.jsonl.gz` alone, output `result-check.out`): 3,078 in715; 3,000
+with a net; 78 unpriced; 278 depth short; share 0.11566; mean +4.4594 over 25
+days; side −1 n 2,715 at +83.395 and side +1 n 285 at −747.509. Each equals
+result.json and report.json. The SE is left to the Final review.
+
+**For the look's report and review:**
+- Depth short was 278 (9.0%). The pre-freeze projection put WITHHELD at
+  2.2% (P(WITHHELD) 1.8%), and it did not foresee crash-hour depth.
+- The forced-sell side and the forced-buy side differ by ~830 bps. That
+  is a print seen after the fact, so it is never a verdict here. Any rule
+  built on it is its own frozen test on months not yet seen.
+
+**What the frozen rules say next:** only HOLDS or DOES NOT HOLD end the exam
+early (M11), so look 2 follows, about 2027-02-08, on FRESH-2's data (rules.md
+P1; window 182 days, z 2.81, LIKELY 2.437).
+
+**Owed:**
+1. The look's report.
+2. Its Final review with independent code (POLISH-EXAM-REVIEW, fresh).
+3. The owner's talk on what next: the AI items, Fable 5.2's cold review,
+   the variations, MARKET-1's first look 2026-12-19, the v1 plan.
+
 2026-11-24 (the supervisor — LOOK 1: THE REPRODUCTION PASSED, STEP 1 DONE,
 BEFORE ANY PRICE): **THE FROZEN PROGRAM REPRODUCED THE TEN MONTHS EXACTLY.
 FRESH WAS OPENED AND BUILT TWICE, AND THE TWO BUILDS ARE EQUAL; ITS
