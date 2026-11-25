@@ -5,12 +5,12 @@
  * D1-D8): the plan's files of Hyperliquid's archive from AWS's keyless public
  * bucket and the 38 coins' settled funding from Hyperliquid's public info
  * API, into the store on F:, beside the live collector on the same line.
- * Plain Node 24, no package, never part of a frozen program. It hashes bytes
- * and never decodes or parses a data file: the test months are stored
- * unopened.
+ * Plain Node 24 with the workspace's Zod, never part of a frozen program. It
+ * hashes bytes and never decodes or parses a data file of WAVE-H's or
+ * FRESH's: the test months are stored unopened.
  *
  *   node tools/waveh-fetch.cjs --store <dir> --heartbeat <file>
- *     [--sizing-only | --fresh] [--plan]
+ *     [--sizing-only | --fresh | --copyh [--max-reads <n>]] [--plan]
  *     [--rate <bytes a second, at most 2000000>] [--books <file>]
  *
  * A run downloads one range. WAVE-H's dates: nothing before
@@ -25,6 +25,18 @@
  * before FRESH_END. --plan lists and prints what would come down; --rate may
  * only lower the rate.
  *
+ * --copyh takes COPY-H's funding (decisions 2026-11-25, "COPY-H'S PLAN
+ * APPROVED", ruling 5; the plan's part 0): one `meta` read, kept as
+ * info/meta.json and held to its hash after, gives the coin list, every coin
+ * of its universe in its order, the delisted among them; then each coin's
+ * settled `fundingHistory` on 20-day windows from M0 (2025-06-30) to
+ * FRESH_END, split at END_E so that none holds both E and S, window by
+ * window. Each reply is Zod-checked (Iron Rule 3) for its shape and times
+ * only before it is kept: one that fails is dropped, asked once more, then
+ * written as bad; `[]` is a valid reply. A run that goes through all its
+ * reads writes funding.sha256, every stored reply's SHA-256 by key.
+ * --max-reads ends a session after n info reads (exit 0); the next resumes.
+ *
  * --books <file> fetches only the book files a file names, a key a line
  * (`market_data/<YYYYMMDD>/<h>/l2Book/<COIN>.lz4`, one of the 38 coins, of
  * the range's hours: the rehearsal's legs before the seal with
@@ -37,10 +49,10 @@
  * `books.jsonl` keeps earlier runs' books.
  *
  * tools/waveh-fetch-start.ps1 starts it detached at idle priority; the stop
- * file stops it. A range's store sits in its own folder, <root>/WAVE-H/store
- * or <root>/FRESH/store, and one download runs at a time on the line: a run
- * refuses to start while the other range's store holds a live lock. In the
- * store: the bucket's keys mirrored below ROOT,
+ * file stops it. A range's store sits in its own folder, <root>/WAVE-H/store,
+ * <root>/FRESH/store or <root>/COPY-H/funding, and one download runs at a time
+ * on the line: a run refuses to start while another range's store holds a
+ * live lock. In the store: the bucket's keys mirrored below ROOT,
  * info/fundingHistory/<coin>/<window start ms>.json, manifest.jsonl, and the
  * tool's own fetch/ (the pid file, which is its lock; the stop file;
  * rate.txt, the rate each pause halves and each 30 clean minutes double back
@@ -57,6 +69,11 @@ const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { z } = require(
+  require.resolve("zod", {
+    paths: [path.join(__dirname, "..", "apps", "poller")],
+  }),
+);
 
 const BUCKET = "https://aws-public-blockchain.s3.us-east-2.amazonaws.com";
 const ROOT = "v1.1/hyperliquid/mainnet/";
@@ -77,6 +94,11 @@ const DATA_END = Date.UTC(2026, 4, 29, 1);
  * written again on the second day after it; decisions 2026-11-17, FRESH-FETCH).
  */
 const FRESH_END = Date.UTC(2026, 10, 16);
+/** COPY-H's instants (its plan, C1): M0, its first Monday; END_E, the end of WAVE-H's store and of E. */
+const COPYH_START = Date.UTC(2025, 5, 30);
+const END_E = Date.UTC(2026, 4, 29, 2);
+const META_BODY = JSON.stringify({ type: "meta" });
+const META_KEY = "info/meta.json";
 
 /** MARKET-1's 38 small coins by Hyperliquid's names (plan H3). */
 const COINS =
@@ -109,19 +131,24 @@ const PARTS = [
 /**
  * The ranges a run downloads: their parts (each listed month by month), the
  * hours an hourly file and the days a daily file may be dated in, `[from,
- * to)`, their funding windows, and the folder their store sits in.
+ * to)`, their funding windows and coins, and the folder their store sits in,
+ * `<root>/<folder>/<leaf>`. COPY-H's coins come from its `meta` reading
+ * (`fromMeta`), set on the run's own copy of the range.
  */
 const WAVEH = {
   title: "WAVE-H's download: the full plan",
   folder: "WAVE-H",
+  leaf: "store",
   parts: PARTS,
   hours: [FIRST, DATA_END + HOUR],
   days: [FIRST, DATA_END],
   windows: [...grid(FIRST, SEAL), ...grid(SEAL, DATA_END)],
+  coins: COINS,
 };
 const SIZING = {
   title: "WAVE-H's download: the sizing months only",
   folder: "WAVE-H",
+  leaf: "store",
   parts: PARTS.map((p) => ({
     ...p,
     months: p.months.filter(
@@ -131,10 +158,12 @@ const SIZING = {
   hours: [FIRST, SEAL],
   days: [FIRST, SEAL],
   windows: grid(FIRST, SEAL),
+  coins: COINS,
 };
 const FRESH = {
   title: "FRESH's download: the months after WAVE-H's data",
   folder: "FRESH",
+  leaf: "store",
   parts: [
     {
       name: "node_fills_by_block",
@@ -152,7 +181,21 @@ const FRESH = {
   hours: [DATA_END + HOUR, FRESH_END],
   days: [Date.UTC(2026, 4, 29), FRESH_END],
   windows: grid(DATA_END, FRESH_END),
+  coins: COINS,
 };
+const COPYH = {
+  title: "COPY-H's funding: every main-dex coin's settled hours",
+  folder: "COPY-H",
+  leaf: "funding",
+  parts: [],
+  hours: [0, 0],
+  days: [0, 0],
+  windows: [...grid(COPYH_START, END_E), ...grid(END_E, FRESH_END)],
+  coins: null,
+  fromMeta: true,
+};
+/** The stores, one a folder (SIZING's is WAVE-H's). */
+const STORES = [WAVEH, FRESH, COPYH];
 
 const MAX_RATE = 2_000_000;
 const FLOOR = 200 * 2 ** 30;
@@ -161,6 +204,9 @@ const GAP_MS = SECOND;
 const FUNDING_GAP_MS = 6 * SECOND;
 /** A fundingHistory reply's bytes at most: a full window of 480 rows was 43,018 B (the review, D5). */
 const FUNDING_MAX = 256 * 1024;
+/** A `meta` reply's bytes at most: it was 17,743 B on 2026-11-13. */
+const META_MAX = 2 ** 20;
+const MAX_READS = 10_000;
 const LISTING_MAX = 4 * 2 ** 20;
 const IDLE_MS = 60 * SECOND;
 const LADDER_MS = [30 * SECOND, 2 * MINUTE, 10 * MINUTE];
@@ -194,6 +240,7 @@ class Abort extends Error {}
 class Settings extends Error {}
 
 const iso = (ms) => new Date(ms).toISOString();
+const sha256 = (b) => createHash("sha256").update(b).digest("hex");
 const gib = (bytes) => (bytes / 2 ** 30).toFixed(1);
 const gb = (bytes) => `${bytes} B (${(bytes / 1e9).toFixed(2)} GB)`;
 
@@ -255,6 +302,134 @@ const fundingBody = (coin, w) =>
     endTime: w.end - 1,
   });
 
+const bodies = new WeakMap();
+/** A range's fundingHistory reads, each coin's on each window; none while its coins are still to be read. */
+function fundingBodies(range) {
+  if (!bodies.has(range)) {
+    bodies.set(
+      range,
+      new Set(
+        range.windows.flatMap((w) =>
+          (range.coins ?? []).map((coin) => fundingBody(coin, w)),
+        ),
+      ),
+    );
+  }
+  return bodies.get(range);
+}
+
+const DEVICE = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+const MetaReply = z.object({
+  universe: z
+    .array(
+      z.object({
+        name: z.string().regex(/^[A-Za-z0-9]{1,32}$/),
+        isDelisted: z.boolean().optional(),
+      }),
+    )
+    .min(1),
+});
+const decimal = z
+  .string()
+  .refine((s) => s.length > 0 && Number.isFinite(Number(s)), "not a number");
+const FundingReply = z.array(
+  z.object({
+    coin: z.string(),
+    fundingRate: decimal,
+    premium: decimal,
+    time: z.number().int(),
+  }),
+);
+
+/** The first Zod issue, its path and message; never the value. */
+const issue = (error) => {
+  const i = error.issues[0];
+  return `${i.path.join(".") || "the reply"}: ${i.message}`;
+};
+
+function jsonOf(bytes) {
+  try {
+    return { json: JSON.parse(bytes.toString("utf8")) };
+  } catch {
+    return { why: "not JSON" };
+  }
+}
+
+/**
+ * A `meta` reply checked (Iron Rule 3): every entry of its universe, in its
+ * order, delisted ones included. Each name is a folder of the store, so it is
+ * letters and digits only (no builder dex's `dex:COIN`, no spot name), unique
+ * ignoring case (Windows' folders) and no Windows device name.
+ */
+function parseMeta(bytes) {
+  const { json, why } = jsonOf(bytes);
+  if (why !== undefined) return { why };
+  const r = MetaReply.safeParse(json);
+  if (!r.success) return { why: `not meta's shape: ${issue(r.error)}` };
+  const seen = new Set();
+  for (const { name } of r.data.universe) {
+    if (DEVICE.test(name))
+      return { why: `the coin ${name} is a Windows device name` };
+    if (seen.has(name.toLowerCase()))
+      return { why: `two coins named ${name} but for case` };
+    seen.add(name.toLowerCase());
+  }
+  return {
+    why: null,
+    coins: r.data.universe.map((u) => u.name),
+    delisted: r.data.universe
+      .filter((u) => u.isDelisted === true)
+      .map((u) => u.name),
+  };
+}
+
+/**
+ * A fundingHistory reply of `coin` on window `w`, checked for its shape and
+ * times only (Iron Rule 3; decisions 2026-11-25, the supervisor's ruling on
+ * COPYH-FUNDING's Q2): rows of that coin, stamped in the window, in time
+ * order, no more than its hours. No rate is read beyond its being a number.
+ */
+function fundingCheck(bytes, coin, w) {
+  const { json, why } = jsonOf(bytes);
+  if (why !== undefined) return { why };
+  const r = FundingReply.safeParse(json);
+  if (!r.success)
+    return { why: `not fundingHistory's shape: ${issue(r.error)}` };
+  const hours = (w.end - w.start) / HOUR;
+  if (r.data.length > hours)
+    return {
+      why: `${r.data.length} rows, more than the window's ${hours} hours`,
+    };
+  let last = -Infinity;
+  for (const row of r.data) {
+    if (row.coin !== coin)
+      return { why: `a row of another coin, ${row.coin.slice(0, 40)}` };
+    if (row.time < w.start || row.time >= w.end)
+      return { why: `a row stamped ${row.time}, outside the window` };
+    if (row.time <= last)
+      return { why: `a row stamped ${row.time}, out of time order` };
+    last = row.time;
+  }
+  return { why: null, fields: { rows: r.data.length } };
+}
+
+const META_ITEM = {
+  kind: "meta",
+  part: "meta",
+  key: META_KEY,
+  max: META_MAX,
+  request: { url: INFO, method: "POST", body: META_BODY },
+  check: (bytes) => {
+    const m = parseMeta(bytes);
+    return m.why !== null
+      ? m
+      : {
+          why: null,
+          fields: { coins: m.coins.length, delisted: m.delisted.length },
+        };
+  },
+};
+
 /** A book file's hour (plan H8, H15): `market_data/<YYYYMMDD>/<h>/l2Book/<COIN>.lz4` of one of the 38 coins, else null. */
 function bookTime(key) {
   const m = /^market_data\/(\d{8})\/(0|[1-9]\d?)\/l2Book\/([^/]+)\.lz4$/.exec(
@@ -311,9 +486,9 @@ function listingOk(q, range, books) {
 
 /**
  * The guard on every request: a listing of one of the range's months, a GET
- * of a key it admits, or one of its fundingHistory reads; with --books, only
- * a listing of a needed key's hour folder and a GET of a needed key. Anything
- * else, /exchange among it, ends the run.
+ * of a key it admits, or one of its fundingHistory reads (and COPY-H's one
+ * `meta` read); with --books, only a listing of a needed key's hour folder
+ * and a GET of a needed key. Anything else, /exchange among it, ends the run.
  */
 function checkRequest(url, method, body, range, books = null) {
   let ok = false;
@@ -321,9 +496,9 @@ function checkRequest(url, method, body, range, books = null) {
     ok =
       books === null &&
       url === INFO &&
-      range.windows.some((w) =>
-        COINS.some((coin) => fundingBody(coin, w) === body),
-      );
+      (body === META_BODY
+        ? range.fromMeta === true
+        : fundingBodies(range).has(body));
   } else if (
     books !== null &&
     method === "GET" &&
@@ -689,9 +864,9 @@ function statusClass(status, url) {
   );
 }
 
-/** Why a reply's bytes are not the listed file's, or not a fundingHistory reply's; null when they agree. */
+/** Why a reply's bytes are not the listed file's, or not an info reply's; null when they agree. */
 function disagreement(item, r) {
-  if (item.kind === "funding") {
+  if (item.request.url === INFO) {
     if (!/^application\/json\b/.test(r.contentType ?? ""))
       return `the content type ${r.contentType}`;
     return r.bytes === 0 ? "an empty reply" : null;
@@ -787,7 +962,16 @@ function storeFiles(store) {
     problems: path.join(dir, "problems.jsonl"),
     manifest: path.join(store, "manifest.jsonl"),
     books: path.join(store, "books.jsonl"),
+    list: path.join(store, "funding.sha256"),
   };
+}
+
+/** funding.sha256's text: every stored reply's SHA-256 by key, in sha256sum's format (WAVE-H's data.sha256), sorted by key. */
+function fundingList(manifest) {
+  return [...manifest.lines.keys()]
+    .sort()
+    .map((key) => `${manifest.lines.get(key).sha256} *${key}\n`)
+    .join("");
 }
 
 function makeLog(dir, clock) {
@@ -898,6 +1082,7 @@ class Fetcher {
     fullRate,
     watch,
     books = null,
+    maxReads = null,
   }) {
     this.clock = clock;
     this.fetch = fetch;
@@ -912,7 +1097,10 @@ class Fetcher {
     this.fullRate = fullRate;
     this.errors = 0;
     this.lastStart = -Infinity;
-    this.lastFunding = -Infinity;
+    this.lastInfo = -Infinity;
+    this.maxReads = maxReads;
+    this.infoReads = 0;
+    this.problems = { missing: 0, bad: 0, changed: 0 };
     this.pausedUntil = 0;
     this.pauses = [];
     this.cleanSince = null;
@@ -1060,8 +1248,8 @@ class Fetcher {
       : "a reading after the pause";
   }
 
-  /** Waits until a request may start: the gate open, 1 s after the last request, 6 s after the last fundingHistory read (D5). */
-  async ready(kind) {
+  /** Waits until a request may start: the gate open, 1 s after the last request, 6 s after the last info read (D5). */
+  async ready(spec) {
     let said = null;
     for (;;) {
       this.throwIfStopping();
@@ -1070,7 +1258,7 @@ class Fetcher {
       if (why === null) {
         const at = Math.max(
           this.lastStart + GAP_MS,
-          kind === "funding" ? this.lastFunding + FUNDING_GAP_MS : 0,
+          spec.url === INFO ? this.lastInfo + FUNDING_GAP_MS : 0,
         );
         if (now >= at) return;
         await this.sleep(Math.min(SECOND, at - now));
@@ -1092,7 +1280,10 @@ class Fetcher {
     };
     this.current = ac;
     this.lastStart = this.clock.now();
-    if (spec.kind === "funding") this.lastFunding = this.lastStart;
+    if (spec.url === INFO) {
+      this.lastInfo = this.lastStart;
+      this.infoReads += 1;
+    }
     let sink = null;
     try {
       watchIdle();
@@ -1165,10 +1356,16 @@ class Fetcher {
     }
   }
 
-  /** A request through the gate and the error ladder: "ok", "missing" or "long". */
+  /** A request through the gate and the error ladder: "ok", "missing" or "long". A session's last info read ends the run before the next. */
   async request(spec) {
     for (;;) {
-      await this.ready(spec.kind);
+      if (
+        spec.url === INFO &&
+        this.maxReads !== null &&
+        this.infoReads >= this.maxReads
+      )
+        throw new Stop(0, `the session's ${this.maxReads} reads`);
+      await this.ready(spec);
       const r = await this.attempt(spec);
       if (r.kind === "interrupted") continue;
       if (r.kind === "error") {
@@ -1198,7 +1395,6 @@ class Fetcher {
     const prefix = `${ROOT}${part.dir}${month}`;
     for (;;) {
       const r = await this.request({
-        kind: "list",
         url: listingUrl(prefix, token),
         method: "GET",
         max: LISTING_MAX,
@@ -1264,6 +1460,13 @@ class Fetcher {
         r.kind === "long"
           ? `more than ${item.max} bytes`
           : disagreement(item, r);
+      // COPY-H's replies are checked before they are kept: the bytes just written, read back.
+      let fields = {};
+      if (why === null && item.check !== undefined) {
+        const c = item.check(fs.readFileSync(part));
+        why = c.why;
+        fields = c.fields ?? {};
+      }
       if (why === null) {
         await this.rename(part, file);
         manifest.add({
@@ -1274,13 +1477,15 @@ class Fetcher {
           md5: r.md5,
           sha256: r.sha256,
           fetchedAt: iso(this.clock.now()),
-          ...(item.kind === "funding"
+          ...(item.request.url === INFO
             ? { request: JSON.parse(item.request.body) }
             : {}),
+          ...fields,
         });
         this.log("fetched", {
           key: item.key,
           bytes: r.bytes,
+          ...fields,
           files: manifest.lines.size,
           storedBytes: manifest.bytes,
         });
@@ -1306,6 +1511,7 @@ class Fetcher {
   }
 
   problem(key, problem, detail) {
+    this.problems[problem] += 1;
     fs.appendFileSync(
       this.files.problems,
       `${JSON.stringify({ at: iso(this.clock.now()), key, problem, detail })}\n`,
@@ -1339,11 +1545,7 @@ async function makePlan(fetcher, range, log) {
               etag: e.etag,
               lastModified: e.lastModified,
               max: e.size,
-              request: {
-                kind: "file",
-                url: `${BUCKET}/${e.key}`,
-                method: "GET",
-              },
+              request: { url: `${BUCKET}/${e.key}`, method: "GET" },
             });
           }
         }
@@ -1353,22 +1555,43 @@ async function makePlan(fetcher, range, log) {
     items.push(...[...keys.values()].sort((a, b) => a.time - b.time));
   }
   for (const w of range.windows) {
-    for (const coin of COINS) {
+    for (const coin of range.coins) {
       items.push({
         kind: "funding",
         part: "funding",
         key: `info/fundingHistory/${coin}/${w.start}.json`,
         max: FUNDING_MAX,
-        request: {
-          kind: "funding",
-          url: INFO,
-          method: "POST",
-          body: fundingBody(coin, w),
-        },
+        request: { url: INFO, method: "POST", body: fundingBody(coin, w) },
+        ...(range.fromMeta
+          ? { check: (bytes) => fundingCheck(bytes, coin, w) }
+          : {}),
       });
     }
   }
   return items;
+}
+
+/**
+ * COPY-H's coin list: `meta` read once through the gate and kept, or the kept
+ * reading, held to its manifest line's bytes and SHA-256 (our own file: a
+ * change throws). Without a list nothing more may be asked.
+ */
+async function coinList(fetcher, manifest) {
+  if (!manifest.lines.has(META_KEY)) {
+    await fetcher.fetchItem(META_ITEM, manifest, Infinity, manifest.bytes);
+    if (!manifest.lines.has(META_KEY))
+      throw new Abort(
+        "no coin list: the meta read was refused (problems.jsonl)",
+      );
+  }
+  const file = path.join(fetcher.store, ...META_KEY.split("/"));
+  const line = manifest.lines.get(META_KEY);
+  const bytes = fs.readFileSync(file);
+  if (bytes.length !== line.bytes || sha256(bytes) !== line.sha256)
+    throw new Error(`${file} is not the bytes its manifest line names`);
+  const meta = parseMeta(bytes);
+  if (meta.why !== null) throw new Error(`${file}: ${meta.why}`);
+  return { ...meta, line };
 }
 
 /** The books' plan: each needed key's hour folder listed; a key it holds is an item, one it lacks is missing. */
@@ -1399,7 +1622,7 @@ async function makeBooksPlan(fetcher, books) {
           etag: e.etag,
           lastModified: e.lastModified,
           max: e.size,
-          request: { kind: "file", url: `${BUCKET}/${e.key}`, method: "GET" },
+          request: { url: `${BUCKET}/${e.key}`, method: "GET" },
         });
     }
   }
@@ -1446,35 +1669,75 @@ function planText(items, manifest, cap, disk, range) {
   return `${lines.join("\n")}\n`;
 }
 
+/** A fundingHistory read's weight at most: 20, and one per 20 rows of a 480-row window (HL-FOLLOW-FACTS 2.4, the natural reading). */
+const WEIGHT_MAX = 20 + 480 / 20;
+
+/** What --plan prints for COPY-H: its meta reading, its windows, the reads and bytes, their time and weight, the cap and the floor. */
+function copyhPlanText(items, manifest, cap, disk, range, meta) {
+  const todo = items.filter((i) => !manifest.lines.has(i.key));
+  const e = range.windows.filter((w) => w.end <= END_E);
+  const s = range.windows.filter((w) => w.start >= END_E);
+  const hours = new Map();
+  for (const w of range.windows) {
+    const h = (w.end - w.start) / HOUR;
+    hours.set(h, (hours.get(h) ?? 0) + 1);
+  }
+  const delisted = new Set(meta.delisted);
+  const planned = items.reduce((t, i) => t + i.max, 0);
+  const left = todo.reduce((t, i) => t + i.max, 0);
+  return `${[
+    range.title,
+    `meta: fetched ${meta.line.fetchedAt}, ${meta.line.bytes} B, sha256 ${meta.line.sha256}; ${meta.coins.length} coins, ${meta.delisted.length} delisted (*)`,
+    `coins in meta's order: ${meta.coins.map((c) => (delisted.has(c) ? `${c}*` : c)).join(" ")}`,
+    `windows: ${range.windows.length} a coin; E ${e.length} from ${iso(e[0].start)} to ${iso(END_E)}, S ${s.length} to ${iso(s.at(-1).end)}; hours a window: ${[...hours].map(([h, n]) => `${h} x${n}`).join(", ")}`,
+    `funding: ${items.length} reads (at most) ${gb(planned)}; in the store ${items.length - todo.length}; to fetch ${todo.length}, ${gb(left)}`,
+    `the reads to fetch, ${FUNDING_GAP_MS / SECOND} s apart: about ${((todo.length * FUNDING_GAP_MS) / HOUR).toFixed(1)} hours of reading; at most ${WEIGHT_MAX} weight a read, ${(WEIGHT_MAX * MINUTE) / FUNDING_GAP_MS} a minute, of 1200`,
+    `in all: ${gb(planned + META_MAX)} planned, the cap ${gb(cap)}; to fetch ${gb(left)}; ${gib(disk.bavail * disk.bsize)} GiB free on the store's disk, the floor ${gib(FLOOR)} GiB`,
+  ].join("\n")}\n`;
+}
+
 /** The range a run's options name. */
 const rangeOf = (opts) =>
-  opts.fresh ? FRESH : opts.sizingOnly ? SIZING : WAVEH;
+  opts.copyh ? COPYH : opts.fresh ? FRESH : opts.sizingOnly ? SIZING : WAVEH;
 
-/** The other range's store, beside this one: `<root>\FRESH\store` and `<root>\WAVE-H\store`. */
-const otherStore = (store, range) =>
-  path.join(
-    path.dirname(path.dirname(store)),
-    range === FRESH ? WAVEH.folder : FRESH.folder,
-    "store",
+/** The other ranges' stores, beside this one: `<root>\WAVE-H\store`, `<root>\FRESH\store`, `<root>\COPY-H\funding`. */
+const otherStores = (store, range) =>
+  STORES.filter((r) => r.folder !== range.folder).map((r) =>
+    path.join(path.dirname(path.dirname(store)), r.folder, r.leaf),
   );
 
+/** COPY-H's counts at a run's end: its reads, the store's replies and bytes, the empty windows, the reads left, this run's problems. */
+function sessionCounts(fetcher, manifest, items) {
+  const lines = [...manifest.lines.values()];
+  return {
+    reads: fetcher.infoReads,
+    files: lines.length,
+    bytes: manifest.bytes,
+    empty: lines.filter((l) => l.rows === 0).length,
+    left: items.filter((i) => !manifest.lines.has(i.key)).length,
+    problems: fetcher.problems,
+  };
+}
+
 /**
- * The run: one download at a time on the line (the other range's store's
- * lock read, never taken), the lock, the plan from the listings, then every
- * planned item not in the manifest.
+ * The run: one download at a time on the line (the other ranges' stores'
+ * locks read, never taken), the lock, COPY-H's coin list, the plan from the
+ * listings, then every planned item not in the manifest.
  */
 async function run(opts, deps) {
-  const range = rangeOf(opts);
+  let range = rangeOf(opts);
   const files = storeFiles(opts.store);
   fs.mkdirSync(files.logDir, { recursive: true });
   const log = makeLog(files.logDir, deps.clock);
-  const other = storeFiles(otherStore(opts.store, range)).pid;
-  const running = holder(other, deps.clock.now());
-  if (running !== null) {
-    log("refused", {
-      why: `the other range's download runs (pid ${running}, ${other}): one download at a time on the line`,
-    });
-    return 3;
+  for (const store of otherStores(opts.store, range)) {
+    const other = storeFiles(store).pid;
+    const running = holder(other, deps.clock.now());
+    if (running !== null) {
+      log("refused", {
+        why: `the other range's download runs (pid ${running}, ${other}): one download at a time on the line`,
+      });
+      return 3;
+    }
   }
   const taken = takeLock(files.pid, deps.clock.now());
   if (taken !== null) {
@@ -1482,6 +1745,7 @@ async function run(opts, deps) {
     return 3;
   }
   let fetcher = null;
+  let session = null;
   try {
     log("start", { pid: process.pid, node: process.version, ...opts });
     if (fs.existsSync(files.stop))
@@ -1505,14 +1769,28 @@ async function run(opts, deps) {
       fullRate: opts.rate ?? MAX_RATE,
       watch: new Watch(opts.heartbeat, log),
       books,
+      maxReads: opts.maxReads ?? null,
     });
     fetcher.start();
     if (books !== null)
       return await runBooks(fetcher, books, manifest, opts, deps, log);
+    let meta = null;
+    if (range.fromMeta) {
+      meta = await coinList(fetcher, manifest);
+      range = { ...range, coins: meta.coins };
+      fetcher.range = range;
+    }
     const items = await makePlan(fetcher, range, log);
-    const cap = Math.ceil(items.reduce((s, i) => s + i.max, 0) * CAP);
-    const text = planText(items, manifest, cap, deps.statfs(opts.store), range);
+    const planned =
+      items.reduce((s, i) => s + i.max, 0) + (meta === null ? 0 : META_MAX);
+    const cap = Math.ceil(planned * CAP);
+    const disk = deps.statfs(opts.store);
+    const text =
+      meta === null
+        ? planText(items, manifest, cap, disk, range)
+        : copyhPlanText(items, manifest, cap, disk, range, meta);
     log("plan", { text });
+    if (meta !== null) session = { manifest, items };
     if (opts.plan) {
       deps.out(text);
       return 0;
@@ -1532,7 +1810,28 @@ async function run(opts, deps) {
         );
       }
     }
-    log("done", { files: manifest.lines.size, bytes: manifest.bytes });
+    if (meta === null) {
+      log("done", { files: manifest.lines.size, bytes: manifest.bytes });
+      return 0;
+    }
+    const list = fundingList(manifest);
+    fs.writeFileSync(`${files.list}.tmp`, list);
+    await fetcher.rename(`${files.list}.tmp`, files.list);
+    const left = items
+      .filter((i) => !manifest.lines.has(i.key))
+      .map((i) => i.key);
+    log("done", {
+      files: manifest.lines.size,
+      bytes: manifest.bytes,
+      list: {
+        file: files.list,
+        lines: manifest.lines.size,
+        sha256: sha256(list),
+      },
+      manifestSha256: sha256(fs.readFileSync(files.manifest)),
+      left: left.length,
+      leftKeys: left.slice(0, 200),
+    });
     return 0;
   } catch (err) {
     if (err instanceof Stop) {
@@ -1549,6 +1848,8 @@ async function run(opts, deps) {
     return 1;
   } finally {
     fetcher?.stop();
+    if (session !== null)
+      log("session", sessionCounts(fetcher, session.manifest, session.items));
     releaseLock(files.pid);
   }
 }
@@ -1593,24 +1894,38 @@ function parseArgs(argv) {
     heartbeat: null,
     sizingOnly: false,
     fresh: false,
+    copyh: false,
     plan: false,
     rate: null,
     books: null,
+    maxReads: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--sizing-only") opts.sizingOnly = true;
     else if (arg === "--fresh") opts.fresh = true;
+    else if (arg === "--copyh") opts.copyh = true;
     else if (arg === "--plan") opts.plan = true;
     else if (
       arg === "--store" ||
       arg === "--heartbeat" ||
       arg === "--rate" ||
-      arg === "--books"
+      arg === "--books" ||
+      arg === "--max-reads"
     ) {
       const value = argv[++i];
       if (value === undefined) throw new Settings(`${arg} needs a value`);
-      if (arg === "--rate") {
+      if (arg === "--max-reads") {
+        if (
+          !/^\d{1,5}$/.test(value) ||
+          Number(value) < 1 ||
+          Number(value) > MAX_READS
+        )
+          throw new Settings(
+            `--max-reads ${value}: from 1 to ${MAX_READS} reads`,
+          );
+        opts.maxReads = Number(value);
+      } else if (arg === "--rate") {
         if (
           !/^\d{1,7}$/.test(value) ||
           Number(value) < 1 ||
@@ -1628,14 +1943,20 @@ function parseArgs(argv) {
     throw new Settings("--store and --heartbeat are needed");
   if (opts.fresh && opts.sizingOnly)
     throw new Settings("--fresh and --sizing-only name two ranges");
-  // Checked before anything is written: a FRESH run never writes WAVE-H's store, nor the reverse.
-  const { folder } = rangeOf(opts);
+  if (opts.copyh && (opts.fresh || opts.sizingOnly))
+    throw new Settings("--copyh names a range of its own");
+  if (opts.copyh && opts.books !== null)
+    throw new Settings("--books is no COPY-H read");
+  if (!opts.copyh && opts.maxReads !== null)
+    throw new Settings("--max-reads is COPY-H's");
+  // Checked before anything is written: no range's run writes another's store.
+  const { folder, leaf } = rangeOf(opts);
   if (
-    path.basename(opts.store).toLowerCase() !== "store" ||
+    path.basename(opts.store).toLowerCase() !== leaf ||
     path.basename(path.dirname(opts.store)).toUpperCase() !== folder
   )
     throw new Settings(
-      `--store ${opts.store}: a store of ${folder}'s range is <folder>${path.sep}${folder}${path.sep}store`,
+      `--store ${opts.store}: a store of ${folder}'s range is <folder>${path.sep}${folder}${path.sep}${leaf}`,
     );
   return opts;
 }
@@ -1674,7 +1995,10 @@ async function main() {
 module.exports = {
   BUCKET,
   COINS,
+  COPYH,
+  COPYH_START,
   DATA_END,
+  END_E,
   FIRST,
   FLOOR,
   FRESH,
@@ -1682,6 +2006,8 @@ module.exports = {
   FUNDING_MAX,
   INFO,
   MAX_RATE,
+  META_BODY,
+  META_KEY,
   PARTS,
   ROOT,
   SEAL,
@@ -1695,12 +2021,15 @@ module.exports = {
   bookTime,
   checkRequest,
   fundingBody,
+  fundingCheck,
+  fundingList,
   fundingWindows,
   grid,
   judge,
   makeLog,
   parseArgs,
   parseListing,
+  parseMeta,
   readBooks,
   realClock,
   run,

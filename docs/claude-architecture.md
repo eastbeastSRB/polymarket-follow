@@ -270,14 +270,15 @@ start when available. Neither is done before the freeze and the owner's word.
 forward run over the old weeks in a FIND-SLOTS slot), both pre-cut data only,
 run when `MARKET1_PRECUT` names the paths.
 
-## WAVE-H's data download (built 2026-11-14 by WAVE-H-FETCH, FRESH's range added 2026-11-17 by FRESH-FETCH; the supervisor starts it)
+## WAVE-H's data download (built 2026-11-14 by WAVE-H-FETCH, FRESH's range added 2026-11-17 by FRESH-FETCH, COPY-H's funding 2026-11-25 by COPYH-FUNDING; the supervisor starts it)
 
-`tools/waveh-fetch.cjs`, plain Node, no package, part of no frozen program
-(decisions 2026-11-14, "WAVE-H's download spec", and WAVE-H-FETCH's
-technical calls; 2026-11-17, FRESH-FETCH's): files of Hyperliquid's archive
-(AWS's keyless bucket, `v1.1/hyperliquid/mainnet/`) and the 38 coins' settled
-funding (`POST /info` `fundingHistory`) into a store on F:. **A run downloads
-one range:**
+`tools/waveh-fetch.cjs`, plain Node with the workspace's Zod (loaded from
+`apps/poller`'s install by path), part of no frozen program (decisions
+2026-11-14, "WAVE-H's download spec", and WAVE-H-FETCH's technical calls;
+2026-11-17, FRESH-FETCH's; 2026-11-25, "COPY-H'S PLAN APPROVED", ruling 5):
+files of Hyperliquid's archive (AWS's keyless bucket,
+`v1.1/hyperliquid/mainnet/`) and settled funding (`POST /info`
+`fundingHistory`) into a store on F:. **A run downloads one range:**
 - **WAVE-H's** (the default; `--sizing-only` its first session):
   `node_fills/hourly/`, `node_fills_by_block/hourly/` and `asset_ctxs/` from
   2025-05-25 to DATA END, 760 funding windows aligned to the seal, into
@@ -286,18 +287,39 @@ one range:**
   until a sharpened rule is frozen: `node_fills_by_block` hours from 2026-05-29
   02h and `asset_ctxs` days from 2026-05-29, both before `FRESH_END`
   (2026-11-16T00:00Z), 342 funding windows on the same 20-day grid from DATA
-  END, into `F:\polymarket-follow-research\FRESH\store\`.
+  END, into `F:\polymarket-follow-research\FRESH\store\`;
+- **COPY-H's funding** (`--copyh`): no bucket file.
+  - One `{"type":"meta"}` read through the gate, kept as `info\meta.json`
+    and held to its manifest line's bytes and SHA-256 by every later run, gives
+    the coin list: every coin of its universe in its order, the delisted among
+    them (names letters and digits only, unique ignoring case, no Windows
+    device name).
+  - Then each coin's `fundingHistory` on 26 windows of at most 20 days from M0
+    (2025-06-30T00:00Z) to `FRESH_END`, split at END_E (2026-05-29T02:00Z):
+    17 in E and 9 in S, none holding both. Window by window, into
+    `F:\polymarket-follow-research\COPY-H\funding\`.
+  - Each reply is Zod-checked for its shape and times only: the coin asked,
+    stamped in its window, in time order, at most its hours; `[]` is valid.
+    One that fails is dropped, asked once more, then written as bad.
+  - Its manifest lines carry `rows`. A run that goes through all its reads
+    writes `funding.sha256` (every stored reply's SHA-256 by key, sha256sum's
+    format, sorted by key) and logs its own and the manifest's SHA-256.
+  - `--max-reads <n>` ends a session (exit 0); every run logs a `session`
+    line with its counts.
 
-A store sits in its range's folder (`…\WAVE-H\store` or `…\FRESH\store`,
-checked before anything is written), and one download runs at a time on the
-line: a run refuses to start while the other range's store holds a live lock.
+A store sits in its range's folder (`…\WAVE-H\store`, `…\FRESH\store` or
+`…\COPY-H\funding`, checked before anything is written), and one download
+runs at a time on the line: a run refuses to start while another range's
+store holds a live lock.
 In a store: the keys mirrored, `info\fundingHistory\<coin>\<window start
 ms>.json`, `manifest.jsonl` (key, bytes, ETag, LastModified, MD5, SHA-256,
 fetch time), and its own `fetch\` (the pid file, which is its lock; the stop
 file `waveh-fetch.stop`; `rate.txt`; `problems.jsonl`; `log\<UTC date>.jsonl`).
 It hashes the bytes as they come and never decodes, parses or reads back a
-data file. Every request passes one gate: the range's guards on prefix and
-date, one at a time, a 2 MB/s token bucket, no request 02:30–06:00Z and
+data file of WAVE-H's or FRESH's; under `--copyh` it reads back `meta.json`
+and each reply it has just written, to check it. Every request passes one
+gate: the range's guards on prefix, date and body, one at a time, info reads
+at least 6 s apart, a 2 MB/s token bucket, no request 02:30–06:00Z and
 10:25–11:15Z, the error ladder, the F: floor and the cap, and the watch on the
 collector's `heartbeat.json`:
 - its time by stat, its content once a minute at most;
@@ -307,10 +329,12 @@ collector's `heartbeat.json`:
   clock and the price audit, no read failed) the rate doubles back, up to the
   run's full rate, kept in `rate.txt` and logged.
 
-`--plan` prints the plan. `tools\waveh-fetch-start.ps1` (`-Fresh` for FRESH's
-range and store) starts it through WMI at idle priority, so it outlives the
-session (`-Check` says whether it runs, on its store or the other); the stop
-file stops it within a second. `--books <file>` fetches only the book files a
+`--plan` prints the plan (under `--copyh` it reads `meta` once when the store
+has none, and no `fundingHistory`). `tools\waveh-fetch-start.ps1` (`-Fresh`
+for FRESH's range and store, `-CopyH` with `-MaxReads` for COPY-H's) starts it
+through WMI at idle priority, so it outlives the session (`-Check` says
+whether it runs, on its store or another's); the stop file stops it within a
+second. `--books <file>` fetches only the book files a
 file names (`market_data/<date>/<h>/l2Book/<COIN>.lz4` of the 38 coins and the
 range's hours) under the same gate: each needed key's hour folder listed, each
 listed key checked as any file into the store's `books.jsonl`, a key its

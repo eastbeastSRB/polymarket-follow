@@ -19,20 +19,26 @@ type Window = { start: number; end: number };
 type Range = {
   title: string;
   folder: string;
+  leaf: string;
   parts: Part[];
   hours: [number, number];
   days: [number, number];
   windows: Window[];
+  coins: string[] | null;
+  fromMeta?: boolean;
 };
 type Opts = {
   store: string;
   heartbeat: string;
   sizingOnly: boolean;
   fresh?: boolean;
+  copyh?: boolean;
   plan: boolean;
   rate: number | null;
   books?: string | null;
+  maxReads?: number | null;
 };
+type Checked = { why: string | null; fields?: { rows: number } };
 type Clock = {
   now: () => number;
   after: (ms: number, fn: () => void) => () => void;
@@ -47,12 +53,17 @@ type Deps = {
 type Tool = {
   BUCKET: string;
   COINS: string[];
+  COPYH: Range;
+  COPYH_START: number;
   DATA_END: number;
+  END_E: number;
   FIRST: number;
   FLOOR: number;
   FRESH: Range;
   FRESH_END: number;
   INFO: string;
+  META_BODY: string;
+  META_KEY: string;
   PARTS: Part[];
   ROOT: string;
   SEAL: number;
@@ -76,6 +87,12 @@ type Tool = {
   bookTime: (key: string) => number | null;
   readBooks: (file: string, range: Range) => Set<string>;
   fundingBody: (coin: string, w: Window) => string;
+  fundingCheck: (bytes: Buffer, coin: string, w: Window) => Checked;
+  parseMeta: (bytes: Buffer) => {
+    why: string | null;
+    coins?: string[];
+    delisted?: string[];
+  };
   fundingWindows: (sizingOnly: boolean) => Window[];
   grid: (from: number, to: number) => Window[];
   judge: (beat: unknown) => { conditions: string[] } | null;
@@ -335,6 +352,8 @@ class FakeServer {
   readonly etags = new Map<string, string>();
   readonly calls: Call[] = [];
   readonly delivered: { at: number; url: string; bytes: number }[] = [];
+  /** The info API's usual answer to a POST's body; `[]` without it. */
+  info: ((body: string) => Buffer) | null = null;
   pageSize = 1_000;
   open = 0;
   maxOpen = 0;
@@ -381,12 +400,13 @@ class FakeServer {
     if (answer.throws !== undefined) {
       return Promise.reject(new TypeError(answer.throws));
     }
-    return Promise.resolve(this.reply(url, method, answer, signal));
+    return Promise.resolve(this.reply(url, method, body, answer, signal));
   };
 
   private reply(
     url: string,
     method: string,
+    body: string | undefined,
     answer: Answer,
     signal: AbortSignal,
   ): Response {
@@ -399,7 +419,7 @@ class FakeServer {
     }
     if (method === "POST") {
       return this.respond(
-        answer.body ?? Buffer.from("[]"),
+        answer.body ?? this.info?.(body ?? "") ?? Buffer.from("[]"),
         { "content-type": answer.contentType ?? "application/json" },
         url,
         answer,
@@ -520,9 +540,9 @@ function sizingWorld(server: FakeServer): void {
 }
 const FUNDING_READS = 4 * 38;
 
-function setup(start = T0, folder = "WAVE-H") {
+function setup(start = T0, folder = "WAVE-H", leaf = "store") {
   const root = fs.mkdtempSync(path.join(tmpdir(), "waveh-fetch-"));
-  const store = path.join(root, folder, "store");
+  const store = path.join(root, folder, leaf);
   const clock = new FakeClock(start);
   const collector = new FakeCollector(
     clock,
@@ -587,6 +607,9 @@ type ManifestLine = {
   sha256: string;
   fetchedAt: string;
   request?: unknown;
+  rows?: number;
+  coins?: number;
+  delisted?: number;
 };
 function jsonLines<T>(file: string): T[] {
   if (!fs.existsSync(file)) return [];
@@ -2167,9 +2190,11 @@ describe("the runner", () => {
       heartbeat: path.resolve("h"),
       sizingOnly: false,
       fresh: false,
+      copyh: false,
       plan: false,
       rate: null,
       books: null,
+      maxReads: null,
     });
     expect(
       tool.parseArgs(["--fresh", "--store", F, "--heartbeat", "h"]),
@@ -2193,9 +2218,11 @@ describe("the runner", () => {
       heartbeat: path.resolve("h"),
       sizingOnly: true,
       fresh: false,
+      copyh: false,
       plan: true,
       rate: 500_000,
       books: null,
+      maxReads: null,
     });
     expect(() =>
       tool.parseArgs([
@@ -2783,5 +2810,918 @@ describe("the FRESH range (--fresh)", () => {
     expect(
       jsonLines<ManifestLine>(path.join(w.store, "books.jsonl")),
     ).toMatchObject([{ key: BOOK, bytes: 20_000 }]);
+  }, 60_000);
+});
+
+describe("COPY-H's funding (--copyh)", () => {
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const COPYH_RUN = { copyh: true, sizingOnly: false };
+  /** The world's meta: three coins, one delisted, beside the fields the real reply carries. */
+  const UNIVERSE = [
+    { name: "BTC" },
+    { name: "OLD", isDelisted: true },
+    { name: "kPEPE" },
+  ];
+  const COINS3 = UNIVERSE.map((u) => u.name);
+  const READS = COINS3.length * tool.COPYH.windows.length;
+  const metaOf = (universe: object[]) =>
+    Buffer.from(
+      JSON.stringify({
+        universe: universe.map((u) => ({
+          szDecimals: 5,
+          maxLeverage: 40,
+          marginTableId: 56,
+          ...u,
+        })),
+        marginTables: [],
+        collateralToken: 0,
+      }),
+    );
+  /** Each coin's settled hours, [from, to): OLD's end on 2025-08-10, kPEPE's start on 2026-06-01. */
+  const SETTLED: Record<string, [number, number]> = {
+    BTC: [0, Infinity],
+    OLD: [0, Date.parse("2025-08-10T00:00:00Z")],
+    kPEPE: [Date.parse("2026-06-01T00:00:00Z"), Infinity],
+  };
+  type Row = {
+    coin: string;
+    fundingRate: string;
+    premium: string;
+    time: number;
+  };
+  /** A coin's rows in [from, to): one an hour it settled, stamped 17 ms after the hour. */
+  function rowsOf(coin: string, from: number, to: number): Row[] {
+    const [a, b] = SETTLED[coin] ?? [0, Infinity];
+    const rows: Row[] = [];
+    for (let h = Math.max(from, a); h < Math.min(to, b); h += HOUR)
+      rows.push({
+        coin,
+        fundingRate: "0.0000125",
+        premium: "0.0001",
+        time: h + 17,
+      });
+    return rows;
+  }
+  /** The info API's answers: the meta above, and each fundingHistory read's rows. */
+  function answerOf(body: string): Buffer {
+    if (body === tool.META_BODY) return metaOf(UNIVERSE);
+    const q = JSON.parse(body) as {
+      coin: string;
+      startTime: number;
+      endTime: number;
+    };
+    return Buffer.from(
+      JSON.stringify(rowsOf(q.coin, q.startTime, q.endTime + 1)),
+    );
+  }
+  const copyhSetup = (start = T0) => {
+    const w = setup(start, "COPY-H", "funding");
+    w.server.info = answerOf;
+    return w;
+  };
+  const windowAt = (i: number) => tool.COPYH.windows[i] as Window;
+  const keyOf = (coin: string, win: Window) =>
+    `info/fundingHistory/${coin}/${win.start}.json`;
+  const bodiesInOrder = () =>
+    tool.COPYH.windows.flatMap((win) =>
+      COINS3.map((coin) => tool.fundingBody(coin, win)),
+    );
+  const listOf = (store: string) =>
+    fs.readFileSync(path.join(store, "funding.sha256"), "utf8");
+
+  it("lays its windows from M0 to FRESH_END, split at END_E: 17 in E and 9 in S, contiguous, none holding both; WAVE-H's and FRESH's unchanged", () => {
+    expect(tool.COPYH_START).toBe(Date.parse("2025-06-30T00:00:00.000Z"));
+    expect(tool.END_E).toBe(Date.parse("2026-05-29T02:00:00.000Z"));
+    const w = tool.COPYH.windows;
+    expect(w[0]?.start).toBe(tool.COPYH_START);
+    expect(w.at(-1)?.end).toBe(tool.FRESH_END);
+    w.forEach((x, i) => {
+      if (i > 0) expect(x.start).toBe(w[i - 1]?.end);
+      expect(x.end <= tool.END_E || x.start >= tool.END_E).toBe(true);
+    });
+    expect(w.map((x) => (x.end - x.start) / HOUR)).toEqual([
+      ...Array<number>(16).fill(480),
+      314,
+      ...Array<number>(8).fill(480),
+      262,
+    ]);
+    expect(w.filter((x) => x.end <= tool.END_E).length).toBe(17);
+    expect(windowAt(17).start).toBe(tool.END_E);
+    expect(iso(windowAt(16).start)).toBe("2026-05-16T00:00:00.000Z");
+    expect(iso(windowAt(25).start)).toBe("2026-11-05T02:00:00.000Z");
+    expect(tool.COPYH).toMatchObject({
+      folder: "COPY-H",
+      leaf: "funding",
+      parts: [],
+      coins: null,
+      fromMeta: true,
+    });
+    expect(tool.fundingWindows(false).length).toBe(20);
+    expect(tool.FRESH.windows.length).toBe(9);
+    expect(tool.FRESH.windows[0]?.start).toBe(tool.DATA_END);
+  });
+
+  it("lets through only meta and the fundingHistory reads of meta's coins on its windows; refuses everything else, and meta under the other ranges", () => {
+    const run: Range = { ...tool.COPYH, coins: COINS3 };
+    const check =
+      (
+        url: string,
+        method: string,
+        body: string | undefined,
+        range: Range,
+        books: Set<string> | null = null,
+      ) =>
+      () =>
+        tool.checkRequest(url, method, body, range, books);
+    for (const [body, range] of [
+      [tool.META_BODY, tool.COPYH],
+      [tool.META_BODY, run],
+      [tool.fundingBody("BTC", windowAt(0)), run],
+      [tool.fundingBody("OLD", windowAt(25)), run],
+      [tool.fundingBody("kPEPE", windowAt(16)), run],
+      [tool.fundingBody("kPEPE", windowAt(17)), run],
+    ] as const)
+      expect(check(tool.INFO, "POST", body, range), body).not.toThrow();
+    const after = { start: tool.FRESH_END, end: tool.FRESH_END + 20 * DAY };
+    const straddling = { start: windowAt(16).start, end: windowAt(17).end };
+    for (const [url, method, body, range] of [
+      [tool.INFO, "POST", tool.META_BODY, tool.WAVEH],
+      [tool.INFO, "POST", tool.META_BODY, tool.FRESH],
+      [tool.INFO, "POST", tool.META_BODY, tool.SIZING],
+      [tool.INFO, "POST", tool.fundingBody("BTC", windowAt(0)), tool.COPYH],
+      [tool.INFO, "POST", tool.fundingBody("SOL", windowAt(0)), tool.COPYH],
+      [tool.INFO, "POST", tool.fundingBody("SOL", windowAt(0)), run],
+      [tool.INFO, "POST", tool.fundingBody("btc", windowAt(0)), run],
+      [
+        tool.INFO,
+        "POST",
+        tool.fundingBody("BTC", tool.WAVEH.windows[5] as Window),
+        run,
+      ],
+      [
+        tool.INFO,
+        "POST",
+        tool.fundingBody("BTC", tool.FRESH.windows[0] as Window),
+        run,
+      ],
+      [tool.INFO, "POST", tool.fundingBody("BTC", straddling), run],
+      [tool.INFO, "POST", tool.fundingBody("BTC", after), run],
+      [tool.INFO, "POST", JSON.stringify({ type: "meta", dex: "xyz" }), run],
+      [tool.INFO, "POST", '{"type": "meta"}', run],
+      [
+        tool.INFO,
+        "POST",
+        JSON.stringify({ type: "userFills", user: "0x0" }),
+        run,
+      ],
+      [tool.INFO.replace("/info", "/exchange"), "POST", tool.META_BODY, run],
+      [tool.INFO, "GET", undefined, run],
+      [
+        urlOf("node_fills_by_block/hourly/20250801/0.lz4"),
+        "GET",
+        undefined,
+        run,
+      ],
+      [
+        listingUrlOf("node_fills_by_block/hourly/202508"),
+        "GET",
+        undefined,
+        run,
+      ],
+      [urlOf("asset_ctxs/20250801.csv.lz4"), "GET", undefined, run],
+    ] as const)
+      expect(check(url, method, body, range), `${url} ${body}`).toThrow(
+        /outside the guard/,
+      );
+    expect(
+      check(tool.INFO, "POST", tool.META_BODY, run, new Set(["x"])),
+    ).toThrow(/outside the guard/);
+  });
+
+  it("reads meta's universe (Iron Rule 3): every coin in its order, the delisted among them; refuses a name not of letters and digits, two alike but for case, a device name, no universe, not JSON", () => {
+    expect(tool.parseMeta(metaOf(UNIVERSE))).toEqual({
+      why: null,
+      coins: COINS3,
+      delisted: ["OLD"],
+    });
+    for (const [bytes, why] of [
+      [Buffer.from("<html>busy</html>"), /^not JSON$/],
+      [Buffer.from("null"), /^not meta's shape: the reply/],
+      [Buffer.from("{}"), /^not meta's shape: universe/],
+      [metaOf([]), /^not meta's shape: universe/],
+      [metaOf([{ name: "xyz:ABC" }]), /universe\.0\.name/],
+      [metaOf([{ name: "BTC" }, { name: "@107" }]), /universe\.1\.name/],
+      [metaOf([{ name: "PURR/USDC" }]), /universe\.0\.name/],
+      [metaOf([{ name: "" }]), /universe\.0\.name/],
+      [metaOf([{ name: "A".repeat(33) }]), /universe\.0\.name/],
+      [metaOf([{ name: 7 }]), /universe\.0\.name/],
+      [metaOf([{ name: "BTC", isDelisted: "yes" }]), /universe\.0\.isDelisted/],
+      [
+        metaOf([{ name: "kPEPE" }, { name: "KPEPE" }]),
+        /^two coins named KPEPE but for case$/,
+      ],
+      [
+        metaOf([{ name: "BTC" }, { name: "Aux" }]),
+        /^the coin Aux is a Windows device name$/,
+      ],
+      [metaOf([{ name: "COM1" }]), /device name/],
+      [metaOf([{ name: "nul" }]), /device name/],
+    ] as const)
+      expect(tool.parseMeta(bytes).why, String(why)).toMatch(why);
+    expect(
+      tool.parseMeta(
+        metaOf([
+          { name: "A", isDelisted: false },
+          { name: "B", isDelisted: true },
+          { name: "C" },
+        ]),
+      ),
+    ).toEqual({ why: null, coins: ["A", "B", "C"], delisted: ["B"] });
+    expect(
+      tool.parseMeta(
+        metaOf([{ name: "COM0" }, { name: "CONS" }, { name: "LPT" }]),
+      ).why,
+    ).toBeNull();
+    expect(
+      tool.parseMeta(metaOf([{ name: "A".repeat(32) }])).coins,
+    ).toHaveLength(1);
+  });
+
+  it("checks a fundingHistory reply for its shape and times only: rows of the coin asked, stamped in its window, in time order, no more than its hours; [] is valid; a refusal never names a rate", () => {
+    const w = windowAt(16);
+    const json = (rows: unknown) => Buffer.from(JSON.stringify(rows));
+    const full = rowsOf("BTC", w.start, w.end);
+    const at = (i: number) => full[i] as Row;
+    expect(full.length).toBe(314);
+    expect(tool.fundingCheck(json(full), "BTC", w)).toEqual({
+      why: null,
+      fields: { rows: 314 },
+    });
+    expect(tool.fundingCheck(json([]), "OLD", w)).toEqual({
+      why: null,
+      fields: { rows: 0 },
+    });
+    expect(
+      tool.fundingCheck(
+        json([...full.slice(0, 3), ...full.slice(4)]),
+        "BTC",
+        w,
+      ),
+    ).toEqual({ why: null, fields: { rows: 313 } });
+    expect(
+      tool.fundingCheck(
+        json([
+          { ...at(0), time: w.start },
+          ...full.slice(1, -1),
+          { ...at(313), time: w.end - 1 },
+        ]),
+        "BTC",
+        w,
+      ).why,
+    ).toBeNull();
+    for (const [rows, why] of [
+      [
+        [{ ...at(0), coin: "ETH" }, ...full.slice(1)],
+        /^a row of another coin, ETH$/,
+      ],
+      [
+        [...full.slice(0, -1), { ...at(313), time: w.end }],
+        /outside the window/,
+      ],
+      [
+        [{ ...at(0), time: w.start - 1 }, ...full.slice(1)],
+        /outside the window/,
+      ],
+      [[at(1), at(0), ...full.slice(2)], /out of time order/],
+      [[at(0), at(0), ...full.slice(2)], /out of time order/],
+      [
+        [...full, { ...at(313), time: w.end - 30 * MINUTE }],
+        /^315 rows, more than the window's 314 hours$/,
+      ],
+      [
+        [{ ...at(0), fundingRate: "x" }],
+        /^not fundingHistory's shape: 0\.fundingRate: not a number$/,
+      ],
+      [[{ ...at(0), premium: "" }], /0\.premium: not a number/],
+      [[{ ...at(0), fundingRate: 0.0000125 }], /0\.fundingRate/],
+      [[{ ...at(0), time: at(0).time + 0.5 }], /0\.time/],
+      [[{ ...at(0), time: String(at(0).time) }], /0\.time/],
+      [[{ coin: "BTC", premium: "0", time: at(0).time }], /0\.fundingRate/],
+      [[{ ...at(0), coin: 7 }], /0\.coin/],
+      [{ rows: full }, /^not fundingHistory's shape: the reply/],
+      [null, /^not fundingHistory's shape: the reply/],
+    ] as const)
+      expect(tool.fundingCheck(json(rows), "BTC", w).why, String(why)).toMatch(
+        why,
+      );
+    expect(
+      tool.fundingCheck(Buffer.from("<html>busy</html>"), "BTC", w).why,
+    ).toBe("not JSON");
+    expect(
+      tool.fundingCheck(
+        json([{ ...at(0), fundingRate: "987654321e999" }]),
+        "BTC",
+        w,
+      ).why,
+    ).toBe("not fundingHistory's shape: 0.fundingRate: not a number");
+  });
+
+  it("downloads every coin of one meta reading on every window, window by window, after meta: one request at a time, 6 s apart, a generic User-Agent; each reply kept as received with its rows; funding.sha256 lists each by key", async () => {
+    const w = copyhSetup();
+    expect(await w.run(COPYH_RUN)).toBe(0);
+    const calls = w.server.calls;
+    expect(calls.every((c) => c.method === "POST" && c.url === tool.INFO)).toBe(
+      true,
+    );
+    expect(calls.map((c) => c.body)).toEqual([
+      tool.META_BODY,
+      ...bodiesInOrder(),
+    ]);
+    expect(
+      calls.every(
+        (c) => c.userAgent === "research-check/1.0" && c.redirect === "manual",
+      ),
+    ).toBe(true);
+    calls.forEach((c, i) => {
+      const before = calls[i - 1];
+      if (before !== undefined)
+        expect(c.at - before.at).toBeGreaterThanOrEqual(6 * SECOND);
+    });
+    expect(w.server.maxOpen).toBe(1);
+
+    const manifest = manifestOf(w.store);
+    expect(manifest.length).toBe(1 + READS);
+    const meta = metaOf(UNIVERSE);
+    expect(manifest[0]).toMatchObject({
+      key: tool.META_KEY,
+      bytes: meta.length,
+      etag: null,
+      lastModified: null,
+      md5: md5(meta),
+      sha256: sha256(meta),
+      request: { type: "meta" },
+      coins: 3,
+      delisted: 1,
+    });
+    expect(fs.readFileSync(storePath(w.store, tool.META_KEY))).toEqual(meta);
+    for (const line of manifest.slice(1)) {
+      const body = answerOf(JSON.stringify(line.request));
+      expect(line).toMatchObject({
+        bytes: body.length,
+        etag: null,
+        lastModified: null,
+        md5: md5(body),
+        sha256: sha256(body),
+      });
+      expect(fs.readFileSync(storePath(w.store, line.key))).toEqual(body);
+    }
+    const byKey = new Map(manifest.map((l) => [l.key, l]));
+    const rows = (coin: string, i: number) =>
+      byKey.get(keyOf(coin, windowAt(i)))?.rows;
+    expect([
+      rows("BTC", 0),
+      rows("BTC", 16),
+      rows("BTC", 25),
+      rows("OLD", 1),
+      rows("OLD", 2),
+      rows("OLD", 3),
+      rows("OLD", 25),
+      rows("kPEPE", 16),
+      rows("kPEPE", 17),
+      rows("kPEPE", 18),
+    ]).toEqual([480, 314, 262, 480, 24, 0, 0, 0, 410, 480]);
+    expect(manifest.filter((l) => l.rows === 0).length).toBe(23 + 17);
+
+    const list = listOf(w.store);
+    expect(list).toBe(
+      [...byKey.keys()]
+        .sort()
+        .map((key) => `${byKey.get(key)?.sha256} *${key}\n`)
+        .join(""),
+    );
+    const lines = list.trimEnd().split("\n");
+    expect(lines[0]).toMatch(
+      new RegExp(
+        `^[0-9a-f]{64} \\*info/fundingHistory/BTC/${tool.COPYH_START}\\.json$`,
+      ),
+    );
+    expect(lines.at(-1)).toMatch(/^[0-9a-f]{64} \*info\/meta\.json$/);
+    expect(eventsOf(w.store, "done")).toMatchObject([
+      {
+        files: 1 + READS,
+        left: 0,
+        leftKeys: [],
+        list: { lines: 1 + READS, sha256: sha256(Buffer.from(list)) },
+        manifestSha256: sha256(
+          fs.readFileSync(path.join(w.store, "manifest.jsonl")),
+        ),
+      },
+    ]);
+    expect(eventsOf(w.store, "session")).toMatchObject([
+      {
+        reads: 1 + READS,
+        files: 1 + READS,
+        empty: 40,
+        left: 0,
+        problems: { missing: 0, bad: 0, changed: 0 },
+      },
+    ]);
+    expect(eventsOf(w.store, "fetched").at(-1)).toMatchObject({
+      key: keyOf("kPEPE", windowAt(25)),
+      rows: 262,
+    });
+    const logs = path.join(w.store, "fetch", "log");
+    expect(
+      fs
+        .readdirSync(logs)
+        .map((n) => fs.readFileSync(path.join(logs, n), "utf8"))
+        .join(""),
+    ).not.toContain("0.0000125");
+    expect(problemsOf(w.store)).toEqual([]);
+    expect(partsIn(w.store)).toEqual([]);
+    expect(fs.existsSync(fetchFile(w.store, "waveh-fetch.pid"))).toBe(false);
+  }, 60_000);
+
+  it("drops a reply that fails its check, asks once more, then writes it as bad and goes on: never stored, not in funding.sha256, asked again at the next start; a 404 is missing", async () => {
+    const w = copyhSetup();
+    const bad = tool.fundingBody("BTC", windowAt(0));
+    const gone = tool.fundingBody("OLD", windowAt(5));
+    w.server.script(
+      bad,
+      { body: Buffer.from("<html>busy</html>") },
+      {
+        body: Buffer.from(
+          JSON.stringify(rowsOf("OLD", windowAt(0).start, windowAt(0).end)),
+        ),
+      },
+    );
+    w.server.script(gone, { status: 404 });
+    expect(await w.run(COPYH_RUN)).toBe(0);
+    expect(w.server.calledFor(bad).length).toBe(2);
+    expect(w.server.calledFor(gone).length).toBe(1);
+    const badKey = keyOf("BTC", windowAt(0));
+    const goneKey = keyOf("OLD", windowAt(5));
+    expect(
+      eventsOf(w.store, "mismatch").map((l) => [l.key, l.why, l.attempt]),
+    ).toEqual([
+      [badKey, "not JSON", 1],
+      [badKey, "a row of another coin, OLD", 2],
+    ]);
+    expect(problemsOf(w.store)).toMatchObject([
+      { key: badKey, problem: "bad", detail: "a row of another coin, OLD" },
+      { key: goneKey, problem: "missing", detail: "HTTP 404" },
+    ]);
+    expect(eventsOf(w.store, "error")).toEqual([]);
+    for (const key of [badKey, goneKey]) {
+      expect(fs.existsSync(storePath(w.store, key))).toBe(false);
+      expect(manifestOf(w.store).some((l) => l.key === key)).toBe(false);
+      expect(listOf(w.store)).not.toContain(key);
+    }
+    expect(listOf(w.store).split("\n").length - 1).toBe(READS - 1);
+    expect(eventsOf(w.store, "done")).toMatchObject([
+      { left: 2, leftKeys: [badKey, goneKey] },
+    ]);
+    expect(eventsOf(w.store, "session")).toMatchObject([
+      { problems: { missing: 1, bad: 1, changed: 0 }, left: 2 },
+    ]);
+    expect(partsIn(w.store)).toEqual([]);
+
+    const before = w.server.calls.length;
+    expect(await w.run(COPYH_RUN)).toBe(0);
+    expect(w.server.calls.slice(before).map((c) => c.body)).toEqual([
+      bad,
+      gone,
+    ]);
+    expect(eventsOf(w.store, "done")[1]).toMatchObject({
+      left: 0,
+      files: 1 + READS,
+    });
+    expect(listOf(w.store).split("\n").length - 1).toBe(1 + READS);
+  }, 60_000);
+
+  it("ends the run without a coin list (exit 1): meta refused twice, nothing more asked; a kept meta.json that is not its manifest line's bytes, or not meta's shape", async () => {
+    const w = copyhSetup();
+    w.server.script(
+      tool.META_BODY,
+      { body: metaOf([{ name: "BTC" }, { name: "xyz:ABC" }]) },
+      { body: metaOf([{ name: "kPEPE" }, { name: "KPEPE" }]) },
+    );
+    expect(await w.run(COPYH_RUN)).toBe(1);
+    expect(w.server.calls.map((c) => c.body)).toEqual([
+      tool.META_BODY,
+      tool.META_BODY,
+    ]);
+    expect(problemsOf(w.store)).toMatchObject([
+      {
+        key: tool.META_KEY,
+        problem: "bad",
+        detail: "two coins named KPEPE but for case",
+      },
+    ]);
+    expect(eventsOf(w.store, "mismatch")[0]?.why).toMatch(
+      /^not meta's shape: universe\.1\.name/,
+    );
+    expect(eventsOf(w.store, "aborted")[0]?.why).toContain(
+      "no coin list: the meta read was refused",
+    );
+    expect(manifestOf(w.store)).toEqual([]);
+    expect(fs.existsSync(storePath(w.store, tool.META_KEY))).toBe(false);
+
+    for (const change of ["a byte", "a byte more"] as const) {
+      const k = copyhSetup();
+      expect(await k.run({ ...COPYH_RUN, maxReads: 1 })).toBe(0);
+      expect(manifestOf(k.store).map((l) => l.key)).toEqual([tool.META_KEY]);
+      expect(eventsOf(k.store, "stopped")).toMatchObject([
+        { code: 0, why: "the session's 1 reads" },
+      ]);
+      const file = storePath(k.store, tool.META_KEY);
+      const kept = fs.readFileSync(file);
+      if (change === "a byte") {
+        kept[3] = (kept[3] ?? 0) ^ 1;
+        fs.writeFileSync(file, kept);
+      } else fs.appendFileSync(file, " ");
+      expect(await k.run(COPYH_RUN)).toBe(1);
+      expect(eventsOf(k.store, "crash")[0]?.why).toContain(
+        "is not the bytes its manifest line names",
+      );
+      expect(k.server.calls.length).toBe(1);
+    }
+
+    const g = copyhSetup();
+    const empty = metaOf([]);
+    fs.mkdirSync(path.join(g.store, "info"), { recursive: true });
+    fs.writeFileSync(storePath(g.store, tool.META_KEY), empty);
+    fs.writeFileSync(
+      path.join(g.store, "manifest.jsonl"),
+      `${JSON.stringify({
+        key: tool.META_KEY,
+        bytes: empty.length,
+        etag: null,
+        lastModified: null,
+        md5: md5(empty),
+        sha256: sha256(empty),
+        fetchedAt: iso(T0),
+        request: { type: "meta" },
+      })}\n`,
+    );
+    expect(await g.run(COPYH_RUN)).toBe(1);
+    expect(eventsOf(g.store, "crash")[0]?.why).toContain(
+      `${storePath(g.store, tool.META_KEY)}: not meta's shape: universe`,
+    );
+    expect(g.server.calls).toEqual([]);
+  }, 60_000);
+
+  it("ends a session after --max-reads info reads (exit 0, its counts logged); the next resumes: three sessions give an unbroken run's store", async () => {
+    const plain = copyhSetup();
+    expect(await plain.run(COPYH_RUN)).toBe(0);
+    const s = copyhSetup();
+    for (const n of [30, 30, 30])
+      expect(await s.run({ ...COPYH_RUN, maxReads: n })).toBe(0);
+    expect(s.server.calls.map((c) => c.body)).toEqual(
+      plain.server.calls.map((c) => c.body),
+    );
+    expect(eventsOf(s.store, "stopped")).toMatchObject([
+      { code: 0, why: "the session's 30 reads" },
+      { code: 0, why: "the session's 30 reads" },
+    ]);
+    expect(eventsOf(s.store, "session")).toMatchObject([
+      { reads: 30, files: 30, left: READS - 29 },
+      { reads: 30, files: 60, left: READS - 59 },
+      { reads: 19, files: 1 + READS, left: 0 },
+    ]);
+    const kept = (store: string) =>
+      manifestOf(store).map(
+        ({ key, bytes, md5, sha256, request, rows, coins, delisted }) => ({
+          key,
+          bytes,
+          md5,
+          sha256,
+          request,
+          rows,
+          coins,
+          delisted,
+        }),
+      );
+    expect(kept(s.store)).toEqual(kept(plain.store));
+    expect(listOf(s.store)).toBe(listOf(plain.store));
+    expect(eventsOf(s.store, "done").length).toBe(1);
+  }, 60_000);
+
+  it("--plan reads meta once when the store has none, never a fundingHistory, and prints COPY-H's plan; a second --plan reads nothing", async () => {
+    const w = copyhSetup();
+    expect(await w.run({ ...COPYH_RUN, plan: true })).toBe(0);
+    expect(w.server.calls.map((c) => c.body)).toEqual([tool.META_BODY]);
+    const meta = manifestOf(w.store)[0];
+    const text = [
+      "COPY-H's funding: every main-dex coin's settled hours",
+      `meta: fetched ${meta?.fetchedAt}, ${meta?.bytes} B, sha256 ${meta?.sha256}; 3 coins, 1 delisted (*)`,
+      "coins in meta's order: BTC OLD* kPEPE",
+      "windows: 26 a coin; E 17 from 2025-06-30T00:00:00.000Z to 2026-05-29T02:00:00.000Z, S 9 to 2026-11-16T00:00:00.000Z; hours a window: 480 x24, 314 x1, 262 x1",
+      "funding: 78 reads (at most) 20447232 B (0.02 GB); in the store 0; to fetch 78, 20447232 B (0.02 GB)",
+      "the reads to fetch, 6 s apart: about 0.1 hours of reading; at most 44 weight a read, 440 a minute, of 1200",
+      "in all: 21495808 B (0.02 GB) planned, the cap 21925725 B (0.02 GB); to fetch 20447232 B (0.02 GB); 4096.0 GiB free on the store's disk, the floor 200.0 GiB",
+      "",
+    ].join("\n");
+    expect(w.out).toEqual([text]);
+    expect(manifestOf(w.store).map((l) => l.key)).toEqual([tool.META_KEY]);
+    expect(await w.run({ ...COPYH_RUN, plan: true })).toBe(0);
+    expect(w.server.calls.length).toBe(1);
+    expect(w.out).toEqual([text, text]);
+    expect(fs.existsSync(path.join(w.store, "funding.sha256"))).toBe(false);
+  }, 60_000);
+
+  it("takes --copyh with a store <root>/COPY-H/funding and --max-reads from 1 to 10000; refuses it beside another range or --books, --max-reads without it, and any other store, before anything is written (exit 2)", () => {
+    const C = path.join("x", "COPY-H", "funding");
+    const tail = ["--store", C, "--heartbeat", "h"];
+    expect(
+      tool.parseArgs(["--copyh", ...tail, "--max-reads", "300", "--plan"]),
+    ).toEqual({
+      store: path.resolve(C),
+      heartbeat: path.resolve("h"),
+      sizingOnly: false,
+      fresh: false,
+      copyh: true,
+      plan: true,
+      rate: null,
+      books: null,
+      maxReads: 300,
+    });
+    expect(
+      tool.parseArgs([
+        "--copyh",
+        "--store",
+        path.join("x", "copy-h", "Funding"),
+        "--heartbeat",
+        "h",
+        "--max-reads",
+        "10000",
+      ]).maxReads,
+    ).toBe(10_000);
+    expect(
+      tool.parseArgs(["--copyh", ...tail, "--max-reads", "1"]).maxReads,
+    ).toBe(1);
+    for (const [argv, why] of [
+      [["--copyh", "--fresh", ...tail], "--copyh names a range of its own"],
+      [
+        ["--copyh", "--sizing-only", ...tail],
+        "--copyh names a range of its own",
+      ],
+      [["--copyh", "--books", "b", ...tail], "--books is no COPY-H read"],
+      [
+        [
+          "--max-reads",
+          "5",
+          "--store",
+          path.join("x", "WAVE-H", "store"),
+          "--heartbeat",
+          "h",
+        ],
+        "--max-reads is COPY-H's",
+      ],
+      [["--copyh", "--max-reads", "0", ...tail], "from 1 to 10000 reads"],
+      [["--copyh", "--max-reads", "10001", ...tail], "from 1 to 10000 reads"],
+      [["--copyh", "--max-reads", "1.5", ...tail], "from 1 to 10000 reads"],
+      [["--copyh", ...tail, "--max-reads"], "--max-reads needs a value"],
+      [
+        [
+          "--copyh",
+          "--store",
+          path.join("x", "COPY-H", "store"),
+          "--heartbeat",
+          "h",
+        ],
+        /a store of COPY-H's range is <folder>.COPY-H.funding/,
+      ],
+      [
+        [
+          "--copyh",
+          "--store",
+          path.join("x", "WAVE-H", "store"),
+          "--heartbeat",
+          "h",
+        ],
+        /a store of COPY-H's range is <folder>.COPY-H.funding/,
+      ],
+      [
+        [
+          "--copyh",
+          "--store",
+          path.join("x", "FRESH", "funding"),
+          "--heartbeat",
+          "h",
+        ],
+        /a store of COPY-H's range is <folder>.COPY-H.funding/,
+      ],
+      [tail, /a store of WAVE-H's range is <folder>.WAVE-H.store/],
+      [
+        ["--fresh", ...tail],
+        /a store of FRESH's range is <folder>.FRESH.store/,
+      ],
+    ] as const)
+      expect(() => tool.parseArgs([...argv]), argv.join(" ")).toThrow(why);
+    const root = fs.mkdtempSync(path.join(tmpdir(), "waveh-fetch-"));
+    const wrong = path.join(root, "COPY-H", "store");
+    const out = spawnSync(
+      process.execPath,
+      [
+        createRequire(import.meta.url).resolve(
+          "../../../tools/waveh-fetch.cjs",
+        ),
+        "--copyh",
+        "--plan",
+        "--store",
+        wrong,
+        "--heartbeat",
+        path.join(root, "heartbeat.json"),
+      ],
+      { encoding: "utf8", timeout: 30_000 },
+    );
+    expect(out.status).toBe(2);
+    expect(out.stderr).toContain(
+      `waveh-fetch: --store ${wrong}: a store of COPY-H's range is`,
+    );
+    expect(fs.readdirSync(root)).toEqual([]);
+  }, 60_000);
+
+  it("runs one download at a time across the three stores: each refuses (exit 3) while either other store holds a live, fresh lock, and takes none", async () => {
+    for (const [folder, leaf, more, otherFolder, otherLeaf] of [
+      ["COPY-H", "funding", COPYH_RUN, "WAVE-H", "store"],
+      ["COPY-H", "funding", COPYH_RUN, "FRESH", "store"],
+      ["WAVE-H", "store", { sizingOnly: false }, "COPY-H", "funding"],
+      [
+        "FRESH",
+        "store",
+        { fresh: true, sizingOnly: false },
+        "COPY-H",
+        "funding",
+      ],
+    ] as const) {
+      const w = setup(T0, folder, leaf);
+      w.server.info = answerOf;
+      const other = path.join(
+        w.root,
+        otherFolder,
+        otherLeaf,
+        "fetch",
+        "waveh-fetch.pid",
+      );
+      fs.mkdirSync(path.dirname(other), { recursive: true });
+      fs.writeFileSync(other, `${process.ppid}\n`);
+      fs.utimesSync(other, T0 / SECOND, T0 / SECOND);
+      expect(await w.run({ ...more, plan: true })).toBe(3);
+      expect(w.server.calls).toEqual([]);
+      expect(eventsOf(w.store, "refused")).toMatchObject([
+        {
+          why: `the other range's download runs (pid ${process.ppid}, ${other}): one download at a time on the line`,
+        },
+      ]);
+      expect(fs.existsSync(fetchFile(w.store, "waveh-fetch.pid"))).toBe(false);
+      const stale = (T0 - 3 * MINUTE) / SECOND;
+      fs.utimesSync(other, stale, stale);
+      expect(await w.run({ ...more, plan: true })).toBe(0);
+      expect(fs.readFileSync(other, "utf8")).toBe(`${process.ppid}\n`);
+    }
+  }, 60_000);
+
+  it("resumes after a kill: the .part removed, a torn manifest line cut, a reply without its line fetched again, the store as an unbroken run's; in the store only the manifest, the pid file, meta.json and each .part just written are read", async () => {
+    const plain = copyhSetup();
+    expect(await plain.run(COPYH_RUN)).toBe(0);
+
+    const killed = copyhSetup();
+    const stalled = tool.fundingBody("BTC", windowAt(2));
+    killed.server.script(stalled, { stallAfter: 0, stallMs: 30 * SECOND });
+    const part = `${storePath(killed.store, keyOf("BTC", windowAt(2)))}.part`;
+    const run = { ...killed.opts, ...COPYH_RUN };
+    await killed.clock.abandon(tool.run(run, killed.deps), () =>
+      fs.existsSync(part),
+    );
+    const stored = manifestOf(killed.store).length;
+    expect(stored).toBe(1 + 6);
+    const manifestFile = path.join(killed.store, "manifest.jsonl");
+    fs.appendFileSync(manifestFile, '{"key":"info/fundingHistory/OLD');
+    const orphan = storePath(killed.store, keyOf("OLD", windowAt(2)));
+    fs.mkdirSync(path.dirname(orphan), { recursive: true });
+    fs.writeFileSync(orphan, "half a reply");
+    const dead = spawnSync(process.execPath, ["-e", ""]).pid;
+    const clock = new FakeClock(killed.clock.t + MINUTE);
+    const pidFile = fetchFile(killed.store, "waveh-fetch.pid");
+    fs.writeFileSync(pidFile, `${dead}\n`);
+    fs.utimesSync(pidFile, clock.t / SECOND, clock.t / SECOND);
+    const server = new FakeServer(clock);
+    server.info = answerOf;
+    new FakeCollector(clock, killed.collector.file);
+
+    const calls: { name: string; file: string; flags: unknown }[] = [];
+    const record = (name: string, args: unknown[]) => {
+      calls.push({ name, file: String(args[0]), flags: args[1] });
+    };
+    recordFs(
+      fs,
+      [
+        "readFileSync",
+        "openSync",
+        "readSync",
+        "createReadStream",
+        "readFile",
+        "open",
+      ],
+      record,
+    );
+    recordFs(fs.promises, ["readFile", "open"], record);
+    expect(
+      await clock.drive(
+        tool.run(run, { ...killed.deps, fetch: server.fetch, clock }),
+      ),
+    ).toBe(0);
+    vi.restoreAllMocks();
+
+    const kept = (store: string) =>
+      manifestOf(store)
+        .map(({ key, bytes, md5, sha256, request, rows }) => ({
+          key,
+          bytes,
+          md5,
+          sha256,
+          request,
+          rows,
+        }))
+        .sort((a, b) => a.key.localeCompare(b.key));
+    expect(kept(killed.store)).toEqual(kept(plain.store));
+    expect(listOf(killed.store)).toBe(listOf(plain.store));
+    expect(partsIn(killed.store)).toEqual([]);
+    expect(
+      eventsOf(killed.store, "removed").map((l) => [l.why, l.file]),
+    ).toEqual([
+      ["a .part left by a stop", part],
+      ["a torn last line", manifestFile],
+      [
+        "in the store without its manifest line: fetched again, never read",
+        orphan,
+      ],
+    ]);
+    expect(server.calls.map((c) => c.body)).toEqual(
+      bodiesInOrder().slice(stored - 1),
+    );
+
+    const inStore = calls.filter((c) => c.file.startsWith(killed.store));
+    // A write opens with "w", "wx" or "a"; a Buffer read's own open (readFileSync's "r") goes with its read.
+    const opens = (c: (typeof calls)[number]) =>
+      c.name === "openSync" &&
+      ((typeof c.flags === "string" && /[wa]/.test(c.flags)) ||
+        inStore.some((d) => d.name === "readFileSync" && d.file === c.file));
+    const reads = inStore.filter((c) => !opens(c));
+    const partReads = reads.filter(
+      (c) => c.name === "readFileSync" && c.file.endsWith(".part"),
+    );
+    expect(partReads.length).toBe(1 + READS - stored);
+    expect(
+      new Set(
+        reads
+          .filter((c) => !partReads.includes(c))
+          .map((c) => `${c.name} ${path.relative(killed.store, c.file)}`),
+      ),
+    ).toEqual(
+      new Set([
+        "readFileSync manifest.jsonl",
+        `readFileSync ${path.join("fetch", "waveh-fetch.pid")}`,
+        `readFileSync ${path.join("info", "meta.json")}`,
+      ]),
+    );
+  }, 60_000);
+
+  it("keeps the gate on every info read: a 429 and a 503 climb the error ladder, and nothing is asked in a pause window", async () => {
+    const w = copyhSetup(Date.parse("2026-11-15T10:20:00Z"));
+    const limited = tool.fundingBody("OLD", windowAt(0));
+    w.server.script(limited, { status: 429 }, { status: 503 });
+    expect(await w.run(COPYH_RUN)).toBe(0);
+    const tries = w.server.calledFor(limited);
+    expect(tries.length).toBe(3);
+    expect((tries[1]?.at ?? 0) - (tries[0]?.at ?? 0)).toBeGreaterThanOrEqual(
+      30 * SECOND,
+    );
+    expect((tries[2]?.at ?? 0) - (tries[1]?.at ?? 0)).toBeGreaterThanOrEqual(
+      120 * SECOND,
+    );
+    expect(
+      eventsOf(w.store, "error").map((l) => [l.inARow, l.waitS, l.why]),
+    ).toEqual([
+      [1, 30, `HTTP 429: ${tool.INFO}`],
+      [2, 120, `HTTP 503: ${tool.INFO}`],
+    ]);
+    expect(w.server.calls.filter((c) => tool.windowEnd(c.at) !== null)).toEqual(
+      [],
+    );
+    expect(
+      w.server.calls.filter((c) => c.at < Date.parse("2026-11-15T10:25:00Z"))
+        .length,
+    ).toBeGreaterThan(3);
+    expect(
+      w.server.calls.some((c) => c.at >= Date.parse("2026-11-15T11:15:00Z")),
+    ).toBe(true);
+    expect(eventsOf(w.store, "waiting").map((l) => l.why)).toContain(
+      "the pause window to 2026-11-15T11:15:00.000Z",
+    );
+    expect(eventsOf(w.store, "done")).toMatchObject([{ left: 0 }]);
   }, 60_000);
 });

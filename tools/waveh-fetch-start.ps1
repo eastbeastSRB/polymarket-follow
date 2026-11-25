@@ -1,26 +1,30 @@
 <#
   Starts a download of tools\waveh-fetch.cjs, detached and at idle priority, so that it outlives the
   session that starts it (decisions 2026-11-14, "WAVE-H's download spec", point 7): WAVE-H's range, or
-  with -Fresh the months after WAVE-H's data (decisions 2026-11-17, FRESH-FETCH). WMI's
-  Win32_Process.Create starts it: the process is no child of this shell, and no job of the session can
-  end it. A start is refused while the stop file is there, or while the tool runs on this store or on
-  the other range's (one download at a time on the line): a pid file that names a live process and
-  was touched in the last 3 minutes (the tool touches it every minute).
+  with -Fresh the months after WAVE-H's data (decisions 2026-11-17, FRESH-FETCH), or with -CopyH
+  COPY-H's funding (decisions 2026-11-25, "COPY-H'S PLAN APPROVED", ruling 5), a session of at most
+  -MaxReads info reads. WMI's Win32_Process.Create starts it: the process is no child of this shell,
+  and no job of the session can end it. A start is refused while the stop file is there, or while the
+  tool runs on this store or on another range's (one download at a time on the line): a pid file that
+  names a live process and was touched in the last 3 minutes (the tool touches it every minute).
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1 -Fresh          FRESH's download
-    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1 -Fresh -Check   does it run?
-    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1                 WAVE-H's (-SizingOnly: its first session)
+    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1 -CopyH -MaxReads 300   a COPY-H session
+    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1 -CopyH -Check          does it run?
+    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1 -Fresh                 FRESH's download
+    powershell -NoProfile -ExecutionPolicy Bypass -File tools\waveh-fetch-start.ps1                        WAVE-H's (-SizingOnly: its first session)
 
-  A store sits in its range's folder, ...\FRESH\store or ...\WAVE-H\store (the tool refuses any other).
-  To stop it: New-Item -ItemType File <Store>\fetch\waveh-fetch.stop. It ends within a second and logs
-  why; delete the file before the next start.
+  A store sits in its range's folder, ...\WAVE-H\store, ...\FRESH\store or ...\COPY-H\funding (the tool
+  refuses any other). To stop it: New-Item -ItemType File <Store>\fetch\waveh-fetch.stop. It ends within
+  a second and logs why; delete the file before the next start.
 #>
 param(
   [string]$Store = '',
   [string]$Heartbeat = 'E:\polymarket-follow-run\var\heartbeat.json',
   [switch]$Fresh,
   [switch]$SizingOnly,
+  [switch]$CopyH,
   [int]$Rate = 0,
+  [int]$MaxReads = 0,
   [switch]$Check
 )
 $ErrorActionPreference = 'Stop'
@@ -28,16 +32,28 @@ if ($Fresh -and $SizingOnly) {
   Write-Output 'Not started: -Fresh and -SizingOnly name two ranges.'
   exit 1
 }
-$folder = if ($Fresh) { 'FRESH' } else { 'WAVE-H' }
-$otherFolder = if ($Fresh) { 'WAVE-H' } else { 'FRESH' }
-if ($Store -eq '') { $Store = Join-Path 'F:\polymarket-follow-research' "$folder\store" }
+if ($CopyH -and ($Fresh -or $SizingOnly)) {
+  Write-Output 'Not started: -CopyH names a range of its own.'
+  exit 1
+}
+if ($MaxReads -gt 0 -and -not $CopyH) {
+  Write-Output 'Not started: -MaxReads is COPY-H''s.'
+  exit 1
+}
+# Each range's store, <root>\<folder>\<leaf>.
+$stores = [ordered]@{ 'WAVE-H' = 'store'; 'FRESH' = 'store'; 'COPY-H' = 'funding' }
+$folder = if ($CopyH) { 'COPY-H' } elseif ($Fresh) { 'FRESH' } else { 'WAVE-H' }
+if ($Store -eq '') { $Store = Join-Path 'F:\polymarket-follow-research' "$folder\$($stores[$folder])" }
 $Store = $Store.TrimEnd('\')
-$otherStore = Join-Path (Split-Path -Parent (Split-Path -Parent $Store)) "$otherFolder\store"
+$root = Split-Path -Parent (Split-Path -Parent $Store)
+$otherPidFiles = @()
+foreach ($other in $stores.Keys) {
+  if ($other -ne $folder) { $otherPidFiles += Join-Path $root "$other\$($stores[$other])\fetch\waveh-fetch.pid" }
+}
 $fetchDir = Join-Path $Store 'fetch'
 $pidFile = Join-Path $fetchDir 'waveh-fetch.pid'
 $stopFile = Join-Path $fetchDir 'waveh-fetch.stop'
 $logDir = Join-Path $fetchDir 'log'
-$otherPidFile = Join-Path $otherStore 'fetch\waveh-fetch.pid'
 
 # The pid of the tool holding a pid file, or $null: the tool's own lock rule.
 function Get-FetchPid([string]$file) {
@@ -58,8 +74,10 @@ if ($Check) {
     $process = Get-Process -Id $running
     Write-Output "waveh-fetch runs on ${Store}: pid $running, priority $($process.PriorityClass), started $($process.StartTime.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))"
   }
-  $other = Get-FetchPid $otherPidFile
-  if ($null -ne $other) { Write-Output "waveh-fetch runs on the other range's store, ${otherStore}: pid $other" }
+  foreach ($otherPidFile in $otherPidFiles) {
+    $other = Get-FetchPid $otherPidFile
+    if ($null -ne $other) { Write-Output "waveh-fetch runs on another range's store (${otherPidFile}): pid $other" }
+  }
   if (Test-Path -LiteralPath $stopFile) { Write-Output "the stop file is there: $stopFile" }
   $log = Get-ChildItem -LiteralPath $logDir -Filter '*.jsonl' -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
   if ($null -ne $log) {
@@ -78,16 +96,20 @@ if ($null -ne $running) {
   Write-Output "Not started: waveh-fetch runs already on $Store, pid $running."
   exit 1
 }
-$other = Get-FetchPid $otherPidFile
-if ($null -ne $other) {
-  Write-Output "Not started: waveh-fetch runs on the other range's store ($otherStore), pid $other; one download at a time on the line."
-  exit 1
+foreach ($otherPidFile in $otherPidFiles) {
+  $other = Get-FetchPid $otherPidFile
+  if ($null -ne $other) {
+    Write-Output "Not started: waveh-fetch runs on another range's store ($otherPidFile), pid $other; one download at a time on the line."
+    exit 1
+  }
 }
 $node = (Get-Command node.exe -CommandType Application | Select-Object -First 1).Source
 $arguments = @((Join-Path $PSScriptRoot 'waveh-fetch.cjs'), '--store', $Store, '--heartbeat', $Heartbeat)
 if ($Fresh) { $arguments += '--fresh' }
 if ($SizingOnly) { $arguments += '--sizing-only' }
+if ($CopyH) { $arguments += '--copyh' }
 if ($Rate -gt 0) { $arguments += @('--rate', "$Rate") }
+if ($MaxReads -gt 0) { $arguments += @('--max-reads', "$MaxReads") }
 $commandLine = (@($node) + $arguments | ForEach-Object { '"' + $_ + '"' }) -join ' '
 # Idle (64) and hidden (0): the collector, at Task Scheduler's below normal, always comes first (D3).
 $startup = New-CimInstance -CimClass (Get-CimClass -ClassName Win32_ProcessStartup) -ClientOnly -Property @{
@@ -107,9 +129,9 @@ $newPid = [int]$created.ProcessId
 $until = (Get-Date).AddSeconds(15)
 while ((Get-Date) -lt $until) {
   if ((Get-FetchPid $pidFile) -eq $newPid) {
-    $freshSwitch = if ($Fresh) { ' -Fresh' } else { '' }
+    $rangeSwitch = if ($CopyH) { ' -CopyH' } elseif ($Fresh) { ' -Fresh' } else { '' }
     Write-Output "Started: waveh-fetch, pid $newPid, at idle priority; its log in $logDir."
-    Write-Output "Check: tools\waveh-fetch-start.ps1 -Check$freshSwitch -Store '$Store'"
+    Write-Output "Check: tools\waveh-fetch-start.ps1 -Check$rangeSwitch -Store '$Store'"
     Write-Output "Stop: New-Item -ItemType File '$stopFile'"
     exit 0
   }
