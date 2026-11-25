@@ -10,8 +10,9 @@
  *   sorted names) and `file`, the input file's index;
  * - `bars/<iid>/<YYYY-MM>/`: a coin's minutes of the month in the range,
  *   row k the minute `start + k min`: trades, Σ sz, Σ px·sz, the last price,
- *   the pairs' gap sum and count, the left-out takers by cause; only the
- *   coin-months with a taker record.
+ *   the pairs' gap sum and count, the left-out takers by cause, the
+ *   Settlement records' Σ sz and Σ px·sz; only the coin-months with a taker
+ *   or a Settlement record.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";

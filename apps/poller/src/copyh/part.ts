@@ -62,6 +62,9 @@ export const BARS: readonly Column[] = [
   ["leftBackstop", "u32"],
   ["leftAdl", "u32"],
   ["leftSettlement", "u32"],
+  ["leftVault", "u32"],
+  ["settleSz", "f64"],
+  ["settleNtl", "f64"],
 ];
 
 const Blob = z.tuple([z.number(), z.number()]);
@@ -86,7 +89,6 @@ export const PartHeader = z.object({
       outcome: z.number(),
       early: z.number(),
       late: z.number(),
-      refused: z.number(),
       failed: z.number(),
       unknownDir: z.number(),
       unknownCoin: z.number(),
@@ -104,13 +106,7 @@ export const PartHeader = z.object({
     unknownCoins: z.array(z.tuple([z.string(), z.number()])),
     vaults: z.array(z.string()),
     runs: z.array(z.tuple([z.number(), z.number()])),
-    times: z
-      .object({
-        first: z.number(),
-        max: z.number(),
-        holes: z.array(z.tuple([z.number(), z.number()])),
-      })
-      .nullable(),
+    minutes: z.array(z.tuple([z.number(), z.number(), z.number()])),
   }),
   users: Stretch.extend({ count: z.number(), blob: Blob }),
   dicts: z.object({ dirs: z.array(z.string()), methods: z.array(z.string()) }),
@@ -262,7 +258,7 @@ export function partOf(p: {
       unknownCoins: byKey(s.unknownCoins),
       vaults: [...s.vaults].sort(),
       runs: s.runs,
-      times: s.times,
+      minutes: s.minutes,
     },
     users: {
       ...usersStretch,

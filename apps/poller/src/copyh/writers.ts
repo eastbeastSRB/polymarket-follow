@@ -15,11 +15,13 @@
  *   records (one a trade) taken in `time` order, ties in the file's: the
  *   trades, Σ sz, Σ px·sz, the last price (the latest in time), the
  *   opposite-side pairs at most PAIR_MS apart (|p_buy − p_sell| ÷ their mean,
- *   in the minute of the second), and the taker records left out by cause;
- *   with the coin's first and last market taker, so that the merge joins a
- *   pair across files and refuses files out of time order.
+ *   in the minute of the second), the taker records left out by cause, and
+ *   the Settlement records' Σ sz and Σ px·sz (either side: the price every
+ *   holder was paid, RM4); with the coin's first and last market taker, so
+ *   that the merge joins a pair across files and refuses files out of time
+ *   order.
  */
-import { BUCKETS, PAIR_MS } from "./design.js";
+import { BUCKETS, PAIR_MS, SETTLEMENT_DIR } from "./design.js";
 import {
   TradePairs,
   isMarket,
@@ -138,6 +140,10 @@ export type CoinBars = {
   leftBackstop: number[];
   leftAdl: number[];
   leftSettlement: number[];
+  leftVault: number[];
+  /** The Settlement records' Σ sz and Σ px·sz. */
+  settleSz: number[];
+  settleNtl: number[];
   /** The coin's first and last market taker in the file, in time order: [time, px, side]. */
   first: [number, number, number] | null;
   lastTaker: [number, number, number] | null;
@@ -154,6 +160,7 @@ export class Writers implements Sink {
   private readonly pairs = new TradePairs();
   private readonly takers = new Map<number, Taker[]>();
   private readonly left = new Map<number, [number, LeftOut][]>();
+  private readonly settled = new Map<number, [number, number, number][]>();
   private order = 0;
 
   add(rec: Rec, iid: number): void {
@@ -194,6 +201,11 @@ export class Writers implements Sink {
       taker: f.crossed,
       market,
     });
+    if (f.dir === SETTLEMENT_DIR) {
+      const l = this.settled.get(iid) ?? [];
+      l.push([f.time, Number(f.px), Number(f.sz)]);
+      this.settled.set(iid, l);
+    }
     if (!f.crossed) return;
     const why = leftOutOf(method, f.dir);
     if (why !== null) {
@@ -232,27 +244,41 @@ export class Writers implements Sink {
         market: w.market,
       };
     });
-    const coins = new Set([...this.takers.keys(), ...this.left.keys()]);
+    const coins = new Set([
+      ...this.takers.keys(),
+      ...this.left.keys(),
+      ...this.settled.keys(),
+    ]);
     const bars = [...coins]
       .sort((a, b) => a - b)
       .map((iid) =>
-        barsOf(iid, this.takers.get(iid) ?? [], this.left.get(iid) ?? []),
+        barsOf(
+          iid,
+          this.takers.get(iid) ?? [],
+          this.left.get(iid) ?? [],
+          this.settled.get(iid) ?? [],
+        ),
       );
     return { unpaired, odd: this.pairs.odd, bars };
   }
 }
 
-/** A coin's bars over the minutes its taker records span. */
+/** A coin's bars over the minutes its taker and Settlement records span. */
 function barsOf(
   iid: number,
   takers: readonly Taker[],
   left: readonly (readonly [number, LeftOut])[],
+  settled: readonly (readonly [number, number, number])[],
 ): CoinBars {
   const ts = [...takers].sort((a, b) => a.time - b.time || a.order - b.order);
   // A loop, not a spread: a spread of millions of times overflows the stack.
   let lo = Infinity;
   let hi = -Infinity;
-  for (const t of [...ts.map((x) => x.time), ...left.map((l) => l[0])]) {
+  for (const t of [
+    ...ts.map((x) => x.time),
+    ...left.map((l) => l[0]),
+    ...settled.map((x) => x[0]),
+  ]) {
     if (t < lo) lo = t;
     if (t > hi) hi = t;
   }
@@ -273,6 +299,9 @@ function barsOf(
     leftBackstop: zeros(),
     leftAdl: zeros(),
     leftSettlement: zeros(),
+    leftVault: zeros(),
+    settleSz: zeros(),
+    settleNtl: zeros(),
     first: ts.length === 0 ? null : [ts[0]!.time, ts[0]!.px, ts[0]!.side],
     lastTaker:
       ts.length === 0
@@ -301,8 +330,15 @@ function barsOf(
         ? b.leftBackstop
         : why === "adl"
           ? b.leftAdl
-          : b.leftSettlement;
+          : why === "settlement"
+            ? b.leftSettlement
+            : b.leftVault;
     col[k] = col[k]! + 1;
+  }
+  for (const [t, px, sz] of settled) {
+    const k = Math.floor(t / MINUTE_MS) - m0;
+    b.settleSz[k] = b.settleSz[k]! + sz;
+    b.settleNtl[k] = b.settleNtl[k]! + px * sz;
   }
   return b;
 }

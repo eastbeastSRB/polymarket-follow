@@ -2,23 +2,30 @@
  * Market trades (copyh/rules.md C3, M1): a trade is the two records that
  * share (coin, `tid`, `time`) — a `tid` alone is not unique (external-apis,
  * 2026-11-19). A trade is a market trade when its taker record's
- * `liquidation.method` is not "backstop" and its `dir` is neither
- * "Auto-Deleveraging" nor "Settlement": the backstop's takeover and the
- * engine's deleveraging and settlement prints are prices no follower could
- * trade at. Both records of a trade take the reading of its taker record; a
+ * `liquidation.method` is not "backstop" and its `dir` is none of
+ * "Auto-Deleveraging", "Settlement" and "Net Child Vaults": the backstop's
+ * takeover and the engine's deleveraging and settlement prints are prices no
+ * follower could trade at, and a netting inside the protocol's vault is no
+ * public trade (the rules review's Q6). Both records of a trade take the reading of its taker record; a
  * record whose trade's other record is in neither its own file nor the next
  * file in order reads its own fields, and is counted. Within a file the
  * pass pairs its records here; a trade split across two files next to each
  * other is paired after the pass, from the parts' unpaired lists.
  */
-import { ADL_DIR, BACKSTOP_METHOD, SETTLEMENT_DIR } from "./design.js";
+import {
+  ADL_DIR,
+  BACKSTOP_METHOD,
+  SETTLEMENT_DIR,
+  VAULT_DIR,
+} from "./design.js";
 
-/** Why a taker record is no market trade, or null when it is one (the precedence: backstop, then ADL, then Settlement). */
-export type LeftOut = "backstop" | "adl" | "settlement";
+/** Why a taker record is no market trade, or null when it is one (the precedence: backstop, then ADL, then Settlement, then the vault's netting). */
+export type LeftOut = "backstop" | "adl" | "settlement" | "vault";
 export function leftOutOf(method: string | null, dir: string): LeftOut | null {
   if (method === BACKSTOP_METHOD) return "backstop";
   if (dir === ADL_DIR) return "adl";
   if (dir === SETTLEMENT_DIR) return "settlement";
+  if (dir === VAULT_DIR) return "vault";
   return null;
 }
 

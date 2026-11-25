@@ -14,13 +14,12 @@
  *   below 2^53 by its value, a longer one by `JSON.parse`'s `context.source`.
  * - Zod checks the rest (`RecordSchema`): `user` 0x and 40 hex digits,
  *   lower-cased when read; `coin` and `dir` non-empty text; `px` decimal
- *   text above 0; `sz` unsigned and `startPosition` signed decimal text;
- *   `side` "A" or "B"; `time` a safe integer; `crossed` a boolean;
- *   `liquidation` optional, its `liquidatedUser` (if any) an address.
- * - `exactInDouble`: `sz` and `startPosition` are stored as doubles only
- *   when their text has at most EXACT_DIGITS significant digits, so the
- *   double gives the decimal value back exactly (the chain rule's
- *   exactness, C3).
+ *   text above 0; `sz` unsigned and `startPosition` signed decimal text,
+ *   each of at most EXACT_DIGITS significant digits (`exactInDouble`), so
+ *   that a double gives the decimal value back exactly (the chain rule's
+ *   exactness; D5); `side` "A" or "B"; `time` a safe integer; `crossed` a
+ *   boolean; `liquidation` optional, its `liquidatedUser` (if any) an
+ *   address.
  */
 import { z } from "zod";
 import { EXACT_DIGITS } from "./design.js";
@@ -144,10 +143,13 @@ const FillSchema = z.object({
     .string()
     .regex(UNSIGNED)
     .refine((p) => Number(p) > 0, "not above 0"),
-  sz: z.string().regex(UNSIGNED),
+  sz: z.string().regex(UNSIGNED).refine(exactInDouble, "beyond 15 digits"),
   side: z.enum(["A", "B"]),
   time: z.number().int().safe(),
-  startPosition: z.string().regex(SIGNED),
+  startPosition: z
+    .string()
+    .regex(SIGNED)
+    .refine(exactInDouble, "beyond 15 digits"),
   crossed: z.boolean(),
   oid: Id,
   tid: Id,

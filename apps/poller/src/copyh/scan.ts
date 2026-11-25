@@ -7,27 +7,23 @@
  * settle it is parsed whole on the slow path (`parseSlow`), counted. Each
  * record falls in one class: a builder dex's or spot's, by its coin's form,
  * counted and never parsed; a main-dex-shaped one is cut and parsed
- * (`cutText`, `parseFast`) and held to the schema (failing: counted), then
- * timed before the range's start or at or after its end (counted), of kind
- * `outcome` (counted), its `dir` or coin outside its list (a stop, or counted
- * when the run only counts), its `sz` or `startPosition` not exact in a
- * double (refused, counted), else kept and handed to the sink. The counts are
- * what the parts, the manifest and the integrity need.
+ * (`cutText`, `parseFast`) and held to the schema (failing: counted, its
+ * `sz` or `startPosition` of more than 15 significant digits among them),
+ * then timed before the range's start or at or after its end (counted), of
+ * kind `outcome` (counted), its `dir` or coin outside its list (a stop, or
+ * counted when the run only counts), else kept and handed to the sink. Every
+ * record's time is counted by hour and by minute (the minute's first and last
+ * time), from which `holes.ts` finds the holes of the union of every file's
+ * records. The counts are what the parts, the manifest and the integrity
+ * need.
  */
 import { decodeFrame } from "../polish/lz4.js";
-import { HOUR_MS } from "../schedule.js";
+import { HOUR_MS, MINUTE_MS } from "../schedule.js";
 import { formOfCoin } from "./coins.js";
-import { HOLE_MS, SETTLEMENT_DIR } from "./design.js";
+import { SETTLEMENT_DIR } from "./design.js";
 import type { DirKind } from "./dirs.js";
 import { StoreError } from "./run.js";
-import {
-  cutText,
-  exactInDouble,
-  parseFast,
-  parseSlow,
-  recordOf,
-  type Rec,
-} from "./schema.js";
+import { cutText, parseFast, parseSlow, recordOf, type Rec } from "./schema.js";
 
 export type Format = "node_fills" | "node_fills_by_block";
 
@@ -44,7 +40,6 @@ export type Classes = {
   outcome: number;
   early: number;
   late: number;
-  refused: number;
   failed: number;
   /** Counting runs only: a main-dex-shaped record whose `dir`, or whose coin, is outside its list. */
   unknownDir: number;
@@ -77,8 +72,8 @@ export type Scan = {
   vaults: Set<string>;
   /** `node_fills_by_block`'s block numbers in line order, as runs. */
   runs: [number, number][];
-  /** The records' first time, their latest, and the stretches of HOLE_MS or more with none, in file order. */
-  times: { first: number; max: number; holes: [number, number][] } | null;
+  /** Every record's time by its minute: [minute (its start ÷ 60,000), the first time, the last], by minute. */
+  minutes: [number, number, number][];
 };
 
 export type Lists = {
@@ -168,7 +163,6 @@ class Scanner {
       outcome: 0,
       early: 0,
       late: 0,
-      refused: 0,
       failed: 0,
       unknownDir: 0,
       unknownCoin: 0,
@@ -184,8 +178,9 @@ class Scanner {
     unknownCoins: new Map(),
     vaults: new Set(),
     runs: [],
-    times: null,
+    minutes: [],
   };
+  private readonly byMinute = new Map<number, [number, number]>();
 
   constructor(
     private readonly key: string,
@@ -416,10 +411,6 @@ class Scanner {
       c.unknownCoin += 1;
       return;
     }
-    if (!exactInDouble(f.sz) || !exactInDouble(f.startPosition)) {
-      c.refused += 1;
-      return;
-    }
     c.kept += 1;
     const coin = this.scan.coins.get(iid);
     const settled = f.dir === SETTLEMENT_DIR ? f.time : -1;
@@ -435,15 +426,24 @@ class Scanner {
     this.sink.add(rec, iid);
   }
 
-  /** A record's time: its hour's count, the file's first and latest time, the holes. */
+  /** A record's time: its hour's count, its minute's first and last time. */
   private count(t: number): void {
-    const sc = this.scan;
-    bump(sc.byHour, t - (t % HOUR_MS));
-    if (sc.times === null) sc.times = { first: t, max: t, holes: [] };
+    bump(this.scan.byHour, t - (t % HOUR_MS));
+    const m = Math.floor(t / MINUTE_MS);
+    const span = this.byMinute.get(m);
+    if (span === undefined) this.byMinute.set(m, [t, t]);
     else {
-      if (t - sc.times.max >= HOLE_MS) sc.times.holes.push([sc.times.max, t]);
-      if (t > sc.times.max) sc.times.max = t;
+      if (t < span[0]) span[0] = t;
+      if (t > span[1]) span[1] = t;
     }
+  }
+
+  /** The file's end: its minutes in order. */
+  finish(): Scan {
+    this.scan.minutes = [...this.byMinute]
+      .sort((a, b) => a[0] - b[0])
+      .map(([m, [lo, hi]]) => [m, lo, hi]);
+    return this.scan;
   }
 
   private blockSeen(b: number): void {
@@ -484,5 +484,5 @@ export function scanFile(
     carry = at < data.length ? Buffer.from(data.subarray(at)) : null;
   });
   if (carry !== null) sc.line(carry);
-  return sc.scan;
+  return sc.finish();
 }

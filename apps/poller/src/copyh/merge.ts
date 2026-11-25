@@ -11,10 +11,11 @@
  *   address's; the `dir` values and methods, sorted;
  * - the fills by (month, bucket group), or by (month, bucket) when a group
  *   holds more than UNIT_ROWS rows: each bucket's rows by (account, `time`),
- *   ties in the pass's order, a second record of one (account, `time`,
- *   coin, `tid`, side, taker) dropped and counted (the first file's kept),
- *   one that is a market taker stopping the merge (its bars would count it
- *   twice; the supervisor's ruling 4);
+ *   ties in the pass's order. A record found in both of the switch hour's
+ *   files (the same account, `time`, coin, `tid`, side and taker) is kept
+ *   once, the first file's, and counted; one that is a market taker stops
+ *   the merge (its bars would count it twice; C3, D2). Any other record met
+ *   twice stops it too, for a ruling (the supervisor's note, 2026-11-25);
  * - the bars by month, every coin with a taker record in it, the parts'
  *   minutes added in file order, the last price the latest in time (ties:
  *   the later file), the pairs across files added;
@@ -27,7 +28,8 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { PAIR_MS } from "./design.js";
+import { HOUR_MS } from "../schedule.js";
+import { PAIR_MS, SWITCH_HOUR } from "./design.js";
 import {
   BARS,
   FILLS,
@@ -41,7 +43,7 @@ import {
   type PartHeader,
 } from "./part.js";
 import type { FileTask } from "./pass.js";
-import { monthBounds, type Range } from "./range.js";
+import { hourKeys, monthBounds, type Range } from "./range.js";
 import {
   NotFinished,
   StoreError,
@@ -223,6 +225,10 @@ export function merge(
   const odd = heads.flatMap((h) =>
     h.header.odd.map((k): [number, string] => [h.index, k]),
   );
+  /** The switch hour's two files' indices, `node_fills` first; -1 when the range lacks the hour. */
+  const switchPair = hourKeys(SWITCH_HOUR, SWITCH_HOUR + HOUR_MS).map(
+    (k) => o.files.find((f) => f.key === k)?.index ?? -1,
+  ) as [number, number];
 
   // The dictionaries, once: every unit names them.
   const dictFile = path.join(o.dir, MERGE, "dict.json");
@@ -348,6 +354,7 @@ export function merge(
           dirId,
           methodId,
           patches,
+          switchPair,
           dictId,
           unit,
         });
@@ -500,6 +507,7 @@ function fillsUnit(u: {
   dirId: ReadonlyMap<string, number>;
   methodId: ReadonlyMap<string, number>;
   patches: ReadonlyMap<number, ReadonlyMap<string, boolean>>;
+  switchPair: readonly [number, number];
   dictId: string;
   unit: string;
 }): UnitRecord {
@@ -581,22 +589,30 @@ function fillsUnit(u: {
           col.user[x]! - col.user[y]! || col.time[x]! - col.time[y]! || x - y,
       );
     const keep: number[] = [];
-    let run = new Set<string>();
+    /** The (account, time) run's records by key: the file of the first (-2 once its second was dropped). */
+    let run = new Map<string, number>();
     for (let j = 0; j < order.length; j++) {
       const i = order[j]!;
       const p = j > 0 ? order[j - 1]! : -1;
       if (p < 0 || col.user[p] !== col.user[i] || col.time[p] !== col.time[i])
-        run = new Set();
+        run = new Map();
       const k = `${col.iid[i]}|${col.tid[2 * i]}|${col.tid[2 * i + 1]}|${col.side[i]}|${col.flags[i]! & TAKER}`;
-      if (run.has(k)) {
+      const first = run.get(k);
+      if (first !== undefined) {
+        const at = `file ${col.file[i]}, ${new Date(col.time[i]!).toISOString()}`;
+        if (first !== u.switchPair[0] || col.file[i] !== u.switchPair[1])
+          throw new StoreError(
+            `${u.unit}: a record twice outside the switch hour's two files (${at}): a ruling`,
+          );
         if ((col.flags[i]! & TAKER) !== 0 && (col.flags[i]! & MARKET) !== 0)
           throw new StoreError(
-            `${u.unit}: a market taker twice (file ${col.file[i]}, ${new Date(col.time[i]!).toISOString()}): its bars would count it twice`,
+            `${u.unit}: a market taker twice (${at}): its bars would count it twice`,
           );
-        duplicates.push([col.file[i]!, k]);
+        duplicates.push([col.file[i], k]);
+        run.set(k, -2);
         continue;
       }
-      run.add(k);
+      run.set(k, col.file[i]!);
       keep.push(i);
     }
     out += keep.length;
@@ -688,6 +704,9 @@ function barsUnit(u: {
           "leftBackstop",
           "leftAdl",
           "leftSettlement",
+          "leftVault",
+          "settleSz",
+          "settleNtl",
         ])
           a[name]![k] = a[name]![k]! + v[name]![j]!;
         const lt = v.lastTime![j]!;

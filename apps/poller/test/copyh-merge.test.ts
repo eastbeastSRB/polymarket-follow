@@ -2,7 +2,8 @@
  * The merge and the store (src/copyh/merge.ts, store.ts; rules.md C3): the
  * fills by bucket and month, rows by (account, time), ties in the pass's
  * order, every kept row conserved; the switch hour's record in both formats
- * kept once, and a market taker twice stopping the merge; a trade split
+ * kept once, a market taker twice stopping the merge, and any other record
+ * met twice stopping it; a trade split
  * across two files paired, its maker taking the taker's reading; the bars
  * added across files, the last price the latest, a pair across files, files
  * out of time order stopping; a merge stopped between units and resumed
@@ -162,6 +163,41 @@ describe("the fills", { timeout: 60_000 }, () => {
     );
   });
 
+  it("stops on any other record met twice: in one file, in two files outside the switch hour, a third time", async () => {
+    const outside = "a record twice outside the switch hour's two files";
+    const maker = t(3, { time: H0 + 10, tid: 9, crossed: false });
+    const one = new Map([[keyOf(H0, "node_fills"), `${maker}\n${maker}\n`]]);
+    await expect(run((await built(one)).input)).rejects.toThrow(
+      `${outside} (file 0, 2025-07-27T07:00:00.010Z): a ruling`,
+    );
+    const late = t(3, {
+      time: SWITCH_HOUR + HOUR_MS + 10,
+      tid: 9,
+      crossed: false,
+    });
+    const two = new Map([
+      [keyOf(SWITCH_HOUR, "node_fills_by_block"), `${byBlock(1, [late])}\n`],
+      [
+        keyOf(SWITCH_HOUR + HOUR_MS, "node_fills_by_block"),
+        `${byBlock(2, [late])}\n`,
+      ],
+    ]);
+    await expect(run((await built(two)).input)).rejects.toThrow(
+      `${outside} (file 1, 2025-07-27T09:00:00.010Z): a ruling`,
+    );
+    const both = t(3, { time: SWITCH_HOUR + 10, tid: 9, crossed: false });
+    const three = new Map([
+      [keyOf(SWITCH_HOUR, "node_fills"), `${both}\n`],
+      [
+        keyOf(SWITCH_HOUR, "node_fills_by_block"),
+        `${byBlock(1, [both, both])}\n`,
+      ],
+    ]);
+    await expect(run((await built(three)).input)).rejects.toThrow(
+      `${outside} (file 1, 2025-07-27T08:00:00.010Z): a ruling`,
+    );
+  });
+
   it("pairs a trade split across two files: the maker takes the taker's reading", async () => {
     const backstop = {
       liquidatedUser: addr(5),
@@ -234,6 +270,49 @@ describe("the bars", { timeout: 60_000 }, () => {
     await expect(run((await built(outOfOrder)).input)).rejects.toThrow(
       "files out of time order need a ruling",
     );
+  });
+  it("add the Settlement records' sums and the left-out takers across files", async () => {
+    const m0 = SWITCH_HOUR - 60_000;
+    const settle = (
+      user: number,
+      time: number,
+      tid: number,
+      crossed: boolean,
+      sz: string,
+    ) =>
+      t(user, {
+        time,
+        tid,
+        crossed,
+        side: crossed ? "A" : "B",
+        px: "4",
+        sz,
+        coin: "HYPE",
+        dir: "Settlement",
+      });
+    const files = new Map([
+      [
+        keyOf(H0, "node_fills"),
+        `${[settle(1, m0 + 10, 1, true, "1.0"), settle(2, m0 + 10, 1, false, "1.0"), t(3, { time: m0 + 20, tid: 2, coin: "HYPE", dir: "Net Child Vaults" })].join("\n")}\n`,
+      ],
+      [
+        keyOf(SWITCH_HOUR, "node_fills"),
+        `${settle(4, m0 + 30_000, 3, false, "2.5")}\n`,
+      ],
+    ]);
+    const b = await built(files);
+    await run(b.input);
+    const store = openStore(b.dir, [path.dirname(b.dir)]);
+    const p = store.partition("bars", coinKey(3), "2025-07")!;
+    const k = Math.floor((m0 - H0) / 60_000);
+    const at = (name: string) => store.column(p, name)[k];
+    expect([
+      at("trades"),
+      at("leftSettlement"),
+      at("leftVault"),
+      at("settleSz"),
+      at("settleNtl"),
+    ]).toEqual([0, 1, 1, 4.5, 18]);
   });
 });
 

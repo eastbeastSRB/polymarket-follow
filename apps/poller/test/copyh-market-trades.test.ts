@@ -1,12 +1,13 @@
 /**
  * Market trades and the bars (src/copyh/market-trades.ts, writers.ts;
- * rules.md C3, C9, M1): a backstop's taker and maker legs, an ADL and a
- * Settlement record on either side, a market liquidation's legs kept as
+ * rules.md C3, C9, M1): a backstop's taker and maker legs, an ADL, a
+ * Settlement and a "Net Child Vaults" record on either side, a market liquidation's legs kept as
  * market trades, both records of a trade taking its taker's reading, a
  * record left unpaired keeping its own and listed, the shared `tid` of two
  * trades; the bars from market takers only, in time order, the last price
  * the latest, the opposite-side pairs within 2 s counted in the second's
- * minute, the left-out takers by cause.
+ * minute, the left-out takers by cause, the Settlement records' sums on
+ * either side (RM4).
  */
 import { describe, expect, it } from "vitest";
 import { isMarket, leftOutOf } from "../src/copyh/market-trades.js";
@@ -59,12 +60,15 @@ const flagsOf = (rows: { user: string; flags: number }[], user: string) =>
   rows.filter((r) => r.user === user).map((r) => r.flags);
 
 describe("the rule", { timeout: 60_000 }, () => {
-  it("leaves out a backstop's, ADL's and Settlement's takers, in that order of causes, and nothing else", () => {
+  it("leaves out a backstop's, ADL's, Settlement's and the vault's netting's takers, in that order of causes, and nothing else", () => {
     expect(leftOutOf("backstop", "Auto-Deleveraging")).toBe("backstop");
+    expect(leftOutOf("backstop", "Net Child Vaults")).toBe("backstop");
     expect(leftOutOf(null, "Auto-Deleveraging")).toBe("adl");
     expect(leftOutOf("market", "Settlement")).toBe("settlement");
+    expect(leftOutOf(null, "Net Child Vaults")).toBe("vault");
     expect(leftOutOf("market", "Liquidated Cross Long")).toBeNull();
     expect(isMarket(null, "Open Long")).toBe(true);
+    expect(isMarket(null, "Net Child Vaults")).toBe(false);
   });
 });
 
@@ -279,11 +283,51 @@ describe("the bars", { timeout: 60_000 }, () => {
       t(m + 2, "B", "10", "1.0", { dir: "Auto-Deleveraging" }),
       t(m + 3, "B", "10", "1.0", { dir: "Settlement" }),
       t(m + 4, "A", "10"),
+      t(m + 5, "B", "10", "1.0", { dir: "Net Child Vaults" }),
     ]);
     const [b] = done.bars;
-    expect([b!.trades, b!.leftBackstop, b!.leftAdl, b!.leftSettlement]).toEqual(
-      [[1], [1], [1], [1]],
-    );
+    expect([
+      b!.trades,
+      b!.leftBackstop,
+      b!.leftAdl,
+      b!.leftSettlement,
+      b!.leftVault,
+    ]).toEqual([[1], [1], [1], [1], [1]]);
     expect(b!.pairs).toEqual([0]);
+  });
+
+  it("sum the Settlement records of either side, taker or not, in their minute", () => {
+    const m = Math.floor(T / 60_000) * 60_000;
+    const settle = (
+      time: number,
+      side: "A" | "B",
+      crossed: boolean,
+      sz: string,
+    ) =>
+      record(addr(crossed ? 3 : 4), {
+        coin: "HYPE",
+        side,
+        time,
+        crossed,
+        tid: time,
+        px: "2.5",
+        sz,
+        dir: "Settlement",
+      });
+    const { done } = run([
+      settle(m + 10, "A", true, "4.0"),
+      settle(m + 10, "B", false, "4.0"),
+      settle(m + 61_000, "B", false, "1.5"),
+      t(m + 62_000, "A", "10"),
+    ]);
+    // SOL's one market taker; HYPE's minutes from its Settlement records alone, no trade.
+    const hype = done.bars.find((b) => b.iid === 3)!;
+    expect(hype).toMatchObject({ start: m, first: null, lastTaker: null });
+    expect(hype.trades).toEqual([0, 0]);
+    expect(hype.leftSettlement).toEqual([1, 0]);
+    expect(hype.settleSz).toEqual([8, 1.5]);
+    expect(hype.settleNtl).toEqual([20, 3.75]);
+    const sol = done.bars.find((b) => b.iid === 2)!;
+    expect([sol.trades, sol.settleSz, sol.settleNtl]).toEqual([[1], [0], [0]]);
   });
 });

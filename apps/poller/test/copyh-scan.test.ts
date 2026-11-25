@@ -1,14 +1,16 @@
 /**
  * One raw file through COPY-H's boundary (src/copyh/scan.ts; rules.md C3):
  * made-up records in both formats; every class (kept, spot, builder dex,
- * outcome, before and after the range's time, refused, failing), each
- * record in exactly one; the 2025-07-27 switch hour's two files; ADL,
+ * outcome, before and after the range's time, failing, a value beyond 15
+ * significant digits among them), each record in exactly one; the 2025-07-27 switch hour's two files; ADL,
  * Settlement and "Liquidated …" kept; the vault accounts; the coins' first,
  * last and Settlement times; the slow path and `misread`; a `dir` or coin
  * outside its list stopping a build and counted by a counting run; the
- * records by hour, the holes and the block runs.
+ * records by hour and minute, the holes of the union of files' records
+ * (holes.ts) and the block runs.
  */
 import { describe, expect, it } from "vitest";
+import { holesOf } from "../src/copyh/holes.js";
 import { scanFile, type Lists, type Scan } from "../src/copyh/scan.js";
 import { Writers } from "../src/copyh/writers.js";
 import { HOUR_MS } from "../src/schedule.js";
@@ -113,8 +115,7 @@ describe("the classes", { timeout: 60_000 }, () => {
       outcome: 1,
       early: 1,
       late: 1,
-      refused: 1,
-      failed: 1,
+      failed: 2,
       unknownDir: 0,
       unknownCoin: 0,
     });
@@ -311,7 +312,7 @@ describe("the slow path", { timeout: 60_000 }, () => {
 });
 
 describe("the times", { timeout: 60_000 }, () => {
-  it("count records by hour, find the holes of 60 s or more, and the block runs", () => {
+  it("count records by hour and minute, give the holes of 60 s or more, and the block runs", () => {
     const at = (t: number, tid: number, coin = "BTC") =>
       record(addr(1), { coin, side: "B", time: t, crossed: true, tid });
     const { scan: s } = scan(
@@ -328,17 +329,65 @@ describe("the times", { timeout: 60_000 }, () => {
         [T, 3],
       ]),
     );
-    expect(s.times).toEqual({
-      first: T - 10_000,
-      max: T + 170_000,
-      holes: [
-        [T - 10_000, T + 50_000],
-        [T + 109_999, T + 170_000],
-      ],
-    });
+    const m = T / 60_000;
+    expect(s.minutes).toEqual([
+      [m - 1, T - 10_000, T - 10_000],
+      [m, T + 50_000, T + 50_000],
+      [m + 1, T + 109_999, T + 109_999],
+      [m + 2, T + 170_000, T + 170_000],
+    ]);
+    // 60,000 ms is a hole, 59,999 is not; the window's ends bound the first and last.
+    expect(holesOf([s.minutes], range.start, range.end)).toEqual([
+      [range.start, T - 10_000],
+      [T - 10_000, T + 50_000],
+      [T + 109_999, T + 170_000],
+      [T + 170_000, range.end],
+    ]);
     expect(s.runs).toEqual([
       [10, 12],
       [14, 14],
     ]);
+  });
+});
+
+describe("the holes", { timeout: 60_000 }, () => {
+  const H = Date.parse("2025-07-27T08:00:00Z");
+  const span = (t: number, ...more: number[]): [number, number, number] => [
+    Math.floor(t / 60_000),
+    Math.min(t, ...more),
+    Math.max(t, ...more),
+  ];
+  it("are the union's: a gap between two files counts, one file's records fill another's gap", () => {
+    // The switch hour's two files: node_fills to 08:45:48.664, by_block from 08:50:10.273.
+    const a = [span(H), span(H + 45 * 60_000 + 48_664)];
+    const b = [span(H + 50 * 60_000 + 10_273), span(H + 3_599_000)];
+    expect(holesOf([a, b], H, H + 3_600_000)).toEqual([
+      [H, H + 45 * 60_000 + 48_664],
+      [H + 45 * 60_000 + 48_664, H + 50 * 60_000 + 10_273],
+      [H + 50 * 60_000 + 10_273, H + 3_599_000],
+    ]);
+    // A third file whose records fall in those gaps, 20 and 40 s apart, leaves none.
+    const c = Array.from({ length: 60 }, (_, k) =>
+      span(H + k * 60_000 + 10_000, H + k * 60_000 + 50_000),
+    );
+    expect(holesOf([a, b, c], H, H + 3_600_000)).toEqual([]);
+  });
+  it("read a minute's first and last time, whatever the files' order or the records' order in them", () => {
+    const x = [span(H + 70_000, H + 61_000, H + 119_000)];
+    const y = [span(H + 1_000), span(H + 190_000)];
+    for (const files of [
+      [x, y],
+      [y, x],
+    ])
+      expect(holesOf(files, H, H + 200_000)).toEqual([
+        [H + 1_000, H + 61_000],
+        [H + 119_000, H + 190_000],
+      ]);
+  });
+  it("leave out the minutes outside the window", () => {
+    const files = [[span(H - 30_000), span(H + 10_000), span(H + 200_000)]];
+    expect(holesOf(files, H, H + 120_000)).toEqual([[H + 10_000, H + 120_000]]);
+    expect(holesOf([], H, H + 59_999)).toEqual([]);
+    expect(holesOf([], H, H + 60_000)).toEqual([[H, H + 60_000]]);
   });
 });
