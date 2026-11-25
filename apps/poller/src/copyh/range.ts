@@ -79,19 +79,17 @@ export const RANGES: Readonly<Record<RangeName, Range>> = {
 
 const LIST_LINE = /^([0-9a-f]{64}) \*(.+)$/;
 
-/** `copyh/data.sha256`'s lines (sha256sum's format, written by `tools/copyh-freeze.cjs --data`): a key's SHA-256. Our own file: a line of another form, or a key twice, throws. */
+/** `copyh/data.sha256`'s lines (sha256sum's format, written by `tools/copyh-freeze.cjs --data`, its header lines `#`): a key's SHA-256. Our own file: a line of another form, or a key twice, throws. */
 export function readDataList(text: string): Map<string, string> {
   const list = new Map<string, string>();
-  text
-    .split("\n")
-    .filter((l) => l !== "")
-    .forEach((l, i) => {
-      const m = LIST_LINE.exec(l);
-      if (m === null)
-        throw new Error(`data.sha256: line ${i + 1} is not a list line`);
-      if (list.has(m[2]!)) throw new Error(`data.sha256: ${m[2]!} twice`);
-      list.set(m[2]!, m[1]!);
-    });
+  text.split("\n").forEach((l, i) => {
+    if (l === "" || l.startsWith("#")) return;
+    const m = LIST_LINE.exec(l);
+    if (m === null)
+      throw new Error(`data.sha256: line ${i + 1} is not a list line`);
+    if (list.has(m[2]!)) throw new Error(`data.sha256: ${m[2]!} twice`);
+    list.set(m[2]!, m[1]!);
+  });
   return list;
 }
 

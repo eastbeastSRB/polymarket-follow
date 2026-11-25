@@ -1,14 +1,22 @@
 /**
- * COPY-H's list tool (tools/copyh-freeze.cjs; rules.md C3): --data's list,
- * every file of E's and S's ranges in their order, each line its frozen
- * source list's, the sources named by SHA-256; its refusals, nothing
- * written. A test never writes the package's `copyh/data.sha256`.
+ * COPY-H's list tool (tools/copyh-freeze.cjs; rules.md C3, C9): --data's
+ * list, every file of E's and S's ranges in their order, each line its
+ * frozen source list's, the sources named by SHA-256; its refusals, nothing
+ * written; the program reading the committed list (range.ts); --funding's
+ * list, the meta reply and every window of every coin, each held to the
+ * store's list and manifest and read by the program's reader (funding.ts),
+ * and its refusals. A test never writes the package's `copyh/` files.
  */
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { RANGES } from "../src/copyh/range.js";
+import * as reader from "../src/copyh/funding.js";
+import {
+  RANGES,
+  filesOf,
+  readDataList as readCopyhList,
+} from "../src/copyh/range.js";
 import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
 import { readDataList } from "../src/waveh/store.js";
 
@@ -19,6 +27,16 @@ const tool = createRequire(import.meta.url)(
 ) as {
   dataList: (sources: Source[], ranges: RangeKeys[]) => string;
   listOf: (text: string, name: string) => Map<string, string>;
+  manifestOf: (text: string) => Map<string, { key: string; sha256: string }>;
+  fundingList: (o: {
+    list: Map<string, string>;
+    listText: string;
+    manifest: Map<string, { key: string; sha256: string }>;
+    coins: { meta: { sha256: string }; coins: { name: string }[] };
+    windows: { start: number; end: number }[];
+    read: (key: string) => Buffer;
+    reader: typeof reader;
+  }) => string;
 };
 const hash = (n: number) => n.toString(16).padStart(64, "0");
 const listText = (keys: readonly string[], from = 0) =>
@@ -98,5 +116,147 @@ describe("--data", { timeout: 60_000 }, () => {
     const f = readDataList(fresh);
     for (const k of RANGES.E.fill) expect(list.get(k), k).toBe(w.get(k));
     for (const k of RANGES.S.fill) expect(list.get(k), k).toBe(f.get(k));
+  });
+});
+
+describe(
+  "the program reads the committed data list",
+  { timeout: 60_000 },
+  () => {
+    it("skips its header lines and gives each range's files in order: the burn-in's 850", () => {
+      const list = readCopyhList(
+        readFileSync(path.join(PACKAGE_ROOT, "copyh", "data.sha256"), "utf8"),
+      );
+      expect(list.size).toBe(8_845 + 4_102);
+      const burnin = filesOf(RANGES.burnin, list);
+      expect(burnin).toHaveLength(850);
+      expect(burnin[0]).toEqual({
+        index: 0,
+        key: RANGES.burnin.fill[0],
+        sha256: list.get(RANGES.burnin.fill[0]!),
+      });
+      expect(filesOf(RANGES.E, list).map((f) => f.key)).toEqual(RANGES.E.fill);
+      expect(() => readCopyhList("# a header\nnot a line\n")).toThrow(
+        "data.sha256: line 2 is not a list line",
+      );
+    });
+  },
+);
+
+describe("--funding", { timeout: 60_000 }, () => {
+  const W = [
+    { start: Date.UTC(2025, 5, 30), end: Date.UTC(2025, 6, 20) },
+    { start: Date.UTC(2025, 6, 20), end: Date.UTC(2025, 7, 9) },
+  ];
+  const rows = (t: number, coin: string) =>
+    Buffer.from(
+      JSON.stringify([
+        { coin, fundingRate: "0.00001", premium: "0.0", time: t + 887_645 },
+        { coin, fundingRate: "0.00001", premium: "0.0", time: t + 3_600_017 },
+      ]),
+    );
+  function store() {
+    const files = new Map<string, Buffer>([
+      ["info/meta.json", Buffer.from('{"universe":[]}')],
+    ]);
+    for (const coin of ["BTC", "ETH"])
+      for (const w of W)
+        files.set(reader.fundingKey(coin, w.start), rows(w.start, coin));
+    const listText = [...files.keys()]
+      .sort()
+      .map((k) => `${sha256(files.get(k)!)} *${k}\n`)
+      .join("");
+    const manifestText = [...files]
+      .map(
+        ([key, b]) =>
+          `${JSON.stringify({ key, bytes: b.length, sha256: sha256(b), fetchedAt: "x" })}\n`,
+      )
+      .join("");
+    return { files, listText, manifestText };
+  }
+  const run = (
+    st: ReturnType<typeof store>,
+    over: Partial<Parameters<typeof tool.fundingList>[0]> = {},
+  ) =>
+    tool.fundingList({
+      list: tool.listOf(st.listText, "funding.sha256"),
+      listText: st.listText,
+      manifest: tool.manifestOf(`${st.manifestText}{"key":"torn`),
+      coins: {
+        meta: { sha256: sha256(st.files.get("info/meta.json")!) },
+        coins: [{ name: "BTC" }, { name: "ETH" }],
+      },
+      windows: W,
+      read: (key) => st.files.get(key)!,
+      reader,
+      ...over,
+    });
+
+  it("lists the meta reply and every window of every coin, sorted, each read by the program's reader", () => {
+    const st = store();
+    const text = run(st);
+    const lines = text.split("\n");
+    expect(lines.slice(0, 3)).toEqual([
+      "# COPY-H's funding (copyh/rules.md C9): written by tools/copyh-freeze.cjs --data --funding",
+      `# from the funding store's funding.sha256 (${sha256(st.listText)}), each line held to its manifest.jsonl,`,
+      "# every window of the 2 coins of coins.json read by dist/copyh/funding.js:",
+    ]);
+    expect(lines.slice(3, -1)).toEqual(st.listText.split("\n").slice(0, -1));
+  });
+
+  it("refuses a window missing, a line differing from the manifest, bytes differing, a reply the reader refuses, and coins of another meta", () => {
+    const st = store();
+    const missing = store();
+    missing.listText = missing.listText
+      .split("\n")
+      .filter((l) => !l.includes("ETH"))
+      .join("\n");
+    expect(() => run(missing)).toThrow(
+      "2 files are not in the funding store's list, the first info/fundingHistory/ETH/",
+    );
+    const other = store();
+    other.manifestText = other.manifestText.replace(
+      sha256(other.files.get("info/meta.json")!),
+      "0".repeat(64),
+    );
+    expect(() => run(other)).toThrow(
+      "info/meta.json: its line differs from the store's manifest",
+    );
+    const k = reader.fundingKey("BTC", W[1]!.start);
+    expect(() =>
+      run(st, {
+        read: (key) => (key === k ? Buffer.from("[]") : st.files.get(key)!),
+      }),
+    ).toThrow(`${k}: its bytes differ from its line`);
+    const twice = store();
+    const bad = Buffer.from(
+      JSON.stringify([
+        { coin: "BTC", fundingRate: "0.0", premium: "0.0", time: W[1]!.start },
+        {
+          coin: "BTC",
+          fundingRate: "0.0",
+          premium: "0.0",
+          time: W[1]!.start + 1_000,
+        },
+      ]),
+    );
+    twice.files.set(k, bad);
+    twice.listText = twice.listText.replace(
+      sha256(rows(W[1]!.start, "BTC")),
+      sha256(bad),
+    );
+    twice.manifestText = twice.manifestText.replace(
+      sha256(rows(W[1]!.start, "BTC")),
+      sha256(bad),
+    );
+    expect(() => run(twice)).toThrow(`${k}: BTC's hour`);
+    expect(() =>
+      run(st, {
+        coins: { meta: { sha256: "1".repeat(64) }, coins: [{ name: "BTC" }] },
+      }),
+    ).toThrow("coins.json was made from another meta reply");
+    expect(() => tool.manifestOf('{"key":"a"}\n{"key":"a"}\n')).toThrow(
+      "manifest.jsonl: a twice",
+    );
   });
 });
