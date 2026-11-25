@@ -1102,19 +1102,38 @@ nothing:
   idle priority (the program sets it), with the worker heap of `design.ts`
   [SET BEFORE THE FREEZE: twice the rehearsal's largest measured peak,
   rounded up to a whole GB, the owner's rule; above 20 GB, the parts are cut
-  smaller instead; OPEN Q2] and no heap flag. No part is started in
-  02:30–06:00Z or 10:25–11:15Z. **No build, test or other heavy run on the
-  machine during a step** (decisions 2026-11-20). Settings, no defaults:
-  `COPYH_ROOT` (COPY-H's own folder: its stores, parts and outputs),
-  `WAVEH_STORE` (read only), `COPYH_FUNDING` (read only, the funding store,
-  C9), for step 2 `FRESH_STORE` (read only), and for the reproduction
-  `PAPER_SEED` (the paper's seed folder) and the kit's panel (read only).
-- **Parts** (the plan's question 8): every heavy run is a chain of
-  resumable parts, each written whole (`.tmp`, then renamed) and planned to
-  last at most 15 minutes; a crash loses at most the part it was in, and a
-  resumed run equals an unbroken one. **A run that crashes before its result
-  exists is not a look.**
-- **Exit codes:** 0 done; 1 a crash; 2 bad settings or a heap flag; 4 the
+  smaller instead; until the rehearsal, three times the peaks measured on
+  synthetic data at full size (D10)] and no heap flag. **The heap is a
+  ceiling, not a rule of the test:** no output depends on it (every engine
+  part is held to its twin's hash, every store to its second build). The
+  rehearsal measures E alone, and step 2 and FRESH-2's stage hold longer
+  histories; so a later step may run under a larger ceiling, never a smaller
+  one, given as the setting `COPYH_HEAP_GB` and named in a decisions entry
+  before the step and in every output's identity (RH1 (c)). No part is
+  started in 02:30–06:00Z or 10:25–11:15Z. **No build, test or other heavy
+  run on the machine during a step** (decisions 2026-11-20). Settings, no
+  defaults: `COPYH_ROOT` (COPY-H's own folder: its stores, parts and
+  outputs), `WAVEH_STORE` (read only), `COPYH_FUNDING` (read only, the
+  funding store, C9), for step 2 `FRESH_STORE` (read only), for FRESH-2's
+  stage `FRESH2_STORE` (read only, C14), for the reproduction `PAPER_SEED`
+  (the paper's seed folder; the kit reads its own panel, C15 (a)), and,
+  when a decisions entry names it, `COPYH_HEAP_GB` (a whole number above
+  `design.ts`'s value; any other value is exit 2).
+- **Parts and runs** (the plan's question 8): every heavy command is a chain
+  of resumable parts, each written whole (`.tmp`, then renamed). A run
+  starts no new part once 14 minutes are spent or a closed window has begun,
+  so that with the work in flight it ends inside 15, and exits 3; the next
+  run resumes from the whole parts. A crash loses at most the part it was
+  in, and a resumed command's output equals an unbroken one's. A step is run
+  again after each exit 3 until its `result.json` exists; from then on it
+  refuses (exit 5). **A run that crashes before its result exists is not a
+  look** (D9).
+- **The `burnin` range** (`range.ts`; the supervisor's ruling Q9): WAVE-H's
+  850 files before M₀, a counts and timing run of the pass before the
+  rehearsal; it prices nothing and judges nothing (its weeks hold no entry).
+- **Exit codes:** 0 done; 1 a crash; 2 bad settings or a heap flag; 3 not
+  finished: its minutes are spent or a closed window began; run it again
+  (D9); 4 the
   freeze does not verify (C0); 5 not ready (sealed; a listed file missing,
   differing or failing to decode; a day over the record-failure limit; a
   `dir` or coin outside its list; an earlier step's file differing from its
@@ -1125,19 +1144,32 @@ nothing:
   - **(a) The reproduction: known answers on Polymarket's weeks before the
     cut.** The paper's seed (its files held to `experiment/seed.sha256`; never
     a holdout account) is converted, record for record, to Hyperliquid's
-    record shape: each order event's fills given per-fill `startPosition`
-    chains from its `previous_size`; side, taker, liquidation, ADL and
-    settlement in their Hyperliquid fields; the instrument's own id as iid,
-    so that ids and delays equal the paper's. It is then run through COPY-H's
-    mapping (C3's chain heads and normalization, C4, and C5 but for its
-    90-day bound: the label reads R5's whole capture here, since the seed's
-    history before its late Mondays can exceed 90 days, and the bound is
-    (c) 7's to check) and the kit, on the kit's own panel and taker
-    setting. It must give the paper's own reproduction's known answers
-    (decisions 2026-11-12, PAPER-BUILD's technical calls):
-    - FIND-6-EXITS's **1,700 of 1,700** non-holdout copies to 1e-9 bps (the
-      plan's "1,918" holds 218 holdout copies, which the seed does not
-      hold) [OPEN Q10];
+    record shape: each order event's fills of one timestamp given a
+    per-fill `startPosition` chain that starts at the event's
+    `previous_size` (RM6); side, taker, liquidation, ADL and settlement in
+    their Hyperliquid fields; the instrument's own id as iid, so that ids and
+    delays equal the paper's. It is then run through COPY-H's mapping (C3's
+    chain heads and normalization, C4, and C5 but for its 90-day bound: the
+    label reads R5's whole capture here, since the seed's history before its
+    late Mondays can exceed 90 days, and the bound is (c) 7's to check) and
+    the kit, on the kit's own panel (which the kit reads itself, where it
+    keeps it, each file held to its pinned hash: `loadMarket`; the
+    supervisor's ruling Q7) and taker setting. **Each reference value is
+    computed in the same run by the kit on the seed's own records** (its
+    `normFill`, events, entries, `labelAt`, `habitsAt`, `leg`, lib-exits'
+    `priceCopy`, `dAgainstNull` with `removalOf`); every total is the
+    record's (decisions 2026-11-12, PAPER-BUILD's technical calls). It must
+    give the paper's own reproduction's known answers:
+    - FIND-6-EXITS's **1,700 of 1,700** non-holdout copies, exits copied and
+      held 24 h, at D = 0, each equal to its reference to 1e-9 bps [the
+      plan's "1,918" held 218 holdout copies, which the seed does not hold];
+    - **d and x′** (the reading H1 made decide): for every entry the
+      reproduction prices, d by `judge.ts` (C10: the line's accounts at M,
+      the week of M, distinct trades, market trades only) equal to its
+      reference to 1e-9 bps, the reference's removal lists taking the same
+      fills; null for the same reason where the reference is null; and
+      x′ = d − the cost of the kit's `leg` at 24 h (RM6; the supervisor's
+      ruling Q5);
     - X3's 1,366 copies at its printed figures, and 1,104 of 1,104 per
       entry;
     - **P1 at every Monday of the 26 for every account** equal to the
@@ -1154,34 +1186,51 @@ nothing:
     (code-rules: a rehearsal on synthetic data rehearses the wiring).
   - **(c) The rehearsal on real months, counts only** (M2, M3, M4, M9, H1
     fix 7, L3), by the program to be frozen, on all of E from WAVE-H's raw
-    store:
+    store. The rehearsal on real months first runs after this file's rules
+    review and its fix round are closed in decisions. From then on this file
+    changes only in its set-before-the-freeze values, each by the rule
+    written beside it, and in what the code review's fix round names in a
+    decisions entry with the reason no count seen can have chosen it (RM8;
+    the supervisor's ruling Q8). Its counts and results go to
+    `copyh/rehearsal.json` (RL7):
     1. the pass (C3) and its counts: records by kind and `dir`; taker
-       records by `dir` and `liquidation.method` (M1's left-out; Q6); the
-       holes; the chain breaks. `dirs.json` and `unpaired.json` (below) are
-       written from them before any later count;
+       records by `dir` and `liquidation.method` (M1's left-out, "Net Child
+       Vaults" among them); the holes; the matching events with more than
+       one chain (C3; D12); each coin's first Settlement instant, and its
+       market trades and MAIN's entries after it (RL11). `dirs.json` and
+       `unpaired.json` (below) are written from them before any later count;
     2. labels at every Monday of E, the lines' memberships, entries and
        exits, no price: copies a week by line;
     3. **C16's counts on all of E,** with the projected unpriced share of
-       MAIN's set, which sets C9's settlement mark (M2) [SET BEFORE THE
-       FREEZE];
+       MAIN's set, which sets C9's settlement mark (M2)
+       [SET BEFORE THE FREEZE];
     4. **the survival curve of MAIN copies' holds** (the share of an entry
        day's copies still open at each hour after entry, from entries and
        exits alone) **and MAIN's long share day by day** (H1 fix 7), from
-       which the rules review reads the ratio "real ÷ read" by the
-       review's section 6 formula;
-    5. among the accounts P1 at some Monday of E, the largest account's
-       order events and the kit's time and memory on it, which set C4's
-       EVENTS_MAX (M4) [SET BEFORE THE FREEZE];
+       which the build's fix-check computes the ratio "real ÷ read" by the
+       plan review's section 6 formula, recorded in decisions before the
+       freeze. It changes no rule; if it lies outside the plan review's grid
+       (its `r1-power.mjs`, sections E and F), the plan gate is read again
+       before the freeze (RM8);
+    5. among the accounts P1 at some Monday of E: the exit rows of each
+       account above EXITS_MAX and of the ten largest under it, and the
+       kit's time and memory on the largest under it (M4). If that run
+       passes one part or half the worker heap, the freeze waits for a
+       decisions entry (RH1 (b));
     6. the order events with 1e-9 ≤ |prev + net| < 1e-6 (L3: a float
        residue the kit's 1e-9 would read as a reduce or a flip);
     7. **the label bound's check** (M3): on one 1/32 address slice (the
-       addresses whose number is 0 mod 32) [OPEN Q5] at four Mondays where
-       the bound binds — 2025-12-01, 2026-02-02, 2026-04-06 and 2026-05-25 —
-       the label and MAIN's membership from C5's 90-day capture against the
-       whole capture from ARCHIVE_START, every difference listed. **Its pass
-       mark, fixed now: MAIN's membership differs for under 1% of MAIN's
-       accounts at each of the four Mondays.** If it fails, C5's label reads
-       the whole capture from ARCHIVE_START, before the freeze [OPEN Q3];
+       addresses whose number is 0 mod 32: eight whole buckets of the 256)
+       at four Mondays where the bound binds — 2025-12-01, 2026-02-02,
+       2026-04-06 and 2026-05-25 — the label and MAIN's account-level
+       conditions (C7: P1, the habit window covered, median hold ≥ 6 h, at
+       least 3 closed cycles) from C5's 90-day capture against the whole
+       capture from ARCHIVE_START, every difference listed. **Its pass mark,
+       fixed now: at each of the four Mondays, the accounts that meet the
+       conditions under one capture and not under the other number under 1%
+       of those that meet them under the whole capture** (RL4). If it fails,
+       C5's label reads the whole capture from ARCHIVE_START (R5's own rule;
+       no second bound), before the freeze;
     8. the label step's measured CPU time in all and its cut into parts
        (M3);
     9. every part's run time and memory peak, which set the worker heap
@@ -1192,20 +1241,24 @@ nothing:
         copies is kept** (M9). Only their SHA-256 is printed — of the
         copies' lines as `positions.jsonl.gz` writes them, sorted by entry
         id — with their counts by line and their legs by source. Step 1
-        computes the same copies, compares its hash to the last rehearsal's
-        and prints whether they are equal, deciding nothing (a difference is
-        explained in the look's report by the commits between the two);
-    11. the calibration prints (C13), on outcome-free cells.
+        computes the same copies, compares its hash to
+        `copyh/rehearsal.json`'s (RL7) and prints whether they are equal,
+        deciding nothing (a difference is explained in the look's report by
+        the commits between the two);
+    11. the calibration prints (C13), on outcome-free cells, into
+        `copyh/calibration.json`; the book half only if WAVE-H's frozen book
+        reader serves it unchanged (the supervisor's ruling Q10).
 
     Every count and print of the rehearsal is a count of instants, sizes,
     labels and memberships, or two prices of one moment (11): no price
     change after an instant is printed, and none is computed but 10.'s, in
     memory, whose one output is its hash. **The rehearsal's store is
-    sealed:** no reader but the
-    rehearsal's opens it, and it is moved aside or deleted (the
-    supervisor's call) before step 1, which builds its own two.
-- **Step 1** (`dist\copyh.js step1`; the gate at `copyh-freeze-1`;
-  `repro.json` passed by this very program, else exit 5):
+    sealed:** no reader but the rehearsal's opens it, and it is moved aside
+    or deleted (the supervisor's call) before step 1, which builds its own
+    two.
+- **Step 1** (`dist\copyh.js step1`; the gate at a list without
+  `copyh/look1.sha256` (RM2); `repro.json` passed by this very program, else
+  exit 5):
   1. a second step 1 refuses (exit 5);
   2. **E's pass, twice:** two stores, each built in full from WAVE-H's raw
      files, compared byte for byte — the manifest but for the run's fields
@@ -1222,14 +1275,17 @@ nothing:
      listed, or when `copyh/unpaired.json` lists it (written from the
      rehearsal's pass and ruled before the freeze, as the exam's
      `known-unpaired.json`); the sample days re-read cell by cell by an
-     independent reader (`reread.ts`, sharing no code with the pass):
-     2025-07-27, 2025-10-10 and 2026-03-15 [OPEN Q13]; C3's counts, the
-     holes and the chain breaks. A failure stops the step (exit 6), every
-     record listed, for the supervisor's ruling by C0's route;
+     independent reader (`reread.ts`, sharing no code with the pass): the
+     analyzer's G6 days (C18; D11, the supervisor's ruling Q6); C3's counts,
+     the holes and the matching events with more than one chain (D12). A
+     failure stops the step (exit 6), every record listed, for the
+     supervisor's ruling by C0's route;
   4. the engine's counts, no price: labels at every Monday of E, the P1
-     set, the lines' memberships, entries, exits and the legs' instants;
+     set, the lines' memberships, entries, exits and the legs' instants; the
+     chain breaks (lib-exits' `chainBreaks`) of the accounts it builds
+     (D12);
   5. **the tripwire (C16), before any price:** above 1%, the step stops
-     (exit 6) for a decisions entry;
+     (exit 6), and only C16's two outcomes may follow (RH1 (a));
   6. the positions and prices, then d and x′ (C8–C11), every engine part
      twice (below);
   7. everything computed first; then **look 1's `result.json`, written
@@ -1239,28 +1295,29 @@ nothing:
      the writes, `result.json` is moved aside (`result.first.json`) in a
      decisions entry and step 1 runs again: the same positions' SHA-256,
      verdict and numbers, else a code defect.
-- **The engine's guard** (M4) [OPEN Q4]: every engine part — the labels,
+- **The engine's guard** (M4): every engine part — the labels,
   the removal tables (C10) and each account bucket's positions — is computed
   twice, in separate processes, and the two are held equal by SHA-256
   before either is used (exit 7 on a difference). A step's parts hold
   priced copies on disk before its `result.json` exists; nothing but the
   step itself reads them, and every other reader refuses them by name.
 - **Between the steps, the rounds** (C14): `dist\copyh.js tries --round
-  <n>`, then `choice`; then `copyh-freeze-2`.
-- **Step 2** (`dist\copyh.js step2`; the gate at `copyh-freeze-2`; step 1's
-  `result.json`, `positions.jsonl.gz` and `report.json` held to
-  `copyh/look1.sha256`, which freeze 2 lists, else exit 5):
+  <n>`, then `choice`; then the rounds' freeze.
+- **Step 2** (`dist\copyh.js step2`; the gate at the rounds' freeze, or a
+  later list of its kind (RM2); step 1's `result.json`, `positions.jsonl.gz`
+  and `report.json` held to `copyh/look1.sha256`, which the rounds' freeze
+  lists, else exit 5):
   1. a second step 2 refuses (exit 5);
   2. **S's pass, twice,** held equal (`look2\builds.json`, exit 7); S's
-     integrity as step 1's 3., its sample days 2026-06-15 and 2026-10-15
-     [OPEN Q13]; a record left unpaired outside S's first and last file, a
-     new `dir` or a new coin is ruled by C0's route;
+     integrity as step 1's 3., its sample days the 15th of each of S's
+     months (C18; D11); a record left unpaired outside S's first and last
+     file, a new `dir` or a new coin is ruled by C0's route;
   3. **step 1 recomputed** from E's store (its manifest, `builds.json` and
      `integrity.json` held to the SHA-256s step 1's `result.json` names,
      else exit 5) by this program, and held to `look1.sha256`'s positions
      hash (exit 6);
   4. the engine on E ∪ S at END_S, every part twice; the tripwire on look
-     2's set and on S's copies alone (above 1%: exit 6);
+     2's set and on each chosen try's set on S (C16; RH1 (a));
   5. look 2 (C12); the confirmation of the frozen tries on S alone (C14);
      MAIN on S alone (L8, a print);
   6. `look2\result.json` first, then `positions.jsonl.gz`, then
@@ -1286,7 +1343,8 @@ nothing:
 
 - **At each step** (and before the freeze on all of E, C15 (c)), from the
   bars and the copies' plans alone (entries, exits and D; no price), over
-  MAIN's set of the look (voted by END):
+  each set the stop below projects (at step 1, MAIN's set of look 1, voted
+  by END):
   1. the follow instants and every leg's instant (an open or crossing
      copy's END − 1 ms among them) whose coin has no market trade in the 6
      minutes up to the instant's minute end (the minute that holds the
@@ -1295,18 +1353,27 @@ nothing:
      trade in the 6 minutes before the hour** (M2: the kit's third reason
      for "unpriced", a funding settlement without a mark): each settlement
      row whose nominal hour lies in (t + D, the copy's last leg instant];
-     under C9's 60-minute rule, if it is set, the 60 minutes before the
-     hour;
-  3. the copies open across their coin's settlement (C6);
+     under C9's 60-minute rule, if it is set, the 61 minutes before the hour
+     (RL3);
+  3. the copies open at their coin's first Settlement (C8: valued at the
+     Settlement price and flagged `settled`; a count, never unpriced; RM4);
   4. the funding hours missing (charged nothing and counted; they unprice
      nothing);
   5. the gap copies (C11: printed with and without, never unpriced);
 
-  and so **the projected unpriced share:** the share of MAIN's set with at
-  least one of 1–3. It is exact for those reasons, since a minute has a mark
+  and so **the projected unpriced share:** the share of the set with at
+  least one of 1–2. It is exact for those reasons, since a minute has a mark
   exactly when it has a market trade (C9).
 - **Above 1%** (half of the 2% WITHHELD line), the step stops before any
-  price (exit 6) for a decisions entry.
+  price (exit 6). The decisions entry that follows records the projection
+  and may do one of two things only, changing no rule, number or file of
+  this test: **run on** — the step is started again with `--past-tripwire`
+  and runs as frozen (a set above 2% then reads WITHHELD, which the
+  projection already says); or **end there** — the step is not run, its
+  look and its confirmations are recorded as not made, its months stay
+  sealed, and a repair is a new frozen test. The sets projected: at step 1
+  look 1's; at step 2 look 2's and each chosen try's set on S; at FRESH-2's
+  stage each judged set (RH1 (a)).
 - **Before the freeze, on all of E** (M2): if the projected share is above
   0.5%, C9's settlement mark becomes the 60-minute rule; if it is still
   above 1% with that, the freeze waits for a decisions entry (the plan gate
@@ -1318,27 +1385,35 @@ nothing:
   2.4%, look 1's report.]
 - To be built in `src/copyh/tripwire.ts`; pinned by
   `test/copyh-tripwire.test.ts` (each reason alone on a made-up coin; a
-  quiet :54 → :59 before an hour inside a hold of days; the 1% stop on
-  both sides with a margin; on a made-up world, the projection equal to the
-  copies the pricing then finds unpriced by reasons 1–3).
+  quiet :54 → :59 before an hour inside a hold of days; a `settled` copy
+  counted and never unpriced; `--past-tripwire` running as frozen; the 1%
+  stop on both sides with a margin; on a made-up world, the projection equal
+  to the copies the pricing then finds unpriced by reasons 1–2).
 
 ## C17. What never changes — R16
 
 After the freeze no number, line, population, threshold, instant or rule of
 this file changes; a new idea is a new frozen test, never a change here.
-Every `[SET BEFORE THE FREEZE]` value is set before the freeze, in this file
-and in `design.ts`, from the rehearsal's recorded counts, and every
-`[OPEN Qn]` is ruled before the freeze, so that the frozen file holds no
-open marker. A step runs once (a second run is refused); it runs only when
-the earlier step's files are present and held to their hashes. The rounds,
-freeze 2 and freeze 3 change only what C14 names; a defect goes by C0's
-route. **A run that crashes before its result exists is not a look.**
+Every value marked to be set before the freeze is set then, in this file and
+in `design.ts`, from `copyh/rehearsal.json`'s recorded counts, so that the
+frozen file holds no open marker: `tools/copyh-freeze.cjs --final` refuses
+this file while it holds `[SET BEFORE THE FREEZE` or `[OPEN Q` (RL10; as a
+marker, the first followed by `:` or `]`, the second by a digit, which this
+sentence's quotes are not). A step's result is made once: once its
+`result.json` exists the step refuses (C15); it runs only when the earlier
+step's files are present and held to their hashes. The rounds, the rounds'
+freeze and FRESH-2's change only what C14 names; a defect goes by C0's
+route. **Any other stop after the freeze has two outcomes only:** once its
+cause is removed without changing a rule, a number or a frozen file, the
+step runs again as frozen; or the step is not run and its months stay
+sealed. Nothing else is decided after a result is known (RH1). **A run that
+crashes before its result exists is not a look.**
 
 ## C18. The numbers
 
 `src/copyh/design.ts` holds each number below; a test reads this table and
 holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
-(its 14 and 30 days, its 5 minutes' staleness, R8's delay) stay the kit's.
+(its 14 and 30 days, its 5 minutes' staleness, R4's delay) stay the kit's.
 
 | Name | Value |
 |---|---|
@@ -1347,12 +1422,15 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | END_E | 2026-05-29T02:00:00.000Z |
 | END_S | 2026-11-16T00:00:00.000Z |
 | END_F2 | 2027-05-17T00:00:00.000Z |
-| funding from | 2025-05-25T00:00:00.000Z |
+| funding from | 2025-06-30T00:00:00.000Z |
+| switch hour | 2025-07-27T08:00:00.000Z |
 | record failure limit | 0.01 10 |
+| exact digits of sz and startPosition | 15 |
 | buckets | 256 |
 | hole seconds | 60 |
 | merge ms | 60000 |
-| EVENTS_MAX | [SET BEFORE THE FREEZE] |
+| EXITS_MAX | 20000000 |
+| float residue bounds | 1e-9 1e-6 |
 | label capture days | 90 |
 | main hold hours, closed cycles | 6 3 |
 | ten closed cycles | 10 |
@@ -1364,6 +1442,7 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | rank weeks, min copies, share | 12 5 0.2 |
 | slices | 4 |
 | fee a leg | 0.00045 |
+| venue fee a side, Binance | 0.0005 |
 | pair max ms | 2000 |
 | spread min minutes | 30 |
 | spread fallback | 0.0025 |
@@ -1374,11 +1453,13 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | withheld share | 0.02 |
 | delta bps | 10 |
 | z looks | 2.81 2.43 |
-| smallest edge | 2.43 0.8416212335729143 504 |
+| smallest edge | 2.43 0.8416212335729143 |
+| concentration best days, top traders' share, top traders | 2 0.01 10 |
 | rounds | 3 |
 | tries a round | 8 6 4 |
 | z choice | 2.99 |
 | choice min traders, days | 100 100 |
+| choice best days left out | 2 |
 | chosen at most | 2 |
 | z confirm | 2.24 1.96 |
 | z seal try, main | 1.96 1.645 |
@@ -1388,11 +1469,12 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | part minutes | 15 |
 | closed windows | 02:30-06:00Z 10:25-11:15Z |
 | worker heap | [SET BEFORE THE FREEZE] |
+| worker heap cap GB | 20 |
 | rehearsal window | 2025-06-30T00:00:00.000Z 2025-07-14T00:00:00.000Z |
 | label check Mondays | 2025-12-01 2026-02-02 2026-04-06 2026-05-25 |
 | label check slice | 32 0 |
 | label check pass mark | 0.01 |
 | reproduction | 1700 1366 1104 26 1137 157 525 61 |
 | reproduction tolerance bps | 1e-9 |
-| sample days, E | 2025-07-27 2025-10-10 2026-03-15 |
-| sample days, S | 2026-06-15 2026-10-15 |
+| sample days, E | 2025-05-31 2025-06-01 2025-06-15 2025-07-27 2025-08-15 2025-09-15 2025-10-10 2025-11-15 2025-12-15 2026-01-15 2026-02-15 2026-03-15 2026-04-15 2026-05-28 2026-05-29 |
+| sample days, S | 2026-06-15 2026-07-15 2026-08-15 2026-09-15 2026-10-15 2026-11-15 |
