@@ -481,6 +481,27 @@ read from a venue's page is as that page read on the day.
   never share a minute). Minutes with no row for any coin: 2025-05-25 14:23
   (9 minutes), 06-28 08:18 (7), 07-19 09:53 (21), 07-27 11:53 (8); the last
   two cover a funding hour by more than 5 minutes.
+- **The `l2Book` files' snapshot cadence fell through 2026** (measured
+  2026-11-25 by POLISH-EXAM-REVIEW on the book files look 1's legs needed:
+  all 3,119 of FRESH's, and a 264-file sample of the ten months; its
+  `workers/POLISH-EXAM-REVIEW/out-summary/cadence-*.json` in the
+  supervisor folder; report `docs/reviews/polish-exam-look1-2026-11-25.md`).
+  "Live" means the last snapshot is at most 10 s old.
+
+  | Period | Snapshots a file (median) | Median gap | Live share of the hour | File size (median) |
+  |---|---|---|---|---|
+  | 2025-05 → 2026-06-14 | about 6,500 | 0.54 s | the whole hour | 0.65–1.4 MB |
+  | 2026-06-15 → 06-19 | 1,662 | 2.16 s | the whole hour | 335 KB |
+  | 2026-06-23 → 11-09 | 670 | 5.39 s | the whole hour | 169 KB |
+  | 2026-11-10 → 11-15 | 71 | 10.95 s | 15% | 23 KB |
+
+  - The 90th-percentile gap in 2026-11-10 → 15 is 128.8 s.
+  - The steps' exact dates are bracketed by the files read: none for
+    06-20 → 22 or 08-30 → 11-06.
+  - A file's size in the listing tracks its snapshot count, so a listing
+    alone shows the cadence.
+  - Its cause is not known. Re-measure before a test that prices from these
+    books.
 - **What the archive's files hold, measured** (EXTRACT-BUILD's checks C1–C4,
   2026-11-17 22:15–22:23Z, on WAVE-H's store held to its list; decisions
   2026-11-18, EXTRACT-BUILD's technical calls):

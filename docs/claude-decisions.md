@@ -1,5 +1,81 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — LOOK 1'S FINAL REVIEW): **"THE VERDICT
+STANDS" (WITHHELD). INDEPENDENT CODE GIVES THE SAME 3,078 POSITIONS, PRICES
+AND VERDICT. THE 278 DEPTH-SHORT POSITIONS ARE NOT THIN CRASH BOOKS: THE
+ARCHIVE'S BOOK SNAPSHOTS THINNED THROUGH 2026, SO LEGS FELL TO THE TAPE.
+THAT MATTERS FOR LOOK 2.**
+
+**The review:**
+- `docs/reviews/polish-exam-look1-2026-11-25.md` (`246f1f7`).
+- POLISH-EXAM-REVIEW: Sonnet 5.5, max, fresh, 00:57–01:33Z. Context peak
+  611k (63%). Access clean: only the reviewers' folders it was allowed.
+- **The known answer first:** the 715 line on E from the explored store,
+  5,067 positions and 4,310 priced, m and SE within 1.4e-13.
+- **On FRESH:**
+  - all 5,930 positions line by line: 0 categorical differences, net within
+    2.6e-12 bps;
+  - 248 numbers of result.json and report.json within 1e-9 relative (the
+    largest 5.6e-14);
+  - 54 identity hashes equal.
+- **The record order:** decisions `8d9e094` (step 1's counts) committed
+  2026-11-24 13:49:31Z, before the first book was fetched and 10 h 39 min
+  before step 2.
+
+**Its answers:**
+- **Q2, depth short:**
+  - At the book, 0 legs were short. Every short leg was priced from the
+    tape, after a stale book or with no book file.
+  - The archive's `l2Book` cadence fell: a median gap of 0.54 s to
+    2026-06-14, 5.4 s from late June, 11 s with 2-minute silences from
+    2026-11-10 (external-apis, the same date).
+  - So 28% of legs (55% in November) went to the tape, where takers on our
+    side held a median $253 of the $1,000. 258 of the 289 short legs and
+    all 78 unpriced positions are in November.
+- **Q3, the prints:**
+  - The forced buys' −747.5 is one event: 244 of 285 on 2026-08-19,
+    −208,258 of −213,040.
+  - The two best days (2026-11-08, 08-22) are 11.16 times the line's sum;
+    without them the mean is −52.6 ± 96.2. The event-level line is −29.2 ±
+    77.5.
+- **Q4, the 61 missing books:** CASHCAT 60 coin-hours and LIT 1. They touch
+  63 positions of the line.
+
+**Findings:** no high one; none changes a number, the verdict or the
+record order.
+- **M1:** the WITHHELD projection could not see the cadence. If look 2
+  meets November's cadence, its pooled share passes 10% once segment 2′
+  holds about 1,070 positions.
+- **M2:** the 5% tripwire cannot see book coverage.
+- **L1–L5:** small. L2 corrects two wordings in decisions 2026-11-25:
+  - "11.6% left out" means 11.6% not priced cleanly (unpriced or depth
+    short; P8's leftOut is 0);
+  - "11.2" is a multiple of the line's sum, not a percent.
+
+**The supervisor's checks:**
+- The commit holds only the report and its README row.
+- An editor warning in its `i-verdict.cjs` ("extraR" not found) is stale:
+  line 158 declares it.
+- `verify/POLISH-LOOK1/review-claims.cjs` on positions.jsonl.gz alone gives:
+  - short legs by source: tape 291, book 0;
+  - the tape share 26.9%, 54.0% in November;
+  - the forced buys 244 of 285 on 2026-08-19, −208,258.27;
+  - the two best days 11-08 and 08-22, 11.157 times;
+  - the mean without them −52.646.
+
+  These are equal, or near where it counted legs differently (289
+  against 291; 28% against 26.9%).
+
+**Rulings on its questions:**
+1. FRESH-2's `l2Book` sizes listed (metadata only) and a dated decision
+   on whether look 2 runs as frozen: **recommended, for the owner's talk**,
+   since it decides whether a frozen look runs.
+2. The cadence goes into external-apis (done, dated and sourced), and the
+   wordings are corrected here: **yes**.
+3. A book-coverage tripwire, and WITHHELD projected from the tested months'
+   cadence, for any later test: **yes, noted in the plan page's variations
+   for later**.
+
 2026-11-25 (the supervisor — LOOK 1'S VERDICT): **WITHHELD. 11.6% OF THE
 715 LINE'S 3,078 DECIDING POSITIONS WERE LEFT OUT: 78 UNPRICED AND 278
 DEPTH SHORT, ABOVE THE 10% LIMIT. THE 3,000 PRICED POSITIONS AVERAGE +4.5 ±
