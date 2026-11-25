@@ -1,5 +1,61 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's STORE: COMMITS 4 AND 5; THE BUILDER'S
+EIGHT QUESTIONS RULED; THREE SENTENCES QUEUED FOR THE RULES' LAST TOUCH):
+**`dist/copyh.js` EXISTS (THE SIXTH ENTRY POINT): `coins`, `count`, `build`;
+THE STEPS' COMMANDS GATED AND NOT YET BUILT. NOTHING RAN ON REAL DATA.**
+
+**The commits** (COPYH-STORE-2, Opus 5.5, max; each `pnpm verify` green,
+its files only):
+- `2ff8976` commit 4: the store to the committed C3 and C18 (`design.ts`
+  holds every C18 row, held both ways by `test/copyh-rules.test.ts`; "Net
+  Child Vaults" left out; the bars' vault and Settlement sums; the 15-digit
+  boundary; exact holes over the union of files; a record met twice dropped
+  only between the switch hour's two files). 104 test files, 949 tests + 6
+  skipped.
+- `caf3aab` commit 5: the launcher `src/copyh.ts` and `main.ts` (`coins`,
+  `count --range` listing every `dir` exactly, `build --range [--twin]`;
+  `step1`, `tries`, `choice`, `step2`, `fresh2` gated, exit 4); the gate's
+  closure, `checkKit()` and lists by content; FRESH-2's seal; the settings
+  `FRESH2_STORE`, `PAPER_SEED`, `COPYH_HEAP_GB`; `RUN_MINUTES` = 14. 106 test
+  files, 964 tests + 6 skipped.
+- Between `5a80af5` (22:13Z) and `caf3aab` (22:31Z) a verify would have
+  failed on the rules test (C18's new row); no other worker ran one.
+- The builder stopped believing its context at 80%; `tools/context-usage.mjs`
+  read 485,550 (~50%). It is resumed with its context, for its items 1–2.
+
+**The rulings on its questions:**
+1. The Settlement sums count every Settlement record of the minute, either
+   side: as built.
+2. **A record met twice outside the switch hour stops the build (exit 5).**
+   - The analyzer's merge met none: 0 duplicates in 448,389,336 tape,
+     247,493,526 bars and 10,763,876 liq records over WAVE-H's months, and
+     0 in FRESH's 275,474,513, 87,206,805 and 6,308,826 (its store
+     manifests' `counts.merge`, read 22:33Z, counts only).
+   - The rehearsal builds E's store before the freeze, so a repeat on E
+     would show while it can still be fixed. On S or FRESH-2 it is one of
+     C17's other stops.
+3. `COPYH_HEAP_GB` is capped at C18's `worker heap cap GB`, 20; above it is
+   exit 2, and a step that needs more cuts its parts smaller. The heap
+   measurement also reports the sum of all threads' peaks against the
+   machine's memory.
+4. Holes at the window's ends count, as C3's "inside [ARCHIVE_START, END)"
+   already says.
+5. The funding hour by `Math.round`, a row at +30 min to the next hour, as
+   WAVE-H's H9; pinned by a test with rows 887,645 ms late, at +30 min and
+   early. The two late hours are 2025-07-19 10:00Z (+887,645 ms) and
+   2025-07-27 12:00Z (+110,963 ms), every coin; the supervisor's
+   `store-check.cjs`.
+6. The three closure files not yet imported stay in the test's pending
+   list until the import comes.
+7. C18 and `design.ts` change together.
+8. `coins` runs and `coins.json` is committed, naming `meta.json`'s
+   SHA-256, before the burn-in's count.
+
+**Queued for the rules' one last touch at part 5,** with the code review's
+findings: rulings 2 (C3 and C15's exit-5 list), 3 (C15's cap) and 4 (C3's
+holes phrase). The builder builds to them now.
+
 2026-11-25 (the supervisor — COPY-H's RULES READY): **`copyh/rules.md` IS
 READY TO FREEZE WITH THE CODE: SHA-256
 `38ff9dbdec3ad7a4af0d04fd6ea608b832f4cb88c8cf432f93a0da4240ebc349`, 1,494
