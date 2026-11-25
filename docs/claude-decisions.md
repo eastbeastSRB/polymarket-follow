@@ -1,5 +1,43 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's RULES FIX-CHECKED): **"READY AFTER
+THESE FIXES": 0 HIGH, 1 MEDIUM, 8 LOW, ALL TEXT; NO NUMBER, BAR, DESIGN OR
+GUARD TOUCHED. A LAST SMALL ROUND, THEN THE RULES ARE READY TO FREEZE WITH
+THE CODE.**
+
+**The check:** `docs/reviews/copyh-rules-fixcheck-2026-11-25.md` (`d703c47`).
+- COPYH-RULES-FIXCHECK: Sonnet 5.5, max, fresh, 21:42–22:11Z, context peak
+  519,784. Read only; its bar written in its brief before it read the
+  text.
+- 61 items checked from the text: 48 exact, 12 kept in meaning, 1 partly
+  applied (RL1: F2). RM3 (b) and RM4 (b) correctly absent.
+- 43 hunks of `fa52406..9fee674`: 36 trace to an item; 7 have no source,
+  none changing a rule, a number or a bar.
+- The four declared changes of form: each keeps the meaning and was needed.
+- Markers: no open question; the six `[SET BEFORE THE FREEZE` marks are
+  the settlement mark's and the heap's only. Every C18 row equals its
+  mentions; the 15 sample days equal the analyzer's `gates.ts`; the guards
+  hold (nothing priced before the freeze but an in-memory hash, FRESH-2
+  unseen, no choosing month judges).
+- **F1 (medium):** C16's tripwire would count a `settled` copy's last leg
+  as unpriced on a quiet coin, though RM4 prices it at the Settlement. The
+  supervisor read the lines and agrees.
+- **Low:** F2 RL1's "DATA END"; F3 the heap in C0's identity list; F4 C18's
+  14 run minutes; F5 C3's `--data` names the funding files; F6 three stops
+  in C15's exit-5 list; F7 a test pin for C17's marker definition; F8 (e)
+  a lost code-rules pointer restored, (c) the colon in C9's marker kept and
+  declared, (a, b, d, f, g) kept; F9 C13's `settled` print.
+
+**The supervisor's rulings on its questions:**
+1. A `settled` copy with no d (a Settlement under 24 h after its follow
+   instant) is printed only (F9); valuing d at the Settlement would be a
+   rule change, not made.
+2. Yes: C13 also prints the entries C6's rule 2 leaves out.
+3. One small commit by COPYH-RULES now (its context ~70%, the round about
+   20 lines, the exact wordings given); the supervisor reads its diff
+   against the check's section 7; no second full check.
+4. `merge.ts` follows D2's scope: COPYH-STORE-2 has it (its commit 4).
+
 2026-11-25 (the supervisor — COPY-H's RULES FIXED; THE FIX-CHECK STARTS;
 THE STORE'S BUILDER HANDED OVER): **THE REVIEW'S FINDINGS AND EVERY RULING
 ARE APPLIED; `copyh/rules.md` IS NOW SHA-256
