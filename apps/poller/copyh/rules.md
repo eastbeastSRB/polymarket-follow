@@ -459,20 +459,29 @@ and 2):
   forced events are exits only) whose first fill t lies in the stage judged
   (C1). Its id is the kit's `entryId(addr, g)`, which holds the coin's iid;
   its **delay D** the kit's `delayOf(id)`, D in [62.14 s, 95.44 s) (60 s to
-  act, up to 33.3 s of polling, 2.14 s of lags: R8's, frozen with MAIN; it
+  act, up to 33.3 s of polling, 2.14 s of lags: R4's delay (the research
+  R8's 62–95 s), frozen with MAIN; it
   fits a manual follower, HL-FOLLOW-FACTS 2.5, and the supervisor's probe of
   2026-11-25 shows that detection, under a second, is not what limits one);
   its **follow instant** t + D.
 - **An account the kit cannot hold** (M4): the kit's `buildEntries` appends
   every reducing event to every group still open on its side, so an account
   that adds and trims for months without going flat grows that work with the
-  square of its events. An account P1 at some Monday whose order events (the
-  kit's `toEvents`) in [ARCHIVE_START, END) number more than **EVENTS_MAX**
-  [SET BEFORE THE FREEZE from C15 (c) 5's count; OPEN Q1] is not run through
-  `toCycles` or `buildEntries`, so it has no habits: it is in no line and in
-  no line's removal set (C10), and it is named at each look with its OPEN
-  and FLIP order events at the Mondays where it is P1 (its entries' upper
-  bound).
+  square of its events. The measure is that work itself, the **exit rows**:
+  the number of exits `buildEntries` would append over all its groups,
+  counted without building them by `exitRows(events)` (the kit's own loop
+  with a count in place of each append; a test holds it equal to the exits
+  of every group that `buildEntries(events, −∞, ∞, 60 000)` returns, on
+  made-up accounts). An account P1 at some Monday whose exit rows over
+  [ARCHIVE_START, END) number more than **EXITS_MAX = 20,000,000** (fixed
+  now: about 2 GB of exits at about 100 B each; an account never flat on one
+  coin reaches it at about 9,000 to 13,000 order events) is not run through
+  `buildEntries`, so it has no habits: it is in no line and in no line's
+  removal set (C10), and it is named at each look with its exit rows and its
+  OPEN and FLIP order events at the Mondays where it is P1 (its entries'
+  upper bound). The count reads the account's fills to END, so an account
+  can leave a later look for what it did after its copies; the look names
+  each such account (RH1 (b)).
 - **A float residue** (L3): the kit zeroes a position within an absolute
   1e-9; a close of a large position in hundreds of fills can leave a larger
   residue, which the kit then reads as a reduce or a flip. The rehearsal
@@ -481,8 +490,8 @@ and 2):
 - To be built in `src/copyh/entries.ts`; pinned by
   `test/copyh-entries.test.ts` (an OPEN, a FLIP, an ADD merged inside 60 s
   and one outside, a forced event as an exit only; the id and its delay
-  hold the coin's iid; an account above EVENTS_MAX left out and named; the
-  residue case of C3's chain test).
+  hold the coin's iid; the count equal to the kit's exits; an account above
+  EXITS_MAX left out and named; the residue case of C3's chain test).
 
 ## C5. Labels and habits at M — R5, with one bound
 
@@ -532,18 +541,18 @@ and 2):
 
   (The plan's middle condition, a fill of the coin at or before t, holds
   for every entry, by its own fill.)
-- **A coin's market objects end at its first "Settlement" record** (the
-  start of the minute that holds it; C9): no leg instant at or after it has
-  a mark, so a copy open across its coin's settlement is unpriced, the way
-  R11 says ("a copy that crosses a settlement is unpriced this way"),
-  counted apart and named at the looks, a small survivorship. [56 of the
-  235 coins were flagged delisted on 2026-11-25.]
+- **A coin's market objects end with its first "Settlement" record** (C9):
+  at the end of the minute that holds it, whose mark is the Settlement
+  records' own price, their Σ px·sz ÷ Σ sz: what every holder was paid. A
+  copy still open then is closed there (C8). [56 of the 235 coins were
+  flagged delisted on 2026-11-25.] (RM4 (a), the owner's ruling.)
 - Crypto has no splits, and no close-only state is read: the delisting is
   the "Settlement" record.
 - Entries in other markets are counted apart and priced in no line.
 - To be built in `src/copyh/markets.ts`; pinned by
   `test/copyh-markets.test.ts` (each condition alone; a settlement later on
-  t's UTC day; a copy open across a settlement unpriced; the object's end).
+  t's UTC day; a copy open at a settlement closed there at the Settlement
+  price and flagged `settled`; the object's end).
 
 ## C7. The lines (each entry's membership fixed at its Monday M)
 
@@ -553,13 +562,13 @@ and 2):
 | TEN | MAIN with at least 10 closed cycles | no |
 | BROAD | P1 at M; a primary market | no |
 | DAY | MAIN with median hold ≥ 24 h | no |
-| STOP2, STOP5 | MAIN's copies, also closed at STOP's instant (R13), on C9's marks | no |
-| DAYS7 | MAIN's copies, also closed at t + D + 7 d (R13) | no |
-| JUMP | MAIN's copies split by J > 3 against J ≤ 3 (R13), on C9's marks | no |
+| STOP2, STOP5 | MAIN's copies, also closed at STOP's instant (R13), on C9's marks, by `dist/paper/copy.js`'s `stopInstant`, unchanged (RL2) | no |
+| DAYS7 | MAIN's copies, also closed at t + D + 7 d (R13), by `dist/paper/copy.js`'s `DAYS7_MS`, unchanged | no |
+| JUMP | MAIN's copies split by J > 3 against J ≤ 3 (R13), on C9's marks, by `dist/paper/copy.js`'s `jumpRatio`, unchanged | no |
 | DELAY0 | MAIN at D = 0, every leg at the last market price of the minute that holds its instant: the end of the trader's own minute, as FIND-6-EXITS (M7) | no |
 | DELAY+5, DELAY+15 | MAIN with every leg at its instant + 5 min and + 15 min, on C9's marks (X3's lines; FABLE-REVIEW point 9) | no |
 | LAST | MAIN at D, every leg at the last market price of its minute (M7: MAIN once more on DELAY0's price) | no |
-| RANK | MAIN's copies of the top fifth of MAIN's accounts at M, ranked by the mean net of their own priced MAIN copies whose follow instant and every leg lie in [M − 12 w, M), at least 5 of them; the top fifth is the first ⌈n ÷ 5⌉ of the n ranked, by that mean, ties by address [OPEN Q7] | no |
+| RANK | MAIN's copies of the top fifth of MAIN's accounts at M, ranked by the mean net of their own priced MAIN copies whose follow instant and every leg lie in [M − 12 w, M), at least 5 of them; the top fifth is the first ⌈n ÷ 5⌉ of the n ranked, by that mean, ties by address, the smaller address first | no |
 | SLICES | MAIN in four disjoint account groups, the address's number mod 4 | no |
 | SIDES, MONTHS | MAIN's longs and shorts apart; MAIN by the UTC month of t | no |
 
@@ -598,10 +607,19 @@ and 2):
   setting})` with C9's setting on C9's market object: Σ partᵢ × the kit's
   `leg` from t + D to each exit instant; in bps of the copy's $1,000: net,
   gross, fees, funding and the share-weighted hold.
+- **A copy still open at its coin's Settlement** (a change from R11,
+  declared: Hyperliquid delists far more markets than Polymarket, and Iron
+  Rule 4 wants the price a follower could have had): its legs are planned
+  with the coin's end in place of END (`planCopyThrough`'s `end`), so what
+  is still open is marked at the end's last millisecond, at the Settlement
+  price, with C9's spread and fee as on any leg (the settlement itself cost
+  neither: a small charge against the copy). It is flagged `settled`, and
+  every look prints MAIN with and without such copies (RM4 (a), the owner's
+  ruling).
 - To be built in `src/copyh/money.ts`; pinned by `test/copyh-money.test.ts`
   (a copy with partial exits, a full close, a flip, a liquidation's share,
-  `crossing` and `open` at END; every bps field asserted on uneven marks
-  with funding, code-rules).
+  `crossing` and `open` at END, `settled` at its coin's end; every bps field
+  asserted on uneven marks with funding, code-rules).
 
 ## C9. The taker setting and the market objects — R9 changed, declared
 
@@ -624,7 +642,13 @@ are the one complete record.
   instant. With fewer than 30 such minutes on d − 1, the coin's latest
   earlier day with 30 is used, flagged; with none, **25 bps**, flagged. [s8,
   September 2025: 0.78 bps weighted by MAIN's entries; BTC 0.04, ETH 0.11,
-  SOL 0.22; the median coin 1.08, the 90th percentile 3.24.]
+  SOL 0.22; the median coin 1.08, the 90th percentile 3.24.] The build takes
+  each file's records in `time` order and joins the files in order. A file
+  whose first market-trade taker record of a coin is timed before that
+  coin's last one in the file before it stops the build (exit 5): the code
+  then cannot give the pairs and the last prices this rule defines, which is
+  a defect, fixed by C0's route with a sort across the two files (D8; RH1
+  (f)).
 - **The setting** given to the kit's `leg` and lib-exits' `priceCopy`:
   `fee(iid, t)` = 0.00045; `spread(iid, t)` = c(coin, d), flagged as its
   `fallback` when it came from an earlier day or the 25 bps.
@@ -636,35 +660,44 @@ are the one complete record.
 - **The market object** (`markets.ts`): the kit's `marketFrom`, step for
   step, with the step's END in place of the kit's cut (the paper's
   `marketThrough` form, since `marketFrom` refuses an end past 2026-11-07),
-  per coin from its first market trade's minute to END or its first
-  "Settlement" record (C6): the minute marks, the minute's market-trade
-  count as `trades` and its Σ sz as `volume`, and the funding rows below.
+  per coin from its first market trade's minute to END or the end of its
+  first Settlement's minute, whose mark is the Settlement price (C6; RM4):
+  the minute marks, the minute's market-trade count as `trades` and its
+  Σ sz as `volume`, and the funding rows below.
   The kit's `markAtMinuteEnd` (5 minutes' staleness at most) and
   `fundingBetween` (nominal hours in (tIn, tOut]) run on it unchanged.
 - **The last-price object** (M7): the same, with each minute's last price
   (C3's bars) as its marks; for DELAY0 and LAST only.
 - **Funding** (the owner's ruling 5): Hyperliquid's settled hourly rates
   (`fundingHistory`, its public info API) for every coin of `coins.json`,
-  the hours [2025-05-25T00:00:00.000Z, END_S), fetched before the freeze by
-  `tools/waveh-fetch.cjs`'s funding mode for COPY-H's coins (part 0, in
-  sessions with a manifest and a safety stop, at about half of the
-  published 1,200 weight a minute: Iron Rule 5, HL-FOLLOW-FACTS 2.4; L6)
-  into COPY-H's funding store (`COPYH_FUNDING`), and listed in
-  `copyh/funding.sha256` from its manifest (every window's file and its
-  SHA-256, and the `meta` reply of C3). **A row's nominal hour is its `time`
-  rounded to the nearest hour**
+  the hours [M₀, END_S) (no copy is open before M₀), fetched before the
+  freeze by `tools/waveh-fetch.cjs`'s funding mode for COPY-H's coins (part
+  0, in sessions with a manifest and a safety stop, at most half of the
+  published 1,200 weight a minute: Iron Rule 5, HL-FOLLOW-FACTS 2.4; L6,
+  RL13) into COPY-H's funding store (`COPYH_FUNDING`), a window a file, no
+  window holding both E's and S's hours. **`copyh/funding.sha256`** is
+  written by `tools/copyh-freeze.cjs --data` from the store's own list, each
+  line held to the store's manifest: the `meta` reply of C3 and **every
+  window of every coin of `coins.json`** (an empty reply is a window read:
+  the coin had no settlement in it). **The tool refuses** a list that lacks a
+  window, and one whose files the program's own reader does not pass: its
+  schema (Zod: `coin` text, `fundingRate` and `premium` decimal text, `time`
+  a safe integer), and no coin's nominal hour twice. That check reads the
+  rows' shape and times only, S's among them, and uses no rate (RM5; RH1
+  (e)). **A row's nominal hour is its `time` rounded to the nearest hour**
   (WAVE-H's H9); a positive rate, longs pay. An hour without a row is
-  charged nothing and counted. A window file that fails its schema (Zod:
-  `coin` text, `fundingRate` and `premium` decimal text, `time` a safe
-  integer), or two rows of one coin in one nominal hour, stop the step
-  (exit 5) before any price, for the supervisor's ruling by C0's route.
-- **The settlement's mark** [SET BEFORE THE FREEZE by C16's count on all of
-  E (M2)]: if the projected unpriced share there is at most 0.5%, the kit's
+  charged nothing and counted. At a step, a window file that fails the
+  reader stops the step (exit 5) before any price; after the tool's check
+  only a changed file can.
+- **The settlement's mark** [SET BEFORE THE FREEZE: by C16's count on all
+  of E (M2)]: if the projected unpriced share there is at most 0.5%, the kit's
   rule unchanged — each settlement at the mark at the end of the minute
   before its hour (`markAtMinuteEnd(mk, hour − 1)`, 5 minutes' staleness);
-  if it is above 0.5%, each settlement at the coin's latest mark at most 60
-  minutes old (the amount changes by the rate times an hour's price move).
-  A settlement with no such mark leaves the copy unpriced either way.
+  if it is above 0.5%, each settlement at the coin's latest minute mark
+  among the minute that ends at the hour and the 60 before it (the kit's
+  rule with a staleness of 60 minutes in place of 5; where the kit's rule
+  finds a mark, this one finds the same; RL3). A settlement with no such
+  mark leaves the copy unpriced either way.
 - **Thin legs** (M6): a leg instant x is **thin** when the coin's market
   trades in the minute that holds x and the five before it sum to under
   $1,000 of notional (Σ px·sz, C3's bars). A copy with a thin leg, its
@@ -678,8 +711,11 @@ are the one complete record.
 - To be built in `src/copyh/setting.ts` and `markets.ts`; pinned by
   `test/copyh-setting.test.ts` (pairs at 2 s and at 2 s + 1 ms; a pair
   across a minute's boundary; the 30-minute fallback and the 25 bps; c from
-  the day before only) and `test/copyh-markets.test.ts` (marks from market
-  trades only; the object's end at END and at a settlement; a row's nominal
+  the day before only) and `test/copyh-markets.test.ts` (the object equal,
+  field for field, to the kit's `marketFrom` on a made-up panel that ends
+  before the kit's cut, the 5-minute rule (RM6); marks from market trades
+  only; the object's end at END and at a settlement, its last mark the
+  Settlement price; a row's nominal
   hour at ±30 min; two rows in one hour stop; the settlement mark's two
   rules; a thin leg at $999.99 and at $1,000, with uneven sizes, code-rules).
 
