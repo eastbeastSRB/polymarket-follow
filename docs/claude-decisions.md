@@ -1,5 +1,17 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the owner's rulings on RM3 and RM4 — "I agree with your recommendation … let's proceed like you suggested"):
+- **RM3:** no filter by side among the rounds' tries. Longs and shorts stay printed apart (SIDES), deciding nothing.
+- **RM4:** a copy still open at its coin's first Settlement (a delisting) is valued at the Settlement price, flagged `settled`, and every look prints MAIN with and without such copies (the review's option (a)).
+
+The rules' fix round starts now. COPYH-RULES, resumed, applies:
+- the review's RH1, RM1–RM8 and RL1–RL13, each in its given wording;
+- D1–D15 (the review's section 4);
+- these two rulings;
+- the supervisor's rulings on the review's Q3–Q10 (decisions `d8cd4a1`).
+
+Then a short fresh fix-check.
+
 2026-11-25 (the supervisor — COPY-H's RULES REVIEW): **"MAY FREEZE AFTER
 THESE FIXES". 1 HIGH, 8 MEDIUM, 13 LOW; NO NEW DESIGN. TWO ITEMS ARE THE
 OWNER'S (RM3, RM4).**
