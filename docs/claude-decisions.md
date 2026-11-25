@@ -1,5 +1,52 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the owner's talk after look 1 — what next): **THE WAVE'S
+POLISHING STOPS. v1 WAITS FOR EVIDENCE. TWO WORKERS START IN PARALLEL: THE
+PLAN FOR COPYING TRADERS ON HYPERLIQUID'S 15½ MONTHS (COPY-PLAN), AND A
+COLD REVIEW OF THE WHOLE PROJECT BY FABLE 5.2 (FABLE-REVIEW). THE REST
+WAITS.**
+
+**The owner's words:**
+- On look 1: "pretty sure we will have better results … total
+  disappointment".
+- On v1: "leaderboards doesn't have sense, waves also … alerts or
+  anything".
+- On copying traders: "use on our 15month history try to filter traders
+  which doing type of trades as we doing in our paper experiment".
+- Then: "let's start with work, let's run parallel things".
+
+**The rulings** (the supervisor's recommendation, the owner's yes, item by
+item):
+1. **Copying traders on Hyperliquid's history** (the plan page, "After
+   WAVE-H's answer" item 4, the owner's idea of 2026-11-17): **starts with
+   its plan.** It is a new question, so all 15½ months (WAVE-H's 10,
+   FRESH's 5½) are unseen for it.
+   - Until the owner approves the plan, no outcome of any account or copy
+     is computed on any month: no profit, return, `closedPnl` or copy
+     price. Only the data's shape, sizes and counts may be measured.
+   - Plan first, then a fresh review, then the owner's yes, then the build
+     and the freeze.
+2. **The crash side only:** not now. It can be tested only on months no one
+   has seen (FRESH-2, from 2026-11-16), so it is decided with look 2's book
+   listing, before February.
+3. **Fable 5.2's cold review of the whole project:** starts now, read only.
+4. **A dated public events calendar flag** (AI-RESEARCH's alternative):
+   not now. It serves the wave rule, which FRESH did not support.
+5. **Polymarket trader ideas on new weeks, prediction-market traders, AI
+   notes and the 8-week news pilot, other venues (WAVE-L, other venues'
+   prices):** not now.
+6. **Variations of the wave rule:** skipped, the supervisor's call at the
+   owner's word ("it is up to you"). Every one would be chosen after
+   seeing FRESH, so it could be tested only on new months, and FRESH's ~0
+   makes a large change unlikely.
+7. **v1:** held until a test finds something a follower can use.
+8. **The frozen tests run on:**
+   - the paper experiment's and MARKET-1's first looks, 2026-12-19;
+   - the exam's look 2, decided after FRESH-2's book listing.
+9. **The cleanup:** only copies and intermediates are deleted (the owner:
+   keep the history and the order books). The exact list with sizes goes
+   to the owner first, and nothing is deleted before their yes.
+
 2026-11-25 (the supervisor — LOOK 1'S FINAL REVIEW): **"THE VERDICT
 STANDS" (WITHHELD). INDEPENDENT CODE GIVES THE SAME 3,078 POSITIONS, PRICES
 AND VERDICT. THE 278 DEPTH-SHORT POSITIONS ARE NOT THIN CRASH BOOKS: THE
