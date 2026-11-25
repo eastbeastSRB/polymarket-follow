@@ -2,26 +2,34 @@
 
 COPY-H asks the project's founding question on Hyperliquid's archive: does
 copying the traders the paper experiment's MAIN rule picks pay a follower
-who copies after R8's delay, leaves when the trader leaves, at a taker's
-real costs? This file is the draft written before the freeze (C0); then a
-fresh rules review, the build's reviews, the freeze and look 1. The plan:
-`docs/reviews/copy-h-plan-2026-11-25.md` (`83ac6ba`), section 2 (its draft
-C0–C17), with every fix of its review,
+who copies after R4's delay (the research R8's 62–95 s), leaves when the
+trader leaves, at a taker's real costs? This file is written before the
+freeze (C0): drafted, reviewed fresh and fixed; then the code's reviews, the
+freeze and look 1. The plan: `docs/reviews/copy-h-plan-2026-11-25.md`
+(`83ac6ba`), section 2 (its draft C0–C17), with every fix of its review,
 `docs/reviews/copy-h-plan-review-2026-11-25.md` (`dda8d38`; H1–H2, M1–M9,
 L1–L9), and the owner's eight rulings, decisions 2026-11-25 "COPY-H'S PLAN
-APPROVED" (`b0a546e`), folded in. The review's finding is named beside each
-rule it changed. Where a rule says "R…", it means the paper experiment's
-rule (`apps/poller/experiment/rules.md`, R0–R17) word for word; "the kit's
-X" is `research/kit` unchanged and "lib-exits' X" `research/find-6-exits`
-unchanged, both run byte for byte. Where a rule names code, the code to be
-built in `apps/poller/src/copyh/` (compiled to `dist/copyh/`) does exactly
-that, and the test named beside it pins it. Every number a rule fixes has
-one home, `src/copyh/design.ts`, and the table at the end (C18) holds this
-file to it. A value the sources leave to be set from counts before the
-freeze is marked `[SET BEFORE THE FREEZE: …]` with the rule that sets it; a
-choice the sources leave open is marked `[OPEN Qn]`, with the recommended
-text in place, for the supervisor's ruling. Figures in brackets are prints
-from before the freeze, deciding nothing.
+APPROVED" (`b0a546e`), folded in; then the fixes of this file's own fresh
+review, `docs/reviews/copyh-rules-review-2026-11-25.md` (`4588143`; RH1,
+RM1–RM8, RL1–RL13, and its wording for COPYH-STORE's differences D1–D15),
+with the owner's rulings on RM3 and RM4 (decisions 2026-11-25, `60e694f`)
+and the supervisor's on the review's questions (`d8cd4a1`). Each review's
+finding is named beside the rule it changed. Where a rule says "R…", it
+means the paper experiment's rule (`apps/poller/experiment/rules.md`,
+R0–R17) word for word; "the kit's X" is `research/kit` unchanged and
+"lib-exits' X" `research/find-6-exits` unchanged, both run byte for byte. A
+research report is named in full ("the research R8"); "R…" alone is always
+a rule of the paper experiment. "s6" to "s8" are the planner's scripts (the
+plan's section 11). Where a rule names code, the code to be built in
+`apps/poller/src/copyh/` (compiled to `dist/copyh/`) does exactly that, and
+the test named beside it pins it. Every number a rule fixes has one home,
+`src/copyh/design.ts`, and the table at the end (C18) holds this file to it.
+Two values are set from the rehearsal's counts before the freeze, each
+marked where it stands with the rule that sets it: C9's settlement mark and
+C15's worker heap (C17). Every choice the draft left open is ruled
+(decisions 2026-11-25: the supervisor's provisional rulings as the rules
+review checked them, and `d8cd4a1`). Figures in brackets are prints from
+before the freeze, deciding nothing.
 
 *Keep and drop are verdicts on this test, never instructions to trade.*
 
@@ -76,42 +84,51 @@ and 2):
   - the program `dist/copyh.js` and every file of `dist/copyh/`;
   - **the closure** (`COPYH_CLOSURE`; L5): every compiled file of another
     frozen program that the program's imports reach, each equal, byte for
-    byte, to its line in that program's own freeze list (the tool refuses
-    otherwise). Named now: `dist/paper/copy.js` (`planCopyThrough`),
-    `dist/paper/stats.js` (`twoWay`, R12's two-way error; also in MARKET-1's
-    list) and `dist/paper/research.js` (the kit's loader and fingerprint
-    check), in `experiment/FROZEN.sha256`; `dist/polish/lz4.js` (the
-    analyzer's LZ4 decoder), in `polish/FROZEN.sha256`. Any other file the
-    build's imports reach is listed the same way, or the tool refuses;
+    byte, to its line in that program's freeze list at COPY-H's freeze
+    commit (the tool refuses otherwise; RL12). Named now:
+    `dist/paper/copy.js` (`planCopyThrough`, and R13's `stopInstant`,
+    `DAYS7_MS` and `jumpRatio`), `dist/paper/stats.js` (`twoWay`,
+    `dailyEValue`, `smallestEdge`; also in MARKET-1's list) and
+    `dist/paper/research.js` (the kit's loader and fingerprint check), in
+    `experiment/FROZEN.sha256`; `dist/polish/lz4.js` (the pass's LZ4 decoder)
+    and `dist/polish/tables.js` (the analyzer's column codecs, the store's
+    table format), in `polish/FROZEN.sha256`; `dist/waveh/keys.js` and `dist/waveh/instants.js`
+    (`keyDate`, the one parser of a key's date) and `dist/waveh/lz4.js` (the
+    independent reader's decoder, C15), in `waveh/FROZEN.sha256`; and lz4js's
+    three files (`node_modules/lz4js/lz4.js`, `util.js`, `xxh32.js`), as
+    WAVE-H's and the exam's lists name them (D14). Any other file the build's
+    imports reach is listed the same way, or the tool refuses;
   - every file of `research/` byte for byte: the kit, fingerprint
     `2d3667b5ce90645b41dfee4e6fc425ab3e64c985cb4973bfed6ece5052c409aa`, and
     lib-exits, `612d58365ba4c2a2d88a3f73a41a08e193d0874458d862b169fc51f218926330`;
   - every file of `copyh/`, these required by name: this file,
     `coins.json` (C3), `dirs.json` (C3), `unpaired.json` (C15),
-    `data.sha256` (C3) and `funding.sha256` (C9).
+    `data.sha256` (C3), `funding.sha256` (C9), `calibration.json` (C13) and
+    `rehearsal.json` (C15 (c): the counts that set this file's values, the
+    label check's result, and the two-week copies' SHA-256) (RL7).
 
   `dist/schedule.js` and `dist/log.js` are shared and not frozen; their
   hashes are logged at each start (as the exam's P0). The tool is to be
   built in `tools/copyh-freeze.cjs`; pinned by `test/copyh-freeze.test.ts`
   (a closure file differing from its own freeze's line refused; each later
-  freeze's allowed differences, C14, and any other refused).
+  list's allowed differences, below and C14, and any other refused).
 - **When another program re-freezes a file of the closure** (the paper's
   breaker fix waits; decisions 2026-11-25): COPY-H's list never changes for
   it. COPY-H's steps then run from a build of its own tag's tree (a worktree
   at `copyh-freeze-<n>`, compiled by the lockfile's TypeScript), which the
   gate holds to the same list. A defect the other program fixes in a file
   COPY-H runs is COPY-H's own defect too, fixed only by the route below.
-  [OPEN Q9]
 - **The gate** (to be built in `src/copyh/gate.ts`): a step runs only when
   `copyh/FROZEN.sha256` lists every file of what runs with its hash, holds
   exactly one line `# tag copyh-freeze-<n>`, that git tag holds this very
   list byte for byte, and the kit's `checkKit()` returns its fingerprint and
-  lib-exits its hash.
-  Otherwise the step writes one line, "frozen files differ", and stops
+  lib-exits its hash; and the list is of the kind the step asks for (below,
+  RM2). Otherwise the step writes one line, "frozen files differ", and stops
   (exit 4), having read no data. Every step checks it first. Pinned by
   `test/copyh-gate.test.ts` (an untagged list, an edited list, a file
-  changed, a file of the closure changed, the tag holding another list; the
-  built program asked through the gate itself, code-rules POLISH-FIX).
+  changed, a file of the closure changed, the tag holding another list, a
+  list of another kind than the step's; the built program asked through the
+  gate itself, code-rules POLISH-FIX).
 - **The seals** (one function, to be built in `src/copyh/seal.ts`), each by
   name and then by real path through junctions, the name checked before the
   path is resolved (code-rules, EXTRACT-FIX):
@@ -126,35 +143,50 @@ and 2):
      (`FRESH_STORE`), whose pass reads it. Step 2 refuses any fill, row or
      minute at or after END_S.
   4. **FRESH-2 is not downloaded before step 2's report is recorded** in
-     decisions, and then only if a yes needs confirming (C14). Until FRESH-2's
-     freeze (C14) every reader refuses a key at or after END_S, open or not.
-  5. **Always:** no reader opens the analyzer's folders (`…\ANALYZER\`: the
-     exam's stores, look 1's outputs, the `liq` table that holds
-     `closedPnl`); the collector's data; the paper experiment's or MARKET-1's
-     run folders and logs, but the paper's seed files held to
-     `experiment/seed.sha256` for the reproduction (C15 (a)); the kit's
-     holdout files; or anything of polymarket-lab.
+     decisions, and then only if a yes needs confirming (C14). Every reader
+     refuses a key at or after END_S, open or not, but the `fresh2` command
+     under a verified FRESH-2 freeze, which reads FRESH-2's store
+     (`FRESH2_STORE`) and refuses any fill, row or minute at or after END_F2
+     (RM7).
+  5. **Always:** every reader refuses a path outside the run's roots, the
+     folders its settings name, by its name and then by its real path; and
+     inside them the analyzer's folders (`…\ANALYZER\`: the exam's stores,
+     look 1's outputs, the `liq` table that holds `closedPnl`). So the
+     collector's data, the paper experiment's and MARKET-1's run folders and
+     logs, the kit's holdout files and everything of polymarket-lab are
+     never reached. One command has one root more: `reproduce` reads the
+     paper's seed folder (`PAPER_SEED`), each file held to its line in
+     `experiment/seed.sha256` before it is parsed (D15).
 
   Pinned by `test/copyh-seal.test.ts` (each refusal by name, by a junction to
   the name, and by a key one millisecond either side of each END; the order
-  of the name check and the path's resolution).
+  of the name check and the path's resolution; a path outside the roots; a
+  junction inside a root that leads out of it).
 - **After the freeze nothing changes but by R0's route.** A defect (the code
   not doing what this file says) is written in a dated decisions entry before
   any fix, with the diff, a test that failed before it, the copies whose
   numbers change, and the reason the fix cannot have been chosen by what was
-  seen; the fix gets a new list tagged `copyh-freeze-<n + 1>`
-  (`--final --tag <n + 1>`). Never a number of this file. **The named
-  exceptions**, each allowed to differ only as its own rule says (the tool
-  refuses any other difference): the rounds' `copyh-freeze-2` and FRESH-2's
-  `copyh-freeze-3` (C14), and a value appended to `dirs.json` or
-  `coins.json`, or a record added to `unpaired.json`, by C3's and C15's
-  rulings at step 2 or at FRESH-2's stage. Before a step runs under such a
-  list, a fresh worker reads its lines that differ from the list before it
-  (as the exam's P0 for its look 2).
+  seen; the fix gets a new list. Never a number of this file. **Lists are
+  numbered in the order they are made:** each is tagged `copyh-freeze-<n>`,
+  n the next free number (`--tag <n>`), whatever its kind; no rule of this
+  file names a list by its number. **The kinds of list after the first,**
+  each allowed to differ from the list before it only as its own rule says
+  (the tool refuses any other difference): a defect's fix (above); a value
+  appended to `dirs.json` or `coins.json`, or a record added to
+  `unpaired.json`, by C3's and C15's rulings; **the rounds' freeze** (C14,
+  `--rounds`); **FRESH-2's freeze** (C14, `--fresh2`). **A step asks for
+  what its list holds, never for a number:** step 1 runs under a list
+  without `copyh/look1.sha256`; step 2 under one that holds
+  `copyh/look1.sha256` and `copyh/choice.json` and no `copyh/fresh2.sha256`;
+  FRESH-2's stage under one that holds `copyh/fresh2.sha256`,
+  `copyh/funding2.sha256` and `copyh/look2.sha256`. Before a step runs under
+  a list of any of these kinds, a fresh worker reads its lines that differ
+  from the list before it (as the exam's P0 for its look 2) (RM2).
 - **Every output names its identity first:** the program's fingerprint;
   COPY-H's freeze list by SHA-256 and its tag; the kit's fingerprint and
   lib-exits' hash; `data.sha256`, `funding.sha256`, `coins.json`,
-  `dirs.json` and `unpaired.json` by SHA-256; the step's stores' manifests,
+  `dirs.json`, `unpaired.json`, `calibration.json` and `rehearsal.json` by
+  SHA-256; the step's stores' manifests,
   `builds.json` and `integrity.json` by SHA-256; at step 2 and after, the
   earlier steps' files by SHA-256; the shared files' hashes; Node's version.
 
@@ -173,7 +205,7 @@ and 2):
   |---|---|---|---|
   | burn-in | [ARCHIVE_START, M₀) | none | labels and habits only; judges nothing |
   | **E** | [M₀, END_E) | 2025-06-30 → 2026-05-25 | MAIN's look 1; then the owner's rounds |
-  | **S** | [END_E, END_S) | 2026-06-01 → 2026-11-09 | sealed until step 2: MAIN's look 2 (E ∪ S, cumulative); the chosen tries' one confirmation, on S alone |
+  | **S** | [END_E, END_S) | 2026-06-01 → 2026-11-09 (an entry of its first three days has M = 2026-05-25) | sealed until step 2: MAIN's look 2 (E ∪ S, cumulative); the chosen tries' one confirmation, on S alone |
   | **FRESH-2** | [END_S, END_F2), 26 weeks | 2026-11-16 → 2027-05-10 | sealed until a yes needs confirming: a MAIN KEEP's confirmation and each confirmed try's sealed judgment, on FRESH-2 alone |
 
   An entry's Monday M can lie in the stage before its own (an entry of
@@ -186,21 +218,24 @@ and 2):
   COPY-H's plan review, "a correction".) FRESH-2's stage has END = END_F2.
 - **No fill, row or minute at or after the step's END is used.** An exit at
   or after END is "crossing" and marked at END − 1 ms (R8).
-- **A fill file holds its writer's hour** (WAVE-H's H11), so a fill timed in
-  a stage's last seconds can sit in the next stage's first file, which that
-  step does not read. Every exit leg lies at least 62 s after its exit (C4's
-  D), so such a fill can change only the marks of the stage's last minutes.
-  The records of a stage's first file timed before the stage's start are
-  counted when that file is read.
+- **A fill file holds its writer's hour** (WAVE-H's rules, H1), so a fill
+  timed in a stage's last seconds can sit in the next stage's first file.
+  Each store keeps the records of its own files timed in its own window, so
+  such a fill is kept by no store: it is counted when that file is read, the
+  stage's last minute's mark lacks it, and its account's next event shows a
+  chain break (a gap copy, C11). Every exit leg lies at least 62 s after its
+  exit (C4's D), so nothing else of a copy can change (D7; RL1).
 - **Weeks** run Monday 00:00Z to Monday 00:00Z; an entry's **Monday M** is
   the latest Monday 00:00Z at or before t. A UTC day is [00:00Z, +24 h); an
   instant's UTC week is the week that holds it, its UTC month the calendar
   month. Times are a fill's `time` and a funding row's `time`, in ms since
   the epoch, never a file's hour or a writer's clock. A window [a, b)
   includes a and excludes b.
-- To be built in `src/copyh/instants.ts`; pinned by
-  `test/copyh-instants.test.ts` (every instant above; each stage's Mondays;
-  an entry's stage and M 1 ms either side of each boundary).
+- To be built in `src/copyh/instants.ts` (an instant's stage, Monday, UTC
+  day, week and month; the instants themselves are `design.ts`'s, C18;
+  D13); pinned by `test/copyh-instants.test.ts` (every instant above; each
+  stage's Mondays; an entry's stage and M 1 ms either side of each
+  boundary).
 
 ## C2. Who
 
@@ -242,19 +277,29 @@ and 2):
 - **Stops** (exit 5): a listed file missing, differing from its line, or
   failing to decode (`dist/polish/lz4.js`); a UTC day of files (by the
   file's date) with more than 1%, and at least 10, of its records failing the
-  boundary below.
+  boundary below. At step 2 or at FRESH-2's stage a day over the limit is
+  ruled by C0's route as a defect of the boundary: the entry lists the
+  failing records' shapes, the boundary is widened to read what the archive
+  wrote (never narrowed, and nothing else changes), and the pass runs again,
+  before any price of that stage (RH1 (d)).
 - **The boundary** (Zod, Iron Rule 3; `schema.ts`): a record is a `user` and
   its fill object, from a line of either format.
   - `user` is 0x and 40 hex digits, lower-cased when read; `coin` is
     non-empty text; `px` is decimal text above 0; `sz` is unsigned decimal
-    text; `startPosition` is signed decimal text; `side` is "A" or "B";
-    `time` is a safe integer; `crossed` is a boolean; `oid` and `tid` are
-    digits, at most 2^64 − 1, kept as their digits (`JSON.parse`'s
-    `context.source`; code-rules, PAPER-BUILD); `dir` is non-empty text;
-    `liquidation` is optional, {`liquidatedUser`? (0x and 40 hex digits),
-    `method` text}. Other keys are tolerated (`z.object`, never `.strict()`).
-  - **`closedPnl`, `fee` and `builderFee` are dropped by the JSON reviver**
-    before any object holds them, so no line of COPY-H can read them.
+    text and `startPosition` signed decimal text, each of at most 15
+    significant digits (a record with more fails the boundary), so a double
+    holds each exactly (D5); `side` is "A" or "B"; `time` is a safe integer;
+    `crossed` is a boolean; `oid` and `tid` are digits, at most 2^64 − 1,
+    kept as their digits; `dir` is non-empty text; `liquidation` is
+    optional, {`liquidatedUser`? (0x and 40 hex digits), `method` text}.
+    Other keys are tolerated (`z.object`, never `.strict()`).
+  - **`closedPnl`, `fee` and `builderFee` never reach an object:** each is
+    cut, key and value, from a record's bytes before `JSON.parse`; a record
+    whose text the cut cannot settle is parsed with a reviver that drops the
+    three at any depth. So no line of COPY-H can read them. On either path an
+    `oid` or `tid` of 16 digits or more is read from its digits
+    (`context.source`). A record that then does not parse fails the boundary
+    (D1).
   - A record that fails is dropped and counted, never guessed; a line that
     fails its own shape counts its records as failing (one when none can be
     counted).
@@ -264,17 +309,22 @@ and 2):
   with '/'; its `startPosition` is a balance and breaks half its chains,
   s6); builder dexes ('dex:COIN'); outcome operations; records timed before
   ARCHIVE_START or at or after the step's END. In the switch hour's two
-  files a record in both (the same user, coin, `tid` and `time`) counts once
-  [the files are disjoint: external-apis, EXTRACT-BUILD's checks].
-- **`dirs.json`** (written before the freeze from the rehearsal's pass over
-  all of E, C15 (c); values and counts only): every `dir` value of E's
-  main-dex-shaped records, each with its kind, ruled from the value's text
-  alone:
+  files a record found in both (the same user, coin, `tid`, `time`, `side`
+  and `crossed`) counts once, the first file's kept, and is counted. If it is
+  a market trade's taker record the build stops (exit 5) for a ruling before
+  the freeze: the files were measured disjoint (external-apis,
+  EXTRACT-BUILD's checks), and a dropped taker would change a minute's bar
+  (D2).
+- **`dirs.json`** (written before the freeze from the rehearsal's count of
+  each value, C15 (c); the file holds each value and its kind): every `dir`
+  value of E's main-dex-shaped records, each with its kind, ruled from the
+  value's text alone:
   - `trade`: a trader's own order ("Open Long", "Close Short", "Long >
     Short", …);
   - `forced`: "Auto-Deleveraging", "Settlement" and every "Liquidated …"
     value: exits only (C4);
-  - `vault`: "Net Child Vaults" (its account is left out, C2);
+  - `vault`: "Net Child Vaults" (its account is left out, C2, and its
+    records are no market trade, below);
   - `outcome`: an outcome-market operation, left out and counted.
 
   The store keeps each `dir` as written (a dictionary) and reads its kind
@@ -285,27 +335,38 @@ and 2):
   value appended (the only difference), and the step runs again.
 - **`coins.json`** (L2): the main-dex coin list of one `meta` reply of
   Hyperliquid's public info API (`{"type":"meta"}`), stored raw, with its
-  read instant and SHA-256, by the funding fetch at its start (part 0;
-  C9) [OPEN Q12]; in the reply's `universe` order, so that a coin's index
-  **iid** is its position in that list (Hyperliquid's asset id), with its
-  `isDelisted` flag as read. `coins.json` names the reply's instant and
-  SHA-256, and `funding.sha256` lists the reply. [The supervisor's probe of
-  2026-11-25 13:21Z read 235 coins, 56 flagged delisted; WAVE-CHECKS's read
-  of 2026-11-13, 235 and 59: the list is the stored reply's, whatever its
-  counts.] **Append-only:** iid is part of each entry's id, which seeds its
-  delay (C4), so an index never changes and a later `meta` read may only
-  append. **A kept record whose coin is not in the list stops the step**
-  (exit 5); at step 2 or at FRESH-2's stage that stop is ruled by C0's
-  route: the coin appended from a new stored `meta` reply (the only
-  difference), and the step runs again.
+  read instant and SHA-256, by the funding fetch at its start (part 0, its
+  `info/meta.json`; C9); in the reply's `universe` order, so that a coin's
+  index **iid** is its position in that list (Hyperliquid's asset id), with
+  its `szDecimals` and its `isDelisted` flag as read. No rule reads the flag:
+  a delisting is the Settlement record (C6; RL11). `coins.json` is written by
+  `dist\copyh.js coins` from the stored reply, held to the store's manifest
+  (RL7); it names the reply's instant and SHA-256, and `funding.sha256`
+  lists the reply. [The supervisor's probe of 2026-11-25 13:21Z read 235
+  coins, 56 flagged delisted; WAVE-CHECKS's read of 2026-11-13, 235 and 59:
+  the list is the stored reply's, whatever its counts.] **Append-only:** iid
+  is part of each entry's id, which seeds its delay (C4), so an index never
+  changes and a later `meta` read may only append. **A kept record whose
+  coin is not in the list stops the step** (exit 5); at step 2 or at
+  FRESH-2's stage that stop is ruled by C0's route: the coin appended from a
+  new stored `meta` reply (the only difference), and the step runs again.
+  Before the freeze, a kept record of E whose coin the reply lacks stops the
+  rehearsal's pass; the supervisor rules it in a decisions entry from the
+  name alone: the coin is appended after the reply's coins (it has no
+  funding rows), or its records are left out and counted as their own kind
+  (RL5).
 - **Chain heads** (the mapping's one change, measured; L3): one **matching
   event**'s fills — the same user, `oid`, coin and `time` — are split into
-  chains. Taken in the order the pass reads them (files in time order,
-  records in file order), a fill b follows the earliest earlier fill a of
-  its matching event that no fill follows yet and whose `startPosition` plus
+  chains when the account's fills are read (`chains.ts`; the store keeps
+  each fill's own `startPosition`, never its head's). The event's fills are
+  taken in the order of their `startPosition` along the order's side (rising
+  for "B", falling for "A"; the pass's order where two are equal). A fill b
+  follows a fill a that no fill follows yet and whose `startPosition` plus
   its signed size (+`sz` for "B", −`sz` for "A") equals b's `startPosition`
-  **exactly, on the decimal text read as scaled integers**; otherwise b heads
-  a new chain. Every fill takes its chain head's `startPosition`. Why:
+  **exactly, as decimal numbers (scaled integers, never floats)**; when two
+  could precede b, the one earlier in the pass's order does; otherwise b
+  heads a new chain. Every fill takes its chain head's `startPosition` (D3,
+  D4). Why:
   Hyperliquid's `startPosition` is per fill, Polymarket's `previous_size`
   per order event; with chain heads the kit's events are one per matching
   event, as on Polymarket. [s6: 10,539 of 10,541 multi-fill events chained
@@ -314,8 +375,10 @@ and 2):
   the 2025-10-10 21h crash hour, s7.]
 - **Normalized into the kit's `normFill` fields** (`normalize.ts`): t =
   `time`; iid = the coin's index in `coins.json`; oid and tid = their digits
-  as text; **prevS = the chain head's `startPosition` text**, prev =
-  Number(prevS); sgn = +1 for "B", −1 for "A"; px = Number(`px`), q =
+  as text; **prevS = the chain head's `startPosition` as the shortest text
+  of its double** (one text a value, so that the kit's event key cannot
+  split one position in two; D5), prev = Number(prevS); sgn = +1 for "B",
+  −1 for "A"; px = Number(`px`), q =
   Number(`sz`); fee = 0 and pnl = 0 (C5 shows the label does not need pnl);
   taker = `crossed`; liq = an own liquidation leg (`liquidation` present and
   its `liquidatedUser`, lower-cased, equal to the user); forced = liq, or a
@@ -324,34 +387,36 @@ and 2):
   (coin, `tid`, `time`) (external-apis, 2026-11-19: a `tid` alone is not
   unique); the kit's `removalOf` keys trades the same way. **A trade is a
   market trade when its taker record's `liquidation.method` is not
-  "backstop" and its `dir` is neither "Auto-Deleveraging" nor "Settlement"**:
-  the backstop's takeover and the engine's deleveraging and settlement
-  prints are prices no follower could trade at (WAVE-H's H8 and the exam's
-  P7 leave out the backstop's; on 2025-10-10 its legs were up to 54% of a
-  coin's takers; external-apis). The pass gives both records of a trade the
-  reading of its taker record; a record whose trade's other record is in
-  neither its own file nor the next file in order (C15's pairing) reads its
-  own fields, and is counted. [OPEN Q6: "Net Child Vaults" taker records.]
+  "backstop" and its `dir` is none of "Auto-Deleveraging", "Settlement" and
+  "Net Child Vaults"**: the backstop's takeover and the engine's deleveraging
+  and settlement prints are prices no follower could trade at (WAVE-H's H8
+  and the exam's P7 leave out the backstop's; on 2025-10-10 its legs were up
+  to 54% of a coin's takers; external-apis), and a netting inside the
+  protocol's vault is no public trade, whatever its count (the rules
+  review's section 3, Q6). The rehearsal prints the counts (C15 (c) 1). The
+  pass gives both records of a trade the reading of its taker record; a
+  record whose trade's other record is in neither its own file nor the next
+  file in order (C15's pairing) reads its own fields, and is counted.
 - **The store** (COPY-H's own pass, in the analyzer's proven form, with no
   new dependency):
   - **`fills`**: every kept record of the step's files: `time`, iid,
-    `user`, `px`, `sz`, `side`, `startPosition` exactly (its text, or a
-    scaled integer that gives the text back) and its chain head's, `oid`
-    and `tid` (u64), `crossed`, the liquidation (none, own or counterparty)
-    and its `method`, the `dir` (a dictionary), the trade's market reading,
-    and the record's order in the pass. Partitioned by account bucket (the
+    `user`, `px`, `sz`, `side`, `startPosition` as a double (exact: the
+    boundary's 15 digits; D5), `oid` and `tid` (u64), `crossed`, the
+    liquidation (none, own or counterparty) and its `method`, the `dir` (a
+    dictionary), the trade's market reading; an account's rows in `time`
+    order, equal times in the pass's order (files in time order, records in
+    file order), each with its file (D6). Partitioned by account bucket (the
     address's last two hex digits: 256) and UTC month.
   - **`bars`**: each main-dex coin's minute, from its market trades' taker
     records only (one taker record a trade): the trades, Σ sz, Σ px·sz, the
     **last price** (the taker record latest in `time`, ties in the pass's
     order; M7), the opposite-side pairs' relative-gap sum and count (C9),
-    and the left-out taker records' count by cause (backstop, ADL,
-    Settlement; M1's print). Partitioned by coin and UTC month.
+    the left-out taker records' count by cause (backstop, ADL, Settlement,
+    "Net Child Vaults"; M1's print), and the Settlement records' Σ sz and
+    Σ px·sz (RM4). Partitioned by coin and UTC month.
   - One part a file: a stopped pass resumes from whole parts; the manifest
     is written last. Each step builds its store twice (C15).
-  - A minute that two stores' records share (a stage's last minute, C1)
-    takes both: counts and sums added, the last price the later one; a pair
-    across the two stores is not counted.
+  - No minute and no pair is shared by two stores (C1; D7).
 - **Holes:** a **hole** is a stretch of 60 s or more inside [ARCHIVE_START,
   END) with no record of any coin, from the union of every file's record
   times, so that a gap between files counts (as the exam's P8) [the switch
@@ -364,22 +429,26 @@ and 2):
 - To be built in `src/copyh/schema.ts`, `coins.ts`, `dirs.ts`, `chains.ts`,
   `normalize.ts`, `market-trades.ts`, `pass.ts`, `writers.ts`, `store.ts`
   and `holes.ts`; pinned by `test/copyh-schema.test.ts` (each field's
-  refusal; the reviver drops the three fields before any object holds them;
-  an id above 2^53; the 1% day stop at both sides), `test/copyh-coins.test.ts`
+  refusal; both paths drop the three fields before any object holds them; a
+  value of 16 significant digits refused; an id above 2^53; the 1% day stop
+  at both sides), `test/copyh-coins.test.ts`
   (the kept and left-out kinds; a coin outside the list stops; an appended
   list keeps every index), `test/copyh-dirs.test.ts` (each kind; a value
-  outside the list stops), `test/copyh-chains.test.ts` (one chain; several
-  chains in one matching event; two heads with one text; a fill that
+  outside the list stops), `test/copyh-chains.test.ts` (one chain; a chain
+  the archive lists out of order; several chains in one matching event; two
+  heads with one text; a fill that
   continues nothing; values `toPrecision(12)` would equate and scaled
   integers do not; an event split by a file boundary; a large close in
   hundreds of fills whose float sum leaves a residue, L3),
   `test/copyh-normalize.test.ts` (every field, an own and a counterparty
   liquidation leg, each forced `dir`), `test/copyh-market-trades.test.ts`
-  (a backstop's taker and maker legs, an ADL and a Settlement record on
-  either side, a market liquidation's legs kept, a trade split across two
-  files, the shared `tid` of two trades) and `test/copyh-pass.test.ts`
-  (both formats; the switch hour; a resumed pass equal to an unbroken one; a
-  bit flipped in one part caught; rows conserved; the holes).
+  (a backstop's taker and maker legs, an ADL, a Settlement and a "Net Child
+  Vaults" record on either side, a market liquidation's legs kept, a trade
+  split across two files, the shared `tid` of two trades) and
+  `test/copyh-pass.test.ts` (both formats; the switch hour, its duplicate
+  counted once and a duplicated market taker stopping the build; a resumed
+  pass equal to an unbroken one; a bit flipped in one part caught; rows
+  conserved; the holes).
 
 ## C4. Events, cycles, entries, delay — R4 unchanged
 
