@@ -50,9 +50,10 @@ One bps is 0.01%. "± x" is one standard error.
   to seven years of new data. Stopping the polishing was right. Look 2 cannot change it: the new days would
   have to average about +300 to +500 for a yes.
 
-**The one habit to change.** Three careful tests in a row could not give a clear answer, and each time that
-could be seen before the build. From now on the first page of every plan should say the most likely result,
-and the chance of a clear yes or no. Build only when a clear answer is more likely than not.
+**The one habit to change.** WAVE-H and the exam were built with great care and could not give a clear
+answer, and each time that could be seen before the build. Look 2 would be the third. From now on the first
+page of every plan should say the most likely result, and the chance of a clear yes or no. Build only when a
+clear answer is more likely than not.
 
 **The road**
 
@@ -112,8 +113,9 @@ folder).
 - **Not checked:** how many of MAIN's copies sit in the two markets after their split days; whether the
   split events carry a numeric instrument id (without one, R6 takes every equity market out of the primary
   cells while the event is listed); whether more such days have come since 2026-11-24.
-- **Why it matters:** a WITHHELD on 2026-12-19 for a mechanical reason would be the third "the data could
-  not answer" in a row. The hole does not heal, so it would return at every look.
+- **Why it matters:** a WITHHELD on 2026-12-19 for a mechanical reason would be the third reading in a row
+  that settles nothing, after WAVE-H's NOT SETTLED and look 1's WITHHELD. The hole does not heal, so it
+  would return at every look.
 - **Recommendation:** count now, from the daily log's summary line (`daily.ts` lines 257–259 print the split
   events and the copies unpriced by them) and the page's unpriced counts. Those are counts, not results.
   Then a dated ruling before 2026-12-19: accepted as it is, with the arithmetic written down, or a defect
@@ -185,10 +187,11 @@ crash during this review moved it up.
 - **Handled well on 2026-11-20:** each fault was traced to one bit (decisions 2026-11-20, "LOOK 1 PAUSED":
   mantissa bit 22, exponent bit 55); nothing wrong was kept; FRESH was built twice and held equal; the
   reproduction ran again; independent code recomputed the look.
-- **What stayed true after it:** four events in one night under the heaviest load (a file misread after its
-  checksum, the collector's 0xC0000374, two flips), on four modules from two kits. The test that passed was
-  Windows' standard one, 39 minutes at rest (decisions 2026-11-24). The record's own words: such a setup
-  "passes normal use and can slip under long heavy load" (decisions 2026-11-20, "the memory test").
+- **What stayed true after it:** four events in one day, on four modules from two kits. A file misread
+  after its checksum and the collector's 0xC0000374 came in the night's heaviest load. The two flips came in
+  the afternoon's reproduction runs, for which the rule was "Nothing heavy runs beside them" (decisions
+  2026-11-20, "THE EXAM IS FROZEN" and "LOOK 1 PAUSED"). So heavy load was not the whole of it. The test that
+  passed was Windows' standard one, 39 minutes at rest (decisions 2026-11-24).
 - **Today** (the System log, read 12:24Z): "The computer has rebooted from a bugcheck. The bugcheck was:
   0x0000000a (0x0000000000000028, 0x0000000000000002, 0x0000000000000000, 0xfffff80378e1ec76)", with a dump
   in `C:\WINDOWS\Minidump\112526-6578-01.dmp`; the shutdown at 12:15:41Z "was unexpected". It is the only
@@ -199,8 +202,9 @@ crash during this review moved it up.
   memory can both do that, and the dump names the module. Until it is read, this is "the PC is not stable",
   not "the memory again". It came one day after the test's "detected no errors", and I do not know what
   else ran in that minute.
-- **By the owner's own rule the trigger has fired again:** "… or the collector crashes again. Then the owner
-  runs Windows Memory Diagnostic before the work goes on" (decisions 2026-11-20, "the memory test").
+- **The owner's own rule covers it:** the trigger was "… or the collector crashes again. Then the owner
+  runs Windows Memory Diagnostic before the work goes on" (decisions 2026-11-20, "the memory test"), and a
+  PC that stops takes the collector with it.
 - **At risk:**
   - every crash is a hole in the recordings that can never be filled, and a file being written can be torn
     (this report was saved a minute before the crash and is whole; `git fsck` at 12:24Z is clean);
@@ -427,8 +431,8 @@ differences, each inside its own error.
 **Where bias still got in**
 
 1. **Only one kind of error was budgeted.** Every budget (5% over three looks, 1% over two, 3.7% for the
-   search) guards against a false yes. Nothing guarded against "could not tell", which is what happened
-   three times (H3).
+   search) guards against a false yes. Nothing guarded against "could not tell", which is what happened at
+   WAVE-H and at look 1, and is the likely word of look 2 and of December (H3, H4, section 6).
 2. **Selection inside months already looked at** (M1), and the 715 cut after the review showed where the
    gain sat (M8). Both were recorded as such; both raised hope and cost power.
 3. **Concentration** (M2): a mean over positions when five events carry it.
@@ -497,7 +501,8 @@ differences, each inside its own error.
   ten weeks.
 - A "no" there closes copying on both venues. A "yes" gives v1 a purpose. Both are worth having, which no
   wave test could offer.
-- It reuses the extraction that is already built and trusted.
+- It builds on what is already built and trusted: the pass over the raw files, the store's format and its
+  gates. It needs a new pass, for every account's fills (the plan page's COPY-H row).
 - **The condition:** its plan shows, from counts and before any outcome, that a clear yes or no is more
   likely than not (H3). If it cannot see +10 bps a copy, the paper experiment's own line, it should not be
   built.
