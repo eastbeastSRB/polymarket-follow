@@ -1,5 +1,50 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the owner's rulings — COPY-H'S PLAN APPROVED): **"i agree with
+everything, let's proceed with your suggestion. let's start." THE PLAN
+(`83ac6ba`) IS APPROVED WITH EVERY FIX OF ITS REVIEW (`dda8d38`). THE BUILD
+STARTS, WITH ITS INDEPENDENT PARTS IN PARALLEL.**
+
+The eight rulings, as the supervisor recommended:
+1. **The plan is approved with all the review's fixes,** H1–H2, M1–M9 and
+   L1–L9, written into the rules exactly.
+2. **H1: the edge over the market decides beside the money.**
+   - x′ = d − the copy's own 24-hour cost, with SE′ the larger of the
+     two-way errors by UTC day and by UTC week.
+   - DROP needs m + z·SE < +10 and m′ + z·SE′ < +10.
+   - KEEP needs m − z·SE > 0 and m′ − z·SE′ > 0, plus the two sign
+     conditions and M6's thin-tape mean.
+   - The same pair holds at the choice, the confirmation and the seal.
+3. **H2 (a): the owner's filter rounds run whatever look 1 says.** The at
+   most two tries chosen are the only variants ever judged.
+4. **The stop rule's "after COPY-H's one look"** now reads "after COPY-H's
+   step 2", the hybrid's confirmation (WORKFLOW amended the same day).
+5. **The funding fetch:** settled `fundingHistory` for every main-dex coin
+   (`meta`: 235, 56 delisted; about 6,100–6,700 keyless reads, about 230 MB,
+   3.7–8 hours at half budget, in sessions with a safety stop). Approved
+   under Iron Rule 1, Hyperliquid's public read-only info API.
+6. **The bar:** δ = +10 bps a copy on Hyperliquid's base-tier taker costs
+   (4.5 bps a leg), with the break-even round trip printed. Propr's fees are
+   Hyperliquid's (decisions 2026-11-25, PROP-FIRM-FACTS).
+7. **FRESH-2's window** is fixed now at 26 weeks, [2026-11-16, 2027-05-17).
+   It stays unseen until a yes needs confirming.
+8. **The planner's slice rows** (888 hourly files with fill prices, 257 MB,
+   in its scratch `COPY-H-PLAN\out\w2025\`): deleted by the supervisor at
+   16:28Z. Nothing was computed from them; the counts' outputs stay.
+
+**The build's first parts, started in parallel:**
+- **COPYH-RULES** writes `apps/poller/copyh/rules.md` (C0–C17 with every
+  fix and ruling), and then gets its fresh rules review.
+- **COPYH-FUNDING** (part 0): the fetch tool's funding mode for COPY-H's
+  coins, its tests, then the fetch in sessions.
+- **COPYH-STORE** (parts 1–2): the readers, the seal, the gate, and the
+  pass and store of every main-dex account's perp fills, built twice and
+  held equal.
+
+The later parts follow the plan's section 7: the copy engine and the
+rounds' runner; the reproduction and the rehearsal; the reviews and the
+freeze; look 1; the rounds; look 2.
+
 2026-11-25 (the supervisor — COPY-H's PLAN REVIEW): **"APPROVE AFTER THESE
 FIXES". 2 HIGH, 9 MEDIUM, 9 LOW; NONE ASKS FOR A NEW PLAN. NO MONTH THAT
 CHOOSES ALSO JUDGES.**
