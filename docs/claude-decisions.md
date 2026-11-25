@@ -1,5 +1,63 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's RULES REVIEW): **"MAY FREEZE AFTER
+THESE FIXES". 1 HIGH, 8 MEDIUM, 13 LOW; NO NEW DESIGN. TWO ITEMS ARE THE
+OWNER'S (RM3, RM4).**
+
+**The review:** `docs/reviews/copyh-rules-review-2026-11-25.md` (`4588143`).
+- COPYH-RULES-REVIEW: Fable 5.2, max, 17:11–17:55Z and 21:12–21:17Z after
+  a usage-limit stop. Context peak 637k. Read only; no data, no network.
+- `copyh/rules.md` is unchanged (`f4067942…00ae`).
+- **What it confirmed:**
+  - all 20 plan-review fixes and the owner's eight rulings are in the text;
+  - no choosing month judges; nothing is priced before the freeze but a
+    hash; FRESH-2 is unseen;
+  - the paper's rules are mapped without a silent change;
+  - every bar is recomputed equal;
+  - MAIN's 32 states each have one reading.
+- **RH1:** seven stops could first fire after look 1's result. Each gets
+  written outcomes now, and C17 says a stop after the freeze has two
+  outcomes only: run again unchanged, or not run with its months sealed.
+  - It includes EXITS_MAX = 20,000,000 (the kit's exit rows) in place of
+    EVENTS_MAX;
+  - the heap is a ceiling a later step may raise, never lower.
+- **RM1–RM8:**
+  - a try's readings completed;
+  - freeze lists asked for by content, not by number;
+  - **RM3 side filters (the owner's)**;
+  - **RM4 copies open at a delisting (the owner's)**;
+  - the funding from M₀ with every window listed;
+  - the known-answer test gains d and the market object;
+  - FRESH-2's seal and stage;
+  - the file closes when the rehearsal first runs on real months.
+- **RL1–RL13:** wording and C18 rows.
+- **COPYH-STORE's 15 differences:** it agrees with all 15 and gives their
+  wording (its section 4). It lists 23 mismatches with the code, most of
+  them parts not built yet.
+
+**The supervisor's rulings on its technical questions (3–10)**, all as it
+recommends:
+- **Q3:** EXITS_MAX = 20,000,000.
+- **Q4:** a try is data (`copyh/tries.json`), not code.
+- **Q5:** d in the known-answer test.
+- **Q6:** all 15 of the analyzer's sample days on E, written into C18.
+- **Q7:** the kit's own panel path, held to its pinned hash.
+- **Q8:** the build's fix-check computes H1's ratio, and the file closes
+  at the rehearsal's first real run.
+- **Q9:** one line in C15 for the `burnin` range.
+- **Q10:** the calibration against books only if WAVE-H's reader serves it
+  unchanged.
+
+**For the owner** (asked the same day):
+- **RM3:** filters by side are not allowed, recommended; longs and shorts
+  stay printed apart.
+- **RM4:** copies still open when their coin is delisted are valued at the
+  settlement price, flagged, and printed with and without, recommended;
+  the alternative drops them as the paper does.
+
+**Next:** the rules' fix round. COPYH-RULES, resumed, applies RH1, RM1–RM8,
+RL1–RL13, D1–D15 and the owner's two rulings. Then a short fix-check.
+
 2026-11-25 (the supervisor — COPY-H's RULES DRAFTED; THEIR FRESH REVIEW
 STARTS): **`apps/poller/copyh/rules.md`, C0–C18, 1,239 lines, SHA-256
 `f40679423fa6f11d2a66f418ecd14605d33a1919eb2a5000ed026a86661100ae`, IS
