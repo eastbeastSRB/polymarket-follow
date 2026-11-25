@@ -25,3 +25,19 @@ export const CLOSED_WINDOWS: readonly (readonly [number, number])[] = [
 ];
 /** A part is planned to last at most this long (C15, C18); a run starts no new work after one minute less, so that the work in flight ends inside it. */
 export const PART_MINUTES = 15;
+
+/** `sz` and `startPosition` are kept as doubles only when their decimal text has at most this many significant digits, so that the double gives the value back exactly (C3; the supervisor's ruling 5). */
+export const EXACT_DIGITS = 15;
+/** The `dir` values and the liquidation method that make a trade no market trade (C3, M1). */
+export const ADL_DIR = "Auto-Deleveraging";
+export const SETTLEMENT_DIR = "Settlement";
+export const BACKSTOP_METHOD = "backstop";
+/** A UTC day of files whose records fail the boundary in more than this share, and at least this many, stops the step (C3). */
+export const FAIL_SHARE = 0.01;
+export const FAIL_LEAST = 10;
+/** The fills' account buckets: the address's last two hex digits (C3). */
+export const BUCKETS = 256;
+/** A hole: a stretch of at least this long with no record of any coin (C3). */
+export const HOLE_MS = 60_000;
+/** A spread pair: two consecutive market-trade taker records of opposite sides at most this far apart (C9). */
+export const PAIR_MS = 2_000;
