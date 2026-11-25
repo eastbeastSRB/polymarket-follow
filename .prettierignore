@@ -20,3 +20,5 @@ apps/poller/waveh
 apps/poller/polish
 # "The crash side only", one frozen page: hashed at its commit (decisions 2026-11-25).
 apps/poller/crashside
+# COPY-H's frozen files (its rules, coin and dir lists, data and funding lists): hashed at its freeze.
+apps/poller/copyh
