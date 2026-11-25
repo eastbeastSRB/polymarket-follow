@@ -11,9 +11,10 @@ NOT SETTLED (2026-11-17). The polishing (a sharpened rule chosen on WAVE-H's
 10 months, then one exam on FRESH's months) chose its rule on 2026-11-19:
 B0 + W4, with the owner's 715 cut deciding and a safety net to N. Its exam
 is FROZEN (2026-11-20, `polish/FROZEN.sha256`, tag `polish-freeze-1`).
-Look 1 is PAUSED by the owner for a few days: its reproduction by the
-frozen program was stopped twice by a single flipped bit in the PC's
-memory, each caught by the program's own check. FRESH is unopened.** The plan is the plan
+Look 1 on FRESH ran 2026-11-24/25: **WITHHELD** (11.6% of the 715 line's
+3,078 positions not priced cleanly; the 3,000 priced +4.5 ± 91.7 bps). Its
+Final review with independent code says the verdict stands. By the frozen
+rules the exam goes on to look 2 (about 2027-02-08).** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -71,12 +72,15 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
       commit `13dc55c`, annotated tag `polish-freeze-1` (pushed). The gate
       says ok. The frozen state's `pnpm verify` counts 822 passed + 6
       skipped.
-    - **Look 1's reproduction** by the frozen program, from the run
-      worktree `E:\coding\polymarket-follow-polish-run` (detached at the
-      tag, fingerprint `4c9e5c9d…`): two runs crashed (exit 1), each on a
-      single-bit flip in a `tid` half (decisions 2026-11-20, "LOOK 1
-      PAUSED"). Their folders are `ANALYZER\look1-repro-crash1\` and
-      `…-crash2\`; `ANALYZER\FRESH` holds `logs\` and `placebo.json` only.
+    - **Look 1** (decisions 2026-11-24 and 2026-11-25): the reproduction
+      passed (resumed from whole parts after two memory-flip crashes);
+      FRESH was built twice, the builds equal; the integrity was exact; the
+      715 line decided (25 days, 38 coins); then the books and step 2:
+      WITHHELD. Its files are in `ANALYZER\FRESH\look1\`. The report and
+      Final review are `docs/reviews/polish-exam-look1-2026-11-25.md`.
+    - **Why so much went unpriced:** the archive's `l2Book` snapshot
+      cadence thinned through 2026, so legs fell to the tape
+      (external-apis).
 - **The operating budget is 250 weighted tokens a minute, all callers
   together, never more than 30 in a burst** (decisions 2026-11-07). The
   analyzer reads only local files.
@@ -85,24 +89,23 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The pause** (the owner, 2026-11-20): nothing heavy and no step 1
-   until the owner is back. Then the memory test (Windows Memory
-   Diagnostic; the owner's rule, "if it is break again") and a Windows
-   restart. Step 1's gate needs only a passed `repro.json` by the
-   program's fingerprint, so the run worktree's dist is never rebuilt
-   meanwhile. The archive's books never expire.
-2. **Look 1** (rules.md P15), the supervisor's runs, one at a time, with
-   nothing heavy beside them: `reproduce` by the frozen program into
-   `ANALYZER\FRESH` again; step 1 (FRESH
-   built twice and held equal, its integrity, the counts, read with
-   `counts.tripwire.share` against the 5%; exit 5, books needed; about 75%
-   chance of one exit 6 at the pairing check first, by H0's route); the
-   books (`node tools\waveh-fetch.cjs --fresh --books
-   ANALYZER\FRESH\look1\books-needed.txt --store <FRESH_STORE> --heartbeat
-   <the collector's heartbeat>`); step 2 (`result.json` first). Then the
-   report and a Final review with independent code. Look 2 about
-   2027-02-08, a later build under its own freeze (rules.md P1), with the
-   rehearsal again before it.
+1. **The owner's talk after look 1:** what next for the project. Covers:
+   - the supervisor's recommendation: stop polishing the wave rule, keep
+     the frozen tests running, make v1 the main work, and give "crash side
+     only" one frozen test;
+   - whether look 2 runs (list FRESH-2's `l2Book` sizes first, metadata
+     only);
+   - the cleanups (deletions need the owner's yes);
+   - the AI items and Fable 5.2's cold review.
+2. **Look 2** (about 2027-02-08; rules.md P1, P15), if it runs: FRESH-2
+   downloaded, a later build under its own freeze, the rehearsal again
+   first. Then, as at look 1:
+   - the reproduction;
+   - step 1 (two builds held equal, the integrity, the counts);
+   - the books (`tools\waveh-fetch.cjs --fresh --books`, started by a cmd
+     like the supervisor's `verify/POLISH-LOOK1/look1-books.cmd`);
+   - step 2;
+   - the report and a Final review with independent code.
 3. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
    MARKET-1 run is live (rules.md M2).
 4. **The daily runs:** the supervisor checks each program's log, budget and
@@ -119,17 +122,19 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Last session (2026-11-20, the supervisor)
 
-The exam was frozen (`13dc55c`, tag `polish-freeze-1`; decisions `f9e6012`).
+Look 1 ran to its verdict, 2026-11-24/25.
 
-Look 1's reproduction ran twice from the run worktree and crashed twice,
-each time on a single flipped bit in a `tid` half: mantissa bit 22, then
-exponent bit 55 (the supervisor's `verify/POLISH-LOOK1/crash1/bitflip-any.mjs`).
+- **The memory test** detected no errors.
+- **The reproduction** passed, resumed from run 2's whole parts, with 0
+  differences from 2026-11-20.
+- **Step 1:** two equal builds; exact integrity; the 715 line decided.
+- **The books:** one stop for the day at the US stock open (timing-only
+  audit dips), then done.
+- **Step 2:** WITHHELD.
+- **POLISH-EXAM-REVIEW** recomputed it with independent code: the verdict
+  stands. It traced the unpriced legs to the archive's thinning book
+  cadence.
 
-- **The fault is the machine's, not the code's or the data's:** the reader
-  code has not changed since the reproduction that passed this morning on
-  the same inputs.
-- **A real Windows restart** (15:09Z) between the runs did not cure it.
-- **The owner** keeps the RAM at 3600 and paused the exam for a few days.
-
-Recorded: decisions "LOOK 1 PAUSED", and the plan page's polishing row and
-Q4 line. Nothing of FRESH was opened.
+Recorded: decisions `8d9e094`, `4f44b38`, `12d7e9a`; the plan page; and
+external-apis (the cadence). The owner's word: "Crash side only" is
+recorded for later.
