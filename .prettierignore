@@ -18,3 +18,5 @@ apps/poller/market1
 apps/poller/waveh
 # The exam's frozen files (its rules, cuts, lists of FRESH's files and one-sided trades): hashed at its freeze.
 apps/poller/polish
+# "The crash side only", one frozen page: hashed at its commit (decisions 2026-11-25).
+apps/poller/crashside

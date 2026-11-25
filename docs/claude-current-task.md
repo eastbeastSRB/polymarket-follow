@@ -103,9 +103,9 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
    the copies the two stock-split days touch, and prepare a fix by R0's
    route (5 failed reads in a row end a run). Applied only on the owner's
    yes, before the look of 2026-12-19.
-3. **"The crash side only":** one frozen page with the plan gate's
-   arithmetic, before anyone looks at FRESH-2's months. Nothing is built
-   unless it can answer.
+3. **"The crash side only":** frozen as one page,
+   `apps/poller/crashside/rules.md` (`a2495d0`, `b8295eb6…afd6`). Its gate
+   fails, so it is not built; the question is looked at again on 2027-05-08.
 3. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
    MARKET-1 run is live (rules.md M2).
 4. **The daily runs:** the supervisor checks each program's log, budget and

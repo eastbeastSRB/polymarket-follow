@@ -1,5 +1,52 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — "THE CRASH SIDE ONLY" FROZEN AS ONE PAGE; NOT
+BUILT): **`apps/poller/crashside/rules.md`, COMMIT `a2495d0`, SHA-256
+`b8295eb6d5bd73c07743cea289d3c15728ca4b465a6db430371051c2477aafd6`, FROZEN
+BEFORE FRESH-2 EXISTS ON DISK. ITS PLAN GATE FAILS, SO IT IS NOT BUILT AND
+IS LOOKED AT AGAIN ON 2027-05-08.**
+
+**The page** (CRASH-SIDE-PAGE, Opus 5.5, max, 12:52–13:27Z; context
+measured at its report):
+- **The rule:** the exam's 715 line, slices 0–19, only the positions
+  entered on a forced sell (dir +1). Entries are still placed over both
+  sides; there is no safety net.
+- **The months:** FRESH-2, 2026-11-16 → END 2027-11-16, with one look from
+  about 2027-11-18.
+- **The price:** every leg at the tape, H8's walk over [x, x + 1 h); no
+  `l2Book`. A coverage check at step 1 reads WITHHELD above 5%, before any
+  price.
+- **The verdict:** P11's ladder at the exam's one-look bars (z 2.6533,
+  LIKELY 2.2126).
+- **The gate** (from look 1's report: 2,715 forced-sell positions on 21 of
+  91 days, an SE of about 106.3/√months): a clear answer in 12 months
+  comes 52% of the time at a true +83, 16% at +50, 7% at +25 and 16% at 0.
+  Weighted alike: 22.5% at 12 months.
+
+**The supervisor's rulings on its questions:**
+1. **The rounding slip** stays in the page and is corrected here: S5's
+   "+83 / 18 months 75%" is 74.495%, and the weighted 12-month figure is
+   22.500%. They change nothing.
+2. **`apps/poller/crashside` joined `.prettierignore`** beside the other
+   frozen folders, so a formatter cannot change the hash.
+   `prettier --check .` is green.
+3. **The tape over one hour, and z from the exam's bars:** accepted as
+   written.
+4. **F8's book condition** is replaced by the mean of positions with no
+   depth-short leg: accepted.
+5. **The gate is judged at +50,** or the four alike, not at the +83 picked
+   after the look. **It fails, so it is not built** (the owner's ruling
+   item 8; WORKFLOW's plan gate).
+6. **FRESH-2** may still confirm a COPY-H "yes", because copies are not
+   this page's positions. Any print of FRESH-2's crash-hour moves would be
+   a look at this page's months, and its plan must say so.
+7. **Done:**
+   - the plan page's crash-side bullet points to the page, "not built",
+     2027-05-08;
+   - current-task's item 3 is done;
+   - the page's arithmetic scripts read no file, so they fit "no program
+     run".
+
 2026-11-25 (the supervisor — PROP-FIRM-FACTS): **OF TWELVE FUNDED-TRADING
 FIRMS WITH CRYPTO, ONE, PROPR, PERMITS IN ITS OWN TERMS COPYING FROM AN
 OUTSIDE ACCOUNT, AND IT TRADES HYPERLIQUID'S PERPS AT HYPERLIQUID'S FEES.
