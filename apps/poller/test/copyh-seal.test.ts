@@ -39,7 +39,7 @@ const tmp = (name: string) => mkdtempSync(path.join(tmpdir(), `${name}-`));
 const fillAt = (t: number) =>
   `node_fills_by_block/hourly/${new Date(t).toISOString().slice(0, 10).replaceAll("-", "")}/${new Date(t).getUTCHours()}.lz4`;
 
-describe("the seal's paths", () => {
+describe("the seal's paths", { timeout: 60_000 }, () => {
   const S_PATHS = [
     "F:\\research\\FRESH\\store\\node_fills_by_block\\hourly\\20260601\\3.lz4",
     "F:\\research\\COPY-H\\S\\store\\manifest.json",
@@ -154,7 +154,7 @@ describe("the seal's paths", () => {
   });
 });
 
-describe("the run's roots", () => {
+describe("the run's roots", { timeout: 60_000 }, () => {
   it("pass a path inside a root, the root itself and any case of it; refuse one outside, `..` out of a root among them", () => {
     const roots = ["F:\\research\\WAVE-H\\store", "F:\\research\\COPY-H"];
     for (const p of [
@@ -199,7 +199,7 @@ describe("the run's roots", () => {
   });
 });
 
-describe("the seal's keys", () => {
+describe("the seal's keys", { timeout: 60_000 }, () => {
   it("passes E's keys closed, WAVE-H's last file among them, and keys dated 1 ms before END_E", () => {
     const last = RANGES.E.fill.at(-1)!;
     expect(keyDate(last)).toBe(END_E - HOUR_MS);

@@ -19,7 +19,12 @@ import type { Seal } from "./seal.js";
 export const FROZEN_FILE = "copyh/FROZEN.sha256";
 
 /** The compiled files of other programs that COPY-H's imports reach, exactly (test/copyh-gate.test.ts walks them). */
-export const COPYH_CLOSURE = ["dist/waveh/instants.js", "dist/waveh/keys.js"];
+export const COPYH_CLOSURE = [
+  "dist/polish/lz4.js",
+  "dist/polish/tables.js",
+  "dist/waveh/instants.js",
+  "dist/waveh/keys.js",
+];
 
 /** lz4js 0.2.0's files (WAVE-H's decoder, behind its pinned hashes). */
 export const LZ4JS_FILES = ["lz4.js", "util.js", "xxh32.js"].map(

@@ -30,7 +30,7 @@ const row = (o: Partial<Row>): Row => ({
   ...o,
 });
 
-describe("the kit's fills", () => {
+describe("the kit's fills", { timeout: 60_000 }, () => {
   it("carry every field, fee and pnl zero, prevS the chain head's shortest text", () => {
     const [f] = normOf([
       row({

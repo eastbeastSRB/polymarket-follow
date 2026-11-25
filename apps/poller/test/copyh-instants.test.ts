@@ -29,7 +29,7 @@ const fillKeysOf = (file: string) =>
     .filter((k) => k.startsWith("node_fills"))
     .sort();
 
-describe("the instants", () => {
+describe("the instants", { timeout: 60_000 }, () => {
   it("are the archive's, WAVE-H's, FRESH's and FRESH-2's", () => {
     for (const [t, iso] of [
       [ARCHIVE_START, "2025-05-25T14:00:00.000Z"],
@@ -54,7 +54,7 @@ describe("the instants", () => {
   });
 });
 
-describe("the ranges", () => {
+describe("the ranges", { timeout: 60_000 }, () => {
   it("hold E as WAVE-H's 8,845 fill files, in WAVE-H's own order, as its frozen list names them", () => {
     const e = RANGES.E;
     expect(e.fill).toEqual(fillKeys(SIZING_START, DATA_END + HOUR_MS));

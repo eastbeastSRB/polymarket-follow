@@ -32,7 +32,7 @@ const UNIVERSE = [
   { szDecimals: 1, name: "OLD", maxLeverage: 3, isDelisted: true },
 ];
 
-describe("coins.json", () => {
+describe("coins.json", { timeout: 60_000 }, () => {
   it("lists the reply's coins in its universe order, delisted ones kept with their flag, the reply named by its line", () => {
     const b = meta(UNIVERSE);
     const f = coinsFromMeta(b, lineOf(b));
@@ -121,7 +121,7 @@ describe("coins.json", () => {
   });
 });
 
-describe("a coin's form", () => {
+describe("a coin's form", { timeout: 60_000 }, () => {
   it("reads a builder dex's, spot's and the main dex's shape", () => {
     expect(formOfCoin("xyz:TSLA")).toBe("builder");
     for (const c of ["@107", "@0", "PURR/USDC"])

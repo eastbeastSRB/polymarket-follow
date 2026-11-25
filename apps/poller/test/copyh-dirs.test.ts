@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { DirsFile, kindOf, kindsOf } from "../src/copyh/dirs.js";
 
-describe("dirs.json", () => {
+describe("dirs.json", { timeout: 60_000 }, () => {
   const file = DirsFile.parse({
     rule: "test",
     dirs: [

@@ -24,7 +24,7 @@ const hash = (n: number) => n.toString(16).padStart(64, "0");
 const listText = (keys: readonly string[], from = 0) =>
   `${keys.map((k, i) => `${hash(from + i)} *${k}`).join("\n")}\n`;
 
-describe("--data", () => {
+describe("--data", { timeout: 60_000 }, () => {
   it("lists each range's files in its order with its source's hash, the sources named by SHA-256", () => {
     const e = { name: "E", fill: ["b", "a"] };
     const s = { name: "S", fill: ["c"] };

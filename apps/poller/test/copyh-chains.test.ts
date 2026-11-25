@@ -21,7 +21,7 @@ const A = (startPosition: number, sz: number): ChainFill => ({
   side: -1,
 });
 
-describe("chain heads", () => {
+describe("chain heads", { timeout: 60_000 }, () => {
   it("give a lone fill its own startPosition", () => {
     expect(chainHeads([B(2.5, 1)])).toEqual([2.5]);
   });

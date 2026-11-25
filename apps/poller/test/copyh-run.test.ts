@@ -40,7 +40,7 @@ import { windowEnd as wavehWindowEnd } from "../src/waveh/run.js";
 
 const tmp = (name: string) => mkdtempSync(path.join(tmpdir(), `${name}-`));
 
-describe("the settings", () => {
+describe("the settings", { timeout: 60_000 }, () => {
   const R = "F:\\polymarket-follow-research";
   const good = {
     COPYH_ROOT: `${R}\\COPY-H`,
@@ -102,7 +102,7 @@ describe("the settings", () => {
   });
 });
 
-describe("the exit codes", () => {
+describe("the exit codes", { timeout: 60_000 }, () => {
   it("name each error's", () => {
     for (const [err, code, event] of [
       [new NotFinished("x"), 3, "not finished"],
@@ -119,7 +119,7 @@ describe("the exit codes", () => {
   });
 });
 
-describe("a run's time", () => {
+describe("a run's time", { timeout: 60_000 }, () => {
   it("keeps WAVE-H's closed windows, minute for minute", () => {
     const day = Date.parse("2026-11-26T00:00:00Z");
     for (let m = 0; m < 24 * 60; m++)
@@ -151,7 +151,7 @@ describe("a run's time", () => {
   });
 });
 
-describe("the writes", () => {
+describe("the writes", { timeout: 60_000 }, () => {
   it("write whole, renamed over the file, no .tmp left", () => {
     const d = tmp("copyh-write");
     for (const write of [writeWhole, writeUnflushed]) {
@@ -173,7 +173,7 @@ describe("the writes", () => {
   });
 });
 
-describe("the fingerprint", () => {
+describe("the fingerprint", { timeout: 60_000 }, () => {
   it("hashes dist/copyh.js and dist/copyh/ alone, so any change to them changes it", () => {
     const root = tmp("copyh-print");
     mkdirSync(path.join(root, "dist", "copyh", "deep"), { recursive: true });

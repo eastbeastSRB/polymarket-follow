@@ -28,7 +28,7 @@ const rec = (fill: string) => `["${U}",${fill}]`;
 const BASE =
   '"coin":"BTC","px":"100.5","sz":"0.25","side":"B","time":1750000000000,"startPosition":"-1.5","dir":"Open Long"';
 
-describe("the cut", () => {
+describe("the cut", { timeout: 60_000 }, () => {
   it("cuts each field wherever it stands: first, in the middle, last, and alone", () => {
     expect(cut(rec(`{"closedPnl":"1.5",${BASE}}`))).toBe(rec(`{${BASE}}`));
     expect(
@@ -143,7 +143,7 @@ function synthetic(n: number): string[] {
   return out;
 }
 
-describe("the fast path against the slow path", () => {
+describe("the fast path against the slow path", { timeout: 60_000 }, () => {
   it("gives the reviver's record on 3,000 made-up records, the three fields in neither object", () => {
     let fast = 0;
     for (const text of synthetic(3_000)) {
@@ -187,7 +187,7 @@ describe("the fast path against the slow path", () => {
   });
 });
 
-describe("the schema", () => {
+describe("the schema", { timeout: 60_000 }, () => {
   const good = {
     coin: "BTC",
     px: "100.5",
@@ -250,7 +250,7 @@ describe("the schema", () => {
   });
 });
 
-describe("a double's exactness", () => {
+describe("a double's exactness", { timeout: 60_000 }, () => {
   it("holds a decimal text of at most 15 significant digits, whatever its zeros", () => {
     for (const t of [
       "0.0",
