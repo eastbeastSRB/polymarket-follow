@@ -1,5 +1,41 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — THE CLEANUP ON F:, at the owner's word): **271.4
+GB OF COPIES AND INTERMEDIATES DELETED; F: FREE 850.1 → 1,121.8 GB. EVERY
+RAW STORE, BOTH ANALYZER STORES AND EVERY RESULT KEPT.**
+
+- **The owner:** "keep history for now and order books, only we can remove
+  which is safe and we don't need", then "once you measure everything,
+  delete it".
+- **The run:** the supervisor's `verify/CLEANUP-1125/cleanup.ps1`,
+  12:01:32–12:02:10Z. The log `cleanup.log` records each folder's files
+  and bytes, measured just before it was removed. No candidate held a
+  reparse point.
+- **Deleted, under `F:\polymarket-follow-research\ANALYZER\`:**
+
+  | Folder | Size | What it was |
+  |---|---|---|
+  | `POLISH-RULES\repro-run1` | 46.1 GB | 2026-11-20's reproduction that misread a file |
+  | `POLISH-RULES\repro` | 46.1 GB | the reproduction that passed, a copy of the explored store |
+  | `look1-repro-crash1` | 19.8 GB | look 1's first crashed reproduction |
+  | `FRESH\repro` | 46.1 GB | look 1's reproduction, equal to the explored store (repro.json (a)) |
+  | `FRESH\twin` | 25.6 GB | FRESH's second build, equal to `FRESH\store` (builds.json) |
+  | `FRESH\parts` | 13.9 GB | the parts `FRESH\store` was built from |
+  | `WAVE-H-gates-failed-1` | 46.1 GB | the superseded first build: `parts` and `store` |
+  | `WAVE-H-stopped-1` | 26.9 GB | the stopped build: `parts` and `store` |
+  | `timing-2025-10-10` and `-b` | 1.1 GB | the timing runs: `parts` and `store` |
+
+  The old runs' logs and gate outputs stay.
+- **Kept:**
+  - the raw stores: `WAVE-H\store`, and `FRESH\store` with its books;
+  - `ANALYZER\WAVE-H`, the explored store and its outputs;
+  - `ANALYZER\FRESH\store` and `look1\`;
+  - every `repro.json`, `placebo.json`, withheld and `.out` file;
+  - the recordings and the backups.
+- **What was lost:** nothing a later step needs. Look 2 runs a new
+  reproduction and its own builds under its own freeze, and COPY-H extracts
+  afresh from the raw stores.
+
 2026-11-25 (the owner's talk after look 1 — what next): **THE WAVE'S
 POLISHING STOPS. v1 WAITS FOR EVIDENCE. TWO WORKERS START IN PARALLEL: THE
 PLAN FOR COPYING TRADERS ON HYPERLIQUID'S 15½ MONTHS (COPY-PLAN), AND A
