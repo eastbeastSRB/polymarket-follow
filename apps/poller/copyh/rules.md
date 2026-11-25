@@ -757,7 +757,7 @@ are the one complete record.
   **unpriced**, counted by reason (lib-exits' `unpricedReason`: "no mark at
   the follow instant", "no mark at an exit instant", "a funding settlement
   without a mark"), and left out of every mean; never guessed. A copy open
-  across its coin's settlement is unpriced this way (C6), and counted apart.
+  at its coin's Settlement is priced there (C8), flagged and counted (RM4).
 - A funding hour without a row is charged nothing and counted.
 - d, and with it x′, is null by reason when the entry is unpriced, a null
   minute is unpriced, the hour has no market trade left after the removal,
@@ -801,7 +801,8 @@ are the one complete record.
   5. **TOO FEW TO TELL** otherwise, with the sentence of its case.
 
   When DROP and KEEP would both hold, DROP (the paper's Q-G; the order
-  gives it).
+  gives it). A set with no copy is TOO FEW TO TELL (no error). A mean over
+  no copy is not above 0 (RL8).
 - **The sentences, written in advance** (X, Y and P filled from the result,
   X and Y in bps a copy):
   - WITHHELD: "Withheld: P% of MAIN's copies were unpriced, above the 2%
@@ -812,8 +813,8 @@ are the one complete record.
   - KEEP: "Keep: m − z·SE = X bps a copy on the money and m′ − z·SE′ = Y on
     the edge over the market, both above 0; the traders' own means, the
     days' own means and the copies without thin legs are above 0 too."
-  - TOO FEW TO TELL when the readings disagree (H1, 4.), the first case that
-    applies:
+  - TOO FEW TO TELL when the readings disagree (H1, 4.), every case that
+    applies, in this order (RL8):
     - (a) the money's upper bound is below +10 and the edge's is not: "Too
       few to tell: the money's upper bound, X bps a copy, is below the +10
       bps line, but the edge over the market's, Y, is not."
@@ -830,9 +831,10 @@ are the one complete record.
       in the order above: "Too few to tell: both lower bounds are above 0,
       but <the mean of the traders' own means | the mean of the days' own
       means | the mean without the thin-tape copies> is not."
-  - TOO FEW TO TELL when no bound is reached: "No mean result as large as X
-    bps a copy was seen", X the larger of m + z·SE and m′ + z·SE′: the
-    largest mean not ruled out (R12's sentence; the plan's section 1).
+  - TOO FEW TO TELL when no bound is reached: "Too few to tell: no mean
+    result as large as X bps a copy was seen.", X the larger of m + z·SE and
+    m′ + z·SE′: the largest mean not ruled out (R12's sentence; the plan's
+    section 1; RL8).
   - Every reading then prints R12's line: "Keep and drop are verdicts on
     this test, never instructions to trade."
 - **The first KEEP or DROP is COPY-H's verdict on MAIN;** a later look
@@ -869,9 +871,12 @@ nothing:
   day and the worst trader (lowest sums); the paper equity's largest fall at
   $1,000 a copy, the copies in the order of their follow instants; the mean
   without the most influential account, then also without the most
-  influential day; the closed copies only; the long share; R3's pooled
-  daily e-value; copies a week; at look 1, the smallest edge visible at
-  look 2, (2.43 + 0.8416) × SE × √(the days so far ÷ 504).
+  influential day; the closed copies only; the long share; the pooled daily
+  e-value (R14; `dist/paper/stats.js`'s `dailyEValue`: one vote a UTC day
+  of t + D, the sign of the day's mean d, a day within ±0.1 bps a tie,
+  dropped; RL2); copies a week; at look 1, the smallest edge visible at look
+  2, (2.43 + 0.8416) × SE × √((END_E − M₀) ÷ (END_S − M₀)), and the same
+  with SE′ (RL9).
 - **The venues, as arithmetic:** Hyperliquid's base-tier 9.0 bps of fees a
   round trip, and Binance futures' regular taker 5 bps a side (10.0 a round
   trip; HL-FOLLOW-FACTS 0 and 5.1), each with COPY-H's spread and funding.
@@ -884,7 +889,10 @@ nothing:
   level: each (coin, side, UTC hour of t) counted once, at its copies' mean;
   the most copies of one trader.
 - **By part, each with n, m ± SE and m′ ± SE′:** longs and shorts apart
-  (SIDES); by UTC month (MONTHS); by slice (SLICES); the long share.
+  (SIDES; a side's m′ carries the market's direction and is no edge: RM3);
+  by UTC month (MONTHS); by slice (SLICES); the long share.
+- **The `settled` copies** (C8; RM4): their count, and MAIN with and
+  without them.
 - **The thin tape** (M6): the thin-tape copies' count and share, and MAIN's
   mean with and without them.
 - **The market trades** (M1): the left-out taker records by cause and
@@ -892,17 +900,21 @@ nothing:
   leg's own minute where that minute holds a pair, from the day before
   otherwise.
 - **The tripwire's counts** (C16); the vault accounts left out (C2); the
-  accounts above EVENTS_MAX and their entries (C4); C4's float residues;
+  accounts above EXITS_MAX, their exit rows and their entries (C4); C4's
+  float residues;
   C3's counts by kind; the holes; run times and memory peaks.
 - **MAIN on S alone** (L8), at step 2: S's voted copies alone, every figure
   above; the first reading on months MAIN's look 1 did not hold.
 - **The calibration prints** (the plan's section 5), computed before the
-  freeze on outcome-free cells of E's months, copied into each look's
-  report by SHA-256: the tape's c against the book's half-spread and its
+  freeze on outcome-free cells of E's months into `copyh/calibration.json`,
+  copied into each look's report and held to its SHA-256 (RL7): the tape's
+  minute mark against `asset_ctxs`' `mark_px` and its impact prices in the
+  same minute; and the tape's c against the book's half-spread and its
   $1,000 walk, where the archive's books are dense, on the book files in
-  WAVE-H's store; the tape's minute mark against `asset_ctxs`' `mark_px` and
-  its impact prices in the same minute. Two prices of one moment only, never
-  a price change across time.
+  WAVE-H's store, only if WAVE-H's frozen book reader serves it unchanged
+  (imported, never changed; otherwise this print is left out: the review's
+  S3, the supervisor's ruling Q10). Two prices of one moment only, never a
+  price change across time.
 - **FRESH-2's prints** follow C14's L9 rule.
 - To be built in `src/copyh/prints.ts`; pinned by `test/copyh-prints.test.ts`
   (each print's numbers on a made-up world; no verdict word for any line but
@@ -922,24 +934,34 @@ nothing:
   names); the seal keeps S closed. Each round writes
   `<COPYH_ROOT>\rounds\round-<n>.json`.
   - At most **3 rounds**, of at most **8, 6 and 4 tries** (18 in all). Each
-    round declares its tries in `copyh/tries.md` (each try's definition and
-    why) and is committed, with its tries' code, before it runs: the runner
-    (`dist\copyh.js tries --round <n>`) refuses an uncommitted `tries.md` or
-    try, a round before the one ahead of it has been written, and a fourth
-    round or a try over the caps. The rounds run under freeze 1's gate,
-    which then allows, beside its list, only the tries' files
-    (`copyh/tries.md` and `dist/copyh/tries/`).
-  - **A try is a filter over MAIN's or BROAD's priced copies of E: a pure
-    function of a copy's covariates, the only input it is given** (step 1
-    writes them for every MAIN and BROAD copy): the line; the trader's
-    habits at M (closed cycles, median hold, long share, entries); the
-    coin; the side; the entry's size (its first event's notional); **the
-    trader's usual hold at M**; the trader's own priced MAIN copies before M
-    (their count, and the mean net of those whose follow instant and every
-    leg lie before M). Every covariate is known at the entry's instant
-    (M5). **Never a new price, never a month of S, and never a liquidation,
-    a cascade or a price move before the entry: that family was printed on
-    FRESH's months** (M5; look 1's report), so no such covariate is given.
+    round declares its tries in `copyh/tries.json` and is committed before
+    it runs. **A try is data, never code:** its line (MAIN or BROAD), its
+    conditions, all of which must hold, and why, in words. A condition is a
+    covariate's name, one of ≥, >, ≤, <, = and "one of", and a constant or a
+    list of constants. The frozen program reads them (`dist\copyh.js tries
+    --round <n>`): it refuses an uncommitted `tries.json`, a round before the
+    one ahead of it has been written, a fourth round and a try over the
+    caps. No code is added after the freeze: the rounds run under the gate
+    of the list in force, which then allows, beside its list, only
+    `copyh/tries.json`; and the rounds' freeze adds only `copyh/tries.json`,
+    `copyh/choice.json` and `copyh/look1.sha256` (the review's S1; the
+    supervisor's ruling Q4).
+  - **A try is a filter over MAIN's or BROAD's priced copies of E, and its
+    conditions name only these covariates** (step 1 writes them for every
+    MAIN and BROAD copy): the line; the trader's habits at M (closed cycles;
+    median hold, the trader's usual hold at M, never the copy's own; long
+    share; entries); the coin; the entry's size (its first event's
+    notional); the trader's own MAIN copies whose follow instant and every
+    leg lie before M: their count and their mean net (RL6). Every covariate
+    is known at the entry's instant (M5). A condition on a covariate the
+    copy lacks is false. **Never a new price, never a month of S, and never
+    a liquidation, a cascade or a price move before the entry: that family
+    was printed on FRESH's months** (M5; look 1's report), so no such
+    covariate is given. **Nor the side:** a filter by side is not neutral on
+    the edge over the market (x′'s null leans with the trader's long share,
+    so a long of a trader whose long share is 0.66 carries 0.68 of the
+    market's move and a short −1.32), and S's direction is public. SIDES
+    prints the two sides, deciding nothing (RM3 (a), the owner's ruling).
   - **Each try prints, on E:** n, traders, days and weeks; m ± SE and
     m′ ± SE′ (C12's forms); m − 2.99·SE and m′ − 2.99·SE′; the choice's
     conditions. Explore spends nothing and decides nothing.
@@ -949,36 +971,56 @@ nothing:
   - **m − 2.99·SE > 0 and m′ − 2.99·SE′ > 0** (H1's pair, in place of "its
     mean d > 0"; z = 2.99, the one-sided Bonferroni bar 2.5% ÷ 18, for every
     try whatever the number run: M5);
-  - the mean of its traders' own means > 0, and its mean without its two
-    best days > 0;
+  - the mean of its traders' own means of x > 0, and its mean of x without
+    its two best days (the two UTC days of t + D with the largest sums of x)
+    > 0 (RL8);
   - it has at least 100 traders and 100 UTC days (of t + D).
 
   At most **two** qualifying tries go on, those with the highest
   m − 2.99·SE (ties: the earlier round, then the earlier try in
-  `tries.md`); none if none qualifies.
-- **`copyh-freeze-2`** (`tools/copyh-freeze.cjs --rounds`, after the last
-  round, or at once, with no try, when no round runs): its list may differ
-  from freeze 1's only by adding `copyh/tries.md`, `copyh/choice.json` (held
-  to the program's file), `copyh/look1.sha256` (step 1's `result.json`,
-  `positions.jsonl.gz` and `report.json`) and the tries' compiled files
-  under `dist/copyh/tries/`; the tool refuses any other difference, a file
-  of freeze 1 changed, added elsewhere or gone.
+  `tries.json`); none if none qualifies.
+- **The rounds' freeze** (`tools/copyh-freeze.cjs --rounds`, after the last
+  round, or at once, with no try, when no round runs; RM2): its list may
+  differ from the list before it only by adding `copyh/tries.json`,
+  `copyh/choice.json` (held to the program's file) and `copyh/look1.sha256`
+  (step 1's `result.json`, `positions.jsonl.gz` and `report.json`); it holds
+  no compiled file of its own; the tool refuses any other difference, a file
+  of the list before it changed, added elsewhere or gone.
 - **The confirmation, once, on S alone, at step 2** (Holm with m = 2
   always: M5): each chosen try on its line's copies with t in S, voted by
-  END_S. Its statistic on S is s = min(m ÷ SE, m′ ÷ SE′) [OPEN Q8]. The try
-  with the larger s is tested at **z = 2.24** (2.5% ÷ 2, one-sided); the
-  other at **1.96** only if the first's s exceeded 2.24 (Holm's step-down);
-  a lone chosen try is tested at 2.24. A try is **confirmed** when its s
-  exceeds its bar (both bounds above 0 at it), C12's three sign conditions
-  hold on S, and S's set is not WITHHELD (more than 2% unpriced); a try
-  whose SE or SE′ cannot be computed on S has no s and is not confirmed. A
-  try not confirmed is closed for good and never retried on these months.
+  END_S. Its statistic on S is **s = min(m ÷ SE, m′ ÷ SE′)** (C12's forms
+  on that set); a try with no copy there, or whose SE or SE′ cannot be
+  computed, has no s. The try with the larger s is the first (a try with no
+  s is the second; equal s: the choice's order). The first is tested at
+  **z = 2.24** (2.5% ÷ 2, one-sided); the second at **1.96**, and only if the
+  first's s exceeded 2.24, whatever the first's other conditions say
+  (Holm's step-down is on s alone); a lone chosen try is tested at 2.24.
+  **A try's reading on S, the first that holds** (RM1):
+  1. **WITHHELD** when more than 2% of its set is unpriced: "Withheld on S:
+     P% of the copies were unpriced, above the 2% limit."
+  2. **NOT CONFIRMED** when it has no s: "Not confirmed on S: no error could
+     be computed."
+  3. **NOT CONFIRMED** when it was not tested: "Not confirmed on S: not
+     tested, since the first try's bounds at 2.24 were not both above 0."
+  4. **CONFIRMED** when its s exceeds its bar z and C12's three sign
+     conditions hold on S: "Confirmed on S at z: m − z·SE = X bps a copy and
+     m′ − z·SE′ = Y, both above 0; the traders' own means, the days' own
+     means and the copies without thin legs are above 0 too."
+  5. **NOT CONFIRMED** otherwise: "Not confirmed on S at z: m − z·SE = X bps
+     a copy and m′ − z·SE′ = Y; a confirmation needs both above 0 and the
+     three conditions."
+
+  Each with R12's line. A try that is not CONFIRMED is closed for good and
+  never retried on these months.
 - **The sealed judgment, once, on FRESH-2 alone:** each confirmed try at
   one-sided 2.5% (**z = 1.96**), and a MAIN KEEP at 5% (**z = 1.645**), each
-  on its copies with t in FRESH-2, voted by END_F2: **CONFIRMED** when
-  m − z·SE > 0, m′ − z·SE′ > 0 and C12's three sign conditions hold;
-  **WITHHELD** when more than 2% is unpriced; **NOT CONFIRMED** otherwise.
-  The sentences:
+  on its copies with t in FRESH-2, voted by END_F2. **The reading, the first
+  that holds:** **WITHHELD** when more than 2% of the set is unpriced; **NOT
+  CONFIRMED** when the set is empty or SE or SE′ cannot be computed ("Not
+  confirmed on FRESH-2: no error could be computed."); **CONFIRMED** when
+  m − z·SE > 0, m′ − z·SE′ > 0 and C12's three sign conditions hold; **NOT
+  CONFIRMED** otherwise. A reading that is not CONFIRMED is no yes, and is
+  not judged again (RM1). The sentences:
   - "Confirmed on FRESH-2: m − z·SE = X bps a copy and m′ − z·SE′ = Y, both
     above 0; the traders' own means, the days' own means and the copies
     without thin legs are above 0 too."
@@ -1001,29 +1043,37 @@ nothing:
   1. **When:** after step 2's report is recorded in decisions, and after the
      archive's upload of 2027-05-16's last hours (a day is settled after its
      D+2 upload, at about 09:20–09:30Z: external-apis), so from about
-     2027-05-18 10:00Z; the fetch's manifest must hold the exact key set.
+     2027-05-18 10:00Z; the fetch's manifest must hold the exact key set. If
+     the archive still lacks an hour of the range on 2027-05-25, the stage
+     runs on the keys the manifest holds: the freeze's decisions entry lists
+     the missing hours, and each is a hole (C3) (RH1 (g)).
   2. **The data:** the fill files `node_fills_by_block/hourly/` of the hours
      [2026-11-16 00h, 2027-05-17 00h) (182 days, 4,368 files), downloaded by
      `tools/waveh-fetch.cjs` under its guards and listed in
      `copyh/fresh2.sha256` from its manifest (names, bytes and SHA-256; the
      exact key set, each once); every coin's funding rows for the hours
      [END_S, END_F2), fetched as in part 0 and listed in
-     `copyh/funding2.sha256`; and a new stored `meta` reply, whose coins
-     beyond `coins.json` are appended (every existing line unchanged). Both
-     reads are network reads under Iron Rule 1, with the owner's yes when
-     the stage is needed [OPEN Q11].
-  3. **`copyh-freeze-3`** (`tools/copyh-freeze.cjs --fresh2`): its list may
-     differ from freeze 2's only by adding `copyh/fresh2.sha256`,
+     `copyh/funding2.sha256` the same way: every window of every coin, and
+     the reader's check before FRESH-2's freeze (RM5); and a new stored
+     `meta` reply, whose coins beyond `coins.json` are appended (every
+     existing line unchanged). Both reads are network reads under Iron Rule
+     1, with the owner's yes when the stage is needed.
+  3. **FRESH-2's freeze** (`tools/copyh-freeze.cjs --fresh2`; RM2): its list
+     may differ from the list before it only by adding `copyh/fresh2.sha256`,
      `copyh/funding2.sha256` and `copyh/look2.sha256` (step 2's three
      files), and by lines appended to `coins.json`; the tool refuses any
-     other difference. The stage's program is the one frozen at freeze 1:
-     the synthetic world runs through it (C15 (b)).
-  4. **The run** (`dist\copyh.js fresh2`; the settings of step 2 and
-     `FRESH2_STORE`, read only), as step 2's: FRESH-2's pass twice and held
-     equal (exit 7); its integrity; the labels at FRESH-2's Mondays from S's
-     and FRESH-2's fills, each from the fills before its M; the engine
-     twice; the tripwire on each judged set (above 1%: exit 6); then
-     `fresh2\result.json` first, `positions.jsonl.gz`, `report.json`.
+     other difference. The stage's program is the one frozen in the first
+     list: the synthetic world runs through it (C15 (b)).
+  4. **The run** (`dist\copyh.js fresh2`; the gate at FRESH-2's freeze; the
+     settings of step 2 and `FRESH2_STORE`, read only), as step 2's: a second
+     run refuses (exit 5); FRESH-2's pass twice and held equal (exit 7); its
+     integrity; E's and S's stores held to the SHA-256s that steps 1 and 2
+     named (exit 5 otherwise); the engine on E ∪ S ∪ FRESH-2 at END_F2 — C4's
+     events and C5's habits from ARCHIVE_START, C2's vault accounts and C4's
+     accounts the kit cannot hold counted to END_F2 — every part twice; the
+     labels at FRESH-2's Mondays, each from the fills before its M; the
+     tripwire on each judged set (C16); then `fresh2\result.json` first,
+     `positions.jsonl.gz`, `report.json` (RM7).
   5. **What it prints** (L9; decisions 2026-11-25, "the crash side only",
      ruling 6: FRESH-2 is also that frozen page's months): no move of a
      crash hour — no cascade print, and no print of a market's own move
@@ -1033,13 +1083,17 @@ nothing:
      UTC month".
 - To be built in `src/copyh/rounds.ts`, `choice.ts`, `confirm.ts` and
   `fresh2.ts`; pinned by `test/copyh-rounds.test.ts` (a round refused before
-  its commit, out of order, past three, or past its cap; a try given only
-  the covariates; the choice's every condition on both sides; at most two
+  its commit, out of order, past three, or past its cap; a try read from
+  `tries.json`, its conditions on the covariates only, a condition on any
+  other name (the side among them) refused, one on a covariate the copy
+  lacks false; the choice's every condition on both sides; at most two
   chosen, by m − 2.99·SE, with its ties), `test/copyh-confirm.test.ts`
-  (Holm's order by s, the second tried only after the first's s passes, a
-  lone try at 2.24, the sign conditions) and `test/copyh-fresh2.test.ts`
-  (each reading and sentence; nothing of FRESH-2 read before freeze 3; the
-  freeze tools' refusals of any other difference; no crash-hour print).
+  (Holm's order by s, a try with no s second, equal s, the second not
+  tested, WITHHELD before the bounds, a lone try at 2.24, the sign
+  conditions; each reading and sentence) and `test/copyh-fresh2.test.ts`
+  (each reading and sentence; nothing of FRESH-2 read before FRESH-2's
+  freeze; the freeze tools' refusals of any other difference; no
+  crash-hour print).
 
 ## C15. The steps, the record, and what runs before the freeze
 
