@@ -1,5 +1,41 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the owner's rulings on FABLE-REVIEW): **"I agree": the
+supervisor's recommendations 1, 3, 4, 5, 6 and 8 hold. The two backup items
+(2 and 7) wait: "nothing for now". THE STOP RULE AND THE PLAN GATE ARE NOW
+STANDING RULES.**
+
+1. **The paper experiment's refused market-days (H1):** this week the
+   supervisor counts the copies the two stock-split days touch, then has a
+   fix prepared by rules.md R0's route (a decisions entry, the diff, a test
+   that failed before it, the copies whose numbers change, a new freeze).
+   It is applied only on the owner's yes, and before the look of
+   2026-12-19.
+2. **The recordings' second copy:** waits (the owner).
+3. **Look 2 is not built.** The exam is recorded as unresolved at look 1
+   (WITHHELD; priced, it would read NOT SETTLED). FRESH-2's months (from
+   2026-11-16) stay unseen, for confirming a later "yes".
+4. **The plan gate, a standing rule** (WORKFLOW, "Standing rules for every
+   worker brief"): a test plan's first page states the most likely result
+   and the chance of a clear yes or no, from counts and errors known before
+   its months are looked at. It is built only if a clear answer is more
+   likely than not. COPY-H is the first plan held to it.
+5. **Where the owner would act** (venue, size, costs, what its rules allow;
+   the record notes that Finotive forbids copying): a short talk before
+   COPY-H's bar is frozen.
+6. **The stop rule** (the owner's yes to these words): after COPY-H's one
+   look, no new research is built unless a frozen test has said a clear yes.
+   The forward tests (the paper experiment, MARKET-1) run on to their last
+   look on 2027-05-08 at no cost. Then the project becomes what passed, or
+   closes with its record.
+7. **The supervisor folder's copy and E:'s free space** (19 GB, 91% full,
+   2026-11-25): wait (the owner). The supervisor reads E:'s free space at
+   each session's start.
+8. **"The crash side only":** one page of frozen text now, written before
+   anyone looks at FRESH-2's months. It names the rule, the months, the
+   price source and the verdict, with the plan gate's arithmetic. Nothing is
+   built unless that arithmetic says its test could answer.
+
 2026-11-25 (the supervisor — FABLE-REVIEW, the cold review of the whole
 project): **"THE METHOD AND THE NUMBERS ARE SOUND". FIVE HIGH FINDINGS, ONE
 OF THEM ACTIONABLE THIS WEEK (THE PAPER EXPERIMENT'S REFUSED MARKET-DAYS).
