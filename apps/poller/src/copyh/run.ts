@@ -22,7 +22,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { DAY_MS, MINUTE_MS } from "../schedule.js";
-import { CLOSED_WINDOWS, WORKER_HEAP_GB } from "./design.js";
+import {
+  CLOSED_WINDOWS,
+  WORKER_HEAP_CAP_GB,
+  WORKER_HEAP_GB,
+} from "./design.js";
 import { SealedError } from "./seal.js";
 
 /** The package's folder (the repository's `apps/poller`), from `src/copyh` or `dist/copyh` alike. */
@@ -32,6 +36,7 @@ export const COPYH_DIR = path.join(PACKAGE_ROOT, "copyh");
 export const COINS_FILE = path.join(COPYH_DIR, "coins.json");
 export const DIRS_FILE = path.join(COPYH_DIR, "dirs.json");
 export const DATA_FILE = path.join(COPYH_DIR, "data.sha256");
+export const UNPAIRED_FILE = path.join(COPYH_DIR, "unpaired.json");
 
 /** A file missing, differing or failing, an unknown coin or `dir`, a part set aside: not ready (exit 5). */
 export class StoreError extends Error {}
@@ -167,14 +172,18 @@ export type Settings = z.infer<typeof Settings>;
 /**
  * Each thread's heap ceiling, GB (C15; RH1 (c)): design.ts's WORKER_HEAP_GB,
  * or COPYH_HEAP_GB when a decisions entry names a larger one for a later
- * step: a whole number above design.ts's, never a smaller one. Anything else
- * is why the program refuses to start (exit 2).
+ * step: a whole number above design.ts's, never a smaller one, and at most
+ * WORKER_HEAP_CAP_GB (a step needing more cuts its parts smaller; the
+ * supervisor's ruling 3, 2026-11-25). Anything else is why the program
+ * refuses to start (exit 2).
  */
 export function heapOf(value: string | undefined): number | string {
   if (value === undefined) return WORKER_HEAP_GB;
-  return /^[1-9][0-9]*$/.test(value) && Number(value) > WORKER_HEAP_GB
+  return /^[1-9][0-9]*$/.test(value) &&
+    Number(value) > WORKER_HEAP_GB &&
+    Number(value) <= WORKER_HEAP_CAP_GB
     ? Number(value)
-    : `COPYH_HEAP_GB=${value}: a whole number of GB above design.ts's ${WORKER_HEAP_GB}, or none`;
+    : `COPYH_HEAP_GB=${value}: a whole number of GB above design.ts's ${WORKER_HEAP_GB} and at most ${WORKER_HEAP_CAP_GB}, or none`;
 }
 
 /** The end of the closed window `now` falls in, or null (WAVE-H's `windowEnd`, waveh/run.ts, on design.ts's windows, so that no WAVE-H process file joins COPY-H's closure). */

@@ -117,7 +117,7 @@ describe("the heap's setting", { timeout: 60_000 }, () => {
   it("is design.ts's ceiling when unset, a larger whole number when set, and a refusal otherwise", () => {
     expect(heapOf(undefined)).toBe(WORKER_HEAP_GB);
     expect(heapOf(String(WORKER_HEAP_GB + 1))).toBe(WORKER_HEAP_GB + 1);
-    expect(heapOf("24")).toBe(24);
+    expect(heapOf("20")).toBe(20);
     for (const v of [
       String(WORKER_HEAP_GB),
       String(WORKER_HEAP_GB - 1),
@@ -128,9 +128,10 @@ describe("the heap's setting", { timeout: 60_000 }, () => {
       "-8",
       "8GB",
       " 8",
+      "21",
     ])
       expect(heapOf(v), v).toBe(
-        `COPYH_HEAP_GB=${v}: a whole number of GB above design.ts's ${WORKER_HEAP_GB}, or none`,
+        `COPYH_HEAP_GB=${v}: a whole number of GB above design.ts's ${WORKER_HEAP_GB} and at most 20, or none`,
       );
   });
 });

@@ -126,7 +126,12 @@ describe("the fills", { timeout: 60_000 }, () => {
     ]);
     const b = await built(files);
     const m = await run(b.input);
-    expect(m.counts.merge).toEqual({ in: 5, out: 5, duplicates: 0 });
+    expect(m.counts.merge).toEqual({
+      in: 5,
+      out: 5,
+      duplicates: 0,
+      byFile: [],
+    });
     const store = openStore(b.dir, [path.dirname(b.dir)]);
     const users = store.users();
     expect(users).toEqual([...users].sort());
@@ -152,7 +157,12 @@ describe("the fills", { timeout: 60_000 }, () => {
       [keyOf(SWITCH_HOUR, "node_fills_by_block"), `${byBlock(1, [maker])}\n`],
     ]);
     const m = await run((await built(files)).input);
-    expect(m.counts.merge).toEqual({ in: 2, out: 1, duplicates: 1 });
+    expect(m.counts.merge).toEqual({
+      in: 2,
+      out: 1,
+      duplicates: 1,
+      byFile: [[1, 1]],
+    });
     const taker = t(3, { time: SWITCH_HOUR + 10, tid: 9 });
     const twice = new Map([
       [keyOf(SWITCH_HOUR, "node_fills"), `${taker}\n`],

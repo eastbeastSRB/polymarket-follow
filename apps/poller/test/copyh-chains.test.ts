@@ -8,7 +8,7 @@
  * one chain whose float sum leaves the kit a residue (L3).
  */
 import { describe, expect, it } from "vitest";
-import { chainHeads, type ChainFill } from "../src/copyh/chains.js";
+import { chainCount, chainHeads, type ChainFill } from "../src/copyh/chains.js";
 
 const B = (startPosition: number, sz: number): ChainFill => ({
   startPosition,
@@ -41,12 +41,19 @@ describe("chain heads", { timeout: 60_000 }, () => {
     expect(
       chainHeads([B(0, 1), B(10, 1), B(1, 1), B(11, 4), B(50, 1)]),
     ).toEqual([0, 10, 0, 10, 50]);
+    expect(chainCount([B(0, 1), B(10, 1), B(1, 1), B(11, 4), B(50, 1)])).toBe(
+      3,
+    );
+    expect(chainCount([B(0, 1), B(1, 1)])).toBe(1);
+    expect(chainCount([A(5, 1)])).toBe(1);
   });
 
   it("give two chains from one startPosition one head text", () => {
     expect(chainHeads([B(0, 1), B(0, 2), B(1, 1), B(2, 1)])).toEqual([
       0, 0, 0, 0,
     ]);
+    // One head text, two chains: the integrity counts two (D12).
+    expect(chainCount([B(0, 1), B(0, 2), B(1, 1), B(2, 1)])).toBe(2);
   });
 
   it("let a fill that could follow two follow the earlier in the archive", () => {

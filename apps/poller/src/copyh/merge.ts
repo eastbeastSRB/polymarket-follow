@@ -475,6 +475,14 @@ export function merge(
         in: records.reduce((s, r) => s + r.in, 0),
         out: records.reduce((s, r) => s + r.out, 0),
         duplicates: records.reduce((s, r) => s + r.duplicates.length, 0),
+        byFile: [
+          ...records
+            .flatMap((r) => r.duplicates.map(([file]) => file))
+            .reduce(
+              (m, f) => m.set(f, (m.get(f) ?? 0) + 1),
+              new Map<number, number>(),
+            ),
+        ].sort((x, y) => x[0] - y[0]),
       },
       straddles,
       unpaired,

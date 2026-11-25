@@ -38,8 +38,18 @@ function decimalOf(x: number): { m: bigint; exp: number } {
 }
 
 /** Each fill's chain head's `startPosition`, in the fills' own order (the archive's). */
-export function chainHeads(fills: readonly ChainFill[]): number[] {
-  if (fills.length === 1) return [fills[0]!.startPosition];
+export const chainHeads = (fills: readonly ChainFill[]): number[] =>
+  chainsOf(fills).head;
+
+/** The number of chains one matching event's fills make (the integrity counts the events with more than one, D12). */
+export const chainCount = (fills: readonly ChainFill[]): number =>
+  chainsOf(fills).chains;
+
+function chainsOf(fills: readonly ChainFill[]): {
+  head: number[];
+  chains: number;
+} {
+  if (fills.length === 1) return { head: [fills[0]!.startPosition], chains: 1 };
   const s = fills.map((f) => decimalOf(f.startPosition));
   const d = fills.map((f) => decimalOf(f.sz));
   const scale = Math.max(0, ...[...s, ...d].map((v) => -v.exp));
@@ -75,5 +85,5 @@ export function chainHeads(fills: readonly ChainFill[]): number[] {
       head[b] = open[best]!.head;
     }
   }
-  return head;
+  return { head, chains: open.length };
 }

@@ -6,6 +6,7 @@
  *   node dist/copyh.js coins
  *   node dist/copyh.js count --range burnin|E [--workers n] [--minutes m]
  *   node dist/copyh.js build --range burnin|E [--twin] [--workers n] [--minutes m]
+ *   node dist/copyh.js integrity --range burnin|E [--minutes m]
  *   node dist/copyh.js step1 | tries | choice | step2 | fresh2
  *
  * `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
@@ -15,6 +16,9 @@
  * written, with its count: `dirs.json` is ruled from it). `build`: the pass
  * and the merge into `<range>\store\` (`--twin`: `<range>\twin\store\`, from
  * its own parts), from `copyh/data.sha256`, `coins.json` and `dirs.json`.
+ * `integrity`: the twin held to the first build when it exists
+ * (`<range>\integrity\builds.json`), then K0–K3 into
+ * `<range>\integrity\integrity.json` (integrity.ts).
  * Before the freeze every command runs under the closed seal, so S's range
  * is refused. The gate's commands verify the freeze of their kind first
  * (gate.ts) and stop with exit 4, having read nothing, when it does not
@@ -39,7 +43,7 @@ import {
   iidsOf,
 } from "./coins.js";
 import { countsOf } from "./count.js";
-import { RUN_MINUTES } from "./design.js";
+import { RUN_MINUTES, SAMPLE_DAYS } from "./design.js";
 import { DirsFile, kindsOf } from "./dirs.js";
 import { COMMANDS, sealOf, verifyGate, type Command } from "./gate.js";
 import { UNIT_ROWS, merge } from "./merge.js";
@@ -63,6 +67,7 @@ import {
   DATA_FILE,
   DIRS_FILE,
   FreezeDiffers,
+  UNPAIRED_FILE,
   PACKAGE_ROOT,
   Settings,
   StoreError,
@@ -75,7 +80,8 @@ import {
   writeWhole,
 } from "./run.js";
 import { SEALED, checkInside, checkPath, checkWrite } from "./seal.js";
-import { MANIFEST } from "./store.js";
+import { MANIFEST, openStore } from "./store.js";
+import { UNIT_BYTES, UnpairedFile, runIntegrity } from "./integrity.js";
 
 function refuse(why: string): never {
   process.stderr.write(`copyh: refused: ${why}\n`);
@@ -84,7 +90,7 @@ function refuse(why: string): never {
 const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
   e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 
-const TOOLS = ["coins", "count", "build"] as const;
+const TOOLS = ["coins", "count", "build", "integrity"] as const;
 const [command, ...options] = process.argv.slice(2);
 const tool = TOOLS.find((t) => t === command) ?? null;
 const gated = COMMANDS.find((c) => c === command) ?? null;
@@ -99,7 +105,8 @@ let twin = false;
 for (let i = 0; i < options.length; i++) {
   const [flag, value] = [options[i], options[i + 1]];
   const passes = tool === "count" || tool === "build";
-  if (passes && flag === "--range" && RANGE_NAMES.some((r) => r === value)) {
+  const ranged = passes || tool === "integrity";
+  if (ranged && flag === "--range" && RANGE_NAMES.some((r) => r === value)) {
     range = value as RangeName;
     i += 1;
   } else if (
@@ -110,7 +117,7 @@ for (let i = 0; i < options.length; i++) {
     workers = Number(value);
     i += 1;
   } else if (
-    passes &&
+    ranged &&
     flag === "--minutes" &&
     /^[1-9][0-9]?$/.test(value ?? "") &&
     Number(value) <= RUN_MINUTES
@@ -120,7 +127,10 @@ for (let i = 0; i < options.length; i++) {
   } else if (tool === "build" && flag === "--twin" && !twin) twin = true;
   else refuse(`the option "${flag ?? ""}"`);
 }
-if ((tool === "count" || tool === "build") && range === null)
+if (
+  (tool === "count" || tool === "build" || tool === "integrity") &&
+  range === null
+)
   refuse(`${tool} needs --range ${RANGE_NAMES.join(" | ")}`);
 const parsed = Settings.safeParse(process.env);
 if (!parsed.success) refuse(issues(parsed.error));
@@ -319,6 +329,60 @@ async function build(r: RangeName): Promise<void> {
   });
 }
 
+/** `integrity`: the store and its twin (when built) through the twin compare and K0–K3. */
+function integrity(r: RangeName): void {
+  const base = rangeDir!;
+  const store = openStore(path.join(base, "store"), roots, SEALED);
+  const twinDir = path.join(base, "twin", "store");
+  const twin = existsSync(path.join(twinDir, MANIFEST))
+    ? openStore(twinDir, roots, SEALED)
+    : null;
+  const lists = listsOf(false);
+  const p = passOf(r);
+  const unpaired = existsSync(UNPAIRED_FILE)
+    ? UnpairedFile.parse(JSON.parse(readFileSync(UNPAIRED_FILE, "utf8")))
+    : {
+        rule: "none yet: copyh/unpaired.json is written from the rehearsal's pass",
+        records: [],
+      };
+  const result = runIntegrity({
+    range: RANGES[r],
+    files: p.files,
+    store,
+    twin,
+    dir: path.join(base, "integrity"),
+    inputs: {
+      listSha256: p.list.sha256,
+      coinsSha256: lists.hashes.coins,
+      dirsSha256: lists.hashes.dirs,
+    },
+    code: fingerprintOf(PACKAGE_ROOT),
+    unpaired,
+    sampleDays: r === "S" ? SAMPLE_DAYS.S : SAMPLE_DAYS.E,
+    reread: {
+      raw,
+      roots,
+      seal: SEALED,
+      files: p.files,
+      start: RANGES[r].start,
+      end: RANGES[r].end,
+      iids: new Map(lists.iids),
+      kinds: new Map(lists.kinds ?? []),
+    },
+    budget: p.budget,
+    unitBytes: UNIT_BYTES,
+    log: logOf,
+  });
+  logOf("done: the integrity passed", {
+    twin: twin !== null,
+    unpaired: unpaired.records.length,
+    edges: result.k1.edges,
+    holes: result.k3.holes.length,
+    multiChain: result.k3.multiChain,
+    seconds: result.seconds,
+  });
+}
+
 /** A gated command: the gate first (exit 4, nothing read); its phases are the engine's parts, still to be built. */
 async function gate(c: Command): Promise<void> {
   const freeze = await verifyGate(PACKAGE_ROOT, c);
@@ -351,6 +415,7 @@ try {
   if (gated !== null) await gate(gated);
   else if (tool === "coins") coins();
   else if (tool === "count") await count(range!);
+  else if (tool === "integrity") integrity(range!);
   else await build(range!);
 } catch (err) {
   const exit = exitOf(err);

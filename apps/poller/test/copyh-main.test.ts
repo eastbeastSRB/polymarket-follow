@@ -127,12 +127,18 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
 
   it("seals S's range before the freeze (exit 5), and writes nothing there", () => {
     const f = folders();
-    for (const c of ["build", "count"]) {
+    for (const c of ["build", "count", "integrity"]) {
       const r = run([c, "--range", "S"], f);
       expect(r.code, c).toBe(5);
       expect(r.stderr, c).toContain("sealed until step 2");
     }
     expect(existsSync(path.join(f.COPYH_ROOT, "S"))).toBe(false);
+  });
+
+  it("refuses the integrity of a store not built (exit 5)", () => {
+    const f = folders();
+    expect(run(["integrity", "--range", "burnin"], f).code).toBe(5);
+    expect(logOf(f.COPYH_ROOT).at(-1)).toMatchObject({ msg: "not ready" });
   });
 
   it("stops a gated command at the gate while the freeze does not verify (exit 4), having read nothing", () => {

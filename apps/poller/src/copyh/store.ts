@@ -61,6 +61,8 @@ const Counts = z.object({
     in: z.number(),
     out: z.number(),
     duplicates: z.number(),
+    /** The duplicates by input file: [file, count]. */
+    byFile: z.array(z.tuple([z.number(), z.number()])),
   }),
   /** Trades split across two files next to each other, paired after the pass. */
   straddles: z.number(),
