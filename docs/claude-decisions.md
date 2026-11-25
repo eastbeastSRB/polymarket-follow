@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's RULES FIXED; THE FIX-CHECK STARTS;
+THE STORE'S BUILDER HANDED OVER): **THE REVIEW'S FINDINGS AND EVERY RULING
+ARE APPLIED; `copyh/rules.md` IS NOW SHA-256
+`47bd169acfa9e95b9c9944daadd2ed76b39e946f686a345e9baf7ceb2d3b3b64`, 1,480
+LINES. NOT FROZEN: IT FREEZES WITH THE CODE.**
+
+**The fix round:**
+- COPYH-RULES (Opus 5.5, max), resumed 21:28Z, done 21:40Z. Context peak
+  681,385. Commits `77d014e` (intro, C0–C3), `540a6e3` (C4–C9), `f89dfb1`
+  (C10–C14), `9fee674` (C15–C18), each touching only `rules.md`.
+- Applied: RH1 (a)–(g) and C17's sentence, RM1–RM8, RL1–RL13, D1–D15, the
+  review's section 5 wordings 19 and 20, the owner's RM3 (a) and RM4 (a),
+  the supervisor's Q3–Q10, and C0 naming `dist/polish/tables.js` beside
+  `lz4.js` (COPYH-STORE's commit 3 added it to the closure).
+- **Four changes of form, declared:** RM8's head and C17's marker sentence
+  reworded so the file does not itself hold the marker its freeze check
+  refuses; C15 (c) 3's marker joined onto one line; D2 kept to the switch
+  hour's two files; RM3 (b) and RM4 (b) not applied (the owner chose (a)).
+- **The supervisor's check:** the hash and size equal the report; the four
+  commits change only `rules.md`; no `[OPEN Q` marker is left; the six
+  `[SET BEFORE THE FREEZE` marks all name the two values the rules name
+  (C9's settlement mark, C15's worker heap); Prettier clean; no CR byte;
+  five fixes read in place (EXITS_MAX in C4 and C18, `settled` in C6 and
+  C8, C17's two outcomes, `tables.js` in C0). The access scan: two folder
+  listings, nothing opened.
+
+**Next:**
+- **COPYH-RULES-FIXCHECK** (Sonnet 5.5, max, fresh): every item applied
+  exactly or in full meaning, every hunk of `fa52406..9fee674` traced to an
+  item, the four changes of form judged, markers, consistency, the guards.
+  Verdict "ready" or "ready after these fixes".
+- **The code items the new rules ask of the store** (the review's section
+  5) are passed to the store's builder.
+
+**COPYH-STORE handed over.** At 21:30Z its context read 912,605 (~94%),
+past the 70% stop; told to stop, it committed commit 3 `36b4924` (the scan,
+writers, market-trade pairing, parts, the pass by worker threads, the
+merge, the store; `pnpm verify` green, 104 test files, 940 tests + 6
+skipped) and wrote its successor's notes. **COPYH-STORE-2** (Opus 5.5, max,
+fresh) started 21:37Z on the owner's yes, on the same brief with an
+addendum: the commands, the twin, the integrity checks and re-reader, the
+measured heap ceilings, the breaks round, then a stop and a report before
+the burn-in run.
+
 2026-11-25 (the owner's rulings on RM3 and RM4 — "I agree with your recommendation … let's proceed like you suggested"):
 - **RM3:** no filter by side among the rounds' tries. Longs and shorts stay printed apart (SIDES), deciding nothing.
 - **RM4:** a copy still open at its coin's first Settlement (a delisting) is valued at the Settlement price, flagged `settled`, and every look prints MAIN with and without such copies (the review's option (a)).
