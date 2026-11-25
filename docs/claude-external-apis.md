@@ -502,6 +502,30 @@ read from a venue's page is as that page read on the day.
     alone shows the cadence.
   - Its cause is not known. Re-measure before a test that prices from these
     books.
+- **Fills and contexts, as COPY-H-PLAN measured them** (2026-11-25, outcome-free:
+  each record parsed with `closedPnl`, `fee` and `builderFee` dropped; its
+  scripts and outputs in the supervisor folder's `workers/COPY-H-PLAN/`; the
+  plan `docs/reviews/copy-h-plan-2026-11-25.md`, section 11):
+  - **`startPosition` is per fill, not per order.** 10,539 of 10,541
+    multi-fill events chain fill to fill. With each fill given its chain
+    head, the chain breaks are 17 in 109,724 fills in a normal hour, and 315
+    in 2.96 million in the 2025-10-10 21h crash hour. Spot breaks about half
+    its chains.
+  - **`dir` values** include spot Buy and Sell, outcome-market operations,
+    "Settlement", "Auto-Deleveraging" and the "Liquidated …" family.
+    Builder dexes appear from December 2025.
+  - **`asset_ctxs` covers only part of each day from about 2026-09-22/25.**
+    Every coin is covered every minute until 2026-09-10; then each day's file
+    covers one stretch only: 655, 501 and 197 minutes a coin on 09-25, 10-15
+    and 11-14.
+  - **The tape as a price source** (three hours of 2025-09):
+    - MAIN's coins had a trade within the kit's staleness at 99.99% of
+      instants;
+    - the quoted half-spread from takers at most 2 s apart, weighted by
+      MAIN's entries, was 0.78 bps.
+  - **Size:** the two raw stores hold 4.46 billion records (378 GB
+    compressed, 1.9 TB decoded). The top 1% of accounts hold 39–58% of an
+    hour's records.
 - **What the archive's files hold, measured** (EXTRACT-BUILD's checks C1–C4,
   2026-11-17 22:15–22:23Z, on WAVE-H's store held to its list; decisions
   2026-11-18, EXTRACT-BUILD's technical calls):

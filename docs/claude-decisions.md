@@ -1,5 +1,74 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H'S PLAN IS WRITTEN; ITS FRESH REVIEW
+RUNS): **COPY-H-PLAN RECOMMENDS THE PAPER EXPERIMENT'S MAIN, UNCHANGED, ON
+EVERY MAIN-DEX HYPERLIQUID ACCOUNT OVER ~72 WEEKS. IT PRICES FROM THE TAPE
+WITH SETTLED FUNDING, AND GIVES THE OWNER'S FILTER ROUNDS MONTHS OF THEIR
+OWN. THE PLAN GATE PASSES ON COUNTS. COPY-H-PLAN-REVIEW (FABLE 5.2) IS
+CHECKING IT.**
+
+**The plan:** `docs/reviews/copy-h-plan-2026-11-25.md` (`83ac6ba`).
+- COPY-H-PLAN: Opus 5.5, max, 11:51–13:02Z, across the 12:15Z blue screen,
+  resumed by message. Context peak 607k. Access clean.
+- **No outcome was computed:**
+  - every record was parsed with a reviver that drops `closedPnl`, `fee` and
+    `builderFee`;
+  - the analyzer's `liq` table was never opened;
+  - the tape spread came from same-moment prices (s8).
+
+  The supervisor read the scripts.
+- **Its recommendation:**
+  1. MAIN unchanged, both readings, R8's delay, base-tier taker costs. MAIN
+     alone decides.
+  2. One price source for every month: the tape (each minute's trade price,
+     a spread from the tape, the 4.5 bps fee) plus settled funding. That
+     needs ~6,700 keyless reads (~230 MB) and the owner's yes. No order
+     book.
+  3. The hybrid schedule:
+     - MAIN's look 1 on E (WAVE-H's months, 333 days, z 2.81);
+     - the owner's filter rounds on E only (at most 3 rounds and 18 tries,
+       the choice rule fixed now);
+     - look 2 on E + FRESH (504 days, z 2.43), with at most two chosen
+       filters confirmed once;
+     - FRESH-2 left unseen.
+  4. **The gate passes, from counts:**
+     - about 39,000 MAIN copies a week, with the error per day borrowed
+       from Polymarket's X3;
+     - DROP is the most likely verdict: 99–100% if the truth is −10 bps,
+       72% in a stress case;
+     - a real +15 bps reads KEEP about 90% of the time (43% in the stress
+       case).
+  5. **The build:** a sixth entry point reusing the analyzer's LZ4 decoder
+     and the paper's frozen kit. The store (~145 GB) is built twice and
+     the runs are resumable. About 17 sessions and ~4,500 lines through
+     look 2.
+- **Its questions for the owner:**
+  - the design (hybrid recommended);
+  - the funding fetch (yes);
+  - where they would act, and so the bar (δ +10 bps on base-tier costs,
+    with the break-even printed);
+  - the pool (every main-dex account less the protocol vault);
+  - the rounds' caps;
+  - a 90-day label window;
+  - two added sign conditions for KEEP;
+  - short runs until the PC is cleared;
+  - FRESH-2's length;
+  - the lines beside.
+- **Its measured facts** are in external-apis (the same date).
+
+**The fresh review** is COPY-H-PLAN-REVIEW: Fable 5.2, max, read only. It
+is asked:
+- whether any month that chooses also judges. That is the supervisor's
+  concern: in the hybrid, filters chosen on E are confirmed on a window
+  that includes E;
+- to recompute and challenge the power;
+- to check the mapping, the price source, Fable's twelve points and the
+  build's size;
+- whether the owner should approve.
+
+**The owner (~13:05Z):** "let's first we confirm our idea". If it works,
+they would enter every trade by hand, with no service or software.
+
 2026-11-25 (the supervisor — COPY-H FIRST, IN PARALLEL; THE PAPER'S SPLIT
 DAYS COUNTED): **THE OWNER: "OUR FOCUS NOW SHOULD BE COPY-H … EVERYTHING
 WHICH YOU CAN RUN IN PARALLEL … DO THAT. WE HAVE CREDITS FOR THIS WEEK."
