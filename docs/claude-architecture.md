@@ -320,7 +320,7 @@ Tests: `test/waveh-fetch.test.ts`, no network; its heartbeats are built from
 the collector's `Heartbeat` schema, so a change of those fields fails there
 (a contract).
 
-## WAVE-H (built by WAVE-H-BUILD 2026-11-14, its reviews' fixes by WAVE-H-FIX 2026-11-16; not frozen, not run on TEST)
+## WAVE-H (built by WAVE-H-BUILD 2026-11-14, its reviews' fixes by WAVE-H-FIX 2026-11-16; frozen 2026-11-16, tag `waveh-freeze-1`; its one look run 2026-11-17: NOT SETTLED)
 
 **What it is.** A fourth entry point of the same package, `dist/waveh.js`
 (`src/waveh.ts`, `src/waveh/`), MARKET-1's wave tested once on Hyperliquid's
@@ -430,7 +430,7 @@ again.
 `test/waveh-reproduce.test.ts`, the pre-cut seed converted to Hyperliquid's
 shape (R8), run when `WAVEH_PRECUT` names a JSON file of `{seedDir, out?}`.
 
-## The analyzer: the polishing's store (built 2026-11-17/18 by EXTRACT-BUILD and EXTRACT-BUILD-2, its Final review's fixes by EXTRACT-FIX 2026-11-18, the supervisor's two rulings after it by EXTRACT-FIX-2, the archive's two quirks by EXTRACT-FIX-3 and EXTRACT-FIX-4 2026-11-19; not frozen; run on the 10 months 2026-11-19, every gate passed)
+## The analyzer: the polishing's store (built 2026-11-17/18 by EXTRACT-BUILD and EXTRACT-BUILD-2, its Final review's fixes by EXTRACT-FIX 2026-11-18, the supervisor's two rulings after it by EXTRACT-FIX-2, the archive's two quirks by EXTRACT-FIX-3 and EXTRACT-FIX-4 2026-11-19; run on the 10 months 2026-11-19, every gate passed; frozen with the exam 2026-11-20, tag `polish-freeze-1`)
 
 **What it is.** A fifth entry point of the same package, `dist/polish.js`
 (`src/polish.ts`, `src/polish/`): the polishing plan's extraction
@@ -747,7 +747,7 @@ answers (`polish-tries-world.ts`: 16 coins, a wave every 2 days, a planted
 edge after forced sells), synthetic stores and synthetic lz4 books; the
 five steps end to end on the gates world (`polish-gates.test.ts`).
 
-## The exam (built 2026-11-19/20 by POLISH-RULES and its successors 2–5, its rules reviewed by POLISH-RULES-REVIEW and fixed 2026-11-20, its code reviewed by POLISH-CODE-REVIEW and fixed by POLISH-FIX 2026-11-20; its rules ready, every marked option filled by the owner; not frozen; FRESH sealed)
+## The exam (built 2026-11-19/20 by POLISH-RULES and its successors 2–5, its rules reviewed by POLISH-RULES-REVIEW and fixed 2026-11-20, its code reviewed by POLISH-CODE-REVIEW and fixed by POLISH-FIX 2026-11-20; every marked option filled by the owner; frozen 2026-11-20, tag `polish-freeze-1`; look 1 run on FRESH 2026-11-24/25: WITHHELD)
 
 **What it is.** `node dist\polish.js exam --step placebo | reproduce | 1 | 2`:
 the polishing's one exam on FRESH (the plan's section 3; decisions

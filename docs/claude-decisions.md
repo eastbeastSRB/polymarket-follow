@@ -1,5 +1,90 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — FABLE-REVIEW, the cold review of the whole
+project): **"THE METHOD AND THE NUMBERS ARE SOUND". FIVE HIGH FINDINGS, ONE
+OF THEM ACTIONABLE THIS WEEK (THE PAPER EXPERIMENT'S REFUSED MARKET-DAYS).
+ONE HABIT TO CHANGE: A PLAN STATES, BEFORE ITS BUILD, THE CHANCE OF A CLEAR
+ANSWER.**
+
+**The review:**
+- `docs/reviews/fable-review-2026-11-25.md` (`31c2ae4`, `122735e`).
+- FABLE-REVIEW: Fable 5.2, max, fresh, 11:51–12:31Z, across the 12:15Z
+  blue screen; resumed by message.
+- Context peak 541k. Access clean: only WORKFLOW and LESSONS from the
+  supervisor folder, as allowed; no data, run folder or program.
+
+**Its findings** (one line each; the evidence in the report):
+- **H1:** the paper experiment's two refused market-days (INTC 2026-11-19,
+  SNDK 2026-11-20, the venue's stock splits) fail at every run. They put
+  every later copy across them out as unpriced, and they count toward the
+  breaker of 5 failed reads in a row.
+- **H2:** the recordings have one copy.
+- **H3:** no test was asked, before its build, whether it could answer.
+- **H4:** look 2 can hardly give a verdict: the new days would need about
+  +300 to +500 for HOLDS.
+- **H5:** the PC is unstable under load (2026-11-20's faults; the 12:15Z
+  bugcheck 0xA).
+- **M1–M8 and L1–L3:**
+  - the check months were not clean for the family that won;
+  - a few cascades carry every wave number;
+  - two prints were not on record;
+  - where the owner acts is still open;
+  - stale lines in the state files;
+  - other single points: the supervisor folder, E:, and the backup
+    task's state;
+  - a variant grew from each unclear result;
+  - small items.
+
+**The supervisor's checks:**
+- **H1, from the code:**
+  - `loop.ts` 136–137: `failed()` ends a run at `FAILING_READS` = 5 in a
+    row.
+  - 254–269: a failed market-day calls it, and only a successful read
+    resets it. The two refused days fall in one scan with no success
+    between them.
+  - Today's run (`F:\polymarket-follow\paper\log\2026-11-25.jsonl`):
+    `failedMarketDays` 2, `failedReads` 0, loop end "done".
+  - So the risk is latent: three more refused days in one scan would end
+    every run early.
+  - The review's "both forward tests" was not checked for MARKET-1.
+- **M6, the stale lines, fixed in the same commit:**
+  - architecture's "not frozen" for WAVE-H, the analyzer and the exam;
+  - CLAUDE.md's "not frozen" for the exam;
+  - the plan page's "too little book depth in the crash hours" (it was the
+    archive's thinning books);
+  - "15½" against "about 18 months";
+  - the review's "two README cells" are left to the record sweep.
+
+  COPY-PLAN and COPY-H-PLAN in the talk's entry name the same worker,
+  COPY-H-PLAN.
+- **M3, the two prints, now on record** (look 1's `report.json`, at the
+  tape, beside, deciding nothing):
+  - **B0 on FRESH, slices 0–19:** −42.9 ± 52.5 bps (11,724 priced, 91
+    days, 38 coins); all 147 slices: −49.6 ± 53.4 (83,354).
+  - **N in the discovery window** (2026-08-31 → 11-07, slices 0–19, not
+    independent): +143.9 ± 45.2 (5,930, 52 days).
+
+**Passed on:** COPY-H-PLAN was sent the review's twelve COPY-H points (its
+section 6) and H3's gate:
+- the power first;
+- one price source for every month;
+- FRESH-2 left unseen;
+- the tension between "MAIN unchanged, no tuning" (the review) and the
+  owner's "filter → test → filter again", laid out both ways for the
+  owner.
+
+**For the owner** (their call, the supervisor's recommendation in the
+report given to them):
+- H1's count and ruling this week;
+- the recordings' second copy;
+- look 2 decided on the arithmetic;
+- the plan gate as a standing rule;
+- where the owner would act;
+- the stop rule in their words;
+- the PC (set aside by the owner at 12:30Z unless it repeats);
+- the supervisor folder's copy and E:'s space;
+- "the crash side only" as one frozen page.
+
 2026-11-25 (the supervisor — THE CLEANUP ON F:, at the owner's word): **271.4
 GB OF COPIES AND INTERMEDIATES DELETED; F: FREE 850.1 → 1,121.8 GB. EVERY
 RAW STORE, BOTH ANALYZER STORES AND EVERY RESULT KEPT.**

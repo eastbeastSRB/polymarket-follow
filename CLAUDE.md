@@ -48,8 +48,8 @@ third, `dist/market1.js`, frozen and deployed 2026-11-13 (tag
 `market1-freeze-1`); WAVE-H a fourth, `dist/waveh.js`, frozen 2026-11-16
 (tag `waveh-freeze-1`), its one look run and closed; the analyzer a fifth,
 `dist/polish.js` (`extract`, `gates`, `explore` and the exploration's five
-steps, and the exam's four, `exam --step placebo | reproduce | 1 | 2`, not
-frozen), run by hand;
+steps, and the exam's four, `exam --step placebo | reproduce | 1 | 2`,
+frozen 2026-11-20 with tag `polish-freeze-1`), run by hand;
 no Turborepo, web, api or shared package yet — decisions 2026-11-11,
 COLLECTOR-BUILD's technical calls; 2026-11-12, PAPER-BUILD's; 2026-11-13,
 MARKET-BUILD's; 2026-11-14/16, WAVE-H-BUILD's and WAVE-H-FIX's; 2026-11-18,
