@@ -1,5 +1,59 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H FIRST, IN PARALLEL; THE PAPER'S SPLIT
+DAYS COUNTED): **THE OWNER: "OUR FOCUS NOW SHOULD BE COPY-H … EVERYTHING
+WHICH YOU CAN RUN IN PARALLEL … DO THAT. WE HAVE CREDITS FOR THIS WEEK."
+TWO MORE WORKERS START BESIDE COPY-H-PLAN. THE SPLIT DAYS TOUCH 0.34% OF
+MAIN'S COPIES, SO THEIR FIX WAITS ON A THIRD REFUSED DAY.**
+
+**The paper experiment's refused market-days** (FABLE-REVIEW H1; the
+supervisor's completeness count, `verify/PAPER-SPLIT/count.cjs` on
+`F:\polymarket-follow\paper\log\2026-11-25-positions.jsonl.gz`; no money, net
+or d value read):
+- **Where the copies are:** 2,705 copies; MAIN 594.
+  - iid 23 (INTC): 11 copies, 1 on MAIN, 1 unpriced.
+  - iid 29 (SNDK): 24 copies, 13 on MAIN, 2 unpriced.
+  - Every unpriced one is "open across a split day of its market" (rules.md
+    R6, as designed).
+- **The share:** MAIN's unpriced are 2 of 594 (0.34%), far under the 2%
+  WITHHELD line.
+- **The remaining risk** is the breaker:
+  - rules.md R3a: "Five failed reads in a row end a run ('api failing')";
+  - `loop.ts` counts a refused market-day as a failed read, and the two
+    fall in one scan;
+  - today's run ended "done", with `failedMarketDays` 2.
+- **Whether changing that is a defect fix** (R0's route: the code
+  against the rule's stated meaning, "api failing") **or a rule change**
+  (forbidden in a frozen arm) needs a careful ruling.
+- **The supervisor's call,** within the owner's yes to "count and prepare a
+  fix", and given the owner's new priority:
+  - read `failedMarketDays` at each session;
+  - prepare the fix only if a third refused day appears in one scan (one
+    more would leave a margin of one before the stop).
+
+**Started in parallel** (briefs in the supervisor folder's `workers\`):
+- **HL-FOLLOW-FACTS** (Sonnet 5.5, xhigh): verified facts for COPY-H's
+  costs, delay and bar.
+  - Hyperliquid's fees and funding.
+  - The public, keyless ways to watch any account's fills, with their
+    limits and the realistic delay.
+  - Hyperliquid's vaults.
+  - Each named venue's rule on copying (Finotive re-verified at its source;
+    Binance futures).
+
+  Web reading only.
+- **CRASH-SIDE-PAGE** (Opus 5.5, max): the ruled page
+  `apps/poller/crashside/rules.md`, deliberately outside `polish/`, whose
+  files the exam's freeze lists.
+  - The 715 line's forced-sell side on FRESH-2's months.
+  - One price source.
+  - The exam's ladder.
+  - The plan gate's arithmetic.
+
+  It is frozen by its commit before FRESH-2 exists on disk.
+- **COPY-H-PLAN** was told that the facts come from HL-FOLLOW-FACTS, that
+  Finotive forbids copying, and to finish as lean as rigour allows.
+
 2026-11-25 (the owner's rulings on FABLE-REVIEW): **"I agree": the
 supervisor's recommendations 1, 3, 4, 5, 6 and 8 hold. The two backup items
 (2 and 7) wait: "nothing for now". THE STOP RULE AND THE PLAN GATE ARE NOW
