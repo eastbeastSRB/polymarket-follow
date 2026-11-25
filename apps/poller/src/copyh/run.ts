@@ -22,11 +22,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { DAY_MS, MINUTE_MS } from "../schedule.js";
-import { CLOSED_WINDOWS, PART_MINUTES } from "./design.js";
+import { CLOSED_WINDOWS, WORKER_HEAP_GB } from "./design.js";
 import { SealedError } from "./seal.js";
 
 /** The package's folder (the repository's `apps/poller`), from `src/copyh` or `dist/copyh` alike. */
 export const PACKAGE_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+/** COPY-H's committed files (C0): the lists a build reads. */
+export const COPYH_DIR = path.join(PACKAGE_ROOT, "copyh");
+export const COINS_FILE = path.join(COPYH_DIR, "coins.json");
+export const DIRS_FILE = path.join(COPYH_DIR, "dirs.json");
+export const DATA_FILE = path.join(COPYH_DIR, "data.sha256");
 
 /** A file missing, differing or failing, an unknown coin or `dir`, a part set aside: not ready (exit 5). */
 export class StoreError extends Error {}
@@ -78,8 +83,12 @@ const tail = (p: string, n: number) =>
  * COPYH_ROOT: COPY-H's folder (`…\COPY-H`), the only one written;
  * WAVEH_STORE: WAVE-H's raw store (`…\WAVE-H\store`), read only;
  * COPYH_FUNDING: COPYH-FUNDING's store (`…\COPY-H\funding`), read only;
- * FRESH_STORE: FRESH's raw store (`…\FRESH\store`), read only, step 2's.
- * None lies inside another, but the funding store may lie in COPYH_ROOT.
+ * FRESH_STORE: FRESH's raw store (`…\FRESH\store`), read only, step 2's;
+ * FRESH2_STORE: FRESH-2's (`…\FRESH-2\store`), read only, its stage's;
+ * PAPER_SEED: the paper experiment's seed folder (`…\seed`), read only, the
+ * reproduction's (C15 (a); D15). None lies inside another, but the funding
+ * store may lie in COPYH_ROOT. The heap's setting, COPYH_HEAP_GB, is
+ * `heapOf`'s.
  */
 export const Settings = z
   .object({
@@ -87,6 +96,8 @@ export const Settings = z
     WAVEH_STORE: absolute,
     COPYH_FUNDING: absolute.optional(),
     FRESH_STORE: absolute.optional(),
+    FRESH2_STORE: absolute.optional(),
+    PAPER_SEED: absolute.optional(),
   })
   .refine((s) => tail(s.COPYH_ROOT, 1) === "copy-h", {
     message: "is not COPY-H's folder (…\\COPY-H)",
@@ -114,12 +125,30 @@ export const Settings = z
     },
   )
   .refine(
+    (s) =>
+      s.FRESH2_STORE === undefined ||
+      tail(s.FRESH2_STORE, 2) === "fresh-2/store",
+    {
+      message: "is not FRESH-2's raw store (…\\FRESH-2\\store)",
+      path: ["FRESH2_STORE"],
+    },
+  )
+  .refine(
+    (s) => s.PAPER_SEED === undefined || tail(s.PAPER_SEED, 1) === "seed",
+    {
+      message: "is not the paper's seed folder (…\\seed)",
+      path: ["PAPER_SEED"],
+    },
+  )
+  .refine(
     (s) => {
       const all = [
         s.COPYH_ROOT,
         s.WAVEH_STORE,
         s.COPYH_FUNDING,
         s.FRESH_STORE,
+        s.FRESH2_STORE,
+        s.PAPER_SEED,
       ].filter((p): p is string => p !== undefined);
       const allowed = (a: string, b: string) =>
         a === s.COPYH_FUNDING && b === s.COPYH_ROOT;
@@ -129,11 +158,24 @@ export const Settings = z
     },
     {
       message:
-        "COPYH_ROOT, WAVEH_STORE, COPYH_FUNDING and FRESH_STORE must lie outside each other, but the funding store in COPYH_ROOT",
+        "COPYH_ROOT, WAVEH_STORE, COPYH_FUNDING, FRESH_STORE, FRESH2_STORE and PAPER_SEED must lie outside each other, but the funding store in COPYH_ROOT",
       path: ["COPYH_ROOT"],
     },
   );
 export type Settings = z.infer<typeof Settings>;
+
+/**
+ * Each thread's heap ceiling, GB (C15; RH1 (c)): design.ts's WORKER_HEAP_GB,
+ * or COPYH_HEAP_GB when a decisions entry names a larger one for a later
+ * step: a whole number above design.ts's, never a smaller one. Anything else
+ * is why the program refuses to start (exit 2).
+ */
+export function heapOf(value: string | undefined): number | string {
+  if (value === undefined) return WORKER_HEAP_GB;
+  return /^[1-9][0-9]*$/.test(value) && Number(value) > WORKER_HEAP_GB
+    ? Number(value)
+    : `COPYH_HEAP_GB=${value}: a whole number of GB above design.ts's ${WORKER_HEAP_GB}, or none`;
+}
 
 /** The end of the closed window `now` falls in, or null (WAVE-H's `windowEnd`, waveh/run.ts, on design.ts's windows, so that no WAVE-H process file joins COPY-H's closure). */
 export function windowEnd(now: number): number | null {
@@ -143,9 +185,6 @@ export function windowEnd(now: number): number | null {
     if (minute >= from && minute < to) return day + to * MINUTE_MS;
   return null;
 }
-
-/** A run's minutes when none are given: one less than a part's, so that the work in flight ends inside it. */
-export const RUN_MINUTES = PART_MINUTES - 1;
 
 /** A run's time: no new work starts once its minutes are spent or a closed window has begun. */
 export function budgetOf(minutes: number, now: () => number = Date.now) {
@@ -214,6 +253,15 @@ export function writeUnflushed(
 
 export const sha256 = (bytes: Buffer | string): string =>
   createHash("sha256").update(bytes).digest("hex");
+
+/** The shared, unfrozen files' hashes, logged at each start (C0). */
+export const sharedHashes = (packageRoot: string): Record<string, string> =>
+  Object.fromEntries(
+    ["dist/schedule.js", "dist/log.js"].map((f) => [
+      f,
+      sha256(readFileSync(path.join(packageRoot, f))),
+    ]),
+  );
 
 /** The compiled program's files, `dist/copyh.js` and `dist/copyh/`: their paths and hashes, hashed again. */
 export function fingerprintOf(packageRoot: string): string {

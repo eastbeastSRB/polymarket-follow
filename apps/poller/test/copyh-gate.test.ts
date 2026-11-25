@@ -1,11 +1,14 @@
 /**
  * COPY-H's gate (src/copyh/gate.ts; rules.md C0, "the gate"): S opens only
- * for step 2 on a verified freeze whose tag holds the very list (a temporary
- * git repository): an untagged list, an edited list, a file changed, missing
- * or unlisted, a file of the closure changed, the tag holding another list,
- * git not on the PATH, each refused and named. The compiled imports reach
- * exactly the closure, each file equal to its own program's freeze. Run in
- * `pnpm verify`'s order: the build first.
+ * for step 2 and FRESH-2's stage, and FRESH-2 only for its stage, each on a
+ * freeze verified for that command, whose tag holds the very list (a
+ * temporary git repository): an untagged list, an edited list, a file
+ * changed, missing or unlisted, a file of the closure changed, the tag
+ * holding another list, git not on the PATH, a list of another kind than the
+ * command's (RM2), the kit or lib-exits differing, each refused and named.
+ * The compiled imports reach the closure (the engine's two files aside, to
+ * come), each file equal to its own program's freeze. Run in `pnpm verify`'s
+ * order: the build first.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -23,13 +26,17 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
+  COMMANDS,
   COPYH_CLOSURE,
   COPYH_FILES,
   FROZEN_FILE,
+  KINDS,
   LZ4JS_FILES,
   frozenFiles,
   sealOf,
   verifyFreeze,
+  verifyGate,
+  type Command,
 } from "../src/copyh/gate.js";
 import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
 
@@ -119,18 +126,23 @@ describe("COPY-H's freeze (a temporary git repository)", () => {
     git(repo, "tag", "copyh-freeze-1");
   }, 60_000);
 
-  it("verifies a list whose tag holds it, byte for byte, and opens S for step 2 alone", () => {
+  it("verifies a list whose tag holds it, byte for byte, and opens nothing for a list verified alone or for step 1", () => {
     const f = verifyFreeze(root);
     expect(f).toEqual({
       ok: true,
       sha256: sha256(list),
       files: frozenFiles(root).length,
       tag: "copyh-freeze-1",
+      command: null,
     });
     expect(frozenFiles(root)).toContain("dist/copyh/deep/x.js");
     expect(frozenFiles(root)).not.toContain(FROZEN_FILE);
-    expect(sealOf(f, "2")).toEqual({ sOpen: true });
-    expect(sealOf(f, "1")).toEqual({ sOpen: false });
+    for (const c of COMMANDS)
+      expect(sealOf(f, c)).toEqual({ sOpen: false, f2Open: false });
+    const one = verifyFreeze(root, "step1");
+    expect(one).toMatchObject({ ok: true, command: "step1" });
+    for (const c of COMMANDS)
+      expect(sealOf(one, c)).toEqual({ sOpen: false, f2Open: false });
   }, 60_000);
 
   it("refuses with no list, and S stays closed", () => {
@@ -139,7 +151,7 @@ describe("COPY-H's freeze (a temporary git repository)", () => {
       () => {
         const f = verifyFreeze(root);
         expect(f).toEqual({ ok: false, problems: [`no ${FROZEN_FILE}`] });
-        expect(sealOf(f, "2")).toEqual({ sOpen: false });
+        expect(sealOf(f, "step2")).toEqual({ sOpen: false, f2Open: false });
       },
       () => renameSync(away(listFile()), listFile()),
     );
@@ -248,7 +260,7 @@ describe("COPY-H's freeze (a temporary git repository)", () => {
           expect(f.ok ? [] : f.problems).toEqual([
             expect.stringContaining(why),
           ]);
-          expect(sealOf(f, "2")).toEqual({ sOpen: false });
+          expect(sealOf(f, "step2")).toEqual({ sOpen: false, f2Open: false });
         },
         () => writeFileSync(listFile(), list),
       );
@@ -267,7 +279,7 @@ describe("COPY-H's freeze (a temporary git repository)", () => {
     expect(f.ok ? [] : f.problems).toEqual([
       expect.stringMatching(/^git could not show the tag's list \(.*ENOENT/),
     ]);
-    expect(sealOf(f, "2")).toEqual({ sOpen: false });
+    expect(sealOf(f, "step2")).toEqual({ sOpen: false, f2Open: false });
     expect(verifyFreeze(root).ok).toBe(true);
   }, 60_000);
 });
@@ -297,9 +309,16 @@ const under = (rel: string): string[] =>
           .flatMap((n) => under(`${rel}/${n}`))
       : [rel];
 
+/** Named in the closure (D14) for the code still to come: the engine's (part 3) and the re-reader's. */
+const PENDING = [
+  "dist/paper/copy.js",
+  "dist/paper/stats.js",
+  "dist/waveh/lz4.js",
+];
+
 describe("COPY-H's closure", () => {
   it.runIf(existsSync(path.join(PACKAGE_ROOT, "dist", "copyh")))(
-    "is exactly what the program's compiled files reach outside dist/copyh, the shared files aside",
+    "is what the program's compiled files reach outside dist/copyh, the shared files aside, and the files the engine is to import",
     () => {
       const reached = [
         ...closureOf([...under("dist/copyh.js"), ...under("dist/copyh")]),
@@ -313,6 +332,7 @@ describe("COPY-H's closure", () => {
               f !== "dist/schedule.js" &&
               f !== "dist/log.js",
           )
+          .concat(PENDING)
           .sort(),
       ).toEqual([...COPYH_CLOSURE].sort());
     },
@@ -341,5 +361,133 @@ describe("COPY-H's closure", () => {
       for (const [name, l] of naming)
         expect(l.get(f), `${f} in ${name}`).toBe(got);
     }
+  });
+});
+
+describe("the lists' kinds (RM2; temporary git repositories)", () => {
+  const BASE = [
+    "dist/copyh.js",
+    "dist/copyh/main.js",
+    ...COPYH_CLOSURE,
+    "research/kit.js",
+    ...LZ4JS_FILES,
+    ...COPYH_FILES,
+  ];
+  /** A repository whose tagged list holds these files and more. */
+  function frozen(more: readonly string[]): string {
+    const repo = tmp("copyh-kind");
+    const root = path.join(repo, "apps", "poller");
+    for (const f of [...BASE, ...more]) {
+      mkdirSync(path.join(root, path.dirname(f)), { recursive: true });
+      writeFileSync(path.join(root, f), `synthetic ${f}\n`);
+    }
+    writeFileSync(
+      path.join(root, FROZEN_FILE),
+      `${[
+        "# FROZEN: COPY-H's files of what runs (copyh/rules.md C0)",
+        "# tag copyh-freeze-1",
+        ...frozenFiles(root).map(
+          (f) => `${sha256(readFileSync(path.join(root, f)))} *${f}`,
+        ),
+      ].join("\n")}\n`,
+    );
+    git(repo, "init", "-q");
+    git(repo, "add", "-A");
+    git(repo, "commit", "-q", "-m", "the freeze");
+    git(repo, "tag", "copyh-freeze-1");
+    return root;
+  }
+  const oks = (root: string) =>
+    COMMANDS.filter((c) => verifyFreeze(root, c).ok);
+  const ROUNDS = [
+    "copyh/look1.sha256",
+    "copyh/choice.json",
+    "copyh/tries.json",
+  ];
+  const FRESH2 = [
+    ...ROUNDS,
+    "copyh/fresh2.sha256",
+    "copyh/funding2.sha256",
+    "copyh/look2.sha256",
+  ];
+
+  it("admits step 1's list for step 1 and the rounds alone, and opens nothing", () => {
+    const root = frozen([]);
+    expect(oks(root)).toEqual(["step1", "tries", "choice"]);
+    const two = verifyFreeze(root, "step2");
+    expect(two.ok ? [] : two.problems).toEqual([
+      "a list for step2 holds copyh/look1.sha256; this one does not",
+      "a list for step2 holds copyh/choice.json; this one does not",
+    ]);
+    for (const c of COMMANDS)
+      expect(sealOf(verifyFreeze(root, c), c)).toEqual({
+        sOpen: false,
+        f2Open: false,
+      });
+    // The rounds' tries.json beside the list, unlisted: the rounds' commands alone pass it.
+    writeFileSync(path.join(root, "copyh", "tries.json"), "{}\n");
+    expect(oks(root)).toEqual(["tries", "choice"]);
+    const one = verifyFreeze(root, "step1");
+    expect(one.ok ? [] : one.problems).toEqual([
+      "not in the freeze: copyh/tries.json",
+    ]);
+  }, 60_000);
+
+  it("admits the rounds' list for step 2 alone, which opens S and not FRESH-2", () => {
+    const root = frozen(ROUNDS);
+    expect(oks(root)).toEqual(["step2"]);
+    const f = verifyFreeze(root, "step2");
+    expect(sealOf(f, "step2")).toEqual({ sOpen: true, f2Open: false });
+    expect(sealOf(f, "fresh2")).toEqual({ sOpen: false, f2Open: false });
+    const one = verifyFreeze(root, "step1");
+    expect(one.ok ? [] : one.problems).toEqual([
+      "a list for step1 lacks copyh/look1.sha256; this one holds it",
+    ]);
+  }, 60_000);
+
+  it("admits FRESH-2's list for its stage alone, which opens S and FRESH-2", () => {
+    const root = frozen(FRESH2);
+    expect(oks(root)).toEqual(["fresh2"]);
+    const f = verifyFreeze(root, "fresh2");
+    expect(sealOf(f, "fresh2")).toEqual({ sOpen: true, f2Open: true });
+    expect(sealOf(f, "step2")).toEqual({ sOpen: false, f2Open: false });
+    const two = verifyFreeze(root, "step2");
+    expect(two.ok ? [] : two.problems).toEqual([
+      "a list for step2 lacks copyh/fresh2.sha256; this one holds it",
+    ]);
+    // Each file FRESH-2's kind holds is needed.
+    for (const need of KINDS.fresh2.holds) {
+      const r = frozen(FRESH2.filter((x) => x !== need));
+      expect(verifyFreeze(r, "fresh2").ok, need).toBe(false);
+    }
+  }, 120_000);
+
+  it("adds the kit's check: a kit or lib-exits that differs refuses, the real one passes", async () => {
+    const root = frozen([]);
+    const pass = await verifyGate(root, "step1", () => Promise.resolve());
+    expect(pass).toMatchObject({ ok: true, command: "step1" });
+    const fail = await verifyGate(root, "step1", () =>
+      Promise.reject(new Error("the kit's fingerprint x is not the pinned y")),
+    );
+    expect(fail.ok ? [] : fail.problems).toEqual([
+      "the kit or lib-exits: the kit's fingerprint x is not the pinned y",
+    ]);
+    expect(sealOf(fail, "step1")).toEqual({ sOpen: false, f2Open: false });
+    // The synthetic repository's research holds no kit: the default check refuses it.
+    const none = await verifyGate(root, "step1");
+    expect(none.ok ? [] : none.problems).toEqual([
+      expect.stringContaining("the kit or lib-exits: "),
+    ]);
+    // The package's own kit passes its check (whatever its freeze says).
+    const real = await verifyGate(PACKAGE_ROOT, "step1");
+    expect(
+      (real.ok ? [] : real.problems).filter((p) => p.startsWith("the kit")),
+    ).toEqual([]);
+  }, 60_000);
+
+  it("names every command's kind", () => {
+    expect(Object.keys(KINDS).sort()).toEqual([...COMMANDS].sort());
+    const c: Command = "step1";
+    expect(KINDS[c].lacks).toEqual(["copyh/look1.sha256"]);
   });
 });

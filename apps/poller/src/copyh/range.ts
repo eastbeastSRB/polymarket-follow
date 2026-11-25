@@ -12,6 +12,8 @@
  */
 import { HOUR_MS } from "../schedule.js";
 import { ARCHIVE_START, END_E, END_S, M0, SWITCH_HOUR } from "./design.js";
+import type { FileTask } from "./pass.js";
+import { StoreError } from "./run.js";
 
 export const RANGE_NAMES = ["burnin", "E", "S"] as const;
 export type RangeName = (typeof RANGE_NAMES)[number];
@@ -74,3 +76,34 @@ export const RANGES: Readonly<Record<RangeName, Range>> = {
   E: rangeOf("E", ARCHIVE_START, END_E),
   S: rangeOf("S", END_E, END_S),
 };
+
+const LIST_LINE = /^([0-9a-f]{64}) \*(.+)$/;
+
+/** `copyh/data.sha256`'s lines (sha256sum's format, written by `tools/copyh-freeze.cjs --data`): a key's SHA-256. Our own file: a line of another form, or a key twice, throws. */
+export function readDataList(text: string): Map<string, string> {
+  const list = new Map<string, string>();
+  text
+    .split("\n")
+    .filter((l) => l !== "")
+    .forEach((l, i) => {
+      const m = LIST_LINE.exec(l);
+      if (m === null)
+        throw new Error(`data.sha256: line ${i + 1} is not a list line`);
+      if (list.has(m[2]!)) throw new Error(`data.sha256: ${m[2]!} twice`);
+      list.set(m[2]!, m[1]!);
+    });
+  return list;
+}
+
+/** A range's files in its order, each with its SHA-256 from the list; a file the list lacks stops (exit 5). */
+export function filesOf(
+  range: Range,
+  list: ReadonlyMap<string, string>,
+): FileTask[] {
+  return range.fill.map((key, index) => {
+    const sha256 = list.get(key);
+    if (sha256 === undefined)
+      throw new StoreError(`${key}: not in copyh/data.sha256`);
+    return { index, key, sha256 };
+  });
+}

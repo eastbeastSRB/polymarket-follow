@@ -2,9 +2,10 @@
  * COPY-H's seals (src/copyh/seal.ts; rules.md C0, "the seals"): S is refused
  * before step 2 (FRESH's raw store and COPY-H's S folder, by name and
  * through a junction by real path; keys dated at or after END_E, one
- * millisecond either side); FRESH-2's and the analyzer's folders always,
- * open or closed; keys at or after END_S always; a path sealed by its name is
- * never resolved; a path outside the run's roots is refused, by name and
+ * millisecond either side); FRESH-2's folders and keys at or after END_S
+ * until FRESH-2's freeze, the analyzer's folders and anything at or after
+ * END_F2 always; the instants a reader checks (`checkInstant`, `endOf`);
+ * a path sealed by its name is never resolved; a path outside the run's roots is refused, by name and
  * through a junction inside a root; nothing is written in COPYH-FUNDING's
  * folder.
  */
@@ -20,21 +21,24 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { END_E, END_S } from "../src/copyh/design.js";
+import { END_E, END_F2, END_S } from "../src/copyh/design.js";
 import { RANGES } from "../src/copyh/range.js";
 import {
   SEALED,
   SealedError,
   checkInside,
+  checkInstant,
   checkKey,
   checkPath,
   checkWrite,
+  endOf,
   type Seal,
 } from "../src/copyh/seal.js";
 import { HOUR_MS } from "../src/schedule.js";
 import { keyDate } from "../src/waveh/keys.js";
 
-const OPEN: Seal = { sOpen: true };
+const OPEN: Seal = { sOpen: true, f2Open: false };
+const F2OPEN: Seal = { sOpen: true, f2Open: true };
 const tmp = (name: string) => mkdtempSync(path.join(tmpdir(), `${name}-`));
 const fillAt = (t: number) =>
   `node_fills_by_block/hourly/${new Date(t).toISOString().slice(0, 10).replaceAll("-", "")}/${new Date(t).getUTCHours()}.lz4`;
@@ -50,11 +54,13 @@ describe("the seal's paths", { timeout: 60_000 }, () => {
     "\\\\localhost\\F$\\x\\COPY-H\\S\\parts\\1.part",
     "\\\\?\\F:\\x\\copy-h\\s",
   ];
-  const ALWAYS = [
+  const F2_PATHS = [
     "F:\\research\\FRESH-2\\store\\node_fills_by_block\\hourly\\20261201\\3.lz4",
+    "F:\\x\\fresh-2",
+  ];
+  const ALWAYS = [
     "F:\\research\\ANALYZER\\WAVE-H\\store\\liq\\2025-10\\closedPnl.f64",
     "f:/x/analyzer/fresh/store/manifest.json",
-    "F:\\x\\fresh-2",
   ];
   const FREE = [
     "F:\\research\\WAVE-H\\store\\node_fills\\hourly\\20250601\\3.lz4",
@@ -71,25 +77,36 @@ describe("the seal's paths", { timeout: 60_000 }, () => {
       expect(() => checkPath(p), p).toThrow(SealedError);
       expect(() => checkPath(p, SEALED), p).toThrow("sealed until step 2");
       expect(() => checkPath(p, OPEN), p).not.toThrow();
+      expect(() => checkPath(p, F2OPEN), p).not.toThrow();
     }
   });
 
-  it("refuses FRESH-2's and the analyzer's folders always, open or closed", () => {
-    for (const p of ALWAYS)
+  it("refuses FRESH-2's folders until FRESH-2's freeze, and passes them under it", () => {
+    for (const p of F2_PATHS) {
       for (const seal of [SEALED, OPEN])
+        expect(() => checkPath(p, seal), p).toThrow(
+          "sealed until FRESH-2's freeze",
+        );
+      expect(() => checkPath(p, F2OPEN), p).not.toThrow();
+    }
+  });
+
+  it("refuses the analyzer's folders always, whatever is open", () => {
+    for (const p of ALWAYS)
+      for (const seal of [SEALED, OPEN, F2OPEN])
         expect(() => checkPath(p, seal), p).toThrow("sealed always");
   });
 
-  it("passes every other path, open or closed", () => {
+  it("passes every other path, whatever is open", () => {
     for (const p of FREE)
-      for (const seal of [SEALED, OPEN])
+      for (const seal of [SEALED, OPEN, F2OPEN])
         expect(() => checkPath(p, seal), p).not.toThrow();
   });
 
   it("never resolves a path sealed by its name; any other path it resolves", () => {
     const resolve = vi.spyOn(realpathSync, "native");
     try {
-      for (const p of [...S_PATHS, ...ALWAYS])
+      for (const p of [...S_PATHS, ...F2_PATHS, ...ALWAYS])
         expect(() => checkPath(p), p).toThrow(SealedError);
       expect(resolve).not.toHaveBeenCalled();
       checkPath(path.join(tmp("copyh-seal"), "a.lz4"));
@@ -227,17 +244,55 @@ describe("the seal's keys", { timeout: 60_000 }, () => {
     }
   });
 
-  it("refuses a key dated at or after END_S always, and one whose date does not parse", () => {
+  it("refuses a key dated at or after END_S until FRESH-2's freeze, at or after END_F2 always, and one whose date does not parse", () => {
     for (const k of [
       fillAt(END_S),
       "asset_ctxs/20261116.csv.lz4",
       `info/fundingHistory/SOL/${END_S}.json`,
-    ])
+      fillAt(END_F2 - HOUR_MS),
+    ]) {
       for (const seal of [SEALED, OPEN])
         expect(() => checkKey(k, seal), k).toThrow(
-          "dated at or after END_S, FRESH-2's months, sealed always",
+          "dated at or after END_S, FRESH-2's months, sealed until FRESH-2's freeze",
+        );
+      expect(() => checkKey(k, F2OPEN), k).not.toThrow();
+    }
+    for (const k of [fillAt(END_F2), `info/fundingHistory/SOL/${END_F2}.json`])
+      for (const seal of [SEALED, OPEN, F2OPEN])
+        expect(() => checkKey(k, seal), k).toThrow(
+          "dated at or after END_F2, sealed always",
         );
     for (const k of ["node_fills/hourly/2025061/3.lz4", "copyh/x.json"])
-      expect(() => checkKey(k, OPEN), k).toThrow("no date that parses");
+      expect(() => checkKey(k, F2OPEN), k).toThrow("no date that parses");
+  });
+
+  it("refuses a fill, row or minute from the seal's end, 1 ms either side of each END", () => {
+    expect([endOf(SEALED), endOf(OPEN), endOf(F2OPEN)]).toEqual([
+      END_E,
+      END_S,
+      END_F2,
+    ]);
+    const cases: [number, Seal, string | null][] = [
+      [END_E - 1, SEALED, null],
+      [END_E, SEALED, "at or after END_E, S's months, sealed until step 2"],
+      [END_E, OPEN, null],
+      [END_S - 1, OPEN, null],
+      [
+        END_S,
+        OPEN,
+        "at or after END_S, FRESH-2's months, sealed until FRESH-2's freeze",
+      ],
+      [END_S, F2OPEN, null],
+      [END_F2 - 1, F2OPEN, null],
+      [END_F2, F2OPEN, "at or after END_F2, sealed always"],
+    ];
+    for (const [t, seal, why] of cases) {
+      const check = () => checkInstant(t, "a funding row", seal);
+      if (why === null) expect(check, String(t)).not.toThrow();
+      else
+        expect(check, String(t)).toThrow(
+          `a funding row at ${new Date(t).toISOString()}: ${why}`,
+        );
+    }
   });
 });

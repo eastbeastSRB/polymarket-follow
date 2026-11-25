@@ -10,7 +10,10 @@
  * files with more than FAIL_SHARE, and at least FAIL_LEAST, of its records
  * failing the boundary stops it, judged once all the day's files are done. No file starts once the run's minutes are
  * spent or a closed window has begun: the files under way end, and the run
- * is not finished (exit 3).
+ * is not finished (exit 3). A counting pass (`mode: "count"`) reads the same
+ * way with the lists it has (a `dir` or coin outside them counted, never a
+ * stop) and writes each file's scan as a small JSON file instead of a part,
+ * from which `dirs.json` is ruled (C15 (c) 1).
  */
 import { createHash } from "node:crypto";
 import {
@@ -22,11 +25,18 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { getHeapStatistics } from "node:v8";
+import { z } from "zod";
 import { Worker } from "node:worker_threads";
 import { formatOf, keyDate } from "../waveh/keys.js";
-import { FAIL_LEAST, FAIL_SHARE } from "./design.js";
+import { FAIL_LEAST, FAIL_SHARE, WORKER_HEAP_GB } from "./design.js";
 import type { DirKind } from "./dirs.js";
-import { partFile, partOf, readPartHeader } from "./part.js";
+import {
+  ScanJson,
+  partFile,
+  partOf,
+  readPartHeader,
+  scanJsonOf,
+} from "./part.js";
 import {
   NotFinished,
   PACKAGE_ROOT,
@@ -34,7 +44,7 @@ import {
   writeUnflushed,
   type Budget,
 } from "./run.js";
-import { scanFile } from "./scan.js";
+import { scanFile, type Sink } from "./scan.js";
 import {
   SEALED,
   SealedError,
@@ -52,17 +62,18 @@ export const WORKER_FILE = path.join(
   "copyh",
   "worker.js",
 );
-/** Each pass worker's old-generation ceiling, MB [SET BEFORE THE FREEZE: 3× the synthetic peak until the rehearsal, then 2× its peak; the supervisor's ruling 10]. */
-export const WORKER_HEAP_MB = 4096;
 
 export type FileTask = { index: number; key: string; sha256: string };
-/** The lists a pass reads with, as plain pairs (a worker's message), and their SHA-256s, which a part names. */
+/** The lists a pass reads with, as plain pairs (a worker's message), and their SHA-256s, which a part names; a counting pass may lack `dirs.json` (kinds null, its hash "none"). */
 export type PassLists = {
   iids: readonly (readonly [string, number])[];
-  kinds: readonly (readonly [string, DirKind])[];
+  kinds: readonly (readonly [string, DirKind])[] | null;
   hashes: { coins: string; dirs: string };
 };
+/** A build writes parts; a count writes each file's scan alone. */
+export type PassMode = "build" | "count";
 export type Task = FileTask & {
+  mode: PassMode;
   store: string;
   parts: string;
   start: number;
@@ -106,6 +117,30 @@ const NO_MEMORY: Memory = {
   heapLimit: 0,
 };
 
+/** A counting pass's file: one input's scan, named by its input, code and lists. */
+export const CountFile = z.object({
+  input: z.object({ index: z.number(), key: z.string(), sha256: z.string() }),
+  code: z.string(),
+  lists: z.object({ coins: z.string(), dirs: z.string() }),
+  compressed: z.number(),
+  scan: ScanJson,
+});
+export type CountFile = z.infer<typeof CountFile>;
+export const countFile = (dir: string, index: number) =>
+  path.join(dir, `${index}.json`);
+
+/** A count file's content when it is whole and parses; else null (a resumed count redoes it). */
+export function readCountFile(file: string): CountFile | null {
+  try {
+    const r = CountFile.safeParse(JSON.parse(readFileSync(file, "utf8")));
+    return r.success ? r.data : null;
+  } catch {
+    return null;
+  }
+}
+
+const NOTHING: Sink = { add: () => {} };
+
 type Done = {
   index: number;
   key: string;
@@ -135,6 +170,7 @@ function extractFile(task: Task): Done {
     throw new StoreError(
       `${task.key}: SHA-256 ${got}, the list's ${task.sha256}`,
     );
+  const counting = task.mode === "count";
   const writers = new Writers();
   let scan: ReturnType<typeof scanFile>;
   try {
@@ -145,25 +181,33 @@ function extractFile(task: Task): Done {
       end: task.end,
       lists: {
         iids: new Map(task.lists.iids),
-        kinds: new Map(task.lists.kinds),
-        counting: false,
+        kinds: task.lists.kinds === null ? null : new Map(task.lists.kinds),
+        counting,
       },
-      sink: writers,
+      sink: counting ? NOTHING : writers,
     });
   } catch (err) {
     if (err instanceof StoreError) throw err;
     throw new StoreError(`${task.key}: ${(err as Error).message}`);
   }
-  const part = partOf({
-    input: { index: task.index, key: task.key, sha256: task.sha256 },
-    code: task.code,
-    lists: task.lists.hashes,
-    compressed: bytes.length,
-    scan,
-    writers,
-  });
+  const input = { index: task.index, key: task.key, sha256: task.sha256 };
+  const out = counting
+    ? Buffer.from(
+        `${JSON.stringify({ input, code: task.code, lists: task.lists.hashes, compressed: bytes.length, scan: scanJsonOf(scan) } satisfies CountFile)}\n`,
+      )
+    : partOf({
+        input,
+        code: task.code,
+        lists: task.lists.hashes,
+        compressed: bytes.length,
+        scan,
+        writers,
+      });
   const memory = memoryNow();
-  writeUnflushed(partFile(task.parts, task.index), part);
+  writeUnflushed(
+    (counting ? countFile : partFile)(task.parts, task.index),
+    out,
+  );
   return {
     index: task.index,
     key: task.key,
@@ -232,7 +276,10 @@ export type PassSummary = {
 
 export async function runPass(o: {
   store: string;
+  /** The parts' folder, or a count's files'. */
   parts: string;
+  /** "build" when not given. */
+  mode?: PassMode;
   files: readonly FileTask[];
   start: number;
   end: number;
@@ -240,6 +287,8 @@ export async function runPass(o: {
   lists: PassLists;
   /** 0: in this thread (the tests). */
   workers: number;
+  /** Each worker's heap ceiling, GB (run.ts `heapOf`). */
+  heapGb?: number;
   seal?: Seal;
   roots: readonly string[];
   budget: Budget;
@@ -275,20 +324,26 @@ export async function runPass(o: {
         `${day}: ${d.failed} of ${d.seen} records fail the boundary`,
       );
   };
+  const mode = o.mode ?? "build";
+  /** A file's part or count file as a resumed pass finds it: its input, code, lists and scan; null when it must be redone. */
+  const doneOf = (f: FileTask) =>
+    mode === "count"
+      ? readCountFile(countFile(o.parts, f.index))
+      : (readPartHeader(partFile(o.parts, f.index))?.header ?? null);
   const todo: FileTask[] = [];
   let skipped = 0;
   for (const f of o.files) {
-    const h = readPartHeader(partFile(o.parts, f.index));
+    const h = doneOf(f);
     if (
       h !== null &&
-      h.header.input.key === f.key &&
-      h.header.input.sha256 === f.sha256 &&
-      h.header.code === o.code &&
-      h.header.lists.coins === o.lists.hashes.coins &&
-      h.header.lists.dirs === o.lists.hashes.dirs
+      h.input.key === f.key &&
+      h.input.sha256 === f.sha256 &&
+      h.code === o.code &&
+      h.lists.coins === o.lists.hashes.coins &&
+      h.lists.dirs === o.lists.hashes.dirs
     ) {
       skipped += 1;
-      tally(f.key, h.header.scan.seen, h.header.scan.classes.failed);
+      tally(f.key, h.scan.seen, h.scan.classes.failed);
     } else todo.push(f);
   }
   o.log("pass", {
@@ -325,6 +380,7 @@ export async function runPass(o: {
   };
   const task = (f: FileTask): Task => ({
     ...f,
+    mode,
     store: o.store,
     parts: o.parts,
     start: o.start,
@@ -345,6 +401,7 @@ export async function runPass(o: {
     stopped = await pool(
       Math.min(o.workers, todo.length),
       todo.map(task),
+      o.heapGb ?? WORKER_HEAP_GB,
       o.budget,
       onDone,
     );
@@ -369,6 +426,7 @@ export async function runPass(o: {
 async function pool(
   n: number,
   tasks: readonly Task[],
+  heapGb: number,
   budget: Budget,
   onDone: (d: Done, worker: number) => void,
 ): Promise<string | null> {
@@ -384,7 +442,7 @@ async function pool(
       (_, w) =>
         new Promise<void>((resolve) => {
           const worker = new Worker(WORKER_FILE, {
-            resourceLimits: { maxOldGenerationSizeMb: WORKER_HEAP_MB },
+            resourceLimits: { maxOldGenerationSizeMb: heapGb * 1024 },
           });
           const finish = () => {
             void worker.terminate().then(() => resolve());

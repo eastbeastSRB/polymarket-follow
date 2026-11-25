@@ -103,8 +103,10 @@ export const FRESH2_FILES = 4_368;
 export const TRIPWIRE_MINUTES = 6;
 export const TRIPWIRE_STOP = 0.01;
 
-/** A part is planned to last at most this long (C15); a run starts no new work after one minute less, so that the work in flight ends inside it. */
+/** A part is planned to last at most this long (C15). */
 export const PART_MINUTES = 15;
+/** A run starts no new part once these are spent, so that with the work in flight it ends inside PART_MINUTES (C15; the fix-check's F4). */
+export const RUN_MINUTES = 14;
 /** The UTC minutes of the day in which no part starts: 02:30–06:00 and 10:25–11:15 (C15). */
 export const CLOSED_WINDOWS: readonly (readonly [number, number])[] = [
   [150, 360],

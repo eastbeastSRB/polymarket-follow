@@ -1,40 +1,47 @@
 /**
  * COPY-H's seals (copyh/rules.md C0, "the seals"). Every reader refuses,
  * before it opens anything:
- * - always: a key dated at or after END_S (FRESH-2's months) and a key whose
- *   date does not parse; a path in a `FRESH-2` folder or in an `ANALYZER`
- *   folder (COPY-H reads raw stores only; the analyzer's `liq` holds
- *   `closedPnl`);
+ * - always: a key whose date does not parse, and any key, fill, row or
+ *   minute at or after END_F2; a path in an `ANALYZER` folder (COPY-H reads
+ *   raw stores only; the analyzer's `liq` holds `closedPnl`);
  * - until step 2: a path in FRESH's raw store (`…\FRESH\store`) or COPY-H's
- *   S folder (`…\COPY-H\S`), and a key dated at or after END_E (S's months);
+ *   S folder (`…\COPY-H\S`), and a key, fill, row or minute at or after
+ *   END_E (S's months); so step 1 reads the funding store's rows before
+ *   END_E only;
+ * - until FRESH-2's freeze: a path in a `FRESH-2` folder and a key, fill,
+ *   row or minute at or after END_S (RM7);
  * - a path outside the run's roots, the folders its settings name
  *   (`checkInside`): so no other program's data, run folder, backups or
  *   holdout files, and no other project, is ever reached, even through a
- *   junction inside a root.
+ *   junction inside a root (D15: the reproduction's one more root is the
+ *   paper's seed folder).
  * A path is checked by its name first, then by its real path (a junction or
  * link followed); a path sealed by its name is never resolved, so nothing of
- * it is touched. Only the gate opens S (gate.ts `sealOf`: a verified freeze,
- * step 2). Nothing is ever written in COPYH-FUNDING's `COPY-H\funding`.
+ * it is touched. Only the gate opens S and FRESH-2 (gate.ts `sealOf`: a
+ * verified freeze of the command's kind). Nothing is ever written in
+ * COPYH-FUNDING's `COPY-H\funding`.
  */
 import { realpathSync } from "node:fs";
 import path from "node:path";
 import { keyDate } from "../waveh/keys.js";
-import { END_E, END_S } from "./design.js";
+import { END_E, END_F2, END_S } from "./design.js";
 
 export class SealedError extends Error {}
 
-/** The seal's state; only the gate opens it (gate.ts `sealOf`). */
-export type Seal = { readonly sOpen: boolean };
-/** S closed: every reader's default. */
-export const SEALED: Seal = { sOpen: false };
+/** The seal's state; only the gate opens it (gate.ts `sealOf`): S at step 2, S and FRESH-2 at FRESH-2's stage. */
+export type Seal = { readonly sOpen: boolean; readonly f2Open: boolean };
+/** S and FRESH-2 closed: every reader's default. */
+export const SEALED: Seal = { sOpen: false, f2Open: false };
 
 /** Folders sealed always, wherever they are. */
-const ALWAYS: readonly (readonly string[])[] = [["fresh-2"], ["analyzer"]];
+const ALWAYS: readonly (readonly string[])[] = [["analyzer"]];
 /** Folders sealed until step 2: a name inside another. */
 const UNTIL_STEP_2: readonly (readonly string[])[] = [
   ["fresh", "store"],
   ["copy-h", "s"],
 ];
+/** Folders sealed until FRESH-2's freeze. */
+const UNTIL_FRESH_2: readonly (readonly string[])[] = [["fresh-2"]];
 
 const partsOf = (p: string) => p.split(/[\\/]+/).map((x) => x.toLowerCase());
 
@@ -67,6 +74,9 @@ function sealedBy(p: string, seal: Seal): string | null {
   const parts = partsOf(p);
   const always = within(parts, ALWAYS);
   if (always !== null) return `in ${always.join("\\")}, sealed always`;
+  const f2 = seal.f2Open ? null : within(parts, UNTIL_FRESH_2);
+  if (f2 !== null)
+    return `in FRESH-2 (${f2.join("\\")}), sealed until FRESH-2's freeze`;
   const s = seal.sOpen ? null : within(parts, UNTIL_STEP_2);
   return s === null ? null : `in S (${s.join("\\")}), sealed until step 2`;
 }
@@ -98,18 +108,33 @@ export function checkInside(file: string, roots: readonly string[]): void {
     );
 }
 
-/** Refuses a store key whose date does not parse, one dated at or after END_S always, and one dated at or after END_E while S is closed. */
+/** The first instant the seal refuses: END_E closed, END_S with S open, END_F2 with FRESH-2 open. */
+export const endOf = (seal: Seal): number =>
+  seal.f2Open ? END_F2 : seal.sOpen ? END_S : END_E;
+
+/** Why an instant is sealed, or null. */
+function instantSealed(t: number, seal: Seal): string | null {
+  if (t >= END_F2) return "at or after END_F2, sealed always";
+  if (t >= END_S && !seal.f2Open)
+    return "at or after END_S, FRESH-2's months, sealed until FRESH-2's freeze";
+  if (t >= END_E && !seal.sOpen)
+    return "at or after END_E, S's months, sealed until step 2";
+  return null;
+}
+
+/** Refuses a fill, row or minute at an instant the seal closes (a reader's check on what it parsed). */
+export function checkInstant(t: number, what: string, seal: Seal): void {
+  const why = instantSealed(t, seal);
+  if (why !== null)
+    throw new SealedError(`${what} at ${new Date(t).toISOString()}: ${why}`);
+}
+
+/** Refuses a store key whose date does not parse, and one dated at an instant the seal closes. */
 export function checkKey(key: string, seal: Seal = SEALED): void {
   const t = keyDate(key);
   if (t === null) throw new SealedError(`${key}: no date that parses`);
-  if (t >= END_S)
-    throw new SealedError(
-      `${key}: dated at or after END_S, FRESH-2's months, sealed always`,
-    );
-  if (t >= END_E && !seal.sOpen)
-    throw new SealedError(
-      `${key}: dated at or after END_E, S's months, sealed until step 2`,
-    );
+  const why = instantSealed(t, seal);
+  if (why !== null) throw new SealedError(`${key}: dated ${why}`);
 }
 
 /** Refuses a folder COPY-H would write in: a sealed one, or one in COPYH-FUNDING's `COPY-H\funding`, by its name or its real path. */

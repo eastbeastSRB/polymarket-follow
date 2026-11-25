@@ -22,17 +22,18 @@ import {
   GateFailed,
   NotFinished,
   PACKAGE_ROOT,
-  RUN_MINUTES,
   Settings,
   StoreError,
   budgetOf,
   exitOf,
   fingerprintOf,
+  heapOf,
   sha256,
   windowEnd,
   writeUnflushed,
   writeWhole,
 } from "../src/copyh/run.js";
+import { RUN_MINUTES, WORKER_HEAP_GB } from "../src/copyh/design.js";
 import { SealedError } from "../src/copyh/seal.js";
 import { MINUTE_MS } from "../src/schedule.js";
 import { PACKAGE_ROOT as WAVEH_PACKAGE_ROOT } from "../src/waveh/gate.js";
@@ -53,15 +54,17 @@ describe("the settings", { timeout: 60_000 }, () => {
       : r.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
   };
   const within =
-    "COPYH_ROOT: COPYH_ROOT, WAVEH_STORE, COPYH_FUNDING and FRESH_STORE must lie outside each other, but the funding store in COPYH_ROOT";
+    "COPYH_ROOT: COPYH_ROOT, WAVEH_STORE, COPYH_FUNDING, FRESH_STORE, FRESH2_STORE and PAPER_SEED must lie outside each other, but the funding store in COPYH_ROOT";
 
-  it("take COPY-H's folder and WAVE-H's raw store, the funding store in COPY-H's folder and FRESH's raw store when given", () => {
+  it("take COPY-H's folder and WAVE-H's raw store, the funding store in COPY-H's folder, FRESH's and FRESH-2's raw stores and the paper's seed when given", () => {
     expect(issues(good)).toEqual([]);
     expect(
       issues({
         ...good,
         COPYH_FUNDING: `${R}\\COPY-H\\funding`,
         FRESH_STORE: `${R}\\FRESH\\store`,
+        FRESH2_STORE: `${R}\\FRESH-2\\store`,
+        PAPER_SEED: "E:\\x\\paper\\seed",
       }),
     ).toEqual([]);
     expect(issues({ ...good, COPYH_ROOT: "f:/x/copy-h/" })).toEqual([]);
@@ -84,6 +87,12 @@ describe("the settings", { timeout: 60_000 }, () => {
     expect(issues({ ...good, FRESH_STORE: "F:\\x\\WAVE-H\\store" })).toEqual([
       "FRESH_STORE: is not FRESH's raw store (…\\FRESH\\store)",
     ]);
+    expect(issues({ ...good, FRESH2_STORE: "F:\\x\\FRESH\\store" })).toEqual([
+      "FRESH2_STORE: is not FRESH-2's raw store (…\\FRESH-2\\store)",
+    ]);
+    expect(issues({ ...good, PAPER_SEED: "E:\\x\\paper" })).toEqual([
+      "PAPER_SEED: is not the paper's seed folder (…\\seed)",
+    ]);
   });
 
   it("refuse one inside another, but the funding store inside COPY-H's folder", () => {
@@ -97,8 +106,32 @@ describe("the settings", { timeout: 60_000 }, () => {
         COPYH_FUNDING: `${R}\\COPY-H\\funding`,
         FRESH_STORE: `${R}\\COPY-H\\funding\\FRESH\\store`,
       },
+      { ...good, FRESH2_STORE: `${R}\\COPY-H\\FRESH-2\\store` },
+      { ...good, PAPER_SEED: `${R}\\WAVE-H\\store\\seed` },
     ])
       expect(issues(s), JSON.stringify(s)).toEqual([within]);
+  });
+});
+
+describe("the heap's setting", { timeout: 60_000 }, () => {
+  it("is design.ts's ceiling when unset, a larger whole number when set, and a refusal otherwise", () => {
+    expect(heapOf(undefined)).toBe(WORKER_HEAP_GB);
+    expect(heapOf(String(WORKER_HEAP_GB + 1))).toBe(WORKER_HEAP_GB + 1);
+    expect(heapOf("24")).toBe(24);
+    for (const v of [
+      String(WORKER_HEAP_GB),
+      String(WORKER_HEAP_GB - 1),
+      "0",
+      "",
+      "8.5",
+      "08",
+      "-8",
+      "8GB",
+      " 8",
+    ])
+      expect(heapOf(v), v).toBe(
+        `COPYH_HEAP_GB=${v}: a whole number of GB above design.ts's ${WORKER_HEAP_GB}, or none`,
+      );
   });
 });
 

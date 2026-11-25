@@ -73,41 +73,45 @@ const SHA = z.string().regex(/^[0-9a-f]{64}$/);
 const Stretch = z.object({ span: Blob, sha256: SHA });
 const Taker = z.tuple([z.number(), z.number(), z.number()]).nullable();
 
+/** A file's scan as a part or a count file holds it: its maps as sorted pairs. */
+export const ScanJson = z.object({
+  decoded: z.number(),
+  lines: z.number(),
+  seen: z.number(),
+  classes: z.object({
+    kept: z.number(),
+    spot: z.number(),
+    builder: z.number(),
+    outcome: z.number(),
+    early: z.number(),
+    late: z.number(),
+    failed: z.number(),
+    unknownDir: z.number(),
+    unknownCoin: z.number(),
+  }),
+  slowLines: z.number(),
+  slowRecords: z.number(),
+  misread: z.number(),
+  byHour: z.array(z.tuple([z.number(), z.number()])),
+  dirs: z.array(z.tuple([z.string(), z.number()])),
+  takers: z.array(z.tuple([z.string(), z.number()])),
+  coins: z.array(
+    z.tuple([z.number(), z.number(), z.number(), z.number(), z.number()]),
+  ),
+  unknownDirs: z.array(z.tuple([z.string(), z.number()])),
+  unknownCoins: z.array(z.tuple([z.string(), z.number()])),
+  vaults: z.array(z.string()),
+  runs: z.array(z.tuple([z.number(), z.number()])),
+  minutes: z.array(z.tuple([z.number(), z.number(), z.number()])),
+});
+export type ScanJson = z.infer<typeof ScanJson>;
+
 export const PartHeader = z.object({
   input: z.object({ index: z.number(), key: z.string(), sha256: SHA }),
   code: z.string(),
   lists: z.object({ coins: SHA, dirs: SHA }),
   compressed: z.number(),
-  scan: z.object({
-    decoded: z.number(),
-    lines: z.number(),
-    seen: z.number(),
-    classes: z.object({
-      kept: z.number(),
-      spot: z.number(),
-      builder: z.number(),
-      outcome: z.number(),
-      early: z.number(),
-      late: z.number(),
-      failed: z.number(),
-      unknownDir: z.number(),
-      unknownCoin: z.number(),
-    }),
-    slowLines: z.number(),
-    slowRecords: z.number(),
-    misread: z.number(),
-    byHour: z.array(z.tuple([z.number(), z.number()])),
-    dirs: z.array(z.tuple([z.string(), z.number()])),
-    takers: z.array(z.tuple([z.string(), z.number()])),
-    coins: z.array(
-      z.tuple([z.number(), z.number(), z.number(), z.number(), z.number()]),
-    ),
-    unknownDirs: z.array(z.tuple([z.string(), z.number()])),
-    unknownCoins: z.array(z.tuple([z.string(), z.number()])),
-    vaults: z.array(z.string()),
-    runs: z.array(z.tuple([z.number(), z.number()])),
-    minutes: z.array(z.tuple([z.number(), z.number(), z.number()])),
-  }),
+  scan: ScanJson,
   users: Stretch.extend({ count: z.number(), blob: Blob }),
   dicts: z.object({ dirs: z.array(z.string()), methods: z.array(z.string()) }),
   groups: z.array(
@@ -236,30 +240,12 @@ export function partOf(p: {
   }));
   const bars = { ...stretch(barsFrom, barsFirst), coins };
   const payload = Buffer.concat(chunks);
-  const s = p.scan;
   const header: PartHeader = {
     input: p.input,
     code: p.code,
     lists: p.lists,
     compressed: p.compressed,
-    scan: {
-      decoded: s.decoded,
-      lines: s.lines,
-      seen: s.seen,
-      classes: s.classes,
-      slowLines: s.slowLines,
-      slowRecords: s.slowRecords,
-      misread: s.misread,
-      byHour: byKey(s.byHour),
-      dirs: byKey(s.dirs),
-      takers: byKey(s.takers),
-      coins: byKey(s.coins).map(([iid, c]) => [iid, ...c]),
-      unknownDirs: byKey(s.unknownDirs),
-      unknownCoins: byKey(s.unknownCoins),
-      vaults: [...s.vaults].sort(),
-      runs: s.runs,
-      minutes: s.minutes,
-    },
+    scan: scanJsonOf(p.scan),
     users: {
       ...usersStretch,
       count: p.writers.users.list.length,
@@ -280,6 +266,28 @@ export function partOf(p: {
   const len = Buffer.alloc(4);
   len.writeUInt32LE(head.length);
   return Buffer.concat([MAGIC, len, head, payload]);
+}
+
+/** A scan's JSON form. */
+export function scanJsonOf(s: Scan): ScanJson {
+  return {
+    decoded: s.decoded,
+    lines: s.lines,
+    seen: s.seen,
+    classes: s.classes,
+    slowLines: s.slowLines,
+    slowRecords: s.slowRecords,
+    misread: s.misread,
+    byHour: byKey(s.byHour),
+    dirs: byKey(s.dirs),
+    takers: byKey(s.takers),
+    coins: byKey(s.coins).map(([iid, c]) => [iid, ...c]),
+    unknownDirs: byKey(s.unknownDirs),
+    unknownCoins: byKey(s.unknownCoins),
+    vaults: [...s.vaults].sort(),
+    runs: s.runs,
+    minutes: s.minutes,
+  };
 }
 
 export type Head = { header: PartHeader; start: number };

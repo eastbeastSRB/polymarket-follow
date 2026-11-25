@@ -77,6 +77,7 @@ const ROWS: Record<string, readonly (number | string)[] | null> = {
   "tripwire minutes": [D.TRIPWIRE_MINUTES],
   "tripwire stop": [D.TRIPWIRE_STOP],
   "part minutes": [D.PART_MINUTES],
+  "run minutes": [D.RUN_MINUTES],
   "closed windows": D.CLOSED_WINDOWS.map(([a, b]) => `${hhmm(a)}-${hhmm(b)}Z`),
   "worker heap": [D.WORKER_HEAP_GB],
   "worker heap cap GB": [D.WORKER_HEAP_CAP_GB],
