@@ -13,8 +13,8 @@ B0 + W4, with the owner's 715 cut deciding and a safety net to N. Its exam
 is FROZEN (2026-11-20, `polish/FROZEN.sha256`, tag `polish-freeze-1`).
 Look 1 on FRESH ran 2026-11-24/25: **WITHHELD** (11.6% of the 715 line's
 3,078 positions not priced cleanly; the 3,000 priced +4.5 ± 91.7 bps). Its
-Final review with independent code says the verdict stands. By the frozen
-rules the exam goes on to look 2 (about 2027-02-08).** The plan is the plan
+Final review with independent code says the verdict stands. Look 2 is not
+built (the owner, 2026-11-25): the exam stays unresolved at look 1.** The plan is the plan
 page (docs/claude-master-plan.md); what exists is architecture.
 
 The supervisor is one long-lived chat whose state and method live in its own
@@ -89,23 +89,23 @@ folder outside the repo, `E:\coding\Claude\supervisor\polymarket-follow\`
 
 ## Next up — IN ORDER
 
-1. **The owner's talk after look 1:** what next for the project. Covers:
-   - the supervisor's recommendation: stop polishing the wave rule, keep
-     the frozen tests running, make v1 the main work, and give "crash side
-     only" one frozen test;
-   - whether look 2 runs (list FRESH-2's `l2Book` sizes first, metadata
-     only);
-   - the cleanups (deletions need the owner's yes);
-   - the AI items and Fable 5.2's cold review.
-2. **Look 2** (about 2027-02-08; rules.md P1, P15), if it runs: FRESH-2
-   downloaded, a later build under its own freeze, the rehearsal again
-   first. Then, as at look 1:
-   - the reproduction;
-   - step 1 (two builds held equal, the integrity, the counts);
-   - the books (`tools\waveh-fetch.cjs --fresh --books`, started by a cmd
-     like the supervisor's `verify/POLISH-LOOK1/look1-books.cmd`);
-   - step 2;
-   - the report and a Final review with independent code.
+1. **COPY-H, copying traders on Hyperliquid's ~18 months** (decisions
+   2026-11-25, the owner's talk and the rulings on FABLE-REVIEW):
+   - COPY-H-PLAN writes the plan, and it meets the plan gate (WORKFLOW);
+   - then a fresh plan review;
+   - a short talk on where the owner would act;
+   - the owner's yes;
+   - the build and one look.
+
+   No outcome is computed on any month before the plan is approved. The
+   stop rule follows its look.
+2. **The paper experiment's refused market-days** (FABLE-REVIEW H1): count
+   the copies the two stock-split days touch, and prepare a fix by R0's
+   route (5 failed reads in a row end a run). Applied only on the owner's
+   yes, before the look of 2026-12-19.
+3. **"The crash side only":** one frozen page with the plan gate's
+   arithmetic, before anyone looks at FRESH-2's months. Nothing is built
+   unless it can answer.
 3. **MARKET-1's daily runs** (10:30Z): no paper command by hand while a
    MARKET-1 run is live (rules.md M2).
 4. **The daily runs:** the supervisor checks each program's log, budget and
