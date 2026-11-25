@@ -1,5 +1,74 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's PLAN REVIEW): **"APPROVE AFTER THESE
+FIXES". 2 HIGH, 9 MEDIUM, 9 LOW; NONE ASKS FOR A NEW PLAN. NO MONTH THAT
+CHOOSES ALSO JUDGES.**
+
+**The review:** `docs/reviews/copy-h-plan-review-2026-11-25.md` (`dda8d38`).
+- COPY-H-PLAN-REVIEW: Fable 5.2, max, 13:04–13:49Z, then 16:13–16:21Z
+  after a usage-limit stop. Context peak 733k (76%).
+- **Access clean:** only COPY-H-PLAN's scripts and outputs and WORKFLOW;
+  no file on F:.
+- **Its evidence:** four scripts of its own on the plan's numbers (no data
+  read), in its `progress.md`. A first formula slip (r1, section D) was
+  caught by its simulation and replaced by r3.
+
+**A correction to the supervisor's earlier entry** ("COPY-H's plan is
+written; its fresh review runs"): by the plan's C14, a filter chosen on E
+is confirmed on S alone, then judged on FRESH-2 alone. MAIN, frozen on
+Polymarket's weeks, is judged on E and on E ∪ S. So no choosing month
+judges. The plan's recommendation line 3 and that entry read otherwise,
+and both are mended by the rules.
+
+**Its findings:**
+- **H1 (high).** MAIN leans long (0.32; 63–70% long in every account
+  group), and 21% of entries are still open at their week's end. So entry
+  days are not independent, and the money reading's true spread is about
+  3 times the error an entry-day cluster reads.
+  - **Fix:** a second deciding quantity, the edge over the market (x′ = d
+    − the copy's own 24-hour cost), with an SE by UTC day and by UTC week.
+  - **DROP** needs both m and m′ under +10 at z.
+  - **KEEP** needs both above 0, plus the two sign conditions.
+  - The same pair holds at the choice, the confirmation and the seal.
+- **H2 (high).** What a DROP at look 1 does to the rounds is unwritten.
+  **Fix:** one sentence chosen by the owner now.
+- **M1–M9:**
+  - market trades only, never the backstop's, ADL's or Settlement's;
+  - the tripwire's third unpriced reason;
+  - the label check moved, and its cost stated (~15 CPU-hours);
+  - histories only for accounts that are P1 at some Monday, and a twin
+    for the engine's run;
+  - the rounds' loose ends (no try from the wave's family, k = 18, Holm's
+    m 2);
+  - a thin-tape guard;
+  - DELAY0 at the minute's last price and no SPEED line;
+  - the yes sized on page one;
+  - no priced rehearsal file kept.
+- **L1–L9:**
+  - FRESH-2 fixed now at 26 weeks, [2026-11-16, 2027-05-17);
+  - `coins.json` from `meta`;
+  - the funding fetch in sessions;
+  - the others small.
+
+**The power, recomputed with its own code:** every cell of the plan's table
+equal; one differs by a point. With H1's fix, in the central case, no
+edge reads DROP about 91% of the time (60% at the worst corner), a real +15
+reads KEEP 60–74%, and there is no wrong-side verdict. The plan gate holds.
+
+**For the owner:**
+1. approve with the fixes;
+2. H1;
+3. H2 (rounds still run after a DROP, recommended, or a DROP ends COPY-H);
+4. the stop rule's "one look" becomes "after COPY-H's step 2";
+5. the funding fetch;
+6. the bar at +10 bps on base-tier costs (Propr's are Hyperliquid's);
+7. FRESH-2 at 26 weeks;
+8. delete the planner's slice rows that hold fill prices (its scratch).
+
+**Then:** a decisions entry with the owner's rulings; the builder writes
+`copyh/rules.md` with every fix; its own fresh rules review; the build in
+parts.
+
 2026-11-25 (the supervisor — "THE CRASH SIDE ONLY" FROZEN AS ONE PAGE; NOT
 BUILT): **`apps/poller/crashside/rules.md`, COMMIT `a2495d0`, SHA-256
 `b8295eb6d5bd73c07743cea289d3c15728ca4b465a6db430371051c2477aafd6`, FROZEN
