@@ -569,6 +569,35 @@ read from a venue's page is as that page read on the day.
 
 ### Hyperliquid's public info API (`POST https://api.hyperliquid.xyz/info`)
 
+- **What a follower would meet, from the official docs** (read 2026-11-25 by
+  HL-FOLLOW-FACTS; each page's own date in
+  `docs/reviews/hl-follow-facts-2026-11-25.md`; no API call made):
+  - **Fees, perps, base tier:** taker 0.045%, maker 0.015%. A taker round
+    trip is 9.0 bps, a maker one 3.0. HIP-3 coins cost more. A builder fee
+    of at most 0.1% is inside the fill's `fee`. The docs give no spread.
+  - **Funding:** hourly, at 1/8 of an 8-hour rate; the interest part is
+    0.00125% an hour; the cap is 0.5% an hour.
+  - **Watching any address, keyless:**
+    - `info`: `userFills`, `userFillsByTime`, `clearinghouseState`,
+      `portfolio`, `vaultDetails`;
+    - WebSocket `userFills`, `userEvents`.
+  - **Limits:**
+    - REST: 1,200 weight a minute per IP; `userFills` weighs 20 plus an
+      unstated extra per 20 rows; `clearinghouseState` weighs 2.
+    - WebSocket: 10 unique users per IP, 10 connections, 1,000
+      subscriptions.
+    - The API reaches only an account's 10,000 most recent fills.
+  - **No read lag is stated.** Arithmetic from the limits only: a follower
+    would detect a fill in about 1–3 s by WebSocket and 30–50 s by polling
+    fills; the owner's own step comes on top.
+  - **Vaults:**
+    - a leader takes 10% of profit; lock-up is 1 day (4 for HLP);
+    - positions, trades and PnL history are public;
+    - 3,032 vaults and $219.6M locked, as the app showed that day.
+  - **Terms** (version of 15 June 2026): nothing on copying, following,
+    scraping or research. Section 3.1.8 bars bots that exceed reasonable use
+    or bypass rate limits.
+
 - **Keyless; `Content-Type: application/json`** (2026-11-13 23:33Z; seven
   reads, all 200). `{"type":"meta"}` (17,743 B): `{universe, marginTables,
   collateralToken}`; 235 `universe` entries `{szDecimals, name, maxLeverage,

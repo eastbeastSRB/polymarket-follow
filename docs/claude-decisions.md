@@ -1,5 +1,49 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — HL-FOLLOW-FACTS): **THE FACTS A FOLLOWER WOULD
+MEET ARE IN. THEY CONFIRM COPY-H'S BASE-TIER COST (4.5 BPS A LEG) AND MAKE
+ITS FUNDING FETCH HOURS, NOT MINUTES.**
+
+**The report:** `docs/reviews/hl-follow-facts-2026-11-25.md` (`19bb0d7`).
+- HL-FOLLOW-FACTS: Sonnet 5.5, xhigh, 12:52–13:12Z. Context peak 361k.
+- It read official pages only, through the browser pane (the docs,
+  Finotive's help centre, Binance). The supervisor read its calls: no API
+  call, no sign-in, nothing typed into a site.
+- Hyperliquid's facts are in external-apis (the same date).
+
+**Venues, for the owner's talk** (facts only, read 2026-11-25; Finotive's
+pages carry no date):
+- **Hyperliquid:**
+  - 9.0 bps a taker round trip at the base tier;
+  - any address watchable with no key;
+  - its terms are silent on following.
+- **Binance futures:**
+  - 37 of the 38 small coins by ticker (not CASHCAT), plus BTC and ETH;
+  - 10.0 bps a regular taker round trip, funding every 8 hours;
+  - no clause on copying by hand found in the Terms read (its Prohibited
+    Use Policy was not read).
+- **Finotive:**
+  - 14 of the 38 coins, plus BTC, ETH and SOL;
+  - crypto leverage 1:10;
+  - commission 0.06% (whether per side is not stated); spreads on one
+    snapshot BTC ~5, ETH ~6, SOL ~8 bps;
+  - no minimum or maximum hold;
+  - its accounts are simulated (terms 1.3);
+  - help article 955 and terms 7.10 are recorded as found.
+
+**For COPY-H** (passed to COPY-H-PLAN-REVIEW):
+- the base-tier taker cost confirmed;
+- the funding fetch (~6,700 keyless reads) is about 3.7–8 hours at half
+  budget, in short sessions with a safety stop;
+- a SPEED line beside, at D in [10 s, 30 s), priced on the tape's first
+  taker trade at or after t + D;
+- a look column with the share of MAIN's copies in coins Binance lists.
+
+**Open for the owner:** a short read-only probe (one WebSocket connection,
+~5 minutes, a few `info` reads) to measure the real fill lag, and to see
+whether the public `trades` feed names both accounts. It is new network
+use under Iron Rule 1, so it needs the owner's yes.
+
 2026-11-25 (the supervisor — COPY-H'S PLAN IS WRITTEN; ITS FRESH REVIEW
 RUNS): **COPY-H-PLAN RECOMMENDS THE PAPER EXPERIMENT'S MAIN, UNCHANGED, ON
 EVERY MAIN-DEX HYPERLIQUID ACCOUNT OVER ~72 WEEKS. IT PRICES FROM THE TAPE
