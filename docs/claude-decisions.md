@@ -1,5 +1,55 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's RULES DRAFTED; THEIR FRESH REVIEW
+STARTS): **`apps/poller/copyh/rules.md`, C0–C18, 1,239 lines, SHA-256
+`f40679423fa6f11d2a66f418ecd14605d33a1919eb2a5000ed026a86661100ae`, IS
+WRITTEN BY COPYH-RULES. IT IS NOT FROZEN. EVERY REVIEW FIX AND OWNER RULING
+IS PLACED (ITS TABLE IS IN ITS REPORT).**
+
+**The draft:**
+- Commits: `36db11a` (C0–C3, C15–C16 and `.prettierignore`), `02e65bc`
+  (C4–C14, C17, C18), `fa52406` (a consistency pass).
+- COPYH-RULES: Opus 5.5, max, 16:31–17:10Z. Context peak 518k. No code,
+  no data, no network.
+- **Corrected from the sources:**
+  - the reproduction's FIND-6-EXITS count is 1,700, not 1,918 (218 were
+    holdout copies the seed does not hold);
+  - the reproduction's labels use R5's whole capture;
+  - C9 uses the paper's `marketThrough`, since `marketFrom` refuses an end
+    after 2026-11-07;
+  - fills at stage boundaries are stated (C1);
+  - an always-true "primary" condition is dropped (C6).
+- **Guards it added:**
+  - a funding file that fails its schema, or two rows in one hour, stops
+    the step;
+  - MAIN's removal set is used for lines made of MAIN's copies;
+  - the rehearsal's store is sealed before step 1.
+
+**The supervisor's provisional rulings on its open questions**
+(technical calls, for the rules review to check):
+- **Q1** EVENTS_MAX: twice the largest P1 account's count on E, within one
+  part.
+- **Q2** the heap: twice the rehearsal's peak, at most 20 GB, parts cut
+  smaller above that.
+- **Q3** a failed label check reads the whole capture (R5); no second
+  bound.
+- **Q4** every engine part runs twice in separate processes, held equal.
+- **Q5** the slice is 0 mod 32.
+- **Q6** taker records are printed by dir and method in the rehearsal; any
+  vault taker leaves the tape like ADL, ruled before the freeze.
+- **Q7** RANK's fifth is the top ⌈n ÷ 5⌉, ties by address.
+- **Q8** Holm orders by min(m ÷ SE, m′ ÷ SE′).
+- **Q9** COPY-H's list never changes; it runs from its own tag's build.
+- **Q10** 1,700 of 1,700.
+- **Q11** FRESH-2's reads are asked of the owner only when needed.
+- **Q12** `coins.json` from the funding fetch's first stored `meta`.
+- **Q13** the sample days 2025-07-27, 2025-10-10, 2026-03-15 (E), 2026-06-15
+  and 2026-10-15 (S).
+
+**Next:** COPYH-RULES-REVIEW (Fable 5.2, max, fresh), against the plan, the
+review, the rulings and the frozen paper rules. Then fixes, the code's
+review and the freeze.
+
 2026-11-25 (the owner's rulings — COPY-H'S PLAN APPROVED): **"i agree with
 everything, let's proceed with your suggestion. let's start." THE PLAN
 (`83ac6ba`) IS APPROVED WITH EVERY FIX OF ITS REVIEW (`dda8d38`). THE BUILD
