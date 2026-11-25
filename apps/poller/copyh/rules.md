@@ -111,7 +111,8 @@ and 2):
   hashes are logged at each start (as the exam's P0). The tool is to be
   built in `tools/copyh-freeze.cjs`; pinned by `test/copyh-freeze.test.ts`
   (a closure file differing from its own freeze's line refused; each later
-  list's allowed differences, below and C14, and any other refused).
+  list's allowed differences, below and C14, and any other refused; a file
+  holding a marker refused, and C17's own sentence not taken for one).
 - **When another program re-freezes a file of the closure** (the paper's
   breaker fix waits; decisions 2026-11-25): COPY-H's list never changes for
   it. COPY-H's steps then run from a build of its own tag's tree (a worktree
@@ -188,7 +189,8 @@ and 2):
   `dirs.json`, `unpaired.json`, `calibration.json` and `rehearsal.json` by
   SHA-256; the step's stores' manifests,
   `builds.json` and `integrity.json` by SHA-256; at step 2 and after, the
-  earlier steps' files by SHA-256; the shared files' hashes; Node's version.
+  earlier steps' files by SHA-256; the shared files' hashes; the worker heap
+  in GB (C15); Node's version.
 
 ## C1. Instants and stages
 
@@ -218,8 +220,9 @@ and 2):
   COPY-H's plan review, "a correction".) FRESH-2's stage has END = END_F2.
 - **No fill, row or minute at or after the step's END is used.** An exit at
   or after END is "crossing" and marked at END − 1 ms (R8).
-- **A fill file holds its writer's hour** (WAVE-H's rules, H1), so a fill
-  timed in a stage's last seconds can sit in the next stage's first file.
+- **A fill file holds its writer's hour** (WAVE-H's rules, H1, DATA END), so
+  a fill timed in a stage's last seconds can sit in the next stage's first
+  file.
   Each store keeps the records of its own files timed in its own window, so
   such a fill is kept by no store: it is counted when that file is read, the
   stage's last minute's mark lacks it, and its account's next event shows a
@@ -265,7 +268,8 @@ and 2):
 
 - **The files** (`copyh/data.sha256`, written by
   `tools/copyh-freeze.cjs --data` from WAVE-H's and FRESH's lists alone, no
-  data file opened): every fill file of E's range from WAVE-H's store —
+  fill file opened; the same command reads the funding files' shape, C9):
+  every fill file of E's range from WAVE-H's store —
   `node_fills/hourly/` from 2025-05-25 14h through 2025-07-27 08h, then
   `node_fills_by_block/hourly/` from 2025-07-27 08h through 2026-05-29 01h
   (the switch hour 2025-07-27 08h in both formats) — and of S's range from
@@ -298,8 +302,8 @@ and 2):
     whose text the cut cannot settle is parsed with a reviver that drops the
     three at any depth. So no line of COPY-H can read them. On either path an
     `oid` or `tid` of 16 digits or more is read from its digits
-    (`context.source`). A record that then does not parse fails the boundary
-    (D1).
+    (`context.source`; code-rules, PAPER-BUILD). A record that then does not
+    parse fails the boundary (D1).
   - A record that fails is dropped and counted, never guessed; a line that
     fails its own shape counts its records as failing (one when none can be
     counted).
@@ -891,8 +895,11 @@ nothing:
 - **By part, each with n, m ± SE and m′ ± SE′:** longs and shorts apart
   (SIDES; a side's m′ carries the market's direction and is no edge: RM3);
   by UTC month (MONTHS); by slice (SLICES); the long share.
-- **The `settled` copies** (C8; RM4): their count, and MAIN with and
-  without them.
+- **The `settled` copies** (C8; RM4): their count, how many of them have no
+  d (a Settlement less than 24 h after the follow instant leaves d null,
+  C10, C11), and MAIN with and without them; and MAIN's entries left out
+  because their coin's Settlement came by the end of their day (C6's rule
+  2) (the fix-check's F9 and its question 2).
 - **The thin tape** (M6): the thin-tape copies' count and share, and MAIN's
   mean with and without them.
 - **The market trades** (M1): the left-out taker records by cause and
@@ -1133,11 +1140,13 @@ nothing:
   rehearsal; it prices nothing and judges nothing (its weeks hold no entry).
 - **Exit codes:** 0 done; 1 a crash; 2 bad settings or a heap flag; 3 not
   finished: its minutes are spent or a closed window began; run it again
-  (D9); 4 the
-  freeze does not verify (C0); 5 not ready (sealed; a listed file missing,
-  differing or failing to decode; a day over the record-failure limit; a
-  `dir` or coin outside its list; an earlier step's file differing from its
-  hash; already run); 6 a check failed (the integrity, the reproduction, a
+  (D9); 4 the freeze does not verify (C0); 5 not ready (sealed; a listed
+  file missing, differing or failing to decode; a day over the
+  record-failure limit; a `dir` or coin outside its list; an earlier step's
+  file differing from its hash; a funding file the reader does not pass
+  (C9); a duplicate market taker in the switch hour (C3); a taker out of
+  time order across two files (C9); already run); 6 a check failed (the
+  integrity, the reproduction, a
   held number, the tripwire of C16); 7 the two builds of a store, or the two
   runs of an engine part, differ.
 - **Before the freeze** (the plan's part 4; `reproduce.ts`, `rehearse.ts`):
@@ -1346,9 +1355,11 @@ nothing:
   each set the stop below projects (at step 1, MAIN's set of look 1, voted
   by END):
   1. the follow instants and every leg's instant (an open or crossing
-     copy's END − 1 ms among them) whose coin has no market trade in the 6
-     minutes up to the instant's minute end (the minute that holds the
-     instant and the 5 before it: the kit's staleness);
+     copy's END − 1 ms among them, but not a `settled` copy's last leg, at
+     its coin's end − 1 ms, whose mark is the Settlement price: C6, C8)
+     whose coin has no market trade in the 6 minutes up to the instant's
+     minute end (the minute that holds the instant and the 5 before it: the
+     kit's staleness);
   2. **each funding hour inside a copy's hold whose coin has no market
      trade in the 6 minutes before the hour** (M2: the kit's third reason
      for "unpriced", a funding settlement without a mark): each settlement
@@ -1363,7 +1374,8 @@ nothing:
 
   and so **the projected unpriced share:** the share of the set with at
   least one of 1–2. It is exact for those reasons, since a minute has a mark
-  exactly when it has a market trade (C9).
+  exactly when it has a market trade, or is its coin's Settlement minute
+  (C9; C6).
 - **Above 1%** (half of the 2% WITHHELD line), the step stops before any
   price (exit 6). The decisions entry that follows records the projection
   and may do one of two things only, changing no rule, number or file of
@@ -1385,8 +1397,9 @@ nothing:
   2.4%, look 1's report.]
 - To be built in `src/copyh/tripwire.ts`; pinned by
   `test/copyh-tripwire.test.ts` (each reason alone on a made-up coin; a
-  quiet :54 → :59 before an hour inside a hold of days; a `settled` copy
-  counted and never unpriced; `--past-tripwire` running as frozen; the 1%
+  quiet :54 → :59 before an hour inside a hold of days; a `settled` copy on
+  a coin quiet for its last six minutes counted and never unpriced;
+  `--past-tripwire` running as frozen; the 1%
   stop on both sides with a margin; on a made-up world, the projection equal
   to the copies the pricing then finds unpriced by reasons 1–2).
 
@@ -1467,6 +1480,7 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | tripwire minutes | 6 |
 | tripwire stop | 0.01 |
 | part minutes | 15 |
+| run minutes | 14 |
 | closed windows | 02:30-06:00Z 10:25-11:15Z |
 | worker heap | [SET BEFORE THE FREEZE] |
 | worker heap cap GB | 20 |
