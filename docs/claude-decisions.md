@@ -1,5 +1,27 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — COPY-H's RULES READY): **`copyh/rules.md` IS
+READY TO FREEZE WITH THE CODE: SHA-256
+`38ff9dbdec3ad7a4af0d04fd6ea608b832f4cb88c8cf432f93a0da4240ebc349`, 1,494
+LINES, 96,015 B (`5a80af5`). NOT FROZEN UNTIL PART 5.**
+
+**The last round:** COPYH-RULES, resumed 22:12Z, one commit `5a80af5`
+(rules.md only; Prettier clean; no CR byte; context peak 703,919). It
+applied the fix-check's F1–F7, F9 with its question 2, and F8 (e) in the
+check's section 7 wording; kept F8 (a, b, d, f, g); declared F8 (c), the
+colon in C9's marker that makes it a marker under C17.
+
+**The supervisor's check:** the diff `9fee674..5a80af5` holds 12 hunks, each
+one of those items in section 7's words, and nothing else; the hash and
+size equal the report; no `[OPEN Q` marker; the six `[SET BEFORE THE
+FREEZE` marks unchanged (the settlement mark and the worker heap).
+
+**What follows for the rules:**
+- They change again only through a finding of the code's review (part 5)
+  or a value set by the rehearsal (the two marks), each recorded here.
+- They freeze with the code under `copyh-freeze-1`.
+- COPYH-STORE-2 builds to this text (`38ff9dbd…c349`).
+
 2026-11-25 (the supervisor — COPY-H's RULES FIX-CHECKED): **"READY AFTER
 THESE FIXES": 0 HIGH, 1 MEDIUM, 8 LOW, ALL TEXT; NO NUMBER, BAR, DESIGN OR
 GUARD TOUCHED. A LAST SMALL ROUND, THEN THE RULES ARE READY TO FREEZE WITH
