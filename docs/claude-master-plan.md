@@ -329,7 +329,13 @@ review, the supervisor re-computing on its own path what decides.
 
 ## Later — the backlog
 
-- ⏳ **AI in the tool** (the owner, 2026-11-20: "can somehow AI help us now?", with about $100 a month of Claude API): AI-RESEARCH (running 2026-11-20) reads the evidence on language models and short-horizon crypto signals, the look-ahead trap of a model trained on the past, the uses worth testing (a filter on wave alerts, plain-language alerts, data checks), and an honest forward-only test design. The AI may label, explain or flag; it never trades. Trigger: its report, then the owner's talk after FRESH.
+- ⏳ **AI in the tool** (the owner, 2026-11-20: "can somehow AI help us now?", with about $100 a month of Claude API): AI-RESEARCH's report (`docs/reviews/ai-assist-research-2026-11-20.md`): Claude can help, but not decide. No study shows a language model predicting short crypto moves after costs. A back-test on our months is contaminated, because the models were trained up to June 2026. A filter's value cannot show at ~30 trades a month. Ranked:
+  1. keep Claude as a research and review partner;
+  2. an optional plain-language "what happened" note on alerts (~$3 a month);
+  3. an optional 8-week pilot measuring whether news can be found in time, not P&L;
+  4. never an AI verdict before an entry.
+
+  Its outside-the-box alternative: a dated public calendar (token unlocks, delistings, macro events) as a plain flag. Each API use needs the owner's ruling under Iron Rule 1. Trigger: the owner's talk after FRESH.
 - ⏳ **A cold review of the whole project by Fable 5.2** (the owner, 2026-11-20): everything so far (the findings, the methods, the record, the data's protection and backups, the machine's memory faults, the road to v1) read fresh, with what to improve and protect. Trigger: after the exam's look 1, before the v1 plan.
 - ⏳ **Variations for later, from the polishing** (the owner, 2026-11-19: "all other possible variations record for later, we will discuss"; decisions 2026-11-19, the 715 cut decides). Each would be its own frozen test on months after FRESH, never a second verdict on FRESH:
   - **N, the rule the check months confirmed** (at least 336 accounts): printed beside the exam on FRESH; it decides only if the safety net fires.
@@ -419,6 +425,10 @@ review, the supervisor re-computing on its own path what decides.
      slow-holding traders, tested once on the 10 months. The months have
      answered only the wave's question, so for this question they are
      still unseen, provided its rules are frozen before any copy is priced.
+     **Since 2026-11-25 there are 15½ months** (WAVE-H's 10 and FRESH's
+     5½; the owner, 2026-11-25: "filter traders which doing type of trades
+     as we doing in our paper experiment"). Earlier months choose the
+     accounts; later months measure them.
      It needs the paper kit's events, cycles and labels mapped onto
      Hyperliquid's fills. It builds on the engine's extraction (3).
      **The owner, 2026-11-17:** it gives ten months of results now, instead
