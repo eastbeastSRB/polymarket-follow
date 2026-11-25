@@ -1,5 +1,50 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-25 (the supervisor — PROP-FIRM-FACTS): **OF TWELVE FUNDED-TRADING
+FIRMS WITH CRYPTO, ONE, PROPR, PERMITS IN ITS OWN TERMS COPYING FROM AN
+OUTSIDE ACCOUNT, AND IT TRADES HYPERLIQUID'S PERPS AT HYPERLIQUID'S FEES.
+THE SUPERVISOR READ THE CLAUSE AT ITS SOURCE.**
+
+**The report:** `docs/reviews/prop-firm-facts-2026-11-25.md` (`60a5a36`).
+- PROP-FIRM-FACTS: Sonnet 5.5, xhigh, 13:00–13:18Z. Context peak 273k.
+- Web reading only (WebFetch and WebSearch): no form, no click, no
+  sign-up.
+- Every fact is dated and sourced; where its reader paraphrased, the
+  report says so.
+
+**The finding:**
+- **Propr** (`propr.xyz`, BVI, launched 2026-02-25):
+  - The terms page, read by the supervisor in the browser pane on
+    2026-11-25 ~13:20Z, says word for word: "Copy trading from an
+    external, non-Propr account into a single Account is permitted."
+  - Beside it, mirroring across one's own Propr accounts is barred: "Each
+    account must be traded independently."
+  - Hyperliquid perps with more than $1M open interest, routed through
+    Hyperliquid; "standard Hyperliquid maker/taker fees apply".
+  - Leverage: 10x on BTC, ETH and SOL, 2x on other crypto.
+  - Weekends, news, holding and bots permitted; daily loss 3% or 5%;
+    payout 80% in USDC.
+  - Young and unregulated, with simulated accounts. Its rulebook and its
+    terms disagree on one line.
+- **MyFundedPerps** and **FTMO** are unclear or silent and need a written
+  answer.
+- **Nine forbid following third parties:** Finotive, FundedNext, The5ers,
+  Breakout, HyroTrader, Crypto Fund Trader, BrightFunded, E8, HyperPnL.
+
+**Its questions** (for the owner; the supervisor recommends as the report
+does):
+1. Shortlist Propr, subject to a written answer from its support on
+   following public Hyperliquid addresses by hand.
+2. Ask MyFundedPerps and FTMO the same as fallbacks.
+3. A small read-only follow-up on Propr: its live asset list against the
+   38 coins, the rest of its terms, its prices against Hyperliquid's.
+4. Hold any account-level test until COPY-H gives a clear yes (the stop
+   rule).
+5. Read no more firms unless all three fail.
+
+**What it means for COPY-H:** Propr's prices and fees are Hyperliquid's,
+so COPY-H's base-tier costs and its +10 bps bar apply there unchanged.
+
 2026-11-25 (the supervisor — HL-FOLLOW-FACTS): **THE FACTS A FOLLOWER WOULD
 MEET ARE IN. THEY CONFIRM COPY-H'S BASE-TIER COST (4.5 BPS A LEG) AND MAKE
 ITS FUNDING FETCH HOURS, NOT MINUTES.**
