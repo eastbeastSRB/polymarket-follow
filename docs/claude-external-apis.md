@@ -569,6 +569,26 @@ read from a venue's page is as that page read on the day.
 
 ### Hyperliquid's public info API (`POST https://api.hyperliquid.xyz/info`)
 
+- **Measured live, 2026-11-25 13:21–13:25Z** (the supervisor's read-only probe
+  with the owner's yes: `verify/HL-PROBE/probe.mjs`, output `probe.out`, in
+  the supervisor folder):
+  - **The probe:** one keyless WebSocket connection to
+    `wss://api.hyperliquid.xyz/ws`, plus three `info` reads (about 42 of
+    1,200 weight a minute). No outcome was read.
+  - **The public `trades` feed names both accounts.** 1,110 of 1,110 BTC
+    and HYPE trades in 120 s carried `users: [buyer, seller]` (439
+    distinct addresses). So one subscription per coin shows every account's
+    trades, with no 10-user limit.
+  - **Lag under a second.** Local receive time minus the venue's `time`:
+    - trades: median −182 ms, p90 −11 ms, one outlier of 20.7 s;
+    - one address's `userFills` (303 live fills): median −183 ms, max
+      +133 ms.
+
+    The local clock reads about 0.2–0.3 s behind the venue's (min −303
+    ms), so the true delay is about 0.1–0.3 s.
+  - **`meta`:** 235 main-dex coins, 56 of them marked delisted.
+    `userFills` returns 2,000 fills a call; its fields include
+    `startPosition`, `dir`, `closedPnl`, `fee`, `tid`, `twapId`.
 - **What a follower would meet, from the official docs** (read 2026-11-25 by
   HL-FOLLOW-FACTS; each page's own date in
   `docs/reviews/hl-follow-facts-2026-11-25.md`; no API call made):
