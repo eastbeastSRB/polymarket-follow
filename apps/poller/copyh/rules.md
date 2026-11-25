@@ -91,7 +91,10 @@ and 2):
     `data.sha256` (C3) and `funding.sha256` (C9).
 
   `dist/schedule.js` and `dist/log.js` are shared and not frozen; their
-  hashes are logged at each start (as the exam's P0).
+  hashes are logged at each start (as the exam's P0). The tool is to be
+  built in `tools/copyh-freeze.cjs`; pinned by `test/copyh-freeze.test.ts`
+  (a closure file differing from its own freeze's line refused; each later
+  freeze's allowed differences, C14, and any other refused).
 - **When another program re-freezes a file of the closure** (the paper's
   breaker fix waits; decisions 2026-11-25): COPY-H's list never changes for
   it. COPY-H's steps then run from a build of its own tag's tree (a worktree
@@ -99,18 +102,19 @@ and 2):
   gate holds to the same list. A defect the other program fixes in a file
   COPY-H runs is COPY-H's own defect too, fixed only by the route below.
   [OPEN Q9]
-- **The gate** (`gate.ts`): a step runs only when `copyh/FROZEN.sha256`
-  lists every file of what runs with its hash, holds exactly one line
-  `# tag copyh-freeze-<n>`, that git tag holds this very list byte for byte,
-  and the kit's `checkKit()` returns its fingerprint and lib-exits its hash.
+- **The gate** (to be built in `src/copyh/gate.ts`): a step runs only when
+  `copyh/FROZEN.sha256` lists every file of what runs with its hash, holds
+  exactly one line `# tag copyh-freeze-<n>`, that git tag holds this very
+  list byte for byte, and the kit's `checkKit()` returns its fingerprint and
+  lib-exits its hash.
   Otherwise the step writes one line, "frozen files differ", and stops
   (exit 4), having read no data. Every step checks it first. Pinned by
   `test/copyh-gate.test.ts` (an untagged list, an edited list, a file
   changed, a file of the closure changed, the tag holding another list; the
   built program asked through the gate itself, code-rules POLISH-FIX).
-- **The seals** (one function, `seal.ts`), each by name and then by real
-  path through junctions, the name checked before the path is resolved
-  (code-rules, EXTRACT-FIX):
+- **The seals** (one function, to be built in `src/copyh/seal.ts`), each by
+  name and then by real path through junctions, the name checked before the
+  path is resolved (code-rules, EXTRACT-FIX):
   1. **Before the freeze no copy's result is read on any month,** and no
      file of priced copies is written (M9; C15 (c)). Of the raw stores, only
      WAVE-H's is opened.
@@ -144,11 +148,14 @@ and 2):
   refuses any other difference): the rounds' `copyh-freeze-2` and FRESH-2's
   `copyh-freeze-3` (C14), and a value appended to `dirs.json` or
   `coins.json`, or a record added to `unpaired.json`, by C3's and C15's
-  rulings at step 2 or at FRESH-2's stage.
+  rulings at step 2 or at FRESH-2's stage. Before a step runs under such a
+  list, a fresh worker reads its lines that differ from the list before it
+  (as the exam's P0 for its look 2).
 - **Every output names its identity first:** the program's fingerprint;
   COPY-H's freeze list by SHA-256 and its tag; the kit's fingerprint and
   lib-exits' hash; `data.sha256`, `funding.sha256`, `coins.json`,
-  `dirs.json` and `unpaired.json` by SHA-256; at step 2 and after, the
+  `dirs.json` and `unpaired.json` by SHA-256; the step's stores' manifests,
+  `builds.json` and `integrity.json` by SHA-256; at step 2 and after, the
   earlier steps' files by SHA-256; the shared files' hashes; Node's version.
 
 ## C1. Instants and stages
@@ -495,7 +502,9 @@ and 2):
   NOTIONAL (no board), COMP (no competitions), MAKER and VWAP (no book).
 - TEN's, BROAD's and DAY's accounts are R7's account-level conditions at M.
   Every line's copy carries its own money and its own d at the line's own D
-  and marks (C10: the removal set is the line's accounts).
+  and marks. TEN, BROAD and DAY take their own accounts as d's removal set
+  (C10); every line made of MAIN's copies (STOP2 to MONTHS above) takes
+  MAIN's.
 - Only MAIN's line carries a verdict and a sentence; every other line
   prints the same figures (C12's m, SE, m′, SE′) with none, deciding
   nothing.
@@ -569,10 +578,12 @@ are the one complete record.
   (`fundingHistory`, its public info API) for every coin of `coins.json`,
   the hours [2025-05-25T00:00:00.000Z, END_S), fetched before the freeze by
   `tools/waveh-fetch.cjs`'s funding mode for COPY-H's coins (part 0, in
-  sessions with a manifest and a safety stop; L6) into COPY-H's funding
-  store (`COPYH_FUNDING`), and listed in `copyh/funding.sha256` from its
-  manifest (every window's file and its SHA-256, and the `meta` reply of
-  C3). **A row's nominal hour is its `time` rounded to the nearest hour**
+  sessions with a manifest and a safety stop, at about half of the
+  published 1,200 weight a minute: Iron Rule 5, HL-FOLLOW-FACTS 2.4; L6)
+  into COPY-H's funding store (`COPYH_FUNDING`), and listed in
+  `copyh/funding.sha256` from its manifest (every window's file and its
+  SHA-256, and the `meta` reply of C3). **A row's nominal hour is its `time`
+  rounded to the nearest hour**
   (WAVE-H's H9); a positive rate, longs pay. An hour without a row is
   charged nothing and counted. A window file that fails its schema (Zod:
   `coin` text, `fundingRate` and `premium` decimal text, `time` a safe
@@ -613,8 +624,9 @@ are the one complete record.
   same D, long with the long share); cost-neutral.
   - **longShare** = the habits' long share at M (C5).
   - **removed** = the kit's `removalOf` over the fills, in the week of M, of
-    every account in the copy's line at M (R7's account-level conditions),
-    **their fills of market trades only** (M1; C3), counted as distinct
+    every account in the copy's line at M (R7's account-level conditions;
+    for a line made of MAIN's copies, MAIN's accounts: C7), **their fills of
+    market trades only** (M1; C3), counted as distinct
     trades by (coin, `tid`, `time`) across all those accounts, whichever
     bucket holds them. The week is cut at the step's END: only the entry's
     own UTC hour is read, so the cut changes nothing, and S stays closed at
@@ -693,8 +705,8 @@ are the one complete record.
   - DROP: "Drop: m + z·SE = X bps a copy on the money and m′ + z·SE′ = Y on
     the edge over the market, both below the +10 bps line."
   - KEEP: "Keep: m − z·SE = X bps a copy on the money and m′ − z·SE′ = Y on
-    the edge over the market, both above 0, with each trader alike, each day
-    alike and the thin-tape copies left out."
+    the edge over the market, both above 0; the traders' own means, the
+    days' own means and the copies without thin legs are above 0 too."
   - TOO FEW TO TELL when the readings disagree (H1, 4.), the first case that
     applies:
     - (a) the money's upper bound is below +10 and the edge's is not: "Too
@@ -834,7 +846,7 @@ nothing:
     try whatever the number run: M5);
   - the mean of its traders' own means > 0, and its mean without its two
     best days > 0;
-  - it has at least 100 traders and 100 days.
+  - it has at least 100 traders and 100 UTC days (of t + D).
 
   At most **two** qualifying tries go on, those with the highest
   m − 2.99·SE (ties: the earlier round, then the earlier try in
@@ -863,8 +875,8 @@ nothing:
   **WITHHELD** when more than 2% is unpriced; **NOT CONFIRMED** otherwise.
   The sentences:
   - "Confirmed on FRESH-2: m − z·SE = X bps a copy and m′ − z·SE′ = Y, both
-    above 0, with each trader alike, each day alike and the thin-tape copies
-    left out."
+    above 0; the traders' own means, the days' own means and the copies
+    without thin legs are above 0 too."
   - "Not confirmed on FRESH-2: m − z·SE = X bps a copy and m′ − z·SE′ = Y;
     a yes needs both above 0 and the three conditions."
   - "Withheld on FRESH-2: P% of the copies were unpriced, above the 2%
@@ -883,8 +895,8 @@ nothing:
   (as the exam's P1 fixed look 2's):
   1. **When:** after step 2's report is recorded in decisions, and after the
      archive's upload of 2027-05-16's last hours (a day is settled after its
-     D+2 upload, about 09:20–09:30Z: external-apis), so from about
-     2027-05-19.
+     D+2 upload, at about 09:20–09:30Z: external-apis), so from about
+     2027-05-18 10:00Z; the fetch's manifest must hold the exact key set.
   2. **The data:** the fill files `node_fills_by_block/hourly/` of the hours
      [2026-11-16 00h, 2027-05-17 00h) (182 days, 4,368 files), downloaded by
      `tools/waveh-fetch.cjs` under its guards and listed in
@@ -934,10 +946,10 @@ nothing:
   smaller instead; OPEN Q2] and no heap flag. No part is started in
   02:30–06:00Z or 10:25–11:15Z. **No build, test or other heavy run on the
   machine during a step** (decisions 2026-11-20). Settings, no defaults:
-  `COPYH_ROOT`
-  (COPY-H's own folder: its stores, parts and outputs), `WAVEH_STORE` (read
-  only), `COPYH_FUNDING` (read only, the funding store, C9), and for step 2
-  `FRESH_STORE` (read only).
+  `COPYH_ROOT` (COPY-H's own folder: its stores, parts and outputs),
+  `WAVEH_STORE` (read only), `COPYH_FUNDING` (read only, the funding store,
+  C9), for step 2 `FRESH_STORE` (read only), and for the reproduction
+  `PAPER_SEED` (the paper's seed folder) and the kit's panel (read only).
 - **Parts** (the plan's question 8): every heavy run is a chain of
   resumable parts, each written whole (`.tmp`, then renamed) and planned to
   last at most 15 minutes; a crash loses at most the part it was in, and a
@@ -958,10 +970,12 @@ nothing:
     chains from its `previous_size`; side, taker, liquidation, ADL and
     settlement in their Hyperliquid fields; the instrument's own id as iid,
     so that ids and delays equal the paper's. It is then run through COPY-H's
-    mapping (C3's chain heads and normalization, C4, C5) and the kit, on the
-    kit's own panel and taker setting. It must give the paper's own
-    reproduction's known answers (decisions 2026-11-12, PAPER-BUILD's
-    technical calls):
+    mapping (C3's chain heads and normalization, C4, and C5 but for its
+    90-day bound: the label reads R5's whole capture here, since the seed's
+    history before its late Mondays can exceed 90 days, and the bound is
+    (c) 7's to check) and the kit, on the kit's own panel and taker
+    setting. It must give the paper's own reproduction's known answers
+    (decisions 2026-11-12, PAPER-BUILD's technical calls):
     - FIND-6-EXITS's **1,700 of 1,700** non-holdout copies to 1e-9 bps (the
       plan's "1,918" holds 218 holdout copies, which the seed does not
       hold) [OPEN Q10];
@@ -1019,13 +1033,18 @@ nothing:
         copies is kept** (M9). Only their SHA-256 is printed — of the
         copies' lines as `positions.jsonl.gz` writes them, sorted by entry
         id — with their counts by line and their legs by source. Step 1
-        computes the same and prints both hashes side by side, deciding
-        nothing;
+        computes the same copies, compares its hash to the last rehearsal's
+        and prints whether they are equal, deciding nothing (a difference is
+        explained in the look's report by the commits between the two);
     11. the calibration prints (C13), on outcome-free cells.
 
     Every count and print of the rehearsal is a count of instants, sizes,
-    labels and memberships: no price change after an instant is computed
-    or printed.
+    labels and memberships, or two prices of one moment (11): no price
+    change after an instant is printed, and none is computed but 10.'s, in
+    memory, whose one output is its hash. **The rehearsal's store is
+    sealed:** no reader but the
+    rehearsal's opens it, and it is moved aside or deleted (the
+    supervisor's call) before step 1, which builds its own two.
 - **Step 1** (`dist\copyh.js step1`; the gate at `copyh-freeze-1`;
   `repro.json` passed by this very program, else exit 5):
   1. a second step 1 refuses (exit 5);
@@ -1077,8 +1096,10 @@ nothing:
      integrity as step 1's 3., its sample days 2026-06-15 and 2026-10-15
      [OPEN Q13]; a record left unpaired outside S's first and last file, a
      new `dir` or a new coin is ruled by C0's route;
-  3. **step 1 recomputed** from E's store by this program and held to
-     `look1.sha256`'s positions hash (exit 6);
+  3. **step 1 recomputed** from E's store (its manifest, `builds.json` and
+     `integrity.json` held to the SHA-256s step 1's `result.json` names,
+     else exit 5) by this program, and held to `look1.sha256`'s positions
+     hash (exit 6);
   4. the engine on E ∪ S at END_S, every part twice; the tripwire on look
      2's set and on S's copies alone (above 1%: exit 6);
   5. look 2 (C12); the confirmation of the frozen tries on S alone (C14);
