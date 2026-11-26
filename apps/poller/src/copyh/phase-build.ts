@@ -32,14 +32,13 @@
  *   later phase reads one coin's lines alone and no line nears V8's cap on a
  *   string.
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { statSync } from "node:fs";
 import { z } from "zod";
 import { MINUTE_MS } from "../schedule.js";
 import { readBucket, type AccountView } from "./accounts.js";
 import { BUCKETS, WORKER_HEAP_GB } from "./design.js";
 import type { PartFunction, PartSpec, PhaseRecord } from "./engine.js";
-import { partBytes } from "./engine.js";
+import { bytesAt, heldPart, partBytes, recordAt } from "./engine.js";
 import {
   delayOf,
   entriesIn,
@@ -60,7 +59,7 @@ import {
   ReadingInputs,
   readingOf,
 } from "./phase-labels.js";
-import { StoreError, sha256 } from "./run.js";
+import { StoreError } from "./run.js";
 import type { Store } from "./store.js";
 import { holesOfReading, isGap } from "./unpriced.js";
 
@@ -233,14 +232,6 @@ export function endsOf(
   };
 }
 
-/** A phase's record read from its folder, held to the SHA-256 a part names. */
-function recordOf(dir: string, want: string): PhaseRecord {
-  const bytes = readFileSync(path.join(dir, "record.json"));
-  if (sha256(bytes) !== want)
-    throw new StoreError(`${dir}: its record is not the one its part names`);
-  return JSON.parse(bytes.toString("utf8")) as PhaseRecord;
-}
-
 /** The P1 Mondays of a bucket's accounts, from LABELS' and LABELS-L's parts. */
 function p1Mondays(
   context: z.infer<typeof BuildContext>,
@@ -250,7 +241,7 @@ function p1Mondays(
   const out = new Map<string, number[]>();
   const read = (dir: string, want: string | null) => {
     if (want === null) return;
-    const record = recordOf(dir, want);
+    const record = recordAt(dir, want);
     for (const [id] of record.parts) {
       if (!id.startsWith(prefix)) continue;
       const part = LabelsPart.parse(
@@ -524,30 +515,104 @@ export const buildPart: PartFunction = (inputs, ctx) => {
   return Buffer.concat([encode(`${JSON.stringify(index)}\n`), ...lines]);
 };
 
-/** A coin's copies and keys from their runs of lines. */
-function coinOfLines(
-  copyLines: Uint8Array,
-  keyLines: Uint8Array,
-  where: string,
-): { copies: Copy[]; keys: Key[] } {
-  const copies = linesOf(copyLines, where).map((v) => Copy.parse(v));
-  const keys: Key[] = [];
-  for (const chunk of linesOf(keyLines, where))
-    for (const k of z.array(Key).parse(chunk)) keys.push(k);
-  return { copies, keys };
+/** The index line a part may hold at most (about 40 bytes a coin). */
+const INDEX_MAX = 4 * 1024 * 1024;
+/** Each BUILD part a process has read, by its file and SHA-256: its index and where its body starts. */
+const indexes = new Map<string, { index: BuildIndex; body: number }>();
+
+/** A closed BUILD or BUILD-L part, held once a process to its record (engine.ts `heldPart`): its file, index and body's start. */
+function indexOf(dir: string, record: PhaseRecord, id: string) {
+  const { file, sha256, start } = heldPart(dir, record, id);
+  const key = `${file}|${sha256}`;
+  let at = indexes.get(key);
+  if (at === undefined) {
+    const head = bytesAt(
+      file,
+      start,
+      Math.min(statSync(file).size - start, INDEX_MAX),
+    );
+    const nl = head.indexOf(10);
+    if (nl < 0) throw new StoreError(`${file}: no index line`);
+    at = {
+      index: BuildIndex.parse(JSON.parse(head.toString("utf8", 0, nl))),
+      body: start + nl + 1,
+    };
+    indexes.set(key, at);
+  }
+  return { file, ...at };
 }
 
-/** A closed BUILD part read whole: its index, facts, and each coin's copies and keys. */
+/** A run of a part's lines, by its span in the part's body. */
+const runOf = (
+  part: { file: string; body: number },
+  [off, len]: Span,
+): Buffer => bytesAt(part.file, part.body + off, len);
+
+/** A closed BUILD or BUILD-L part's facts, read by its index alone. */
+export function factsOf(
+  dir: string,
+  record: PhaseRecord,
+  id: string,
+): BuildFacts {
+  const part = indexOf(dir, record, id);
+  return BuildFacts.parse(linesOf(runOf(part, part.index.facts), id)[0]);
+}
+
+/** One coin's copies from every part of a closed BUILD or BUILD-L phase, each part read by its index alone. */
+export function coinCopies(
+  dir: string,
+  record: PhaseRecord,
+  iid: number,
+): Copy[] {
+  const copies: Copy[] = [];
+  for (const [id] of record.parts) {
+    const part = indexOf(dir, record, id);
+    const coin = part.index.coins.find(([c]) => c === iid);
+    if (coin === undefined) continue;
+    for (const v of linesOf(runOf(part, coin[1]), id))
+      copies.push(Copy.parse(v));
+  }
+  return copies;
+}
+
+/** One coin's keys from every part of a closed BUILD or BUILD-L phase, each part read by its index alone. */
+export function coinKeys(dir: string, record: PhaseRecord, iid: number): Key[] {
+  const keys: Key[] = [];
+  for (const [id] of record.parts) {
+    const part = indexOf(dir, record, id);
+    const coin = part.index.coins.find(([c]) => c === iid);
+    if (coin === undefined) continue;
+    for (const chunk of linesOf(runOf(part, coin[2]), id))
+      for (const k of z.array(Key).parse(chunk)) keys.push(k);
+  }
+  return keys;
+}
+
+/** The coins a closed BUILD or BUILD-L phase holds copies or keys of, rising. */
+export function coinsOf(dir: string, record: PhaseRecord): number[] {
+  const out = new Set<number>();
+  for (const [id] of record.parts)
+    for (const [c] of indexOf(dir, record, id).index.coins) out.add(c);
+  return [...out].sort((a, b) => a - b);
+}
+
+/** A closed BUILD part read by its index: its facts, and each coin's copies and keys. */
 export function buildOf(dir: string, record: PhaseRecord, id: string) {
-  const bytes = partBytes(dir, record, id);
-  const nl = bytes.indexOf(10);
-  const index = BuildIndex.parse(JSON.parse(bytes.toString("utf8", 0, nl)));
-  const body = bytes.subarray(nl + 1);
-  const at = ([off, len]: Span) => body.subarray(off, off + len);
+  const part = indexOf(dir, record, id);
+  const one: PhaseRecord = {
+    phase: record.phase,
+    parts: record.parts.filter(([p]) => p === id),
+  };
   return {
-    facts: BuildFacts.parse(linesOf(at(index.facts), id)[0]),
+    facts: factsOf(dir, record, id),
     coins: new Map(
-      index.coins.map(([iid, c, k]) => [iid, coinOfLines(at(c), at(k), id)]),
+      part.index.coins.map(([iid]) => [
+        iid,
+        {
+          copies: coinCopies(dir, one, iid),
+          keys: coinKeys(dir, one, iid),
+        },
+      ]),
     ),
   };
 }

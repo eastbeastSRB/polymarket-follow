@@ -1193,6 +1193,11 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   share (both copies, the kit's order breaking a tie) and the entries of
   direction 0; its bytes an index line, then the facts, each coin's copies
   a JSON line each and its keys in chunks, read a coin at a time.
+- `phase-removal.ts` (C10): REMOVAL, a part a coin: its keys from every
+  BUILD and BUILD-L part (each part held to its record once a process,
+  `heldPart`, then its coin's lines read by the index), a Monday at a time
+  and by line by the mask, each group through the kit's `removalOf`
+  (judge.ts), read back: the coin's removal tables for PRICES.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

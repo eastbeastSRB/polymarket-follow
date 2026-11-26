@@ -192,17 +192,23 @@ function fileSha256(file: string): string {
   return h.digest("hex");
 }
 
-/** A part file's header line (its first, up to 64 KB of it read). */
+/** A part file's header line, its first, read 64 KB at a time to its newline (a part's inputs can be longer: LABELS-L's deferred pairs). */
 function headerLine(file: string): string {
+  const chunks: Buffer[] = [];
   const buf = Buffer.alloc(65_536);
   const fd = openSync(file, "r");
   try {
-    const n = readSync(fd, buf, 0, buf.length, 0);
-    const end = buf.subarray(0, n).indexOf(10);
-    return buf.toString("utf8", 0, end < 0 ? n : end);
+    for (let pos = 0; ;) {
+      const n = readSync(fd, buf, 0, buf.length, pos);
+      const end = buf.subarray(0, n).indexOf(10);
+      chunks.push(Buffer.from(buf.subarray(0, end < 0 ? n : end)));
+      if (end >= 0 || n === 0) break;
+      pos += n;
+    }
   } finally {
     closeSync(fd);
   }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 /** The jobs through `workers` new children at `heapGb`, until the budget stops the feeding; a child's refusal or crash stops it too and is thrown once the busy children end. Returns why the feeding stopped, or null when every job was fed. */
@@ -234,8 +240,10 @@ async function pool(
             stderr = (stderr + d.toString("utf8")).slice(-4_000);
           });
           let current: Job | null = null;
+          let finished = false;
           const finish = () => {
             current = null;
+            finished = true;
             if (child.connected) child.disconnect();
           };
           const feed = () => {
@@ -268,10 +276,11 @@ async function pool(
             state.stop ??= err;
             resolve();
           });
+          // A child that ends before it was let go crashed: in a part, or before it was ready.
           child.on("exit", (code) => {
-            if (current !== null)
+            if (!finished)
               state.stop ??= new Error(
-                `the engine's child for ${current.phase} ${current.id} exited with code ${code}: ${stderr.trim()}`,
+                `the engine's child for ${current === null ? "no part yet" : `${current.phase} ${current.id}`} exited with code ${code}: ${stderr.trim()}`,
               );
             resolve();
           });
@@ -389,6 +398,51 @@ export async function runPhase(p: Phase): Promise<PhaseRecord> {
     seconds: Math.round((Date.now() - t0) / 1000),
   });
   return record;
+}
+
+/** A closed phase's record read from its folder, held to the SHA-256 a later part names. */
+export function recordAt(dir: string, want: string): PhaseRecord {
+  const bytes = readFileSync(path.join(dir, "record.json"));
+  if (sha256(bytes) !== want)
+    throw new StoreError(`${dir}: its record is not the one its part names`);
+  return PhaseRecord.parse(JSON.parse(bytes.toString("utf8")));
+}
+
+/** The parts a process has held to their records: a phase reading many parts a slice at a time hashes each file once. */
+const held = new Map<string, { sha256: string; start: number }>();
+
+/** A closed phase's part, held once a process to its record's SHA-256: its file, that SHA-256 and where its bytes start, after the header line. */
+export function heldPart(
+  dir: string,
+  record: PhaseRecord,
+  id: string,
+): { file: string; sha256: string; start: number } {
+  const entry = record.parts.find(([p]) => p === id);
+  if (entry === undefined) throw new Error(`${record.phase} has no part ${id}`);
+  const file = partFile(dir, "a", id);
+  const h = held.get(file);
+  if (h?.sha256 === entry[2]) return { file, sha256: entry[2], start: h.start };
+  if (fileSha256(file) !== entry[2])
+    throw new StoreError(`${file}: not the part its phase's record holds`);
+  const start = Buffer.byteLength(headerLine(file)) + 1;
+  held.set(file, { sha256: entry[2], start });
+  return { file, sha256: entry[2], start };
+}
+
+/** `length` bytes of a file from `offset`. */
+export function bytesAt(file: string, offset: number, length: number): Buffer {
+  const buf = Buffer.alloc(length);
+  const fd = openSync(file, "r");
+  try {
+    for (let at = 0; at < length;) {
+      const n = readSync(fd, buf, at, length - at, offset + at);
+      if (n === 0) throw new StoreError(`${file}: shorter than its index says`);
+      at += n;
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return buf;
 }
 
 /** A part of a closed phase: copy a's bytes after its header line, held to the record's SHA-256. */

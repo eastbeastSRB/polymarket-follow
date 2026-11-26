@@ -6,7 +6,9 @@
  * phase equal to an unbroken one; a closed phase read back, its parts held
  * to their hashes; a record or a part of other inputs refused (exit 5), a
  * difference between the copies stopping the phase (exit 7) with no record;
- * a child's refusal passed on (exit 5) and its crash (exit 1); each child
+ * a child's refusal passed on (exit 5) and its crash (exit 1), one ending
+ * before it is ready a crash too; a part whose inputs pass 64 KB resumed
+ * and read back by its record; each child
  * at the heap asked, exactly; a phase only in its own step's engine folder.
  */
 import { execFileSync } from "node:child_process";
@@ -22,10 +24,13 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   PhaseRecord,
+  bytesAt,
+  heldPart,
   partBytes,
+  recordAt,
   runPhase,
   type Phase,
   type PartSpec,
@@ -218,6 +223,52 @@ describe("a phase (C15, the engine's guard)", { timeout: 60_000 }, () => {
     expect((c as Error).message).toMatch(
       /^the engine's child for LABELS p1 exited with code 9/,
     );
+  });
+
+  it("reads a child that ends before it is ready as a crash (exit 1), never as not finished", async () => {
+    const exits = path.join(
+      mkdtempSync(path.join(tmpdir(), "copyh-engine-exit-")),
+      "exit.cjs",
+    );
+    writeFileSync(exits, "process.exit(4);\n");
+    vi.stubEnv("NODE_OPTIONS", `--require ${JSON.stringify(exits)}`);
+    try {
+      const { phase } = phaseOf({ workers: 1 });
+      const err = await runPhase(phase).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(Error);
+      expect(err).not.toBeInstanceOf(NotFinished);
+      expect((err as Error).message).toMatch(
+        /^the engine's child for no part yet exited with code 4/,
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("resumes a part whose inputs pass 64 KB from its whole copies, and reads it by its record (heldPart, bytesAt)", async () => {
+    const long = parts(2, { pad: "x".repeat(100_000) });
+    const { phase } = phaseOf({ parts: long });
+    const record = await runPhase(phase);
+    rmSync(path.join(phase.dir, "record.json"));
+    const again = phaseOf({ dir: phase.dir, parts: long });
+    expect(await runPhase(again.phase)).toEqual(record);
+    expect(again.events.filter(([e]) => e === "engine part")).toEqual([]);
+    const held = heldPart(phase.dir, record, "p0");
+    expect(held.sha256).toBe(record.parts[0]![2]);
+    const size = readFileSync(held.file).length;
+    expect(
+      bytesAt(held.file, held.start, size - held.start).equals(
+        partBytes(phase.dir, record, "p0"),
+      ),
+    ).toBe(true);
+    // A part changed before a process holds it: refused.
+    const p1 = path.join(phase.dir, "a", "p1.part");
+    writeFileSync(p1, Buffer.concat([readFileSync(p1), Buffer.from("x")]));
+    expect(() => heldPart(phase.dir, record, "p1")).toThrow(StoreError);
+    // A record read back is held to the SHA-256 a later part names.
+    const sha = sha256(readFileSync(path.join(phase.dir, "record.json")));
+    expect(recordAt(phase.dir, sha)).toEqual(record);
+    expect(() => recordAt(phase.dir, "0".repeat(64))).toThrow(StoreError);
   });
 
   it("gives each child the heap asked, exactly: a process at that ceiling's", async () => {
