@@ -1,9 +1,10 @@
 /**
- * COPY-H's instants and ranges (src/copyh/design.ts, range.ts; rules.md
- * C1, C3): every instant; E's files are exactly WAVE-H's frozen list's fill
- * files, S's FRESH's, the burn-in's 850 lie before M₀; the switch hour holds
- * both formats, `node_fills` first; each range's sample days; the months a
- * window touches.
+ * COPY-H's instants and ranges (src/copyh/design.ts, range.ts, instants.ts;
+ * rules.md C1, C3): every instant; E's files are exactly WAVE-H's frozen
+ * list's fill files, S's FRESH's, the burn-in's 850 lie before M₀; the switch
+ * hour holds both formats, `node_fills` first; each range's sample days; the
+ * months a window touches; each stage's window and Mondays, an entry's stage
+ * and M 1 ms either side of each boundary, its UTC day, week and month.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -17,6 +18,16 @@ import {
   SAMPLE_DAYS,
   SWITCH_HOUR,
 } from "../src/copyh/design.js";
+import {
+  STAGES,
+  STAGE_WINDOWS,
+  dayOf,
+  mondayOf,
+  mondaysOf,
+  monthOf,
+  stageOf,
+  weekOf,
+} from "../src/copyh/instants.js";
 import {
   RANGES,
   RANGE_NAMES,
@@ -145,5 +156,75 @@ describe("the ranges", { timeout: 60_000 }, () => {
       "2025-07",
     ]);
     expect(monthsOf(t, t)).toEqual([]);
+  });
+});
+
+describe("the stages", () => {
+  const iso = (t: number) => new Date(t).toISOString();
+
+  it("are C1's table, each window starting where the one before ends", () => {
+    expect(STAGES.map((s) => STAGE_WINDOWS[s].map(iso))).toEqual([
+      ["2025-05-25T14:00:00.000Z", "2025-06-30T00:00:00.000Z"],
+      ["2025-06-30T00:00:00.000Z", "2026-05-29T02:00:00.000Z"],
+      ["2026-05-29T02:00:00.000Z", "2026-11-16T00:00:00.000Z"],
+      ["2026-11-16T00:00:00.000Z", "2027-05-17T00:00:00.000Z"],
+    ]);
+  });
+
+  it("hold an entry 1 ms either side of each boundary in the stage its window gives", () => {
+    for (const [b, before, from] of [
+      [ARCHIVE_START, null, "burn-in"],
+      [M0, "burn-in", "E"],
+      [END_E, "E", "S"],
+      [END_S, "S", "FRESH-2"],
+      [END_F2, "FRESH-2", null],
+    ] as const) {
+      expect(stageOf(b - 1), iso(b)).toBe(before);
+      expect(stageOf(b), iso(b)).toBe(from);
+    }
+  });
+
+  it("give an entry's Monday M, 1 ms either side of each boundary, in the stage before its own where it falls", () => {
+    expect(iso(mondayOf(ARCHIVE_START))).toBe("2025-05-19T00:00:00.000Z");
+    expect(mondayOf(M0)).toBe(M0);
+    expect(mondayOf(M0 - 1)).toBe(M0 - 7 * DAY_MS);
+    expect(iso(mondayOf(END_E - 1))).toBe("2026-05-25T00:00:00.000Z");
+    expect(iso(mondayOf(END_E))).toBe("2026-05-25T00:00:00.000Z");
+    expect(iso(mondayOf(Date.parse("2026-05-29T03:00:00Z")))).toBe(
+      "2026-05-25T00:00:00.000Z",
+    );
+    expect(mondayOf(END_S)).toBe(END_S);
+    expect(mondayOf(END_S - 1)).toBe(END_S - 7 * DAY_MS);
+    expect(iso(mondayOf(END_F2 - 1))).toBe("2027-05-10T00:00:00.000Z");
+  });
+
+  it("have their Mondays: none in the burn-in, 48 in E, 24 in S, 26 in FRESH-2", () => {
+    expect(mondaysOf("burn-in")).toEqual([]);
+    for (const [s, n, first, last] of [
+      ["E", 48, "2025-06-30", "2026-05-25"],
+      ["S", 24, "2026-06-01", "2026-11-09"],
+      ["FRESH-2", 26, "2026-11-16", "2027-05-10"],
+    ] as const) {
+      const ms = mondaysOf(s);
+      expect(ms.length, s).toBe(n);
+      expect(iso(ms[0]!), s).toBe(`${first}T00:00:00.000Z`);
+      expect(iso(ms.at(-1)!), s).toBe(`${last}T00:00:00.000Z`);
+      ms.forEach((M, i) => {
+        expect(new Date(M).getUTCDay()).toBe(1);
+        expect(M % DAY_MS).toBe(0);
+        if (i > 0) expect(M - ms[i - 1]!).toBe(7 * DAY_MS);
+        expect(stageOf(M)).toBe(s);
+      });
+    }
+  });
+
+  it("give an instant's UTC day, week (its Monday) and month", () => {
+    const t = Date.parse("2025-07-31T23:59:59.999Z");
+    expect(iso(dayOf(t))).toBe("2025-07-31T00:00:00.000Z");
+    expect(iso(weekOf(t))).toBe("2025-07-28T00:00:00.000Z");
+    expect(iso(monthOf(t))).toBe("2025-07-01T00:00:00.000Z");
+    expect(iso(monthOf(t + 1))).toBe("2025-08-01T00:00:00.000Z");
+    expect(iso(dayOf(END_E))).toBe("2026-05-29T00:00:00.000Z");
+    expect(weekOf(END_S)).toBe(END_S);
   });
 });
