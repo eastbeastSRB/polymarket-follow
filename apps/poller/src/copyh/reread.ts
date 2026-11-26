@@ -43,6 +43,8 @@ export const FLAG = {
 } as const;
 
 const MINUTE = 60_000;
+/** The decoded bytes searched for line ends a window at a time. */
+export const WINDOW = 256 * 2 ** 20;
 const DROP = new Set(["closedPnl", "fee", "builderFee"]);
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const UNSIGNED = /^\d+(\.\d+)?$/;
@@ -50,6 +52,38 @@ const SIGNED = /^-?\d+(\.\d+)?$/;
 const DIGITS = /^\d+$/;
 const U64_MAX = 18_446_744_073_709_551_615n;
 const REC = Buffer.from('["0x', "latin1");
+
+/**
+ * Each non-empty line of decoded bytes, found a window of `window` bytes at a
+ * time: Buffer.indexOf gives a wrong, negative offset for a match past 2^31
+ * bytes (Node 24.13, measured 2026-11-25), and a file can decode to more.
+ */
+export function eachLine(
+  text: Uint8Array,
+  window: number,
+  fn: (line: Buffer) => void,
+): void {
+  let carry: Buffer | null = null;
+  for (let base = 0; base < text.length; base += window) {
+    const end = Math.min(base + window, text.length);
+    const win = Buffer.from(text.buffer, text.byteOffset + base, end - base);
+    let at = 0;
+    for (let nl = win.indexOf(10); nl !== -1; nl = win.indexOf(10, at)) {
+      const piece = win.subarray(at, nl);
+      const line: Buffer =
+        carry === null ? piece : Buffer.concat([carry, piece]);
+      carry = null;
+      if (line.length > 0) fn(line);
+      at = nl + 1;
+    }
+    if (at < win.length)
+      carry =
+        carry === null
+          ? win.subarray(at)
+          : Buffer.concat([carry, win.subarray(at)]);
+  }
+  if (carry !== null && carry.length > 0) fn(carry);
+}
 
 /** The reviver: the three outcome fields dropped wherever they stand; an id that is a number kept as its own digits. */
 function revive(
@@ -212,14 +246,7 @@ class Reader {
     };
     const byBlock = f.key.startsWith("node_fills_by_block/");
     const text = decodeLz4(bytes);
-    const data = Buffer.from(text.buffer, text.byteOffset, text.length);
-    let at = 0;
-    while (at < data.length) {
-      let nl = data.indexOf(10, at);
-      if (nl < 0) nl = data.length;
-      if (nl > at) this.line(data.subarray(at, nl), byBlock, r);
-      at = nl + 1;
-    }
+    eachLine(text, WINDOW, (line) => this.line(line, byBlock, r));
     return r;
   }
 
@@ -479,10 +506,21 @@ export function rereadDay(
   const first = idx[0]!;
   const last = idx.at(-1)!;
   const window = o.files.slice(Math.max(0, first - 1), last + 2);
+  const dayStart = Date.parse(`${day}T00:00:00Z`);
+  const from = Math.max(dayStart, o.start);
+  const to = Math.min(dayStart + 86_400_000, o.end);
+  const minutes = Math.max(0, Math.round((to - from) / MINUTE));
+  const bars = new DayBarsSum(from, minutes);
   const reads = window.map((f) => {
     const inDay = f.index >= first && f.index <= last;
     const reader = new Reader(o, inDay);
-    return { f, inDay, reader, read: reader.read(f) };
+    const read = reader.read(f);
+    // Each file's bars added as it is read; its takers then dropped.
+    bars.add(read);
+    read.takers.clear();
+    read.left.clear();
+    read.settled.clear();
+    return { f, inDay, reader, read };
   });
   // The trades split across two files next to each other, in the range's order: the maker takes its taker's reading.
   for (let i = 0; i + 1 < reads.length; i++) {
@@ -501,10 +539,6 @@ export function rereadDay(
   // What is left unpaired keeps its own reading.
   for (const { reader, read } of reads)
     for (const row of read.unpaired.values()) reader.final(row, row.own, read);
-  const dayStart = Date.parse(`${day}T00:00:00Z`);
-  const from = Math.max(dayStart, o.start);
-  const to = Math.min(dayStart + 86_400_000, o.end);
-  const minutes = Math.max(0, Math.round((to - from) / MINUTE));
   return {
     files: reads
       .filter((x) => x.inDay)
@@ -515,11 +549,7 @@ export function rereadDay(
         count: read.digest.count,
         digest: read.digest.hex(),
       })),
-    bars: barsOf(
-      reads.map((x) => x.read),
-      from,
-      minutes,
-    ),
+    bars: bars.finish(),
     from,
     minutes,
     problems: reads.flatMap(({ f, read }) =>
@@ -528,14 +558,21 @@ export function rereadDay(
   };
 }
 
-/** The day's minutes' bars from the window's files: each file's minutes in its takers' time order, the files added in order, then the pairs across files. */
-function barsOf(
-  reads: readonly FileRead[],
-  from: number,
-  minutes: number,
-): Map<number, DayBars> {
-  const out = new Map<number, DayBars>();
-  const barsOfCoin = (iid: number) => {
+/** The day's minutes' bars from the window's files, added as each is read: each file's minutes in its takers' time order, the files in order, then the pairs across files. */
+class DayBarsSum {
+  private readonly out = new Map<number, DayBars>();
+  private readonly lastTime = new Map<number, Float64Array>();
+  /** Each coin's latest market taker so far, across files: [time, px, side]. */
+  private readonly prev = new Map<number, [number, number, number]>();
+  private readonly cross: { iid: number; time: number; gap: number }[] = [];
+
+  constructor(
+    private readonly from: number,
+    private readonly minutes: number,
+  ) {}
+
+  private barsOfCoin(iid: number): DayBars {
+    const { out, minutes } = this;
     let b = out.get(iid);
     if (b === undefined) {
       b = Object.fromEntries(
@@ -545,12 +582,11 @@ function barsOf(
       out.set(iid, b);
     }
     return b;
-  };
-  const lastTime = new Map<number, Float64Array>();
-  /** Each coin's latest market taker so far, across files: [time, px, side]. */
-  const prev = new Map<number, [number, number, number]>();
-  const cross: { iid: number; time: number; gap: number }[] = [];
-  for (const r of reads) {
+  }
+
+  add(r: FileRead): void {
+    const { from, minutes, lastTime, prev, cross } = this;
+    const barsOfCoin = (iid: number) => this.barsOfCoin(iid);
     const coins = new Set([
       ...r.takers.keys(),
       ...r.left.keys(),
@@ -629,12 +665,14 @@ function barsOf(
       }
     }
   }
-  for (const x of cross) {
-    const k = Math.floor((x.time - from) / MINUTE);
-    if (x.time < from || k >= minutes) continue;
-    const b = barsOfCoin(x.iid);
-    b.pairGap[k] = b.pairGap[k]! + x.gap;
-    b.pairs[k] = b.pairs[k]! + 1;
+  finish(): Map<number, DayBars> {
+    for (const x of this.cross) {
+      const k = Math.floor((x.time - this.from) / MINUTE);
+      if (x.time < this.from || k >= this.minutes) continue;
+      const b = this.barsOfCoin(x.iid);
+      b.pairGap[k] = b.pairGap[k]! + x.gap;
+      b.pairs[k] = b.pairs[k]! + 1;
+    }
+    return this.out;
   }
-  return out;
 }

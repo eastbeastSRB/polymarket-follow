@@ -24,7 +24,7 @@ import {
 import { merge } from "../src/copyh/merge.js";
 import { runPass, type FileTask, type PassLists } from "../src/copyh/pass.js";
 import { monthsOf } from "../src/copyh/range.js";
-import { FLAG } from "../src/copyh/reread.js";
+import { FLAG, eachLine } from "../src/copyh/reread.js";
 import {
   BuildsDiffer,
   GateFailed,
@@ -448,6 +448,25 @@ describe("the integrity", { timeout: 60_000 }, () => {
 });
 
 describe("the re-reader and the digest", { timeout: 60_000 }, () => {
+  it("finds every line in windows of any size, a line across windows whole", () => {
+    let seed = 7;
+    const rnd = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 2 ** 32;
+    };
+    for (let k = 0; k < 200; k++) {
+      const text = Array.from({ length: Math.floor(rnd() * 40) }, () =>
+        rnd() < 0.3 ? "\n" : String.fromCharCode(97 + Math.floor(rnd() * 26)),
+      ).join("");
+      const want = text.split("\n").filter((l) => l !== "");
+      for (const window of [1, 2, 3, 7, 64]) {
+        const got: string[] = [];
+        eachLine(Buffer.from(text), window, (l) => got.push(l.toString()));
+        expect(got, `${JSON.stringify(text)} by ${window}`).toEqual(want);
+      }
+    }
+  });
+
   it("reads the store's flags as writers.ts writes them", () => {
     expect(FLAG).toEqual({
       taker: W.TAKER,

@@ -18,7 +18,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { SWITCH_HOUR } from "../src/copyh/design.js";
+import { SWITCH_HOUR, WORKER_HEAP_GB } from "../src/copyh/design.js";
 import {
   partFile,
   readPartHeader,
@@ -311,9 +311,12 @@ describe("the pass", { timeout: 60_000 }, () => {
       const got = await pass(w, there, { workers: 2 });
       expect(got).toMatchObject({ extracted: 4, skipped: 0 });
       expect(bytesOfParts(there)).toEqual(bytesOfParts(here));
+      // Each worker's ceiling is design.ts's, not the process's.
       for (const m of got.peaks.workers) {
-        expect(m.heapLimit / 2 ** 20).toBeGreaterThanOrEqual(4096);
-        expect(m.heapLimit / 2 ** 20).toBeLessThan(4096 + 512);
+        expect(m.heapLimit / 2 ** 20).toBeGreaterThanOrEqual(
+          WORKER_HEAP_GB * 1024,
+        );
+        expect(m.heapLimit / 2 ** 20).toBeLessThan(WORKER_HEAP_GB * 1024 + 512);
       }
       const stopped = parts();
       await expect(

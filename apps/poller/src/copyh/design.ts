@@ -117,9 +117,16 @@ export const CLOSED_WINDOWS: readonly (readonly [number, number])[] = [
  * program's own (the merge, the integrity) [SET BEFORE THE FREEZE: twice the
  * rehearsal's largest measured peak; until the rehearsal, three times the
  * peaks measured on synthetic data at full size (C15; D10)]. A later step
- * may raise it by COPYH_HEAP_GB, never lower it (RH1 (c)).
+ * may raise it by COPYH_HEAP_GB, never lower it (RH1 (c)). Measured
+ * 2026-11-25 (COPYH-STORE-2, synthetic hours of 5.8–6 million records, 2.5
+ * GB decoded, with a 14 MB line): a pass worker 1,899 MB of heap with 400,000
+ * accounts in the file, 2,525 MB with 2.6 million; the merge of a
+ * 12-million-row unit with 2,967,257 accounts in the dictionary 1,765 MB; an
+ * integrity unit holding an 11.6-million-row partition 346 MB; the re-read of
+ * a day of three such files 652 MB. Three times the largest, 7,575 MB,
+ * rounded up to a whole GB.
  */
-export const WORKER_HEAP_GB = 4;
+export const WORKER_HEAP_GB = 8;
 /** Above this the parts are cut smaller instead (C15). */
 export const WORKER_HEAP_CAP_GB = 20;
 

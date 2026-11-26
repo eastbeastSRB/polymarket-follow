@@ -59,7 +59,7 @@ import {
 } from "./store.js";
 
 const MINUTE = 60_000;
-/** A unit's files at most, in bytes, before the next partition starts a new unit. */
+/** A unit's files at most, in bytes, before the next partition starts a new unit: one holding an 11.6-million-row partition peaked at 346 MB of heap, measured 2026-11-25 (design.ts WORKER_HEAP_GB). */
 export const UNIT_BYTES = 2 * 2 ** 30;
 /** How many records a list shows before it only counts. */
 const SHOWN = 200;
