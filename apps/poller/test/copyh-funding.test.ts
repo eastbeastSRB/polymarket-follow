@@ -1,10 +1,11 @@
 /**
  * The funding reader (src/copyh/funding.ts; rules.md C9, RM5): a window's
- * rows through Zod, each of the file's coin; the nominal hour the time
- * rounded to the nearest hour (a row 887,645 ms late, as the 2025-07-19
- * 10:00Z settlement in every coin, and one a few ms early, each in its own
- * hour; one exactly half an hour after goes to the next); no coin's hour
- * twice, within a window or across two; a step's rows through the seal.
+ * rows through Zod, each of the file's coin, its rates decimal text; the
+ * nominal hour the time rounded to the nearest hour (a row 887,645 ms late,
+ * as the 2025-07-19 10:00Z settlement in every coin, and one a few ms early,
+ * each in its own hour; one exactly half an hour after goes to the next); no
+ * coin's hour twice, within a window or across two; a step's rows through
+ * the seal, by each row's time.
  */
 import { describe, expect, it } from "vitest";
 import { END_E } from "../src/copyh/design.js";
@@ -60,6 +61,11 @@ describe("the funding reader", { timeout: 60_000 }, () => {
       [{ ...row(H), time: H + 0.5 }],
       [{ ...row(H), time: 2 ** 53 }],
       [{ ...row(H), coin: "" }],
+      // Decimal text needs a digit before and after its point.
+      ...["", "-", ".", "1.", ".5", "+1"].map((v) => [
+        { ...row(H), fundingRate: v },
+      ]),
+      [{ ...row(H), premium: "--1" }],
     ])
       expect(readWindow(file(bad), "BTC"), JSON.stringify(bad)).toMatch(
         /^not fundingHistory's shape: /,
@@ -103,6 +109,9 @@ describe("the funding reader", { timeout: 60_000 }, () => {
       bytes: file([row(t, "SOL")]),
     });
     expect(sealedRows("SOL", [w(END_E - HOUR_MS)], SEALED)).toHaveLength(1);
+    // The seal reads a row's time (C1), not its nominal hour: a row 500 ms before END_E is step 1's, its hour END_E.
+    const early = sealedRows("SOL", [w(END_E - 500)], SEALED);
+    expect([early.length, early[0]!.hour]).toEqual([1, END_E]);
     expect(() => sealedRows("SOL", [w(END_E)], SEALED)).toThrow(SealedError);
     expect(
       sealedRows("SOL", [w(END_E)], { sOpen: true, f2Open: false }),

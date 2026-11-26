@@ -1,12 +1,14 @@
 /**
- * COPY-H's list tool (tools/copyh-freeze.cjs; rules.md C3, C9): --data's
- * list, every file of E's and S's ranges in their order, each line its
- * frozen source list's, the sources named by SHA-256; its refusals, nothing
- * written; the program reading the committed list (range.ts); --funding's
- * list, the meta reply and every window of every coin, each held to the
- * store's list and manifest and read by the program's reader (funding.ts),
- * and its refusals. A test never writes the package's `copyh/` files.
+ * COPY-H's list tool (tools/copyh-freeze.cjs; rules.md C3, C9): a call it
+ * does not know refused; --data's list, every file of E's and S's ranges in
+ * their order, each line its frozen source list's, the sources named by
+ * SHA-256; its refusals, nothing written; the program reading the committed
+ * list (range.ts), a file it lacks or names twice a stop; --funding's list,
+ * the meta reply and every window of every coin, each held to the store's
+ * list and manifest and read by the program's reader (funding.ts), and its
+ * refusals. A test never writes the package's `copyh/` files.
  */
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -17,14 +19,20 @@ import {
   filesOf,
   readDataList as readCopyhList,
 } from "../src/copyh/range.js";
-import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
+import { PACKAGE_ROOT, StoreError, sha256 } from "../src/copyh/run.js";
 import { readDataList } from "../src/waveh/store.js";
 
 type Source = { name: string; text: string };
 type RangeKeys = { name: string; fill: readonly string[] };
-const tool = createRequire(import.meta.url)(
-  path.join(import.meta.dirname, "..", "..", "..", "tools", "copyh-freeze.cjs"),
-) as {
+const TOOL = path.join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "..",
+  "tools",
+  "copyh-freeze.cjs",
+);
+const tool = createRequire(import.meta.url)(TOOL) as {
   dataList: (sources: Source[], ranges: RangeKeys[]) => string;
   listOf: (text: string, name: string) => Map<string, string>;
   manifestOf: (text: string) => Map<string, { key: string; sha256: string }>;
@@ -43,6 +51,19 @@ const listText = (keys: readonly string[], from = 0) =>
   `${keys.map((k, i) => `${hash(from + i)} *${k}`).join("\n")}\n`;
 
 describe("--data", { timeout: 60_000 }, () => {
+  it("refuses a call it does not know (exit 1, its usage)", () => {
+    for (const args of [["--bogus"], ["--data", "--funding"]]) {
+      const r = spawnSync(process.execPath, [TOOL, ...args], {
+        encoding: "utf8",
+        timeout: 50_000,
+      });
+      expect(r.status, args.join(" ")).toBe(1);
+      expect(r.stderr, args.join(" ")).toContain(
+        "usage: copyh-freeze.cjs --data",
+      );
+    }
+  });
+
   it("lists each range's files in its order with its source's hash, the sources named by SHA-256", () => {
     const e = { name: "E", fill: ["b", "a"] };
     const s = { name: "S", fill: ["c"] };
@@ -138,6 +159,21 @@ describe(
       expect(filesOf(RANGES.E, list).map((f) => f.key)).toEqual(RANGES.E.fill);
       expect(() => readCopyhList("# a header\nnot a line\n")).toThrow(
         "data.sha256: line 2 is not a list line",
+      );
+    });
+
+    it("stops on a range's file the data list lacks (exit 5), and on a data list naming a file twice", () => {
+      const list = readCopyhList(
+        readFileSync(path.join(PACKAGE_ROOT, "copyh", "data.sha256"), "utf8"),
+      );
+      const first = RANGES.E.fill[0]!;
+      list.delete(first);
+      expect(() => filesOf(RANGES.E, list)).toThrow(StoreError);
+      expect(() => filesOf(RANGES.E, list)).toThrow(
+        `${first}: not in copyh/data.sha256`,
+      );
+      expect(() => readCopyhList(`${hash(1)} *a\n${hash(2)} *a\n`)).toThrow(
+        "data.sha256: a twice",
       );
     });
   },
@@ -255,6 +291,16 @@ describe("--funding", { timeout: 60_000 }, () => {
         coins: { meta: { sha256: "1".repeat(64) }, coins: [{ name: "BTC" }] },
       }),
     ).toThrow("coins.json was made from another meta reply");
+    // A listed window the store's manifest does not hold at all.
+    const manifest = tool.manifestOf(
+      st.manifestText
+        .split("\n")
+        .filter((l) => !l.includes(k))
+        .join("\n"),
+    );
+    expect(() => run(st, { manifest })).toThrow(
+      `${k}: its line differs from the store's manifest`,
+    );
     expect(() => tool.manifestOf('{"key":"a"}\n{"key":"a"}\n')).toThrow(
       "manifest.jsonl: a twice",
     );
