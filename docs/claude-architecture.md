@@ -1141,6 +1141,12 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   table a part can keep); the vote by END; x′, d less the copy's own
   cost over the same 24 h (the kit's `leg` with C9's setting), null
   exactly when d is.
+- `lines.ts` (C7): R7's account-level conditions at M (MAIN, TEN, BROAD,
+  DAY) from the label, the habits and the caller's coverage, none for an
+  account the kit is not run on; an entry's lines in a primary market
+  only; MAIN's copies at another delay or on other marks (DELAY0 and LAST
+  on the minute's last price, DELAY+5 and DELAY+15 on C9's marks); RANK's
+  top fifth at M; SLICES, the address's number mod 4.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
