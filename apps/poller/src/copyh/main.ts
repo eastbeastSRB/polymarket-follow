@@ -43,7 +43,7 @@ import {
   iidsOf,
 } from "./coins.js";
 import { countsOf } from "./count.js";
-import { RUN_MINUTES, SAMPLE_DAYS } from "./design.js";
+import { RUN_MINUTES } from "./design.js";
 import { DirsFile, kindsOf } from "./dirs.js";
 import { COMMANDS, sealOf, verifyGate, type Command } from "./gate.js";
 import { UNIT_ROWS, merge } from "./merge.js";
@@ -59,6 +59,7 @@ import {
   RANGE_NAMES,
   filesOf,
   readDataList,
+  sampleDaysOf,
   type RangeName,
 } from "./range.js";
 import {
@@ -358,7 +359,7 @@ function integrity(r: RangeName): void {
     },
     code: fingerprintOf(PACKAGE_ROOT),
     unpaired,
-    sampleDays: r === "S" ? SAMPLE_DAYS.S : SAMPLE_DAYS.E,
+    sampleDays: sampleDaysOf(r),
     reread: {
       raw,
       roots,

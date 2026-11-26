@@ -11,7 +11,14 @@
  * In the switch hour both formats are read, `node_fills` first.
  */
 import { HOUR_MS } from "../schedule.js";
-import { ARCHIVE_START, END_E, END_S, M0, SWITCH_HOUR } from "./design.js";
+import {
+  ARCHIVE_START,
+  END_E,
+  END_S,
+  M0,
+  SAMPLE_DAYS,
+  SWITCH_HOUR,
+} from "./design.js";
 import type { FileTask } from "./pass.js";
 import { StoreError } from "./run.js";
 
@@ -76,6 +83,11 @@ export const RANGES: Readonly<Record<RangeName, Range>> = {
   E: rangeOf("E", ARCHIVE_START, END_E),
   S: rangeOf("S", END_E, END_S),
 };
+
+/** A range's sample days for the integrity's re-read (C15; D11): S's for S, E's for E and for the burn-in, whose files are E's first (a day without a file of the range is not re-read). */
+export function sampleDaysOf(name: RangeName): readonly string[] {
+  return name === "S" ? SAMPLE_DAYS.S : SAMPLE_DAYS.E;
+}
 
 const LIST_LINE = /^([0-9a-f]{64}) \*(.+)$/;
 

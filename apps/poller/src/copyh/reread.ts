@@ -11,9 +11,13 @@
  * kept rows' count and digest (digest.ts) and its records by class; and, for
  * the day's minutes, every coin's bars, summed in the store's order (each
  * file's minutes, then the files in order, then the pairs across files).
- * One record unpaired in three files running could pair otherwise than the
- * merge pairs it (the merge reads every file); a difference is listed, never
- * hidden.
+ * A blank line is a line that fails, one record (C3), as the pass reads it.
+ * In the switch hour's second file a record of the first (the same user,
+ * coin, `tid`, `time`, side and `crossed`) is counted kept and left out of
+ * the rows, as the store leaves it out (C3); it is in the bars, as in the
+ * store's. One record unpaired in three files running could pair otherwise
+ * than the merge pairs it (the merge reads every file); a difference is
+ * listed, never hidden.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -24,6 +28,7 @@ import {
   EXACT_DIGITS,
   PAIR_MS,
   SETTLEMENT_DIR,
+  SWITCH_HOUR,
   VAULT_DIR,
 } from "./design.js";
 import { Digest, type RowCells } from "./digest.js";
@@ -53,10 +58,19 @@ const DIGITS = /^\d+$/;
 const U64_MAX = 18_446_744_073_709_551_615n;
 const REC = Buffer.from('["0x', "latin1");
 
+/** The switch hour's two files, `node_fills` first (C3), named as the archive names an hour's files. */
+export const SWITCH_KEYS = (["node_fills", "node_fills_by_block"] as const).map(
+  (format) => {
+    const d = new Date(SWITCH_HOUR);
+    return `${format}/hourly/${d.toISOString().slice(0, 10).replaceAll("-", "")}/${d.getUTCHours()}.lz4`;
+  },
+);
+
 /**
- * Each non-empty line of decoded bytes, found a window of `window` bytes at a
- * time: Buffer.indexOf gives a wrong, negative offset for a match past 2^31
- * bytes (Node 24.13, measured 2026-11-25), and a file can decode to more.
+ * Each line of decoded bytes, a blank one too, the last without its newline,
+ * found a window of `window` bytes at a time: Buffer.indexOf gives a wrong,
+ * negative offset for a match past 2^31 bytes (Node 24.13, measured
+ * 2026-11-25), and a file can decode to more.
  */
 export function eachLine(
   text: Uint8Array,
@@ -73,7 +87,7 @@ export function eachLine(
       const line: Buffer =
         carry === null ? piece : Buffer.concat([carry, piece]);
       carry = null;
-      if (line.length > 0) fn(line);
+      fn(line);
       at = nl + 1;
     }
     if (at < win.length)
@@ -82,7 +96,7 @@ export function eachLine(
           ? win.subarray(at)
           : Buffer.concat([carry, win.subarray(at)]);
   }
-  if (carry !== null && carry.length > 0) fn(carry);
+  if (carry !== null) fn(carry);
 }
 
 /** The reviver: the three outcome fields dropped wherever they stand; an id that is a number kept as its own digits. */
@@ -141,6 +155,8 @@ type Row = {
   /** Its own reading: a market trade's fields. */
   own: boolean;
   key: string;
+  /** A record of the switch hour's first file met again in its second: not a row. */
+  repeat: boolean;
 };
 
 /** A market taker for the bars. */
@@ -200,6 +216,8 @@ export type DayBars = Record<BarColumn, Float64Array>;
 /** One file read whole: its records by class, its rows, its unpaired records, its market takers and left-out takers and Settlement records by coin. */
 type FileRead = {
   index: number;
+  /** Its place in SWITCH_KEYS, or -1. */
+  switchFile: number;
   classes: Classes;
   /** Rows whose flags are final, hashed as they come. */
   digest: Digest;
@@ -215,6 +233,8 @@ class Reader {
   constructor(
     private readonly o: RereadInput,
     private readonly sample: boolean,
+    /** The switch hour's first file's kept records, by user, coin, `tid`, `time`, side and `crossed`. */
+    private readonly switchFirst: Set<string>,
   ) {}
 
   read(f: FileTask): FileRead {
@@ -228,6 +248,7 @@ class Reader {
       throw new StoreError(`${f.key}: differs from its list (the re-reader)`);
     const r: FileRead = {
       index: f.index,
+      switchFile: SWITCH_KEYS.indexOf(f.key),
       classes: {
         kept: 0,
         spot: 0,
@@ -367,6 +388,8 @@ class Reader {
       return;
     }
     c.kept += 1;
+    const same = `${user}|${f.coin}|${tid}|${time}|${f.side}|${f.crossed}`;
+    if (r.switchFile === 0) this.switchFirst.add(same);
     const l = liq as { liquidatedUser?: string; method: string } | undefined;
     const method = l?.method ?? null;
     const own =
@@ -406,6 +429,7 @@ class Reader {
       taker: f.crossed,
       own,
       key: `${iid}|${time}|${tid}`,
+      repeat: r.switchFile === 1 && this.switchFirst.has(same),
     };
     this.pair(row, r);
     if (f.dir === SETTLEMENT_DIR) {
@@ -449,9 +473,9 @@ class Reader {
     this.final(row, market ?? row.own, r);
   }
 
-  /** A row's flags made final, and the row hashed into its file's digest (the day's files only). */
+  /** A row's flags made final, and the row hashed into its file's digest (the day's files only; a repeat is no row). */
   final(row: Row, market: boolean, r: { digest: Digest }): void {
-    if (!this.sample) return;
+    if (!this.sample || row.repeat) return;
     r.digest.add({
       ...row.cells,
       flags: row.cells.flags | (market ? FLAG.market : 0),
@@ -511,9 +535,10 @@ export function rereadDay(
   const to = Math.min(dayStart + 86_400_000, o.end);
   const minutes = Math.max(0, Math.round((to - from) / MINUTE));
   const bars = new DayBarsSum(from, minutes);
+  const switchFirst = new Set<string>();
   const reads = window.map((f) => {
     const inDay = f.index >= first && f.index <= last;
-    const reader = new Reader(o, inDay);
+    const reader = new Reader(o, inDay, switchFirst);
     const read = reader.read(f);
     // Each file's bars added as it is read; its takers then dropped.
     bars.add(read);

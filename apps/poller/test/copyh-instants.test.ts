@@ -2,7 +2,8 @@
  * COPY-H's instants and ranges (src/copyh/design.ts, range.ts; rules.md
  * C1, C3): every instant; E's files are exactly WAVE-H's frozen list's fill
  * files, S's FRESH's, the burn-in's 850 lie before M₀; the switch hour holds
- * both formats, `node_fills` first; the months a window touches.
+ * both formats, `node_fills` first; each range's sample days; the months a
+ * window touches.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -13,9 +14,17 @@ import {
   END_F2,
   END_S,
   M0,
+  SAMPLE_DAYS,
   SWITCH_HOUR,
 } from "../src/copyh/design.js";
-import { RANGES, hourKeys, monthsOf } from "../src/copyh/range.js";
+import {
+  RANGES,
+  RANGE_NAMES,
+  hourKeys,
+  monthsOf,
+  sampleDaysOf,
+} from "../src/copyh/range.js";
+import { dayOfKey } from "../src/copyh/reread.js";
 import { PACKAGE_ROOT } from "../src/copyh/run.js";
 import { FRESH_RANGE } from "../src/polish/range.js";
 import { FRESH_END } from "../src/polish/seal.js";
@@ -106,6 +115,23 @@ describe("the ranges", { timeout: 60_000 }, () => {
       "node_fills_by_block/hourly/20250727/9.lz4",
     ]);
     expect(hourKeys(SWITCH_HOUR, SWITCH_HOUR)).toEqual([]);
+  });
+
+  it("give each range its sample days: S's for S, E's for E and the burn-in, which re-reads those its files hold", () => {
+    expect(sampleDaysOf("S")).toEqual(SAMPLE_DAYS.S);
+    expect(sampleDaysOf("E")).toEqual(SAMPLE_DAYS.E);
+    expect(sampleDaysOf("burnin")).toEqual(SAMPLE_DAYS.E);
+    const reread = (r: (typeof RANGE_NAMES)[number]) =>
+      sampleDaysOf(r).filter((d) =>
+        RANGES[r].fill.some((k) => dayOfKey(k) === d),
+      );
+    expect(reread("S")).toEqual(SAMPLE_DAYS.S);
+    expect(reread("E")).toEqual(SAMPLE_DAYS.E);
+    expect(reread("burnin")).toEqual([
+      "2025-05-31",
+      "2025-06-01",
+      "2025-06-15",
+    ]);
   });
 
   it("count the months a window touches, a month's end exclusive", () => {

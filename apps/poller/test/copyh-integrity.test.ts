@@ -7,13 +7,15 @@
  * ruled in unpaired.json, a cell and a bar changed with their manifest lines
  * made to match (only the re-read sees it: K2), the twin's manifest or a twin
  * file differing (exit 7); a run stopped between units and resumed equal to
- * an unbroken one; the re-reader's flags equal to the store's format; the
+ * an unbroken one; blank lines and the switch hour's repeats read as the
+ * store reads them; the re-reader's flags equal to the store's format; the
  * digest moved by any one cell.
  */
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { SWITCH_HOUR } from "../src/copyh/design.js";
 import { Digest, rowBytes, type RowCells } from "../src/copyh/digest.js";
 import {
   UNIT_BYTES,
@@ -23,8 +25,8 @@ import {
 } from "../src/copyh/integrity.js";
 import { merge } from "../src/copyh/merge.js";
 import { runPass, type FileTask, type PassLists } from "../src/copyh/pass.js";
-import { monthsOf } from "../src/copyh/range.js";
-import { FLAG, eachLine } from "../src/copyh/reread.js";
+import { hourKeys, monthsOf } from "../src/copyh/range.js";
+import { FLAG, SWITCH_KEYS, eachLine } from "../src/copyh/reread.js";
 import {
   BuildsDiffer,
   GateFailed,
@@ -206,9 +208,11 @@ function texts(middleUnpaired = false): Map<string, string> {
   ]);
 }
 
-/** The world's raw store, its two builds, and the integrity's input. */
-async function world(o: { middleUnpaired?: boolean } = {}) {
-  const files = texts(o.middleUnpaired);
+/** A raw store of these files (text by key, in the range's order) over a window, its two builds, and the integrity's input. */
+async function worldOf(
+  files: ReadonlyMap<string, string>,
+  window: { start: number; end: number } = RANGE,
+) {
   const s = makeStore(files);
   const tasks: FileTask[] = [...files.keys()].map((key, index) => ({
     index,
@@ -216,7 +220,13 @@ async function world(o: { middleUnpaired?: boolean } = {}) {
     sha256: s.list.get(key)!,
   }));
   const out = mkdtempSync(path.join(tmpdir(), "copyh-integ-"));
-  const range = { ...RANGE, fill: tasks.map((t) => t.key) };
+  const range = {
+    ...RANGE,
+    fill: tasks.map((t) => t.key),
+    start: window.start,
+    end: window.end,
+    months: monthsOf(window.start, window.end),
+  };
   const buildInto = async (base: string) => {
     await runPass({
       store: s.store,
@@ -282,6 +292,18 @@ async function world(o: { middleUnpaired?: boolean } = {}) {
   });
   return { s, tasks, first, second, roots, input, out };
 }
+
+/** The standard world: three files of 2025-09-15 (texts). */
+const world = (o: { middleUnpaired?: boolean } = {}) =>
+  worldOf(texts(o.middleUnpaired));
+
+/** Each input file's records failing the boundary, by the pass (files.jsonl). */
+const failedByFile = (storeDir: string, roots: string[]) =>
+  (
+    openStore(storeDir, roots).fileLines() as {
+      scan: { classes: { failed: number } };
+    }[]
+  ).map((l) => l.scan.classes.failed);
 
 /** A store file's bytes changed in place, and (when `match`) its manifest line made to match. */
 function change(
@@ -423,6 +445,99 @@ describe("the integrity", { timeout: 60_000 }, () => {
     expect(s2.k2.problems.join("\n")).toContain("bar cells differ");
   });
 
+  it("re-reads a blank line as the pass reads it, one failed record: leading, between lines and two trailing", async () => {
+    const H1 = H0 + HOUR_MS;
+    const H2 = H0 + 2 * HOUR_MS;
+    const sol = { coin: "SOL", side: "B" } as const;
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(H0),
+          `\n${byBlock(1, trade(addr(1), addr(2), { ...sol, time: H0 + 1_000, tid: 1 }))}\n`,
+        ],
+        [
+          keyOf(H1),
+          `${byBlock(2, trade(addr(3), addr(4), { ...sol, time: H1 + 1_000, tid: 2 }))}\n\n${byBlock(3, trade(addr(5), addr(6), { ...sol, time: H1 + 9_000, tid: 3 }))}\n`,
+        ],
+        [
+          keyOf(H2),
+          `${byBlock(4, trade(addr(7), addr(8), { ...sol, time: H2 + 1_000, tid: 4 }))}\n\n\n`,
+        ],
+      ]),
+    );
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect(r.k2).toMatchObject({ days: ["2025-09-15"], files: 3, count: 0 });
+    expect(failedByFile(w.first, w.roots)).toEqual([1, 1, 2]);
+    expect(r.counts.classes).toMatchObject({ kept: 8, failed: 4 });
+  });
+
+  it("re-reads the switch hour's second file without the first's records, as the store keeps them once: K0–K2 pass on 2025-07-27", async () => {
+    const S = SWITCH_HOUR;
+    // A whole ADL trade and a lone maker in both files; one account's taker in the first and its own maker in the second (no repeat: another side).
+    const adl = trade(addr(3), addr(4), {
+      coin: "SOL",
+      side: "A",
+      time: S + 2_000,
+      tid: 2,
+      dir: "Auto-Deleveraging",
+    });
+    const maker = record(addr(5), {
+      coin: "ETH",
+      side: "B",
+      time: S + 3_000,
+      crossed: false,
+      tid: 3,
+    });
+    const self = { coin: "SOL", time: S + 5_000, tid: 5 } as const;
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(S, "node_fills"),
+          [
+            ...trade(addr(1), addr(2), {
+              coin: "BTC",
+              side: "B",
+              time: S + 1_000,
+              tid: 1,
+            }),
+            ...adl,
+            maker,
+            record(addr(8), { ...self, side: "B", crossed: true }),
+          ]
+            .map((l) => `${l}\n`)
+            .join(""),
+        ],
+        [
+          keyOf(S),
+          `${byBlock(1, [
+            ...adl,
+            maker,
+            record(addr(8), { ...self, side: "A", crossed: false }),
+            ...trade(addr(6), addr(7), {
+              coin: "BTC",
+              side: "A",
+              time: S + 60_000,
+              tid: 4,
+            }),
+          ])}\n`,
+        ],
+      ]),
+      { start: S, end: S + HOUR_MS },
+    );
+    expect(w.tasks.map((t) => t.key)).toEqual(SWITCH_KEYS);
+    const r = runIntegrity(w.input({ twin: null, sampleDays: ["2025-07-27"] }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect(r.k2).toMatchObject({ days: ["2025-07-27"], files: 2, count: 0 });
+    expect(r.counts.merge).toEqual({
+      in: 12,
+      out: 9,
+      duplicates: 3,
+      byFile: [[1, 3]],
+    });
+    expect([r.counts.straddles, r.k1.edges]).toEqual([1, 2]);
+  });
+
   it("stops on two builds that differ: their manifests, or a file of the second (exit 7)", async () => {
     const w = await world();
     const p = fillsPartOf(w.second, addr(3));
@@ -448,7 +563,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
 });
 
 describe("the re-reader and the digest", { timeout: 60_000 }, () => {
-  it("finds every line in windows of any size, a line across windows whole", () => {
+  it("finds every line in windows of any size as the pass's loop does: a blank one, a line across windows whole, the last without its newline", () => {
     let seed = 7;
     const rnd = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -458,13 +573,23 @@ describe("the re-reader and the digest", { timeout: 60_000 }, () => {
       const text = Array.from({ length: Math.floor(rnd() * 40) }, () =>
         rnd() < 0.3 ? "\n" : String.fromCharCode(97 + Math.floor(rnd() * 26)),
       ).join("");
-      const want = text.split("\n").filter((l) => l !== "");
+      // Every piece between newlines is a line, a blank one too; what follows the last newline is one when it is not empty.
+      const want = text.split("\n");
+      if (want.at(-1) === "") want.pop();
       for (const window of [1, 2, 3, 7, 64]) {
         const got: string[] = [];
         eachLine(Buffer.from(text), window, (l) => got.push(l.toString()));
         expect(got, `${JSON.stringify(text)} by ${window}`).toEqual(want);
       }
     }
+  });
+
+  it("names the switch hour's two files as the archive and the pass do, node_fills first", () => {
+    expect(SWITCH_KEYS).toEqual([
+      "node_fills/hourly/20250727/8.lz4",
+      "node_fills_by_block/hourly/20250727/8.lz4",
+    ]);
+    expect(SWITCH_KEYS).toEqual(hourKeys(SWITCH_HOUR, SWITCH_HOUR + HOUR_MS));
   });
 
   it("reads the store's flags as writers.ts writes them", () => {
