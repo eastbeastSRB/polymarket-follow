@@ -5,12 +5,12 @@
  * significant digits among them), each record in exactly one; the 2025-07-27 switch hour's two files; ADL,
  * Settlement and "Liquidated …" kept; the vault accounts; the coins' first,
  * last and Settlement times; a last line without its newline; the slow path
- * and `misread`; a blank line one failed record; a record's time searched
- * in its own bytes only; `JSON.parse` never handed a
- * cut field on the fast path; a `dir` or coin
- * outside its list stopping a build and counted by a counting run; the
- * records by hour and minute, the holes of the union of files' records
- * (holes.ts) and the block runs.
+ * and `misread`; a blank line one failed record; why each failed record
+ * failed; a record's time searched in its own bytes only; `JSON.parse` never
+ * handed a cut field on the fast path; a `dir` or coin outside its list
+ * counted, a build stopping at the file's end with every such value named;
+ * the kept records by bucket; the records by hour and minute, and the holes
+ * of the union of files' records (holes.ts).
  */
 import { describe, expect, it, vi } from "vitest";
 import { holesOf } from "../src/copyh/holes.js";
@@ -128,6 +128,51 @@ describe("the classes", { timeout: 60_000 }, () => {
     expect(sumClasses(s)).toBe(s.seen);
     expect(writers.groups.reduce((n, g) => n + g.time.length, 0)).toBe(2);
     expect(s.misread).toBe(0);
+    expect([...s.failedBy]).toEqual([
+      ["1.sz", 1],
+      ["1.side", 1],
+    ]);
+    // The kept records by their account's bucket: addr(1) and addr(2), one each.
+    expect([s.buckets.length, s.buckets[1], s.buckets[2]]).toEqual([256, 1, 1]);
+    expect(s.buckets.reduce((a, b) => a + b, 0)).toBe(s.classes.kept);
+  });
+
+  it("names why each failed record failed: its frame, its parse on either path, a line's, the schema's field path, the record itself", () => {
+    const good = (n: number, more: Partial<FillSpec> = {}) =>
+      record(addr(n), {
+        coin: "BTC",
+        side: "B",
+        time: T + n,
+        crossed: true,
+        tid: n,
+        ...more,
+      });
+    const late = (r: string) =>
+      r.replace('{"coin":"BTC"', '{"px":"1","coin":"BTC"');
+    const text = [
+      byBlock(1, [
+        `["0x12",{"coin":"BTC","time":${T}}]`,
+        good(1).replace('"crossed":true', '"crossed":tru'),
+        late(good(2)).replace('"crossed":true', '"crossed":tru'),
+        good(3, { side: "C" as "A" }),
+        late(good(4, { px: "0" })),
+        good(5),
+      ]),
+      `{"block_number":2,"events":[ 5]}`,
+      "not json at all",
+    ].join("\n");
+    const s = scan(`${text}\n`).scan;
+    expect([s.classes.kept, s.classes.failed, s.slowRecords]).toEqual([
+      1, 7, 2,
+    ]);
+    expect([...s.failedBy].sort()).toEqual([
+      ["1.px", 1],
+      ["1.side", 1],
+      ["frame", 1],
+      ["line", 1],
+      ["parse", 2],
+      ["record", 1],
+    ]);
   });
 
   it("read node_fills' one record a line, and keep ADL, Settlement and Liquidated records", () => {
@@ -228,7 +273,7 @@ describe("the classes", { timeout: 60_000 }, () => {
       tid: 1,
     });
     const { scan: s } = scan(`${byBlock(1, [r1])}\n${byBlock(2, [r2])}`);
-    expect([s.classes.kept, s.seen, s.runs]).toEqual([2, 2, [[1, 2]]]);
+    expect([s.classes.kept, s.seen]).toEqual([2, 2]);
     expect(scan(`${r1}\n${r2}`, "node_fills").scan.classes.kept).toBe(2);
   });
 
@@ -278,9 +323,27 @@ describe("the lists", { timeout: 60_000 }, () => {
     }),
   ])}\n`;
 
-  it("stop a build at a dir or a coin outside their lists", () => {
-    expect(() => scan(unknown)).toThrow(
-      'the dir "Merge Question" is not in dirs.json: a ruling gives it its kind',
+  it("stop a build at the file's end, every dir and coin outside their lists named with its count", () => {
+    const more = `${byBlock(2, [
+      record(addr(2), {
+        coin: "SOL",
+        side: "A",
+        time: T + 1,
+        crossed: false,
+        tid: 3,
+        dir: "Split Again",
+      }),
+      record(addr(2), {
+        coin: "SOL",
+        side: "A",
+        time: T + 2,
+        crossed: false,
+        tid: 4,
+        dir: "Merge Question",
+      }),
+    ])}\n`;
+    expect(() => scan(`${unknown}${more}`)).toThrow(
+      `${keyOf(T)}: outside the lists, each with its count: dirs [["Merge Question",2],["Split Again",1]], coins [["NEWCOIN",1]]: a ruling`,
     );
     const coinOnly = `${byBlock(1, [
       record(addr(1), {
@@ -292,7 +355,7 @@ describe("the lists", { timeout: 60_000 }, () => {
       }),
     ])}\n`;
     expect(() => scan(coinOnly)).toThrow(
-      'the coin "NEWCOIN" is not in coins.json',
+      'outside the lists, each with its count: dirs [], coins [["NEWCOIN",1]]: a ruling',
     );
   });
 
@@ -340,11 +403,16 @@ describe("the slow path", { timeout: 60_000 }, () => {
     expect(writers.groups.flatMap((g) => g.time)).toEqual([T, T]);
     const spaced = `{"block_number":4,"events":[ ${record(addr(3), { coin: "BTC", side: "B", time: T, crossed: true, tid: 6 })}]}`;
     const t2 = scan(`${spaced}\n`);
-    expect([t2.scan.slowLines, t2.scan.classes.kept, t2.scan.runs]).toEqual([
-      1,
-      1,
-      [[4, 4]],
-    ]);
+    expect([t2.scan.slowLines, t2.scan.classes.kept]).toEqual([1, 1]);
+    // A block line with no block_number in its head goes to the slow path, which refuses it: its record fails as a line's.
+    const blockless = `{"events":[${record(addr(3), { coin: "BTC", side: "B", time: T, crossed: true, tid: 7 })}]}`;
+    const t3 = scan(`${blockless}\n`).scan;
+    expect([
+      t3.slowLines,
+      t3.classes.kept,
+      t3.classes.failed,
+      [...t3.failedBy],
+    ]).toEqual([1, 0, 1, [["line", 1]]]);
   });
 
   it("counts a line that does not parse as its records failing, one when none can be counted", () => {
@@ -440,7 +508,7 @@ describe("the slow path", { timeout: 60_000 }, () => {
 });
 
 describe("the times", { timeout: 60_000 }, () => {
-  it("count records by hour and minute, give the holes of 60 s or more, and the block runs", () => {
+  it("count records by hour and minute, and give the holes of 60 s or more", () => {
     const at = (t: number, tid: number, coin = "BTC") =>
       record(addr(1), { coin, side: "B", time: t, crossed: true, tid });
     const { scan: s } = scan(
@@ -470,10 +538,6 @@ describe("the times", { timeout: 60_000 }, () => {
       [T - 10_000, T + 50_000],
       [T + 109_999, T + 170_000],
       [T + 170_000, range.end],
-    ]);
-    expect(s.runs).toEqual([
-      [10, 12],
-      [14, 14],
     ]);
   });
 });

@@ -271,9 +271,11 @@ async function count(r: RangeName): Promise<void> {
     file: out,
     seen: counts.seen,
     classes: counts.classes,
+    failedBy: counts.failedBy,
     dirs: counts.dirs.length,
     unknownDirs: counts.unknownDirs,
     unknownCoins: counts.unknownCoins,
+    largestBucketMonths: counts.largestBucketMonths,
   });
 }
 

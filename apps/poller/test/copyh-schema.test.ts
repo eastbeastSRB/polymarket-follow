@@ -4,10 +4,11 @@
  * record's bytes before `JSON.parse` — first, in the middle and last; numbers,
  * strings and negatives; a name inside another string value; escapes; a
  * nested object — and any text the cut cannot settle goes to the slow path,
- * whose reviver drops them at any depth; cut-then-parse equals the reviver's
- * parse on synthetic records; each key searched in its record's own bytes
- * only (the bytes `Buffer#indexOf` reads, counted); ids above 2^53 kept as
- * digits; each field's refusal; the exactness of a double.
+ * whose reviver drops them at any depth, a `\u` escape among them;
+ * cut-then-parse equals the reviver's parse on synthetic records; each key
+ * searched in its record's own bytes only (the bytes `Buffer#indexOf` reads,
+ * counted); ids above 2^53 kept as digits; each field's refusal, an infinite
+ * `px` or `sz` among them, and its name; the exactness of a double.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -18,6 +19,7 @@ import {
   parseFast,
   parseSlow,
   recordOf,
+  refusalOf,
 } from "../src/copyh/schema.js";
 import { searchedBytes } from "./copyh-world.js";
 
@@ -100,6 +102,13 @@ describe("the cut", { timeout: 60_000 }, () => {
       `{${BASE},"fee":"unterminated}`,
     ])
       expect(cut(rec(fill)), fill).toBeNull();
+  });
+
+  it("sends a record holding a \\u escape to the slow path, so an escaped key never reaches an object", () => {
+    const escaped = rec(`{${BASE},"\\u0066ee":"0.5","tid":5}`);
+    expect(cut(escaped)).toBeNull();
+    expect(JSON.stringify(parseSlow(escaped))).not.toContain('"fee"');
+    expect(cut(rec(`{${BASE},"hash":"\\u0041","tid":5}`))).toBeNull();
   });
 
   it("reads only [s, e) of a longer buffer", () => {
@@ -252,6 +261,10 @@ describe("the schema", { timeout: 60_000 }, () => {
       ["px", "0.0"],
       ["px", "-1"],
       ["px", "1e5"],
+      // A text whose double is Infinity, and an sz whose double is 0.
+      ["px", `1${"0".repeat(400)}`],
+      ["sz", `1${"0".repeat(400)}`],
+      ["sz", `0.${"0".repeat(400)}1`],
       ["sz", "-1"],
       ["sz", ".5"],
       ["side", "C"],
@@ -279,6 +292,21 @@ describe("the schema", { timeout: 60_000 }, () => {
     expect(recordOf([U, good, 1])).toBeNull();
     expect(recordOf(["0x12", good])).toBeNull();
     expect(RecordSchema.safeParse([U, good]).success).toBe(true);
+  });
+
+  it("names a refusal by its first field path, never a value, and the record itself when it is no pair", () => {
+    expect(refusalOf([U, { ...good, px: `1${"0".repeat(400)}` }])).toBe("1.px");
+    expect(refusalOf([U, { ...good, side: "C", sz: "-1" }])).toBe("1.sz");
+    expect(
+      refusalOf([
+        U,
+        { ...good, liquidation: { method: "market", liquidatedUser: "0x12" } },
+      ]),
+    ).toBe("1.liquidation.liquidatedUser");
+    expect(refusalOf(["0x12", good])).toBe("0");
+    for (const raw of [[U, good, 1], { a: 1 }, 5, null])
+      expect(refusalOf(raw), JSON.stringify(raw)).toBe("record");
+    expect(() => refusalOf([U, good])).toThrow("passes the boundary");
   });
 
   it("holds sz and startPosition to 15 significant digits", () => {
@@ -343,6 +371,16 @@ describe("a double's exactness", { timeout: 60_000 }, () => {
       "0.1234567890123456",
     ])
       expect(exactInDouble(t), t).toBe(false);
+  });
+
+  it("refuses a text of few digits whose double is not its value: an overflow to Infinity, an underflow to 0; keeps the smallest double's own text", () => {
+    for (const t of [`1${"0".repeat(400)}`, `0.${"0".repeat(400)}1`])
+      expect([exactInDouble(t), Number(t)], t.slice(0, 12)).toEqual([
+        false,
+        t.startsWith("1") ? Infinity : 0,
+      ]);
+    expect(exactInDouble(`0.${"0".repeat(323)}5`)).toBe(true);
+    expect(exactInDouble(`0.${"0".repeat(323)}3`)).toBe(false);
   });
 
   it("is a promise kept: a 15-digit text comes back from its double's shortest text", () => {

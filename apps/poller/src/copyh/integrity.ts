@@ -7,8 +7,9 @@
  * - **K0, whole and conserved:** every file of the store read whole and held
  *   to the manifest; each partition with all its columns, each of its rows'
  *   bytes; the store made from these lists by this code; each input file's
- *   records in exactly one class, no `dir` or coin outside the lists, none
- *   misread; every kept record conserved: an input file's rows in the store
+ *   records in exactly one class, its failed records each with one why, no
+ *   `dir` or coin outside the lists, none misread; every kept record
+ *   conserved: an input file's rows in the store
  *   (by its `file` column) and its dropped duplicates are its kept records,
  *   and the merge's in = out + duplicates;
  * - **K1, one taker and one maker a trade:** no trade met with two records
@@ -502,6 +503,11 @@ export function runIntegrity(o: IntegrityInput) {
     if (classes !== l.scan.seen)
       k0.push(
         `${l.key}: its classes hold ${classes} records of ${l.scan.seen}`,
+      );
+    const failedBy = l.scan.failedBy.reduce((s, [, n]) => s + n, 0);
+    if (failedBy !== c.failed)
+      k0.push(
+        `${l.key}: its failures by why hold ${failedBy} records of ${c.failed}`,
       );
     if (c.unknownDir + c.unknownCoin + l.scan.misread > 0)
       k0.push(

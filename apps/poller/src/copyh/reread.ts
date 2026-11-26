@@ -116,10 +116,25 @@ function revive(
   return value;
 }
 
-/** At most EXACT_DIGITS significant digits. */
+/** At most EXACT_DIGITS significant digits, and its double's shortest text of its value: no overflow, no underflow. */
 function exact(text: string): boolean {
   const d = text.replace("-", "").replace(".", "").replace(/^0+/, "");
-  return d.replace(/0+$/, "").length <= EXACT_DIGITS;
+  if (d.replace(/0+$/, "").length > EXACT_DIGITS) return false;
+  const n = Number(text);
+  return Number.isFinite(n) && sameValue(text, String(n));
+}
+
+/** Whether two decimal texts, an exponent allowed, have one value: each as a whole number times a power of ten, brought to one power. */
+function sameValue(a: string, b: string): boolean {
+  const scaled = (t: string): [bigint, number] => {
+    const [m, e] = t.replace(/^-/, "").split(/e/i);
+    const [whole, frac = ""] = m!.split(".");
+    return [BigInt(`${whole}${frac}`), Number(e ?? 0) - frac.length];
+  };
+  const [x, xp] = scaled(a);
+  const [y, yp] = scaled(b);
+  const p = Math.min(xp, yp);
+  return x * 10n ** BigInt(xp - p) === y * 10n ** BigInt(yp - p);
 }
 
 /** A `startPosition`'s double: its shortest text (the digits before an "e") of at most EXACT_DIGITS significant digits, as the pass reads it. */
@@ -347,6 +362,7 @@ class Reader {
       f.coin === "" ||
       typeof f.px !== "string" ||
       !UNSIGNED.test(f.px) ||
+      !Number.isFinite(Number(f.px)) ||
       !(Number(f.px) > 0) ||
       typeof f.sz !== "string" ||
       !UNSIGNED.test(f.sz) ||

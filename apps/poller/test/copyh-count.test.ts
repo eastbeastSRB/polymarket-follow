@@ -6,7 +6,8 @@
  * lists counted, never a stop; the totals: classes, `dir` values with their
  * counts, takers by `dir` and method, values outside the lists, the coins
  * (their first and last times and first Settlement across files), the vault
- * accounts, the records by day and the holes.
+ * accounts, the records by day, the failed records by why, the ten largest
+ * bucket-months and the holes.
  */
 import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -294,6 +295,71 @@ describe("the counting pass", { timeout: 60_000 }, () => {
     expect(c.coins).toEqual([
       [0, 2, T + 5, T + HOUR_MS + 7, -1],
       [3, 2, T + 10, T + HOUR_MS + 10, T + 10],
+    ]);
+  });
+
+  it("counts kept records by bucket, and prints the ten largest bucket-months, a file's month its key's, and the failed records by why", async () => {
+    const w = world();
+    const dir = mkdtempSync(path.join(tmpdir(), "copyh-counts-"));
+    await count(w, dir, NO_DIRS);
+    const base = readCountFile(countFile(dir, 0))!;
+    // The first file keeps addr(1), addr(2) and addr(5): buckets 1, 2 and 5.
+    expect(
+      base.scan.buckets.flatMap((n, b) => (n > 0 ? [[b, n]] : [])),
+    ).toEqual([
+      [1, 1],
+      [2, 1],
+      [5, 1],
+    ]);
+    // A bucket-month with no kept record is never printed.
+    expect(countsOf([base], window).largestBucketMonths).toEqual([
+      ["2025-09", "01", 1],
+      ["2025-09", "02", 1],
+      ["2025-09", "05", 1],
+    ]);
+    const fileOf = (
+      key: string,
+      counts: Record<number, number>,
+      failedBy: [string, number][],
+    ) => ({
+      ...base,
+      input: { ...base.input, key },
+      scan: {
+        ...base.scan,
+        buckets: Array.from({ length: 256 }, (_, b) => counts[b] ?? 0),
+        failedBy,
+      },
+    });
+    const c = countsOf(
+      [
+        fileOf(keyOf(T), { 0: 5, 1: 1, 2: 2, 3: 3, 4: 4, 5: 6 }, [
+          ["frame", 1],
+          ["1.px", 2],
+        ]),
+        fileOf(keyOf(T + HOUR_MS), { 0: 5, 255: 7 }, [["1.px", 1]]),
+        fileOf(
+          keyOf(Date.parse("2025-10-01T00:00:00Z")),
+          { 0: 9, 16: 8, 17: 1, 18: 2 },
+          [],
+        ),
+      ],
+      window,
+    );
+    expect(c.largestBucketMonths).toEqual([
+      ["2025-09", "00", 10],
+      ["2025-10", "00", 9],
+      ["2025-10", "10", 8],
+      ["2025-09", "ff", 7],
+      ["2025-09", "05", 6],
+      ["2025-09", "04", 4],
+      ["2025-09", "03", 3],
+      ["2025-09", "02", 2],
+      ["2025-10", "12", 2],
+      ["2025-09", "01", 1],
+    ]);
+    expect(c.failedBy).toEqual([
+      ["1.px", 3],
+      ["frame", 1],
     ]);
   });
 });

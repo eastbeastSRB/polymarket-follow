@@ -8,15 +8,17 @@
  *   to the slow path, whose reviver drops the three at any depth before any
  *   object holds them (`parseSlow`). Every unescaped `"<key>":` in valid
  *   JSON is a key (a quote inside a string is escaped), so the cut finds
- *   each; any trace of a name left after it sends the record to the slow
- *   path.
+ *   each; any trace of a name left after it, or any `\u` escape (an escaped
+ *   key such as `"fee"` is `fee` to `JSON.parse`), sends the record to
+ *   the slow path.
  * - `oid` and `tid` are kept as their digits, at most 2^64 − 1: a number
  *   below 2^53 by its value, a longer one by `JSON.parse`'s `context.source`.
  * - Zod checks the rest (`RecordSchema`): `user` 0x and 40 hex digits,
  *   lower-cased when read; `coin` and `dir` non-empty text; `px` decimal
- *   text above 0; `sz` unsigned decimal text of at most EXACT_DIGITS
- *   significant digits (`exactInDouble`), so that a double gives the
- *   decimal value back exactly (the chain rule's exactness; D5);
+ *   text whose double is finite and above 0; `sz` unsigned decimal text of
+ *   at most EXACT_DIGITS significant digits whose double's shortest text has
+ *   its value (`exactInDouble`: no overflow, no underflow), so that a double
+ *   gives the decimal value back exactly (the chain rule's exactness; D5);
  *   `startPosition` signed decimal text read as its double, whose shortest
  *   text must have at most EXACT_DIGITS (`exactAsDouble`: the archive writes
  *   some with 16-18 digits, a residue under a lot past the coin's decimals,
@@ -65,7 +67,7 @@ function valueEnd(b: Buffer, v: number, e: number): number {
  * it (a run of cut pairs at an object's start); null when its text does not
  * settle that (a value that is not a plain string or number, a key not
  * preceded by `,` or `{` or not followed by `,` or `}`, an escaped quote
- * before a key, or a name left after the cut). Each key is searched in the
+ * before a key, a name left after the cut, or a `\u` escape anywhere). Each key is searched in the
  * record's own bytes only: an unbounded search runs on past a record that
  * lacks the key (most lack `builderFee`), quadratic in a block line's
  * records.
@@ -99,7 +101,9 @@ export function cutText(b: Buffer, s: number, e: number): string | null {
     leadingEnd = leading ? q : -1;
   }
   text += b.toString("utf8", at, e);
-  return NAMES.some((n) => text.includes(n)) ? null : text;
+  return NAMES.some((n) => text.includes(n)) || text.includes("\\u")
+    ? null
+    : text;
 }
 
 /** A `tid` or `oid` of 16 digits or more: the text then keeps every id as its digits (above 2^53 a number rounds). */
@@ -149,8 +153,14 @@ const FillSchema = z.object({
   px: z
     .string()
     .regex(UNSIGNED)
-    .refine((p) => Number(p) > 0, "not above 0"),
-  sz: z.string().regex(UNSIGNED).refine(exactInDouble, "beyond 15 digits"),
+    .refine(
+      (p) => Number.isFinite(Number(p)) && Number(p) > 0,
+      "not finite and above 0",
+    ),
+  sz: z
+    .string()
+    .regex(UNSIGNED)
+    .refine(exactInDouble, "beyond 15 digits, or its double not its value"),
   side: z.enum(["A", "B"]),
   time: z.number().int().safe(),
   startPosition: z
@@ -182,14 +192,31 @@ export function recordOf(raw: unknown): Rec | null {
   return { user: user.toLowerCase(), fill };
 }
 
-/** Whether a decimal text has at most EXACT_DIGITS significant digits, so that its double gives the value back exactly. */
+/** Why a record failed the boundary: the schema's first refusal's field path (as "1.px"), never a value; "record" when the record itself is refused (not a two-element array). */
+export function refusalOf(raw: unknown): string {
+  const r = RecordSchema.safeParse(raw);
+  if (r.success) throw new Error("refusalOf: the record passes the boundary");
+  return r.error.issues[0]!.path.join(".") || "record";
+}
+
+/** A decimal text's value, an exponent allowed: its significant digits and the power of ten of the last ("" and 0 for zero), one pair for texts of one value. */
+function valueOf(text: string): [string, number] {
+  const [mantissa, exp = "0"] = text.replace(/^-/, "").split("e");
+  const [whole, frac = ""] = mantissa!.split(".");
+  const lead = `${whole}${frac}`.replace(/^0+/, "");
+  const digits = lead.replace(/0+$/, "");
+  return digits === ""
+    ? ["", 0]
+    : [digits, Number(exp) - frac.length + lead.length - digits.length];
+}
+
+/** Whether a decimal text has at most EXACT_DIGITS significant digits and its double's shortest text has its value, so that the double gives the value back exactly: no overflow, no underflow. */
 export function exactInDouble(text: string): boolean {
-  const digits = text.replace(/^-/, "").replace(".", "");
-  const first = digits.search(/[1-9]/);
-  if (first < 0) return true;
-  let last = digits.length - 1;
-  while (digits[last] === "0") last--;
-  return last - first + 1 <= EXACT_DIGITS;
+  const n = Number(text);
+  if (!Number.isFinite(n)) return false;
+  const [digits, exp] = valueOf(text);
+  const [back, backExp] = valueOf(String(n));
+  return digits.length <= EXACT_DIGITS && back === digits && backExp === exp;
 }
 
 /** Whether a decimal text's double has a shortest text of at most EXACT_DIGITS significant digits (the digits before an "e", which it has below 1e-6 and from 1e21): the double then gives that value back exactly. */

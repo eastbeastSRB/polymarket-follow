@@ -5,11 +5,19 @@
  * exactly as written, with its count, from which `dirs.json` is ruled; the
  * taker records by `dir` and liquidation method; the values outside the
  * lists; the coins kept (their count, first and last time, first Settlement);
- * the vault accounts; the slow path and the misreadings; the records by UTC
- * day; and the holes of the union of every file's records (holes.ts).
+ * the vault accounts; the failed records by why; the slow path and the
+ * misreadings; the records by UTC day; the BUCKET_MONTHS largest
+ * bucket-months of kept records (a file's month its key's), the sizes the
+ * merge's units meet; and the holes of the union of every file's records
+ * (holes.ts).
  */
+import { keyDate } from "../waveh/keys.js";
 import { holesOf } from "./holes.js";
 import type { CountFile } from "./pass.js";
+import { bucketKey } from "./store.js";
+
+/** How many of the largest bucket-months a count prints. */
+const BUCKET_MONTHS = 10;
 
 /** Pairs summed by key, sorted by key. */
 function summed(
@@ -48,6 +56,14 @@ export function countsOf(
       const day = new Date(hour).toISOString().slice(0, 10);
       days.set(day, (days.get(day) ?? 0) + n);
     }
+  const bucketMonths = new Map<string, number>();
+  for (const c of files) {
+    const month = new Date(keyDate(c.input.key)!).toISOString().slice(0, 7);
+    c.scan.buckets.forEach((n, b) => {
+      const k = `${month}|${bucketKey(b)}`;
+      if (n > 0) bucketMonths.set(k, (bucketMonths.get(k) ?? 0) + n);
+    });
+  }
   return {
     files: files.length,
     compressed: sum((c) => c.compressed),
@@ -55,6 +71,7 @@ export function countsOf(
     lines: sum((c) => c.scan.lines),
     seen: sum((c) => c.scan.seen),
     classes,
+    failedBy: summed(files.map((c) => c.scan.failedBy)),
     slowLines: sum((c) => c.scan.slowLines),
     slowRecords: sum((c) => c.scan.slowRecords),
     misread: sum((c) => c.scan.misread),
@@ -69,6 +86,11 @@ export function countsOf(
       .map(([iid, c]) => [iid, ...c]),
     vaults: [...new Set(files.flatMap((c) => c.scan.vaults))].sort(),
     days: [...days].sort((a, b) => (a[0] < b[0] ? -1 : 1)),
+    /** The largest bucket-months of kept records: [month, bucket, records], the largest first (ties by month, then bucket). */
+    largestBucketMonths: [...bucketMonths]
+      .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+      .slice(0, BUCKET_MONTHS)
+      .map(([k, n]) => [...k.split("|"), n] as [string, string, number]),
     holes: holesOf(
       files.map((c) => c.scan.minutes),
       window.start,

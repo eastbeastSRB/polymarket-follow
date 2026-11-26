@@ -46,6 +46,8 @@ export type Partition = z.infer<typeof Partition>;
 /** The store's counts, summed over its files. */
 const Counts = z.object({
   classes: z.record(z.string(), z.number()),
+  /** Why the failed records failed (scan.ts `Scan.failedBy`): [why, count], by why. */
+  failedBy: z.array(z.tuple([z.string(), z.number()])),
   seen: z.number(),
   slowLines: z.number(),
   slowRecords: z.number(),

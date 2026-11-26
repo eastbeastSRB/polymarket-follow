@@ -23,6 +23,7 @@ import {
   type Column,
   type Values,
 } from "../polish/tables.js";
+import { BUCKETS } from "./design.js";
 import { StoreError } from "./run.js";
 import type { Scan } from "./scan.js";
 import {
@@ -89,6 +90,7 @@ export const ScanJson = z.object({
     unknownDir: z.number(),
     unknownCoin: z.number(),
   }),
+  failedBy: z.array(z.tuple([z.string(), z.number()])),
   slowLines: z.number(),
   slowRecords: z.number(),
   misread: z.number(),
@@ -99,10 +101,10 @@ export const ScanJson = z.object({
   coins: z.array(
     z.tuple([z.number(), z.number(), z.number(), z.number(), z.number()]),
   ),
+  buckets: z.array(z.number()).length(BUCKETS),
   unknownDirs: z.array(z.tuple([z.string(), z.number()])),
   unknownCoins: z.array(z.tuple([z.string(), z.number()])),
   vaults: z.array(z.string()),
-  runs: z.array(z.tuple([z.number(), z.number()])),
   minutes: z.array(z.tuple([z.number(), z.number(), z.number()])),
 });
 export type ScanJson = z.infer<typeof ScanJson>;
@@ -276,6 +278,7 @@ export function scanJsonOf(s: Scan): ScanJson {
     lines: s.lines,
     seen: s.seen,
     classes: s.classes,
+    failedBy: byKey(s.failedBy),
     slowLines: s.slowLines,
     slowRecords: s.slowRecords,
     misread: s.misread,
@@ -284,10 +287,10 @@ export function scanJsonOf(s: Scan): ScanJson {
     dirs: byKey(s.dirs),
     takers: byKey(s.takers),
     coins: byKey(s.coins).map(([iid, c]) => [iid, ...c]),
+    buckets: s.buckets,
     unknownDirs: byKey(s.unknownDirs),
     unknownCoins: byKey(s.unknownCoins),
     vaults: [...s.vaults].sort(),
-    runs: s.runs,
     minutes: s.minutes,
   };
 }

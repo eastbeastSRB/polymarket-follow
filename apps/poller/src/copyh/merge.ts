@@ -461,6 +461,7 @@ export function merge(
     partitions,
     counts: {
       classes,
+      failedBy: tally((h) => h.scan.failedBy),
       seen: sum((h) => h.scan.seen),
       slowLines: sum((h) => h.scan.slowLines),
       slowRecords: sum((h) => h.scan.slowRecords),

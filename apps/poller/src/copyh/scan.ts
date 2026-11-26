@@ -7,20 +7,21 @@
  * settle it is parsed whole on the slow path (`parseSlow`), counted. Each
  * record falls in one class: a builder dex's or spot's, by its coin's form,
  * counted and never parsed; a main-dex-shaped one is cut and parsed
- * (`cutText`, `parseFast`) and held to the schema (failing: counted, its
- * `sz` or `startPosition` of more than 15 significant digits among them),
- * then timed before the range's start or at or after its end (counted), of
- * kind `outcome` (counted), its `dir` or coin outside its list (a stop, or
- * counted when the run only counts), else kept and handed to the sink. Every
- * record's time is counted by hour and by minute (the minute's first and last
- * time), from which `holes.ts` finds the holes of the union of every file's
- * records. The counts are what the parts, the manifest and the integrity
- * need.
+ * (`cutText`, `parseFast`) and held to the schema (failing: counted with
+ * why, its `sz` or `startPosition` of more than 15 significant digits among
+ * them), then timed before the range's start or at or after its end
+ * (counted), of kind `outcome` (counted), its `dir` or coin outside its list
+ * (counted; a build then stops at the file's end, naming every such value
+ * with its count), else kept, counted by its account's bucket, and handed to
+ * the sink. Every record's time is counted by hour and by minute (the
+ * minute's first and last time), from which `holes.ts` finds the holes of
+ * the union of every file's records. The counts are what the parts, the
+ * manifest and the integrity need.
  */
 import { decodeFrame } from "../polish/lz4.js";
 import { HOUR_MS, MINUTE_MS } from "../schedule.js";
 import { formOfCoin } from "./coins.js";
-import { SETTLEMENT_DIR } from "./design.js";
+import { BUCKETS, SETTLEMENT_DIR } from "./design.js";
 import type { DirKind } from "./dirs.js";
 import { StoreError } from "./run.js";
 import {
@@ -29,8 +30,10 @@ import {
   parseFast,
   parseSlow,
   recordOf,
+  refusalOf,
   type Rec,
 } from "./schema.js";
+import { bucketOf } from "./writers.js";
 
 export type Format = "node_fills" | "node_fills_by_block";
 
@@ -48,7 +51,7 @@ export type Classes = {
   early: number;
   late: number;
   failed: number;
-  /** Counting runs only: a main-dex-shaped record whose `dir`, or whose coin, is outside its list. */
+  /** A main-dex-shaped record whose `dir`, or whose coin, is outside its list (a build stops at the file's end). */
   unknownDir: number;
   unknownCoin: number;
 };
@@ -59,12 +62,14 @@ export type Scan = {
   /** Every record found, and every record of a line that failed (one when none could be counted). */
   seen: number;
   classes: Classes;
+  /** Why the failed records failed, summing to `classes.failed`: "frame" (not `["0x…",{…}]`), "parse" (no JSON), "line" (each record of a line that fails its own shape), else the schema's first refusal's field path (schema.ts `refusalOf`). */
+  failedBy: Map<string, number>;
   /** Lines and records parsed whole because their text did not settle them. */
   slowLines: number;
   slowRecords: number;
   /** Main-dex-shaped records whose text's coin or time differs from their parse (the parse stands). */
   misread: number;
-  /** Records past the boundary whose `startPosition` text has more than 15 significant digits, read as its double (schema.ts `exactAsDouble`). */
+  /** Records past the boundary whose `startPosition` text is not exact in a double (more than 15 significant digits), read as its double (schema.ts `exactAsDouble`). */
   startByDouble: number;
   /** Every record by the UTC hour of its time. */
   byHour: Map<number, number>;
@@ -74,13 +79,13 @@ export type Scan = {
   takers: Map<string, number>;
   /** Kept records by coin, keyed by its iid: [count, first time, last time, first "Settlement" time or -1]. */
   coins: Map<number, [number, number, number, number]>;
-  /** Counting runs: the values outside their lists, with their counts. */
+  /** Kept records by their account's bucket (writers.ts `bucketOf`), BUCKETS of them. */
+  buckets: number[];
+  /** The values outside their lists, with their counts. */
   unknownDirs: Map<string, number>;
   unknownCoins: Map<string, number>;
   /** The accounts with a kept record of kind `vault`. */
   vaults: Set<string>;
-  /** `node_fills_by_block`'s block numbers in line order, as runs. */
-  runs: [number, number][];
   /** Every record's time by its minute: [minute (its start ÷ 60,000), the first time, the last], by minute. */
   minutes: [number, number, number][];
 };
@@ -98,7 +103,7 @@ const REC = Buffer.from('["0x', "latin1");
 const TIME = Buffer.from('"time":', "latin1");
 const COIN = Buffer.from('{"coin":"', "latin1");
 const EVENTS = Buffer.from('"events":[', "latin1");
-const BLOCK = /"block_number":(\d{1,15})[,}]/;
+const BLOCK = /"block_number":\d{1,15}[,}]/;
 
 const HEX = new Uint8Array(256);
 for (const c of "0123456789abcdefABCDEF") HEX[c.charCodeAt(0)] = 1;
@@ -178,6 +183,7 @@ class Scanner {
       unknownDir: 0,
       unknownCoin: 0,
     },
+    failedBy: new Map(),
     slowLines: 0,
     slowRecords: 0,
     misread: 0,
@@ -186,10 +192,10 @@ class Scanner {
     dirs: new Map(),
     takers: new Map(),
     coins: new Map(),
+    buckets: new Array<number>(BUCKETS).fill(0),
     unknownDirs: new Map(),
     unknownCoins: new Map(),
     vaults: new Set(),
-    runs: [],
     minutes: [],
   };
   private readonly byMinute = new Map<number, [number, number]>();
@@ -236,25 +242,18 @@ class Scanner {
   line(line: Buffer): void {
     this.scan.lines += 1;
     const tiles = this.tiles(line);
-    let block: number | null = null;
-    if (tiles !== null && this.format === "node_fills_by_block") {
-      const m = BLOCK.exec(
-        line.toString("latin1", 0, Math.min(line.length, 256)),
-      );
-      if (m !== null) block = Number(m[1]);
-    }
     if (
       tiles === null ||
-      (this.format === "node_fills_by_block" && block === null)
+      (this.format === "node_fills_by_block" &&
+        !BLOCK.test(line.toString("latin1", 0, Math.min(line.length, 256))))
     ) {
       this.slowLine(line);
       return;
     }
-    if (block !== null) this.blockSeen(block);
     for (const [s, e] of tiles) {
       this.scan.seen += 1;
       if (!framed(line, s, e)) {
-        this.scan.classes.failed += 1;
+        this.fail("frame");
         continue;
       }
       const times = positions(line, TIME, s, e);
@@ -280,17 +279,23 @@ class Scanner {
       try {
         raw = parseFast(text);
       } catch {
-        this.scan.classes.failed += 1;
+        this.fail("parse");
         continue;
       }
       const rec = recordOf(raw);
       if (rec === null) {
-        this.scan.classes.failed += 1;
+        this.fail(refusalOf(raw));
         continue;
       }
       if (rec.fill.coin !== coin || rec.fill.time !== t) this.scan.misread += 1;
       this.take(rec);
     }
+  }
+
+  /** Records failing the boundary, and why. */
+  private fail(why: string, n = 1): void {
+    this.scan.classes.failed += n;
+    bump(this.scan.failedBy, why, n);
   }
 
   /** A record whose text did not settle it: parsed whole, the three fields dropped by the reviver. */
@@ -300,7 +305,7 @@ class Scanner {
     try {
       raw = parseSlow(text);
     } catch {
-      this.scan.classes.failed += 1;
+      this.fail("parse");
       return;
     }
     this.classify(raw);
@@ -319,7 +324,7 @@ class Scanner {
     if (records === null) {
       const n = Math.max(1, positions(line, REC).length);
       this.scan.seen += n;
-      this.scan.classes.failed += n;
+      this.fail("line", n);
       return;
     }
     for (const r of records) {
@@ -341,7 +346,6 @@ class Scanner {
       !Number.isSafeInteger(parsed.block_number)
     )
       return null;
-    this.blockSeen(parsed.block_number as number);
     return parsed.events as unknown[];
   }
 
@@ -371,7 +375,7 @@ class Scanner {
     }
     const rec = recordOf(raw);
     if (rec === null) {
-      this.scan.classes.failed += 1;
+      this.fail(refusalOf(raw));
       return;
     }
     if (formOfCoin(rec.fill.coin) !== "main") {
@@ -399,13 +403,9 @@ class Scanner {
     bump(this.scan.dirs, f.dir);
     if (f.crossed)
       bump(this.scan.takers, `${f.dir}|${f.liquidation?.method ?? ""}`);
-    const { kinds, counting } = this.lists;
+    const { kinds, iids } = this.lists;
     const kind = kinds === null ? "trade" : kinds.get(f.dir);
     if (kind === undefined) {
-      if (!counting)
-        throw new StoreError(
-          `${this.key}: the dir ${JSON.stringify(f.dir)} is not in dirs.json: a ruling gives it its kind`,
-        );
       bump(this.scan.unknownDirs, f.dir);
       c.unknownDir += 1;
       return;
@@ -414,17 +414,15 @@ class Scanner {
       c.outcome += 1;
       return;
     }
-    const iid = this.lists.iids.get(f.coin);
+    const iid = iids.get(f.coin);
     if (iid === undefined) {
-      if (!counting)
-        throw new StoreError(
-          `${this.key}: the coin ${JSON.stringify(f.coin)} is not in coins.json`,
-        );
       bump(this.scan.unknownCoins, f.coin);
       c.unknownCoin += 1;
       return;
     }
     c.kept += 1;
+    const b = bucketOf(rec.user);
+    this.scan.buckets[b] = this.scan.buckets[b]! + 1;
     const coin = this.scan.coins.get(iid);
     const settled = f.dir === SETTLEMENT_DIR ? f.time : -1;
     if (coin === undefined)
@@ -451,26 +449,26 @@ class Scanner {
     }
   }
 
-  /** The file's end: its minutes in order. */
+  /** The file's end: a build stops at the values outside the lists, every one named with its count; else its minutes in order. */
   finish(): Scan {
+    const c = this.scan.classes;
+    if (!this.lists.counting && c.unknownDir + c.unknownCoin > 0)
+      throw new StoreError(
+        `${this.key}: outside the lists, each with its count: dirs ${JSON.stringify([...this.scan.unknownDirs])}, coins ${JSON.stringify([...this.scan.unknownCoins])}: a ruling`,
+      );
     this.scan.minutes = [...this.byMinute]
       .sort((a, b) => a[0] - b[0])
       .map(([m, [lo, hi]]) => [m, lo, hi]);
     return this.scan;
-  }
-
-  private blockSeen(b: number): void {
-    const last = this.scan.runs.at(-1);
-    if (last !== undefined && b === last[1] + 1) last[1] = b;
-    else this.scan.runs.push([b, b]);
   }
 }
 
 /**
  * One fill file (its compressed bytes) through the decoder and the boundary:
  * every kept record of the range's time [start, end) to the sink. A frame
- * that fails throws; a `dir` or coin outside its list stops it (a
- * StoreError) unless the run only counts (`lists.counting`).
+ * that fails throws; a `dir` or coin outside its list stops it at its end (a
+ * StoreError naming every such value) unless the run only counts
+ * (`lists.counting`).
  */
 export function scanFile(
   src: Uint8Array,

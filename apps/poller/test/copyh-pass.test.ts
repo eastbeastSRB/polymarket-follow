@@ -8,7 +8,8 @@
  * without its magic or every group refused; a crash's .tmp files removed; the
  * refusals: a file that differs from its list, or missing (a store error), a
  * sealed path or key, a path outside the run's roots, the 1% day rule (at
- * exactly 1% none; a resumed pass judged again), the pool's as the thread's.
+ * exactly 1% none; a resumed pass judged again), a file's values outside the
+ * lists (all named, no part), the pool's as the thread's.
  */
 import {
   existsSync,
@@ -236,7 +237,43 @@ describe("the pass", { timeout: 60_000 }, () => {
     );
     expect(headers.map((h) => h.scan.classes.kept)).toEqual([60, 40, 12, 20]);
     expect(headers[2]!.scan.classes.spot).toBe(1);
-    expect(headers[2]!.scan.runs).toEqual([[7, 8]]);
+  });
+
+  it("stops a build at a file's values outside the lists, every one named with its count, and writes no part of that file", async () => {
+    const key = keyOf(SWITCH_HOUR + 2 * HOUR_MS, "node_fills_by_block");
+    const t = SWITCH_HOUR + HOUR_MS + 1_000;
+    const w = world(
+      new Map([
+        [
+          key,
+          `${byBlock(10, [
+            record(addr(1), {
+              coin: "BTC",
+              side: "B",
+              time: t,
+              crossed: true,
+              tid: 1,
+              dir: "Merge Question",
+            }),
+            record(addr(2), {
+              coin: "NEWCOIN",
+              side: "A",
+              time: t,
+              crossed: false,
+              tid: 1,
+            }),
+          ])}\n`,
+        ],
+      ]),
+    );
+    const dir = parts();
+    await expect(pass(w, dir)).rejects.toThrow(
+      `${key}: outside the lists, each with its count: dirs [["Merge Question",1]], coins [["NEWCOIN",1]]: a ruling`,
+    );
+    expect([3, 4].map((i) => existsSync(partFile(dir, i)))).toEqual([
+      true,
+      false,
+    ]);
   });
 
   it("stopped by its minutes, ends the files under way, says it is not finished, and resumed gives the unbroken parts byte for byte", async () => {

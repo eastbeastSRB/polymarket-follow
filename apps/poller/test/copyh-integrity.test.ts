@@ -13,8 +13,9 @@
  * a run stopped between units and resumed equal to an unbroken one, another
  * store's unit record never reused; the matching events counted; a sample
  * day read with its neighbour files (a backstop's trade across them, ADL,
- * the vault, a pair across files at 2,000 ms, 15 digits); blank lines and
- * the switch hour's repeats read as the store reads them; the re-reader's
+ * the vault, a pair across files at 2,000 ms, 15 digits); blank lines, an
+ * infinite `px` or `sz`, an `sz` whose double is 0 and the switch hour's
+ * repeats read as the store reads them; the re-reader's
  * flags equal to the store's format, its windows below 2 GiB; the digest
  * moved by any one cell.
  */
@@ -391,7 +392,11 @@ const truncateColumn = (storeDir: string, rel: string, by: number) =>
 
 type FileLineJson = {
   key: string;
-  scan: { seen: number; classes: Record<string, number> };
+  scan: {
+    seen: number;
+    classes: Record<string, number>;
+    failedBy: [string, number][];
+  };
 };
 /** files.jsonl's lines edited, its manifest line made to match. */
 function tamperFiles(storeDir: string, edit: (lines: FileLineJson[]) => void) {
@@ -590,7 +595,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
     ]);
   });
 
-  it("fails on files.jsonl's counts changed with its manifest line made to match: the classes' sum, a value outside the lists, a class the re-read sees", async () => {
+  it("fails on files.jsonl's counts changed with its manifest line made to match: the classes' sum, the failures by why, a value outside the lists, a class the re-read sees", async () => {
     const key = (await world()).tasks[0]!.key;
     const run = async (edit: (l: FileLineJson) => void) => {
       const w = await world();
@@ -606,6 +611,12 @@ describe("the integrity", { timeout: 60_000 }, () => {
     expect(seen.k0.problems).toContain(
       `${key}: its classes hold 4 records of 5`,
     );
+    const why = await run((l) => {
+      l.scan.failedBy = [["frame", 1]];
+    });
+    expect(why.k0.problems).toEqual([
+      `${key}: its failures by why hold 1 records of 0`,
+    ]);
     const unknown = await run((l) => {
       l.scan.classes.unknownDir! += 1;
       l.scan.seen += 1;
@@ -831,6 +842,40 @@ describe("the integrity", { timeout: 60_000 }, () => {
       scan: { startByDouble: number };
     }[];
     expect(line!.scan.startByDouble).toBe(1);
+  });
+
+  it("refuses a px and an sz whose double is Infinity, and an sz whose double is 0, in both readers, and the manifest says why", async () => {
+    const at = (n: number, more: Partial<FillSpec>) =>
+      record(addr(n), {
+        coin: "SOL",
+        side: "B",
+        time: H0 + n * 1_000,
+        crossed: false,
+        tid: n,
+        ...more,
+      });
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(H0),
+          `${byBlock(1, [
+            at(1, {}),
+            at(2, { px: `1${"0".repeat(400)}` }),
+            at(3, { sz: `1${"0".repeat(400)}` }),
+            at(4, { sz: `0.${"0".repeat(400)}1` }),
+          ])}
+`,
+        ],
+      ]),
+    );
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect(r.k2).toMatchObject({ days: ["2025-09-15"], files: 1 });
+    expect(r.counts.classes).toMatchObject({ kept: 1, failed: 3 });
+    expect(openStore(w.first, w.roots).manifest.counts.failedBy).toEqual([
+      ["1.px", 1],
+      ["1.sz", 2],
+    ]);
   });
 
   it("re-reads a blank line as the pass reads it, one failed record: leading, between lines and two trailing", async () => {
