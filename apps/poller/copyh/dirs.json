@@ -1,0 +1,41 @@
+{
+ "rule": "copyh/rules.md C3: every dir value of the main-dex-shaped records counted by `count --range burnin` (2026-11-26, after d42b96a), each with its kind ruled from its text alone (the supervisor, decisions 2026-11-26): trade, a trader's own order; forced, every \"Liquidated ...\" value; vault, \"Net Child Vaults\"",
+ "dirs": [
+  {
+   "dir": "Close Long",
+   "kind": "trade"
+  },
+  {
+   "dir": "Close Short",
+   "kind": "trade"
+  },
+  {
+   "dir": "Liquidated Cross Long",
+   "kind": "forced"
+  },
+  {
+   "dir": "Liquidated Isolated Long",
+   "kind": "forced"
+  },
+  {
+   "dir": "Long > Short",
+   "kind": "trade"
+  },
+  {
+   "dir": "Net Child Vaults",
+   "kind": "vault"
+  },
+  {
+   "dir": "Open Long",
+   "kind": "trade"
+  },
+  {
+   "dir": "Open Short",
+   "kind": "trade"
+  },
+  {
+   "dir": "Short > Long",
+   "kind": "trade"
+  }
+ ]
+}
