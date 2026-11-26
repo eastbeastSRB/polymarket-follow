@@ -53,13 +53,18 @@ import {
   ReproError,
   answersOf,
   compareAccount,
+  compareJudgement,
   compareReading,
   copyhOf,
   copyhReadings,
+  kitInstruments,
   kitPanel,
   poolOf,
+  referenceJudgement,
+  referenceLines,
   referenceOf,
   referenceReadings,
+  reproduce,
   reproduceAccounts,
   seedCoverage,
   seedRows,
@@ -67,6 +72,8 @@ import {
   type AccountsReport,
   type Entry,
   type Figure,
+  type JudgedReport,
+  type Judgement,
   type Limits,
   type Path,
   type Reading,
@@ -81,6 +88,7 @@ import {
   loadResearch,
   type Market,
   type PanelFile,
+  type Setting,
 } from "../src/paper/research.js";
 import { loadSeed, type SeedAccount } from "../src/paper/seed.js";
 import type { StoredRow } from "../src/paper/store.js";
@@ -264,6 +272,8 @@ class SeedBook {
     liquidation?: boolean;
     taker?: boolean;
     pnl?: string;
+    /** An ADL or settlement fill: forced, no market trade. */
+    forced?: "adl" | "settlement";
   }): this {
     const iid = o.iid ?? 6;
     const before = this.pos.get(iid) ?? 0;
@@ -279,6 +289,7 @@ class SeedBook {
           pnl: o.pnl ?? "0",
           taker: o.taker ?? true,
           liquidation: o.liquidation ?? false,
+          ...(o.forced === undefined ? {} : { [o.forced]: true }),
         }),
       ),
     );
@@ -600,7 +611,7 @@ const CUT = kit.constants.CUT;
 const PANEL_START = M1 - 14 * DAY_MS;
 /** The funding hour without a row: inside the hold of the directional trader's first round trip, 24 h to 36 h after PANEL_START. */
 const MISSING_HOUR = PANEL_START + 30 * HOUR_MS;
-/** A made-up panel file of the kit's form from PANEL_START to the cut, or to `end`: uneven marks every minute but in `quiet`, a funding row each hour but MISSING_HOUR, stamped a few ms late, uneven rates. */
+/** A made-up panel file of the kit's form from PANEL_START to the cut, or to `end`: uneven marks every minute but in `quiet`, 3 to 7 trades a minute, a funding row each hour but MISSING_HOUR, stamped a few ms late, uneven rates. */
 function panelOf(
   iid: number,
   o: {
@@ -610,6 +621,7 @@ function panelOf(
   } = {},
 ): PanelFile {
   const end = o.end ?? CUT;
+  const n = (end - PANEL_START) / MINUTE_MS;
   const hours: number[] = [];
   for (let h = PANEL_START + HOUR_MS; h < end; h += HOUR_MS)
     if (h !== MISSING_HOUR) hours.push(h);
@@ -621,13 +633,17 @@ function panelOf(
     end,
     firstTrade: PANEL_START,
     retired: o.retired ?? null,
-    marks: Array.from({ length: (end - PANEL_START) / MINUTE_MS }, (_, i) => {
+    marks: Array.from({ length: n }, (_, i) => {
       const t = PANEL_START + i * MINUTE_MS;
       return o.quiet !== undefined && t >= o.quiet[0] && t < o.quiet[1]
         ? null
         : 100 + iid + ((i * i) % 53) / 7;
     }),
-    klines: { minute: [], trades: [], volume: [] },
+    klines: {
+      minute: Array.from({ length: n }, (_, i) => i),
+      trades: Array.from({ length: n }, (_, i) => 3 + (i % 5)),
+      volume: Array.from({ length: n }, (_, i) => 10 + (i % 7)),
+    },
     funding: hours.map((h, k): [number, number, number] => [
       h,
       ((k % 3) - 1) * 1e-5 + 2e-6,
@@ -636,19 +652,18 @@ function panelOf(
   };
 }
 const SETTING = kit.costs.SETTINGS.taker;
+const INSTRUMENTS = kitInstruments(RESEARCH_ROOT);
 /** The directional trader's fifth open (instrument 6), whose follow instant lies in its panel's quiet stretch. */
 const QUIET_T = M1 - 13 * DAY_MS + 4 * 36 * HOUR_MS;
+/** The judged lines' TEN trader's open j = 17 (instrument 7), in its panel's quiet stretch. */
+const QUIET7_T = M1 - 20 * DAY_MS + 17 * 36 * HOUR_MS;
+const around = (t: number) => [t - 6 * MINUTE_MS, t + 6 * MINUTE_MS] as const;
 /** A retired market's panel end (instrument 8) and its record. */
 const RETIRED_END = M1 - 3 * DAY_MS;
 const RETIREMENT = { timestamp: RETIRED_END - 30_000, price: "123.4" };
 const MARKETS = new Map<number, Market>([
-  [
-    6,
-    kit.panel.marketFrom(
-      panelOf(6, { quiet: [QUIET_T - 6 * MINUTE_MS, QUIET_T + 6 * MINUTE_MS] }),
-    ),
-  ],
-  [7, kit.panel.marketFrom(panelOf(7))],
+  [6, kit.panel.marketFrom(panelOf(6, { quiet: around(QUIET_T) }))],
+  [7, kit.panel.marketFrom(panelOf(7, { quiet: around(QUIET7_T) }))],
   [
     8,
     kit.panel.marketFrom(panelOf(8, { end: RETIRED_END, retired: RETIREMENT })),
@@ -739,6 +754,7 @@ describe("the seed's source and the run", () => {
         mondays: [M1, M2],
         limits,
         sets,
+        instruments: INSTRUMENTS,
         market,
         setting: SETTING,
       });
@@ -788,6 +804,7 @@ describe("the seed's source and the run", () => {
         mondays: [M1],
         limits: NO_LIMITS,
         sets: {},
+        instruments: INSTRUMENTS,
         market,
         setting: SETTING,
       }),
@@ -811,6 +828,7 @@ describe("the seed's source and the run", () => {
       mondays: [M1],
       limits: NO_LIMITS,
       sets: { all: [...ids, `${H}|6|1|OPEN`], cut: [atCutId] },
+      instruments: INSTRUMENTS,
       market: loads,
       setting: SETTING,
     });
@@ -896,6 +914,7 @@ describe("the seed's source and the run", () => {
         mondays: [M1],
         limits: NO_LIMITS,
         sets: { one: [id] },
+        instruments: INSTRUMENTS,
         market,
         setting: {
           ...SETTING,
@@ -925,6 +944,61 @@ describe("the seed's source and the run", () => {
       expect(y.largest).toBeGreaterThan(0);
       expect(y.largest).toBeLessThanOrEqual(REPRODUCTION_TOLERANCE_BPS);
     }
+  });
+
+  it("reproduces on known.json's Mondays and sets with the kit's taker setting, passed exactly when every answer is", () => {
+    const seed = directional().seed(A);
+    const f = folder([seed]);
+    const ids = [...entriesOf(seed).keys()];
+    const printed = Known.parse(
+      JSON.parse(
+        readFileSync(path.join(PACKAGE_ROOT, "copyh", "known.json"), "utf8"),
+      ),
+    ).x3printed;
+    const known = {
+      mondays: ["2026-10-12", "2026-10-26"],
+      find6exits: ids,
+      x3: ids.slice(0, 3),
+      x3voted: ids.slice(0, 2),
+      x3find3: ids.slice(0, 1),
+      x3printed: printed,
+    };
+    const r = reproduce({
+      kit,
+      seed: seedSource({ ...f, roots: [f.root], load: loadSeed }),
+      pool: new Set([A]),
+      instruments: INSTRUMENTS,
+      known,
+      limits: NO_LIMITS,
+      market,
+    });
+    const { accounts, answers } = r.report;
+    expect(accounts.mondays).toEqual(known.mondays);
+    expect(
+      Object.entries(accounts.sets).map(([name, s]) => [name, s.found]),
+    ).toEqual([
+      ["find6exits", ids.length],
+      ["x3", 3],
+      ["x3voted", 2],
+      ["x3find3", 1],
+    ]);
+    expect(answers).toEqual(answersOf(accounts, printed));
+    expect(r.passed).toBe(false);
+    expect(answers.filter((a) => !a.passed).length).toBeGreaterThan(0);
+    expect(answers.filter((a) => a.passed).length).toBeGreaterThan(0);
+    // The kit's taker setting: each figure the reference's with it.
+    const items = ids.flatMap((id) => {
+      const e = entriesOf(seed).get(id)!;
+      const x = referenceReadings(kit, market(e.group.iid), SETTING, e).exits;
+      return x.reason === undefined ? [x.net] : [];
+    });
+    expect(accounts.sets.find6exits!.readings.exits.copyh.net.mean).toBe(
+      kit.stats.cr1Test(
+        items,
+        () => A,
+        (x) => x,
+      ).estimate,
+    );
   });
 
   it("takes the pool from the kit's population, outside its holdout", () => {
@@ -1172,6 +1246,24 @@ describe("the known answers", () => {
     readings: { exits: reading(0), zero: reading(0), held: reading(0), ...r },
   });
   const empty = { count: 0, first: [] };
+  const judged = (copies: number, equal: number): JudgedReport => {
+    const tally = {
+      equal,
+      unpriced: copies - equal,
+      largest: 0,
+      differ: empty,
+    };
+    return {
+      copies,
+      d: tally,
+      edge: tally,
+      nulls: { "no trades in the hour": copies - equal },
+    };
+  };
+  const count = (entries: number, traders: number) => ({
+    kit: { entries, traders },
+    copyh: { entries, traders },
+  });
   /** A report that gives every known answer: X3's figures a little off the printed decimals. */
   const good: AccountsReport = {
     accounts: 1602,
@@ -1193,6 +1285,9 @@ describe("the known answers", () => {
       x3find3: setOf(1104, { held: reading(1104) }),
     },
     retired: [],
+    lines: { MAIN: { kit: 500, copyh: 500 }, TEN: { kit: 200, copyh: 200 } },
+    fr1: { MAIN: count(1137, 157), TEN: count(525, 61) },
+    judged: { MAIN: judged(6000, 5990), TEN: judged(2500, 2496) },
     beyond: empty,
     allowed: empty,
     differ: empty,
@@ -1233,11 +1328,31 @@ describe("the known answers", () => {
       ["X3's held 24 h by trader, over its voted set", "9.1 ± 13.7", true],
       ["X3's 1,104 in FIND-3's look, held 24 h", "1104 of 1104", true],
       ["the Mondays", "26", true],
+      [
+        "FR1: MAIN's entries in the four weeks before the cut",
+        "1137 entries, 157 traders",
+        true,
+      ],
+      [
+        "FR1: TEN's entries in the four weeks before the cut",
+        "525 entries, 61 traders",
+        true,
+      ],
+      ["d of MAIN's copies", "6000 of 6000, at least one", true],
+      ["x′ of MAIN's copies", "6000 of 6000, at least one", true],
+      ["d of TEN's copies", "2500 of 2500, at least one", true],
+      ["x′ of TEN's copies", "2500 of 2500, at least one", true],
     ]);
     expect(answers[2]!.got).toBe(
       "1700 of 1700 (the largest difference 2.5e-14 bps)",
     );
     expect(answers[6]!.got).toBe("COPY-H -9.9 ± 9.1, the kit -9.9 ± 9.1");
+    expect(answers[11]!.got).toBe(
+      "COPY-H 1137 entries, 157 traders, the kit 1137 entries, 157 traders",
+    );
+    expect(answers[13]!.got).toBe(
+      "6000 of 6000 (10 null alike, the largest difference 0 bps)",
+    );
   });
 
   it("fails each answer alone when its number moves", () => {
@@ -1345,6 +1460,42 @@ describe("the known answers", () => {
     expect(failed({ ...good, mondays: good.mondays.slice(1) })).toEqual([
       "the Mondays",
     ]);
+    const fr1 = (L: "MAIN" | "TEN", path: "kit" | "copyh", c: object) => ({
+      ...good,
+      fr1: { ...good.fr1, [L]: { ...good.fr1[L], [path]: c } },
+    });
+    for (const [L, entries, traders] of [
+      ["MAIN", 1137, 157],
+      ["TEN", 525, 61],
+    ] as const) {
+      const answer = `FR1: ${L}'s entries in the four weeks before the cut`;
+      for (const path of ["kit", "copyh"] as const) {
+        expect(failed(fr1(L, path, { entries: entries - 1, traders }))).toEqual(
+          [answer],
+        );
+        expect(failed(fr1(L, path, { entries, traders: traders + 1 }))).toEqual(
+          [answer],
+        );
+      }
+    }
+    for (const L of ["MAIN", "TEN"] as const) {
+      const j = good.judged[L];
+      const moved = (what: "d" | "edge") => ({
+        ...good,
+        judged: {
+          ...good.judged,
+          [L]: { ...j, [what]: { ...j[what], equal: j[what].equal - 1 } },
+        },
+      });
+      expect(failed(moved("d"))).toEqual([`d of ${L}'s copies`]);
+      expect(failed(moved("edge"))).toEqual([`x′ of ${L}'s copies`]);
+      // None judged is no answer.
+      const zero = { ...good, judged: { ...good.judged, [L]: judged(0, 0) } };
+      expect(failed(zero)).toEqual([
+        `d of ${L}'s copies`,
+        `x′ of ${L}'s copies`,
+      ]);
+    }
     const noX3 = Object.fromEntries(
       Object.entries(sets).filter(([name]) => name !== "x3"),
     );
@@ -1361,5 +1512,355 @@ describe("the kit's own panel", () => {
     )) as { loadMarket: unknown };
     expect(typeof panel.loadMarket).toBe("function");
     expect(kitPanel(kit)).toBe(panel.loadMarket);
+  });
+});
+
+/** The four Mondays the lines' tests run: M1 and the three after it, in FR1's weeks. */
+const MONDAYS4 = [0, 7, 14, 21].map((d) => M1 + d * DAY_MS);
+/** `n` round trips of 12 h from `from`, one every `everyH` hours, `minutes` past the hour, on instruments 6 and 7 in turn, each size its own (k + 2) / 4. */
+function steady(
+  from: number,
+  n: number,
+  everyH: number,
+  minutes = 0,
+  forced?: { readonly k: number; readonly kind: "adl" | "settlement" },
+): SeedBook {
+  const book = new SeedBook();
+  for (let k = 0; k < n; k++) {
+    const t = from + k * everyH * HOUR_MS + minutes * MINUTE_MS;
+    const iid = k % 2 === 0 ? 6 : 7;
+    const side = k % 3 === 0 ? -1 : 1;
+    const back = side === 1 ? -1 : 1;
+    const q = (k + 2) / 4;
+    book.order({ t, iid, oid: 2 * k + 1, side, sizes: [q / 2, q / 2] });
+    const quarter = forced?.k === k ? q / 4 : 0;
+    if (quarter > 0)
+      book.order({
+        t: t + 20 * MINUTE_MS,
+        iid,
+        oid: 1000 + k,
+        side: back,
+        sizes: [quarter],
+        taker: false,
+        forced: forced!.kind,
+      });
+    book.order({
+      t: t + 12 * HOUR_MS,
+      iid,
+      oid: 2 * k + 2,
+      side: back,
+      sizes: [q - quarter],
+    });
+  }
+  return book;
+}
+/** TEN at each of MONDAYS4: a round trip every 36 h from M1 − 20 d (13 or more closed in each 30 days), its j = 16 hit by an ADL 20 minutes in. */
+const tenTrader = (addr: string) =>
+  steady(M1 - 20 * DAY_MS, 30, 36, 0, { k: 16, kind: "adl" }).seed(addr);
+/** MAIN but not TEN: a round trip every 108 h, each in the hour of one of tenTrader's opens, 10 minutes into it (6 or 7 closed in 30 days), its k = 7 (tenTrader's j = 21's hour) a settlement fill 20 minutes later. */
+const mainTrader = (addr: string) =>
+  steady(M1 - 20 * DAY_MS, 10, 108, 10, { k: 7, kind: "settlement" }).seed(
+    addr,
+  );
+
+describe("the reference's lines", () => {
+  it("are R7's MAIN and TEN as the paper's linesAt reads them, covered or not", () => {
+    const state = { P: CUT, from: CUT, holes: [] };
+    const seen = { MAIN: 0, TEN: 0 };
+    for (const seed of [
+      tenTrader(A),
+      { ...tenTrader(A), truncated: true },
+      mainTrader(A),
+      directional().seed(),
+      churner("-0.5").seed(),
+    ]) {
+      const paper = accountData(kit, seed.addr, seed, [], state);
+      const ref = referenceOf(kit, seed, MONDAYS4);
+      MONDAYS4.forEach((M, k) => {
+        const l = linesAt(mondayFacts(kit, paper, M, new Map()));
+        const mine = referenceLines(ref.facts[k]!, seedCoverage(kit, seed, M));
+        expect(mine).toEqual({ MAIN: l.main, TEN: l.ten });
+        seen.MAIN += Number(mine.MAIN);
+        seen.TEN += Number(mine.TEN);
+      });
+    }
+    // tenTrader in both at all four (truncated, at the last two only),
+    // mainTrader in MAIN alone, the directional trader in MAIN at the first
+    // two (its last round trips in their 14 days).
+    expect(seen).toEqual({ MAIN: 4 + 2 + 4 + 2, TEN: 4 + 2 });
+  });
+});
+
+describe("the judged lines", () => {
+  const C = `0x${"6".repeat(40)}`;
+  const seeds = [tenTrader(A), mainTrader(C)];
+  const root = mkdtempSync(path.join(tmpdir(), "copyh-repro-judged-"));
+  const dir = path.join(root, "seed");
+  mkdirSync(dir);
+  const manifest = new Map<string, string>();
+  for (const s of seeds) {
+    const bytes = gzipSync(JSON.stringify(s));
+    writeFileSync(path.join(dir, `${s.addr}.json.gz`), bytes);
+    manifest.set(`${s.addr}.json.gz`, sha256(bytes));
+  }
+  const run = (
+    o: {
+      instruments?: ReadonlySet<number>;
+      limits?: Limits;
+      setting?: Setting;
+    } = {},
+  ) =>
+    reproduceAccounts({
+      kit,
+      seed: seedSource({ dir, manifest, roots: [root], load: loadSeed }),
+      pool: new Set([A, C]),
+      instruments: o.instruments ?? INSTRUMENTS,
+      mondays: MONDAYS4,
+      limits: o.limits ?? NO_LIMITS,
+      sets: {},
+      market,
+      setting: o.setting ?? SETTING,
+    });
+  const r = run();
+  /** Each trader's opens with t in [M1, M1 + 28 d): tenTrader's j = 14…29, mainTrader's k = 5…9; tenTrader's j = 17 in instrument 7's quiet stretch. */
+  const TEN_COPIES = 16;
+  const MAIN_COPIES = TEN_COPIES + 5;
+
+  it("hold each account's MAIN and TEN at every Monday to the reference's", () => {
+    expect(r.differ).toEqual({ count: 0, first: [] });
+    expect(r.lines).toEqual({
+      MAIN: { kit: 8, copyh: 8 },
+      TEN: { kit: 4, copyh: 4 },
+    });
+  });
+
+  it("judge every entry of the Mondays' weeks in each of its lines: d and x′ equal to the reference's with the line's own members removed, FR1's counts", () => {
+    const tally = (n: number) => ({
+      equal: n - 1,
+      unpriced: 1,
+      largest: 0,
+      differ: { count: 0, first: [] },
+    });
+    expect(r.judged).toEqual({
+      MAIN: {
+        copies: MAIN_COPIES,
+        d: tally(MAIN_COPIES),
+        edge: tally(MAIN_COPIES),
+        nulls: { "entry unpriced": 1 },
+      },
+      TEN: {
+        copies: TEN_COPIES,
+        d: tally(TEN_COPIES),
+        edge: tally(TEN_COPIES),
+        nulls: { "entry unpriced": 1 },
+      },
+    } satisfies Record<string, JudgedReport>);
+    expect(r.fr1).toEqual({
+      MAIN: {
+        kit: { entries: MAIN_COPIES, traders: 2 },
+        copyh: { entries: MAIN_COPIES, traders: 2 },
+      },
+      TEN: {
+        kit: { entries: TEN_COPIES, traders: 1 },
+        copyh: { entries: TEN_COPIES, traders: 1 },
+      },
+    });
+    // Outside R6's markets nothing is judged: instrument 6's copies gone,
+    // tenTrader's j odd and mainTrader's k odd left.
+    const outside = run({ instruments: new Set([7, 8]) });
+    expect(outside.differ.count).toBe(0);
+    expect(outside.judged.MAIN.copies).toBe(8 + 3);
+    expect(outside.fr1.MAIN).toEqual({
+      kit: { entries: 8 + 3, traders: 2 },
+      copyh: { entries: 8 + 3, traders: 2 },
+    });
+  });
+
+  it("list a line one path holds and the other not, and a copy judged in one path only", () => {
+    // COPY-H's labels past a cap of 3 fills: never P1, so in no line.
+    const capped = run({ limits: { ...NO_LIMITS, labelFills: 3 } });
+    expect(capped.judged.MAIN.copies).toBe(0);
+    const lines = capped.differ.first;
+    expect(lines).toContain(`${A} 2026-10-12: MAIN true / false`);
+    expect(lines).toContain(`${A} 2026-10-12: TEN true / false`);
+    expect(lines.some((l) => l.endsWith(": in MAIN in one path only"))).toBe(
+      true,
+    );
+    expect(capped.differ.count).toBeGreaterThan(MAIN_COPIES + TEN_COPIES);
+  });
+
+  it("list an x′ that differs from the reference's, its d equal", () => {
+    // A fee a hair higher at each call: the reference's leg comes after
+    // COPY-H's, so every priced copy's x′ differs by about 4e-5 bps.
+    let calls = 0;
+    const r2 = run({
+      setting: {
+        ...SETTING,
+        fee: (iid, t) => SETTING.fee(iid, t) + (calls += 1) * 1e-9,
+      },
+    });
+    for (const [L, n] of [
+      ["MAIN", MAIN_COPIES],
+      ["TEN", TEN_COPIES],
+    ] as const) {
+      const j = r2.judged[L];
+      expect([j.d.equal, j.edge.equal, j.edge.unpriced]).toEqual([n - 1, 0, 1]);
+      expect(j.edge.differ.count).toBe(n - 1);
+    }
+    expect(r2.differ.count).toBe(MAIN_COPIES - 1 + TEN_COPIES - 1);
+    expect(r2.differ.first[0]).toMatch(/: (MAIN|TEN) x′ by /);
+  });
+
+  it("remove the line's own members: a TEN copy in mainTrader's hour has another d in MAIN", () => {
+    // tenTrader's open j = 15, mainTrader's k = 5 10 minutes into its hour, in M1's week.
+    const e = [...entriesOf(seeds[0]!).values()].find(
+      (x) => x.group.t === M1 - 20 * DAY_MS + 15 * 36 * HOUR_MS,
+    )!;
+    const k = 0;
+    const facts = referenceOf(kit, seeds[0]!, MONDAYS4).facts[k]!;
+    const c = {
+      addr: A,
+      t: e.group.t,
+      D: e.D,
+      dir: e.group.dir,
+      iid: e.group.iid,
+      k,
+      longShare: facts.longShare,
+    };
+    const week = (s: SeedAccount) =>
+      s.rows
+        .filter(
+          (x) =>
+            x.timestamp >= MONDAYS4[k]! &&
+            x.timestamp < MONDAYS4[k]! + 7 * DAY_MS,
+        )
+        .map((x) => kit.fills.normFill(x));
+    const mk = market(e.group.iid);
+    const ten = referenceJudgement(
+      kit,
+      mk,
+      c,
+      kit.nulls.removalOf([week(seeds[0]!)])(c.iid),
+      SETTING,
+    );
+    const main = referenceJudgement(
+      kit,
+      mk,
+      c,
+      kit.nulls.removalOf([week(seeds[0]!), week(seeds[1]!)])(c.iid),
+      SETTING,
+    );
+    const none = referenceJudgement(kit, mk, c, () => 0, SETTING);
+    const bps = (j: { d: Judgement }) => {
+      if (j.d.reason !== undefined) throw new Error(j.d.reason);
+      return j.d.bps;
+    };
+    expect(new Set([bps(ten), bps(main), bps(none)]).size).toBe(3);
+  });
+
+  it("hold a judgement to its reference: within the tolerance, null alike, or a difference", () => {
+    const TOL = REPRODUCTION_TOLERANCE_BPS;
+    expect(
+      compareJudgement({ bps: 2.5 }, { bps: 2.5 + TOL / 2 }),
+    ).toMatchObject({ kind: "equal" });
+    expect(
+      compareJudgement({ bps: 2.5 + 2 * TOL }, { bps: 2.5 }),
+    ).toMatchObject({
+      kind: "differ",
+    });
+    expect(compareJudgement({ bps: 2.5 - 2 * TOL }, { bps: 2.5 }).kind).toBe(
+      "differ",
+    );
+    expect(compareJudgement({ bps: NaN }, { bps: 2.5 }).kind).toBe("differ");
+    const hour = { reason: "no trades in the hour" };
+    expect(compareJudgement(hour, { ...hour })).toEqual({ kind: "unpriced" });
+    expect(compareJudgement(hour, { reason: "entry unpriced" })).toEqual({
+      kind: "differ",
+      why: "null: no trades in the hour / entry unpriced",
+    });
+    expect(compareJudgement({ bps: 1 }, hour)).toEqual({
+      kind: "differ",
+      why: "null: no / no trades in the hour",
+    });
+  });
+
+  it("leave d and x′ null alike for a null long share and for an hour with no trade left, its reason counted", () => {
+    const e = [...entriesOf(seeds[0]!).values()].find((x) => x.group.t >= M1)!;
+    const mk = market(e.group.iid);
+    const c = {
+      addr: A,
+      t: e.group.t,
+      D: e.D,
+      dir: e.group.dir,
+      iid: e.group.iid,
+      k: 0,
+      longShare: null,
+    };
+    expect(referenceJudgement(kit, mk, c, () => 0, SETTING)).toEqual({
+      d: { reason: "no long share" },
+      edge: { reason: "no long share" },
+    });
+    // Every trade of the hour removed: none left for the null.
+    const all = referenceJudgement(
+      kit,
+      mk,
+      { ...c, longShare: 0.5 },
+      () => 99,
+      SETTING,
+    );
+    expect(all).toEqual({
+      d: { reason: "no trades in the hour" },
+      edge: { reason: "no trades in the hour" },
+    });
+  });
+});
+
+describe("the kit's data files", () => {
+  /** A copy of the kit's FINGERPRINT.sha256 and its two data files the reproduction reads. */
+  function kitCopy() {
+    const root = mkdtempSync(path.join(tmpdir(), "copyh-repro-kit-"));
+    mkdirSync(path.join(root, "kit", "data"), { recursive: true });
+    for (const f of [
+      "FINGERPRINT.sha256",
+      "data/population.json",
+      "data/rulebook.json",
+    ])
+      writeFileSync(
+        path.join(root, "kit", f),
+        readFileSync(path.join(RESEARCH_ROOT, "kit", f)),
+      );
+    return root;
+  }
+  const change = (root: string, f: string) => {
+    const file = path.join(root, "kit", f);
+    writeFileSync(file, `${readFileSync(file, "utf8")} `);
+  };
+
+  it("are read once each is its line's in the kit's fingerprint, the pinned one", () => {
+    const root = kitCopy();
+    expect(poolOf(root)).toEqual(poolOf(RESEARCH_ROOT));
+    expect(kitInstruments(root)).toEqual(INSTRUMENTS);
+    expect(INSTRUMENTS.size).toBe(91);
+    for (const iid of [6, 7, 8, 51]) expect(INSTRUMENTS.has(iid)).toBe(true);
+  });
+
+  it("refuse a changed data file, and a changed fingerprint list, before parsing", () => {
+    for (const [f, read] of [
+      ["data/population.json", poolOf],
+      ["data/rulebook.json", kitInstruments],
+    ] as const) {
+      const root = kitCopy();
+      change(root, f);
+      expect(() => read(root)).toThrow(ReproError);
+      expect(() => read(root)).toThrow(
+        `the kit's ${f} is not its fingerprint's`,
+      );
+    }
+    const root = kitCopy();
+    change(root, "FINGERPRINT.sha256");
+    expect(() => poolOf(root)).toThrow(
+      /the kit's FINGERPRINT\.sha256 is not the pinned/,
+    );
+    expect(() => kitInstruments(root)).toThrow(ReproError);
   });
 });

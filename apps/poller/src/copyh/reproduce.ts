@@ -11,22 +11,26 @@
  * or after END_E, which every store reader's seal refuses before step 2
  * (C0), and C15 (a) runs C3's chain heads and normalization, not the pass.
  * The known copies are priced on the kit's own panel with its taker
- * setting, COPY-H's way (money.ts) and the reference's (lib-exits).
+ * setting, COPY-H's way (money.ts) and the reference's (lib-exits); every
+ * MAIN and TEN entry of the seed's weeks is judged, COPY-H's way (lines.ts,
+ * judge.ts) and the kit's (`dAgainstNull` with `removalOf`); FR1's counts
+ * come from both. `reproduce` is the whole of it, repro.json's body.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
-import type {
-  Capture,
-  CopyExit,
-  CopyPrice,
-  Fill,
-  Group,
-  Market,
-  OrderEvent,
-  Research,
-  Setting,
+import {
+  KIT_FINGERPRINT,
+  type Capture,
+  type CopyExit,
+  type CopyPrice,
+  type Fill,
+  type Group,
+  type Market,
+  type OrderEvent,
+  type Research,
+  type Setting,
 } from "../paper/research.js";
 import type { SeedAccount } from "../paper/seed.js";
 import { DAY_MS, HOUR_MS } from "../schedule.js";
@@ -43,6 +47,16 @@ import {
   historyOf,
   type Limits as HistoryLimits,
 } from "./entries.js";
+import { mondayOf } from "./instants.js";
+import {
+  dOf,
+  edgeOf,
+  memberRecords,
+  removalsOf,
+  removedBy,
+  type Removal,
+  type TradeKey,
+} from "./judge.js";
 import {
   DIRECTIONAL,
   fillsBefore,
@@ -51,9 +65,10 @@ import {
   labelOf,
   type Coverage,
 } from "./labels.js";
+import { accountLines, entryLines } from "./lines.js";
 import { moneyOf, planOf, type Money } from "./money.js";
 import { normOf } from "./normalize.js";
-import { CheckFailed } from "./run.js";
+import { CheckFailed, sha256 } from "./run.js";
 import { exactInDouble } from "./schema.js";
 import { SEALED, checkInside, checkPath } from "./seal.js";
 
@@ -621,19 +636,48 @@ const Population = z.object({
   accounts: z.array(z.object({ addr: z.string(), holdout: z.boolean() })),
 });
 
-/** The kit's pool outside its holdout (`kit/data/population.json`, under the kit's fingerprint): the only accounts the reproduction reads. */
+/**
+ * A file of the kit's data, `kit/data/<name>`, parsed only once its SHA-256
+ * is its line's in the kit's FINGERPRINT.sha256, and that list's own the
+ * pinned fingerprint (the supervisor's condition, 2026-11-26): whatever the
+ * order of calls, no kit file the kit's check has not held is read.
+ */
+function kitData(researchRoot: string, name: string): unknown {
+  const kit = path.join(researchRoot, "kit");
+  const list = readFileSync(path.join(kit, "FINGERPRINT.sha256"));
+  if (sha256(list) !== KIT_FINGERPRINT)
+    throw new ReproError(
+      `the kit's FINGERPRINT.sha256 is not the pinned ${KIT_FINGERPRINT}`,
+    );
+  const want = list
+    .toString("utf8")
+    .split("\n")
+    .map((line) => /^([0-9a-f]{64}) \*(.+)$/.exec(line.trim()))
+    .find((m) => m?.[2] === `data/${name}`)?.[1];
+  const bytes = readFileSync(path.join(kit, "data", name));
+  if (want === undefined || sha256(bytes) !== want)
+    throw new ReproError(`the kit's data/${name} is not its fingerprint's`);
+  return JSON.parse(bytes.toString("utf8"));
+}
+
+/** The kit's pool outside its holdout (`kit/data/population.json`): the only accounts the reproduction reads. */
 export const poolOf = (researchRoot: string): Set<string> =>
   new Set(
-    Population.parse(
-      JSON.parse(
-        readFileSync(
-          path.join(researchRoot, "kit", "data", "population.json"),
-          "utf8",
-        ),
-      ),
-    )
+    Population.parse(kitData(researchRoot, "population.json"))
       .accounts.filter((a) => !a.holdout)
       .map((a) => a.addr),
+  );
+
+const RuleBook = z.object({
+  instruments: z.array(z.object({ iid: z.number().int() })),
+});
+
+/** The kit's rule book's instruments (`kit/data/rulebook.json`): R6's markets, its primary cell's first condition (the paper's `primaryMarket`). */
+export const kitInstruments = (researchRoot: string): Set<number> =>
+  new Set(
+    RuleBook.parse(kitData(researchRoot, "rulebook.json")).instruments.map(
+      (i) => i.iid,
+    ),
   );
 
 /** A list printed with its count: its first lines only. */
@@ -652,12 +696,30 @@ export type Figure = {
   readonly se: number | null;
 };
 
-/** One reading over a known set's copies found in both paths: equal, unpriced alike, the differences, the largest difference in bps, and each path's mean net and gross by trader over its priced copies. */
-export type ReadingReport = {
+/** Values held to their references: equal (the largest difference in bps kept), null or unpriced alike for one reason, and the differences. */
+export type Tally = {
   readonly equal: number;
   readonly unpriced: number;
   readonly largest: number;
   readonly differ: Listed;
+};
+
+function tallyOf(compared: readonly (readonly [string, Compared])[]): Tally {
+  let equal = 0;
+  let unpriced = 0;
+  let largest = 0;
+  const lines: string[] = [];
+  for (const [id, c] of compared)
+    if (c.kind === "equal") {
+      equal += 1;
+      largest = Math.max(largest, c.largest);
+    } else if (c.kind === "unpriced") unpriced += 1;
+    else lines.push(`${id}: ${c.why}`);
+  return { equal, unpriced, largest, differ: listed(lines) };
+}
+
+/** One reading over a known set's copies found in both paths, with each path's mean net and gross by trader over its priced copies. */
+export type ReadingReport = Tally & {
   readonly copyh: { readonly net: Figure; readonly gross: Figure };
   readonly kit: { readonly net: Figure; readonly gross: Figure };
 };
@@ -694,6 +756,137 @@ export type RetiredReport = {
   >;
 };
 
+/** The lines whose copies the reproduction judges, each with its own accounts as d's removal (C10; the supervisor's ruling on Q3). */
+export const JUDGED = ["MAIN", "TEN"] as const;
+export type JudgedLine = (typeof JUDGED)[number];
+
+/**
+ * R7's account-level conditions at M as the paper's `linesAt` reads them,
+ * on the reference's facts and R3's coverage: MAIN, P1 with the habit
+ * window covered, a median hold of at least 6 h and at least 3 closed
+ * cycles; TEN, MAIN with at least 10.
+ */
+export function referenceLines(
+  f: MondayFacts,
+  coverage: Coverage,
+): Record<JudgedLine, boolean> {
+  const main =
+    f.p1 &&
+    coverage.habitCovered &&
+    f.medianHoldMs !== null &&
+    f.medianHoldMs >= 6 * HOUR_MS &&
+    f.closed >= 3;
+  return { MAIN: main, TEN: main && f.closed >= 10 };
+}
+
+/** The paper's Monday of an instant (its part 4's), the reference's. */
+const paperMonday = (t: number) =>
+  Math.floor((t - 4 * DAY_MS) / (7 * DAY_MS)) * 7 * DAY_MS + 4 * DAY_MS;
+
+/** The reference's fills of a line's member in the week of M, cut at `end`: market trades only, an ADL or settlement fill none (the seed holds one account's side of a trade). */
+function marketWeek(
+  seed: SeedAccount,
+  fills: readonly Fill[],
+  M: number,
+  end: number,
+): Fill[] {
+  const to = Math.min(M + 7 * DAY_MS, end);
+  return fills.filter(
+    (f, i) =>
+      f.t >= M &&
+      f.t < to &&
+      seed.rows[i]!.adl !== true &&
+      seed.rows[i]!.settlement !== true,
+  );
+}
+
+/** A d or x′ in bps, or why it is null (C11). */
+export type Judgement =
+  | { readonly bps: number; readonly reason?: undefined }
+  | { readonly reason: string };
+
+/** A judgement held to its reference: equal within REPRODUCTION_TOLERANCE_BPS, null alike for one reason, or why not. */
+export function compareJudgement(mine: Judgement, ref: Judgement): Compared {
+  if (mine.reason !== undefined || ref.reason !== undefined)
+    return mine.reason === ref.reason
+      ? { kind: "unpriced" }
+      : {
+          kind: "differ",
+          why: `null: ${mine.reason ?? "no"} / ${ref.reason ?? "no"}`,
+        };
+  const largest = Math.abs(mine.bps - ref.bps);
+  return largest <= REPRODUCTION_TOLERANCE_BPS
+    ? { kind: "equal", largest }
+    : { kind: "differ", why: `by ${largest} bps` };
+}
+
+/** An entry judged in a line (C10): its account, instant, delay, direction and coin, its Monday's index, and the long share there. */
+export type JudgedCopy = {
+  readonly addr: string;
+  readonly t: number;
+  readonly D: number;
+  readonly dir: number;
+  readonly iid: number;
+  readonly k: number;
+  readonly longShare: number | null;
+};
+
+/**
+ * The reference's d and x′ (C15 (a)): the kit's `dAgainstNull` at 24 h with
+ * the `removalOf` of the line's members, in bps, and d less the copy's own
+ * cost over the same 24 h (the kit's `leg`); a null long share leaves both
+ * null, as the paper's scorer.
+ */
+export function referenceJudgement(
+  kit: Research,
+  mk: Market,
+  c: JudgedCopy,
+  removed: (minute: number) => number,
+  setting: Setting,
+): { readonly d: Judgement; readonly edge: Judgement } {
+  if (c.longShare === null) {
+    const none = { reason: "no long share" };
+    return { d: none, edge: none };
+  }
+  const r = kit.nulls.dAgainstNull(mk, {
+    dir: c.dir,
+    t: c.t,
+    D: c.D,
+    h: HELD_MS,
+    longShare: c.longShare,
+    removed,
+  });
+  if (r.d === null) {
+    const none = { reason: r.reason };
+    return { d: none, edge: none };
+  }
+  const d = r.d * BPS;
+  const L = kit.returns.leg(mk, {
+    dir: c.dir,
+    tIn: c.t + c.D,
+    h: HELD_MS,
+    setting,
+  });
+  return {
+    d: { bps: d },
+    edge:
+      L === null
+        ? { reason: "the 24 h leg unpriced" }
+        : { bps: d - (L.gross - L.net) * BPS },
+  };
+}
+
+/** A line's entries and their traders. */
+export type Count = { readonly entries: number; readonly traders: number };
+
+/** d and x′ of a line's copies judged in both paths, each held to the reference, and COPY-H's null reasons counted. */
+export type JudgedReport = {
+  readonly copies: number;
+  readonly d: Tally;
+  readonly edge: Tally;
+  readonly nulls: Readonly<Record<string, number>>;
+};
+
 /** What the accounts' part of the reproduction found (repro.json's `accounts`). */
 export type AccountsReport = {
   readonly accounts: number;
@@ -707,6 +900,16 @@ export type AccountsReport = {
   readonly pnlLabels: number;
   readonly sets: Readonly<Record<string, SetReport>>;
   readonly retired: readonly RetiredReport[];
+  /** The account-Mondays in MAIN and in TEN (R7's account-level conditions at M). */
+  readonly lines: Readonly<
+    Record<JudgedLine, { readonly kit: number; readonly copyh: number }>
+  >;
+  /** FR1's counts: each line's entries with t in [CUT − 28 d, CUT). */
+  readonly fr1: Readonly<
+    Record<JudgedLine, { readonly kit: Count; readonly copyh: Count }>
+  >;
+  /** d and x′ of every MAIN and TEN entry of the run's weeks. */
+  readonly judged: Readonly<Record<JudgedLine, JudgedReport>>;
   readonly beyond: Listed;
   readonly allowed: Listed;
   readonly differ: Listed;
@@ -721,6 +924,9 @@ type PricedCopy = {
   readonly changed: boolean | null;
 };
 
+/** FR1's weeks: the last four before the cut (APPROACH-REVIEW's FR1; PAPER-BUILD's part 4). */
+const FR1_MS = 28 * DAY_MS;
+
 /**
  * Every seed account through both paths, one at a time: never one of the
  * kit's holdout (`pool` holds the population's accounts outside it), no row
@@ -730,12 +936,18 @@ type PricedCopy = {
  * `kitPanel`, or a test's) with the kit's taker setting. The seed's weeks
  * end at the cut, under the paper's R8 and R11: no market of the kit's
  * panel is read as a settled coin (the supervisor's ruling on Q1,
- * 2026-11-26).
+ * 2026-11-26). At each Monday, each path's MAIN and TEN: COPY-H's by
+ * lines.ts with R3's coverage, the reference's by R7 as the paper reads it;
+ * every entry of a Monday of the run in either line, in a market of R6's
+ * primary cells (`instruments`: the kit's rule book's, then the kit's
+ * `inPrimaryCell`), judged with the line's members' records of its week:
+ * COPY-H's through judge.ts, the reference's through the kit.
  */
 export function reproduceAccounts(o: {
   kit: Research;
   seed: SeedSource;
   pool: ReadonlySet<string>;
+  instruments: ReadonlySet<number>;
   mondays: readonly number[];
   limits: Limits;
   sets: Readonly<Record<string, readonly string[]>>;
@@ -756,7 +968,24 @@ export function reproduceAccounts(o: {
     if (mk === undefined) markets.set(iid, (mk = o.market(iid)));
     return mk;
   };
+  const mondayAt = new Map(o.mondays.map((M, k) => [M, k]));
+  const primary = (g: Group) =>
+    o.instruments.has(g.iid) && o.kit.cells.inPrimaryCell(g.iid, g.t);
   const priced = new Map<string, PricedCopy>();
+  /** Each path's line members' records of the week of the Monday, by `<line>|<Monday's index>`. */
+  const members = {
+    copyh: new Map<string, TradeKey[][]>(),
+    kit: new Map<string, Fill[][]>(),
+  };
+  /** Each path's judged copies, by `<line>|<entry id>`. */
+  const judged = {
+    copyh: new Map<string, JudgedCopy>(),
+    kit: new Map<string, JudgedCopy>(),
+  };
+  const inLines = {
+    MAIN: { kit: 0, copyh: 0 },
+    TEN: { kit: 0, copyh: 0 },
+  };
   let rows = 0;
   const span = { first: Infinity, last: -Infinity };
   const events = { kit: 0, copyh: 0 };
@@ -824,6 +1053,58 @@ export function reproduceAccounts(o: {
     pnlLabels += c.pnlLabels;
     allowed.push(...c.allowed);
     differ.push(...c.differ);
+    const lines = o.mondays.map((M, k) => {
+      const coverage = seedCoverage(o.kit, seed, M);
+      const f = mine.path.facts[k]!;
+      const at = {
+        copyh: accountLines(f.label, f, coverage),
+        kit: referenceLines(ref.facts[k]!, coverage),
+      };
+      for (const L of JUDGED) {
+        if (at.copyh[L] !== at.kit[L])
+          differ.push(`${addr} ${day(M)}: ${L} ${at.kit[L]} / ${at.copyh[L]}`);
+        const key = `${L}|${k}`;
+        if (at.copyh[L]) {
+          inLines[L].copyh += 1;
+          const list = members.copyh.get(key) ?? [];
+          members.copyh.set(key, list);
+          list.push(memberRecords(converted.rows, M, CUT));
+        }
+        if (at.kit[L]) {
+          inLines[L].kit += 1;
+          const list = members.kit.get(key) ?? [];
+          members.kit.set(key, list);
+          list.push(marketWeek(seed, ref.fills, M, CUT));
+        }
+      }
+      return at;
+    });
+    const copyOf = (e: Entry, k: number, longShare: number | null) => ({
+      addr,
+      t: e.group.t,
+      D: e.D,
+      dir: e.group.dir,
+      iid: e.group.iid,
+      k,
+      longShare,
+    });
+    for (const [id, e] of mine.path.entries) {
+      const k = mondayAt.get(mondayOf(e.group.t));
+      if (k === undefined) continue;
+      for (const L of entryLines(lines[k]!.copyh, primary(e.group)))
+        if (L === "MAIN" || L === "TEN")
+          judged.copyh.set(
+            `${L}|${id}`,
+            copyOf(e, k, mine.path.facts[k]!.longShare),
+          );
+    }
+    for (const [id, e] of ref.entries) {
+      const k = mondayAt.get(paperMonday(e.group.t));
+      if (k === undefined || !primary(e.group)) continue;
+      for (const L of JUDGED)
+        if (lines[k]!.kit[L])
+          judged.kit.set(`${L}|${id}`, copyOf(e, k, ref.facts[k]!.longShare));
+    }
   }
   const compared = new Map<string, Record<ReadingName, Compared>>();
   for (const [id, p] of priced) {
@@ -835,18 +1116,6 @@ export function reproduceAccounts(o: {
     compared.set(id, c);
   }
   const readingOf = (ids: readonly string[], k: ReadingName): ReadingReport => {
-    let equal = 0;
-    let unpriced = 0;
-    let largest = 0;
-    const lines: string[] = [];
-    for (const id of ids) {
-      const c = compared.get(id)![k];
-      if (c.kind === "equal") {
-        equal += 1;
-        largest = Math.max(largest, c.largest);
-      } else if (c.kind === "unpriced") unpriced += 1;
-      else lines.push(`${id}: ${c.why}`);
-    }
     const figures = (path: "mine" | "ref") => {
       const items = ids.flatMap((id) => {
         const p = priced.get(id)!;
@@ -864,10 +1133,7 @@ export function reproduceAccounts(o: {
       return { net: figure("net"), gross: figure("gross") };
     };
     return {
-      equal,
-      unpriced,
-      largest,
-      differ: listed(lines),
+      ...tallyOf(ids.map((id) => [id, compared.get(id)![k]] as const)),
       copyh: figures("mine"),
       kit: figures("ref"),
     };
@@ -895,6 +1161,67 @@ export function reproduceAccounts(o: {
         }),
       ),
     }));
+  const removals = {
+    copyh: new Map<string, Map<number, Removal>>(),
+    kit: new Map<string, (iid: number) => (minute: number) => number>(),
+  };
+  for (const [key, lists] of members.copyh)
+    removals.copyh.set(key, removalsOf(o.kit, lists));
+  for (const [key, lists] of members.kit)
+    removals.kit.set(key, o.kit.nulls.removalOf(lists));
+  const judgedOf = (L: JudgedLine): JudgedReport => {
+    const d: (readonly [string, Compared])[] = [];
+    const edge: (readonly [string, Compared])[] = [];
+    const nulls: Record<string, number> = {};
+    const keys = new Set(
+      [...judged.copyh.keys(), ...judged.kit.keys()].filter((key) =>
+        key.startsWith(`${L}|`),
+      ),
+    );
+    for (const key of keys) {
+      const id = key.slice(L.length + 1);
+      const a = judged.copyh.get(key);
+      const b = judged.kit.get(key);
+      if (a === undefined || b === undefined) {
+        differ.push(`${id}: in ${L} in one path only`);
+        continue;
+      }
+      const mk = marketOf(a.iid);
+      const removal = removals.copyh.get(`${L}|${a.k}`)?.get(a.iid);
+      const dm = dOf(o.kit, mk, a, a.longShare, removedBy(removal));
+      const dJ: Judgement =
+        dm.d === null ? { reason: dm.reason } : { bps: dm.d };
+      const x = edgeOf(o.kit, mk, a, o.setting, dm);
+      const removed = removals.kit.get(`${L}|${b.k}`)!(b.iid);
+      const r = referenceJudgement(o.kit, mk, b, removed, o.setting);
+      if (dJ.reason !== undefined)
+        nulls[dJ.reason] = (nulls[dJ.reason] ?? 0) + 1;
+      d.push([id, compareJudgement(dJ, r.d)]);
+      edge.push([id, compareJudgement(x === null ? dJ : { bps: x }, r.edge)]);
+    }
+    for (const [what, list] of [
+      ["d", d],
+      ["x′", edge],
+    ] as const)
+      for (const [id, c] of list)
+        if (c.kind === "differ") differ.push(`${id}: ${L} ${what} ${c.why}`);
+    return { copies: d.length, d: tallyOf(d), edge: tallyOf(edge), nulls };
+  };
+  const fr1Of = (p: "copyh" | "kit", L: JudgedLine): Count => {
+    const traders = new Set<string>();
+    let n = 0;
+    for (const [key, c] of judged[p])
+      if (key.startsWith(`${L}|`) && c.t >= CUT - FR1_MS) {
+        n += 1;
+        traders.add(c.addr);
+      }
+    return { entries: n, traders: traders.size };
+  };
+  const byLine = <T>(f: (L: JudgedLine) => T): Record<JudgedLine, T> => ({
+    MAIN: f("MAIN"),
+    TEN: f("TEN"),
+  });
+  const judgedLines = byLine(judgedOf);
   return {
     accounts: o.seed.accounts.length,
     rows,
@@ -919,6 +1246,9 @@ export function reproduceAccounts(o: {
       }),
     ),
     retired,
+    lines: inLines,
+    fr1: byLine((L) => ({ kit: fr1Of("kit", L), copyh: fr1Of("copyh", L) })),
+    judged: judgedLines,
     beyond: listed(beyond),
     allowed: listed(allowed),
     differ: listed(differ),
@@ -963,18 +1293,21 @@ const decimal = (mean: number | null, se?: number | null) =>
   `${mean?.toFixed(1) ?? "none"}${se === undefined ? "" : ` ± ${se?.toFixed(1) ?? "none"}`}`;
 
 /**
- * C15 (a)'s known answers of the accounts' part, each held to the record
- * (design.ts REPRODUCTION; known.json's `x3printed`): no difference; every
- * known entry found in both paths; FIND-6-EXITS's 1,700 equal in each
- * reading; X3's 1,366 equal exits copied, and its figures by trader at one
- * decimal in both paths (exits copied and gross over X3's set, held 24 h
- * over its voted set); X3's 1,104 equal held 24 h; the 26 Mondays.
+ * C15 (a)'s known answers, each held to the record (design.ts
+ * REPRODUCTION; known.json's `x3printed`): no difference; every known entry
+ * found in both paths; FIND-6-EXITS's 1,700 equal in each reading; X3's
+ * 1,366 equal exits copied, and its figures by trader at one decimal in
+ * both paths (exits copied and gross over X3's set, held 24 h over its
+ * voted set); X3's 1,104 equal held 24 h; the 26 Mondays; FR1's counts in
+ * both paths; every MAIN and TEN copy's d and x′ equal or null alike, at
+ * least one judged.
  */
 export function answersOf(
   r: AccountsReport,
   printed: Known["x3printed"],
 ): Answer[] {
-  const [F6, X3, X3_FIND3, MONDAYS] = REPRODUCTION;
+  const [F6, X3, X3_FIND3, MONDAYS, MAIN_E, MAIN_T, TEN_E, TEN_T] =
+    REPRODUCTION;
   const set = (name: string): SetReport => {
     const s = r.sets[name];
     if (s === undefined) throw new ReproError(`no known set ${name}`);
@@ -1009,6 +1342,27 @@ export function answersOf(
       want,
       got: `COPY-H ${at(x.copyh[f])}, the kit ${at(x.kit[f])}`,
       passed: at(x.copyh[f]) === want && at(x.kit[f]) === want,
+    };
+  };
+  const fr1 = (L: JudgedLine, entries: number, traders: number): Answer => {
+    const at = (c: Count) => `${c.entries} entries, ${c.traders} traders`;
+    const want = at({ entries, traders });
+    const { kit, copyh } = r.fr1[L];
+    return {
+      answer: `FR1: ${L}'s entries in the four weeks before the cut`,
+      want,
+      got: `COPY-H ${at(copyh)}, the kit ${at(kit)}`,
+      passed: at(copyh) === want && at(kit) === want,
+    };
+  };
+  const judgedAs = (L: JudgedLine, what: "d" | "edge"): Answer => {
+    const { copies } = r.judged[L];
+    const x = r.judged[L][what];
+    return {
+      answer: `${what === "d" ? "d" : "x′"} of ${L}'s copies`,
+      want: `${copies} of ${copies}, at least one`,
+      got: `${x.equal + x.unpriced} of ${copies} (${x.unpriced} null alike, the largest difference ${x.largest} bps)`,
+      passed: copies > 0 && x.equal + x.unpriced === copies,
     };
   };
   const sets = Object.values(r.sets);
@@ -1061,5 +1415,61 @@ export function answersOf(
       got: String(r.mondays.length),
       passed: r.mondays.length === MONDAYS,
     },
+    fr1("MAIN", MAIN_E, MAIN_T),
+    fr1("TEN", TEN_E, TEN_T),
+    judgedAs("MAIN", "d"),
+    judgedAs("MAIN", "edge"),
+    judgedAs("TEN", "d"),
+    judgedAs("TEN", "edge"),
   ];
+}
+
+/** C15 (a)'s reproduction, repro.json's body but its identity: the accounts' part and its known answers; passed when every answer is. */
+export type Repro = {
+  readonly passed: boolean;
+  readonly report: {
+    readonly accounts: AccountsReport;
+    readonly answers: readonly Answer[];
+  };
+};
+
+/**
+ * The whole reproduction (C15 (a)): every seed account through both paths
+ * on known.json's 26 Mondays and sets, the known copies priced on the
+ * kit's panel (`market`: `kitPanel`) with the kit's taker setting, and the
+ * known answers held to the record. The `reproduce` command (main.ts)
+ * gives it the seed (`seedSource`), the pool (`poolOf`), R6's instruments
+ * (`kitInstruments`), known.json (`Known`) and design.ts's limits, writes
+ * repro.json whole with its identity first, and exits 6 unless it passed.
+ */
+export function reproduce(o: {
+  kit: Research;
+  seed: SeedSource;
+  pool: ReadonlySet<string>;
+  instruments: ReadonlySet<number>;
+  known: Known;
+  limits: Limits;
+  market: (iid: number) => Market;
+}): Repro {
+  const accounts = reproduceAccounts({
+    kit: o.kit,
+    seed: o.seed,
+    pool: o.pool,
+    instruments: o.instruments,
+    mondays: o.known.mondays.map((d) => Date.parse(`${d}T00:00:00Z`)),
+    limits: o.limits,
+    sets: {
+      find6exits: o.known.find6exits,
+      x3: o.known.x3,
+      x3voted: o.known.x3voted,
+      x3find3: o.known.x3find3,
+    },
+    market: o.market,
+    setting: o.kit.costs.SETTINGS.taker,
+  });
+  const answers = answersOf(accounts, o.known.x3printed);
+  return {
+    passed: answers.every((a) => a.passed),
+    report: { accounts, answers },
+  };
 }
