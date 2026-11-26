@@ -308,6 +308,12 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   in summer time lands an hour earlier in UTC; compute the trigger from the
   UTC instant (`Get-DailyUtcStart` in `tools/task-access.ps1`, used by the
   paper and backup tasks since 2026-11-12).
+- **A heap test compares the exact limit,** never the setting plus a bound:
+  at an 8 GB ceiling V8's young generation adds about 250 MB, so a
+  +512 MB bound hides a ceiling computed in decimal GB (×1000 for ×1024)
+  (COPYH-BREAKS' P13, COPYH-GUARDS, 2026-11-26).
+- **A COPY-H part's `dir` column holds at most 256 names** (COPYH-GUARDS,
+  2026-11-26).
 - **A long run gets a generous heap ceiling from its start** (the owner,
   2026-11-17): size it from a measured peak with a wide margin, never from
   an estimate made on a smaller sample. This PC has 31.9 GB of RAM. WAVE-H's

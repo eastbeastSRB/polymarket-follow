@@ -1042,10 +1042,14 @@ line (`builds.json`; exit 7); K0 every file read whole and held to the
 manifest, each partition's files and sizes, the inputs and code, each
 input's classes, every kept record conserved file by file; K1 no odd
 trade, every unpaired record in the range's first or last file or in
-`copyh/unpaired.json`; K2 C18's sample days re-read by `reread.ts`, which
-shares no code with the pass (lz4js through `dist/waveh/lz4.js`, a
-whole-line `JSON.parse` with its own reviver and checks, the day's files
-with one file either side), each sample file's rows held to the store's by
+`copyh/unpaired.json`; K2 C18's sample days (`sampleDaysOf` in `range.ts`:
+S's for S, E's for E and the burn-in, which holds 3 of them) re-read by
+`reread.ts`, which shares no code with the pass (lz4js through
+`dist/waveh/lz4.js`, a whole-line `JSON.parse` with its own reviver and
+checks, a blank line one failed record as the pass reads it, the switch
+hour's repeats left out of its rows by its own code as the store leaves
+them, the day's files with one file either side), each sample file's rows
+held to the store's by
 a digest of every cell (SHA-256 a row, added lane by lane), its classes to
 the pass's, and the day's bars minute by minute; K3 printed: the holes,
 the records by day, the matching events with more than one chain. Written
