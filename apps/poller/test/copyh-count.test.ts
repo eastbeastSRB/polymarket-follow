@@ -4,8 +4,9 @@
  * resumed from whole count files of the same input, code and lists; with no
  * `dirs.json`, every `dir` counted as written; a `dir` or coin outside the
  * lists counted, never a stop; the totals: classes, `dir` values with their
- * counts, takers by `dir` and method, values outside the lists, the coins,
- * the vault accounts, the records by day and the holes.
+ * counts, takers by `dir` and method, values outside the lists, the coins
+ * (their first and last times and first Settlement across files), the vault
+ * accounts, the records by day and the holes.
  */
 import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -111,6 +112,11 @@ function world() {
       ])}\n`,
     ],
   ]);
+  return worldOf(files);
+}
+
+/** A raw store of these files (text by key), and their tasks in order. */
+function worldOf(files: ReadonlyMap<string, string>) {
   const s = makeStore(files);
   const tasks: FileTask[] = [...files.keys()].map((key, index) => ({
     index,
@@ -224,5 +230,38 @@ describe("the counting pass", { timeout: 60_000 }, () => {
     expect(c2.unknownDirs).toEqual([["Weird Dir", 1]]);
     expect([c2.classes.kept, c2.classes.unknownDir]).toEqual([4, 1]);
     expect(c2.vaults).toEqual([addr(8)]);
+  });
+
+  it("takes a coin's first time, last time and first Settlement across files", async () => {
+    const btc = (time: number, tid: number) =>
+      record(addr(1), { coin: "BTC", side: "B", time, crossed: true, tid });
+    const settle = (time: number, tid: number) =>
+      record(addr(2), {
+        coin: "HYPE",
+        side: "A",
+        time,
+        crossed: false,
+        tid,
+        dir: "Settlement",
+      });
+    const w = worldOf(
+      new Map([
+        [keyOf(T), `${byBlock(1, [btc(T + 5, 1), settle(T + 10, 2)])}\n`],
+        [
+          keyOf(T + HOUR_MS),
+          `${byBlock(2, [btc(T + HOUR_MS + 7, 3), settle(T + HOUR_MS + 10, 4)])}\n`,
+        ],
+      ]),
+    );
+    const dir = mkdtempSync(path.join(tmpdir(), "copyh-counts-"));
+    await count(w, dir, NO_DIRS);
+    const c = countsOf(
+      w.tasks.map((t) => readCountFile(countFile(dir, t.index))!),
+      window,
+    );
+    expect(c.coins).toEqual([
+      [0, 2, T + 5, T + HOUR_MS + 7, -1],
+      [3, 2, T + 10, T + HOUR_MS + 10, T + 10],
+    ]);
   });
 });

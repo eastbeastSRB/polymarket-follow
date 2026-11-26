@@ -6,8 +6,8 @@
  * record left unpaired keeping its own and listed, the shared `tid` of two
  * trades; the bars from market takers only, in time order, the last price
  * the latest, the opposite-side pairs within 2 s counted in the second's
- * minute, the left-out takers by cause, the Settlement records' sums on
- * either side (RM4).
+ * minute (at 2,000 ms one, at 2,001 none), the left-out takers by cause, the
+ * Settlement records' sums on either side (RM4); an id's two 32-bit halves.
  */
 import { describe, expect, it } from "vitest";
 import { isMarket, leftOutOf } from "../src/copyh/market-trades.js";
@@ -21,6 +21,7 @@ import {
   UNNAMED_LIQUIDATION,
   Writers,
   bucketOf,
+  u64Of,
 } from "../src/copyh/writers.js";
 import { HOUR_MS } from "../src/schedule.js";
 import {
@@ -270,6 +271,18 @@ describe("the bars", { timeout: 60_000 }, () => {
     expect(b!.lastTaker).toEqual([m + 63_000, 100.7, 1]);
   });
 
+  it("count a pair exactly 2,000 ms apart, not one 2,001 ms apart", () => {
+    const m = Math.floor(T / 60_000) * 60_000;
+    const { done } = run([
+      t(m + 1_000, "B", "10"),
+      t(m + 3_000, "A", "11"),
+      t(m + 5_001, "B", "10"),
+    ]);
+    const [b] = done.bars;
+    expect(b!.pairs).toEqual([1]);
+    expect(b!.pairGap[0]).toBeCloseTo(1 / 10.5, 15);
+  });
+
   it("count the left-out takers by cause, not as trades", () => {
     const m = Math.floor(T / 60_000) * 60_000;
     const { done } = run([
@@ -329,5 +342,25 @@ describe("the bars", { timeout: 60_000 }, () => {
     expect(hype.settleNtl).toEqual([20, 3.75]);
     const sol = done.bars.find((b) => b.iid === 2)!;
     expect([sol.trades, sol.settleSz, sol.settleNtl]).toEqual([[1], [0], [0]]);
+  });
+});
+
+describe("an id's halves", { timeout: 60_000 }, () => {
+  it("split an id's digits into its low and high 32 bits exactly, below 2^53 and above", () => {
+    for (const digits of [
+      "0",
+      "5",
+      "4294967295",
+      "4294967296",
+      "4294967301",
+      "999999999999999",
+      "1018404382145483",
+      "9007199254740993",
+      "9999999999999999",
+      "18446744073709551615",
+    ]) {
+      const [lo, hi] = u64Of(digits);
+      expect((BigInt(hi) << 32n) | BigInt(lo), digits).toBe(BigInt(digits));
+    }
   });
 });
