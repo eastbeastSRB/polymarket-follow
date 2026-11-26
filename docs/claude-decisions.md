@@ -1,5 +1,95 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's STORE REVIEWED AND FIXED; THE RULES'
+LAST TOUCH WRITTEN AND CHECKED; CUT E; THE REPRODUCTION ON THE WHOLE SEED):
+**THE STORE MAY FREEZE AFTER ITS FIXES, WHICH ARE IN. THE RULES ARE READY
+AFTER ONE SMALL FOURTH COMMIT. NO COUNT OF E HAS BEEN SEEN.**
+
+**The store's review** (COPYH-STORE-REVIEW, Fable 5.2, max; `ab17042`):
+- Verdict "may freeze after these fixes", no rework. No path reads,
+  keeps, drops, pairs or counts a record against C3, and no bad input or
+  crash gives a store that passes its checks.
+- H1: the merge's unit refusal. M1–M4: the unbounded cut search, the
+  finite guards, unknown values named per file, `failedBy`. L1–L16: small
+  items.
+
+**The fixes** (COPYH-STORE-FIX, Opus 5.5, xhigh; context peak 682,893).
+Each commit had `pnpm verify` green; two of them on a second run:
+- `7be16bf`: the dirs kinds held to C3, plus the small items.
+- `f057452`: the bounded search. On a made-up 14 MB by-block line the pass
+  went from 1.14 to 0.098 s/MB, and the cut alone from 14.6 to 0.15 s.
+- `a80ec7c`: the guards, `failedBy`, `sz`'s round trip and the
+  bucket-month count.
+- `593f042`: the merge's unit is a ceiling. A 48,000,000-row unit merged
+  in 458 s at a 2,696 MB heap peak, so the 8 GB heap stays.
+- `8f78679`: `closure.ts`, the store closure's hash (25 files;
+  `design.ts`'s 73 exports classified 17 store, 5 run-only, 51 engine), and
+  `--final`'s check.
+- `scanFile`'s carry is quadratic in a line's LZ4 blocks. Every real file
+  checked (five: the crash hour, the busiest by-block hours, the busiest
+  `node_fills` hour, FRESH's largest) has 4 MB blocks
+  (`verify/NODE-INDEXOF/blocksize.cjs`), so the carry is negligible (0.65 s
+  for a 14 MB line). Not changed.
+- The burn-in's store on F: is unreadable by the new code. It is
+  obsolete; deleting it is the owner's ruling.
+
+**The rules' last touch** (COPYH-RULES-2, Opus 5.5, max; peak 668,228):
+- Commits `855cfad`, `68a42ce`, `2e48130`. rules.md is `cff618e2…58df`,
+  1,672 lines, with 10 `[SET BEFORE THE FREEZE` marks and 0 open.
+- Written in: the ten queued sentences, and these rulings made by the
+  supervisor today in messages (recorded here):
+  - **11:05Z**, a line's reading: a line is read record by record when its
+    records tile it as its format says, or when, parsed whole, it is its
+    format's line; any other line counts its records as failing, one when
+    none can be counted. Also a finite guard on `px` beside `sz`'s.
+  - **12:22Z, cut E:** a matching event's taker fills chain into one event
+    as C3 says, and each maker fill is its own event. This applies only
+    where the engine forms the kit's order events (`normOf`), never in C3's
+    chain test or K3's count, so the store closure is untouched.
+    - Evidence from the paper's seed (COPYH-REPRO): a taker's fills at one
+      ms always share a `previous_size` (82,164 groups) and a maker's
+      matches never do.
+    - C3's join made 854,289 events where the paper has 953,244, and P1
+      differed at 21 of 41,652 account-Mondays.
+    - Cut E reproduces the paper exactly.
+  - **12:25Z:** the day rule's denominator is every record seen, spot and
+    builder-dex among them; the fourth liquidation state is a
+    `liquidation` naming no account.
+  - **12:45Z**, C15 (a)'s one more allowed difference: an order event with
+    a quantity beyond 15 significant digits may split its chain heads
+    (events and exits only, each listed). Seen on the seed at one account,
+    `0x38df…`, whose quantity has 27 digits.
+  - (a-lite) + A' and UNIT_ROWS as a ceiling, as recorded above.
+- **The check** (COPYH-RULES2-CHECK, Sonnet 5.5, max; `2d9226d`): "ready
+  after these fixes".
+  - 26 rulings: 24 exact, 1 kept in meaning, 1 partly missing (the engine's
+    Q2).
+  - All 35 hunks traced to a ruling; 0 high, 0 medium findings.
+  - Low findings F1–F5 go into a small fourth commit with STORE-FIX's two
+    wording items (the `sz` round trip, the `\u` rule), before E's count.
+    F6 is this entry.
+
+**The reproduction on the whole seed** (COPYH-REPRO, its interim report):
+- 1,602 accounts and 1,136,327 rows, in 24 s, under a cut E prototype.
+- P1 rows 3,885 = 3,885 at the 26 Mondays; entries 114,806 = 114,806;
+  the 25 churner/mixed pairs as allowed; the one 27-digit account as
+  above.
+- Earlier, in scratch: FIND-6-EXITS 1,700 of 1,700 (largest difference
+  2.8e-14 bps) and X3 1,366 at its printed figures; FR1 1,137/157 and
+  525/61 under cut E.
+- Its 44 deliberate breaks were all killed.
+
+**A new rule for every builder:** after E's store is built, no edit of
+`schedule.ts` and no edit, comments included, of any file of the store
+closure. A change there means E is rebuilt, and it comes to the supervisor
+first.
+
+**Next:**
+1. COPYH-ENGINE-2's five commits (commit 3; the store-closure commits A,
+   with `chains.ts`'s stale comment, and B; cut E; commit 4).
+2. COPYH-RULES-2's commit 4.
+3. E's count, from a pinned snapshot.
+
 2026-11-26 (the supervisor — COPY-H IN PARALLEL: THE STORE REVIEWED EARLY,
 THE RULES' LAST TOUCH BEFORE E, THE REPRODUCTION BESIDE THE ENGINE; E's
 STORE BUILT ONCE AND RECORDED; THE FUNDING DOWNLOAD DONE): **THE OWNER ASKED
