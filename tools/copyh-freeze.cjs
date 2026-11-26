@@ -6,6 +6,8 @@
  *   node tools/copyh-freeze.cjs --data [--funding <COPYH_FUNDING>]
  *     writes apps/poller/copyh/data.sha256, and with --funding also
  *     apps/poller/copyh/funding.sha256
+ *   node tools/copyh-freeze.cjs --final
+ *     its first check: the candidate's store closure is the rehearsal's
  *
  * --data: every fill file COPY-H's two stages read, E's from WAVE-H's frozen
  * list (`waveh/data.sha256`) and S's from FRESH's (`polish/fresh.sha256`), in
@@ -22,6 +24,12 @@
  * hour twice; no rate is used). Nothing is written unless every window
  * passes. The freeze list itself (`copyh/FROZEN.sha256`, C0) is written by
  * this tool at part 5.
+ *
+ * --final (C15 (c); decisions 2026-11-26, E's store built once and
+ * recorded): refuses, writing nothing, when the build's store closure
+ * (`dist/copyh/closure.js`: every file the store's programs load, design.js
+ * by the store's values) differs from the one `copyh/rehearsal.json`
+ * records, or when there is no record; the list itself comes at part 5.
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -147,12 +155,44 @@ function fundingList({
   return `${lines.join("\n")}\n`;
 }
 
+/** --final's first check: how the build's store closure at `pkg` differs from the one `rehearsal` records; none when the same. */
+async function finalProblems(
+  pkg,
+  rehearsal = path.join(pkg, "copyh", "rehearsal.json"),
+) {
+  if (!fs.existsSync(rehearsal))
+    return [
+      `no ${path.basename(rehearsal)}: E's store is built and recorded first`,
+    ];
+  const closure = await import(
+    pathToFileURL(path.join(pkg, "dist", "copyh", "closure.js")).href
+  );
+  const record = closure.RehearsalRecord.parse(
+    JSON.parse(fs.readFileSync(rehearsal, "utf8")),
+  );
+  return closure.closureDifferences(
+    record.storeClosure,
+    closure.storeClosure(pkg),
+  );
+}
+
 async function main() {
   const args = process.argv.slice(2);
+  if (args.length === 1 && args[0] === "--final") {
+    const problems = await finalProblems(PKG);
+    if (problems.length > 0)
+      throw new Error(
+        `the store closure is not the rehearsal's: ${problems.join("; ")}: nothing written`,
+      );
+    process.stdout.write(
+      "the store closure is the rehearsal's; the freeze list itself comes at part 5: nothing written\n",
+    );
+    return;
+  }
   const funding = args.length === 3 && args[1] === "--funding" ? args[2] : null;
   if (args[0] !== "--data" || (args.length !== 1 && funding === null))
     throw new Error(
-      "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>]",
+      "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final",
     );
   const { RANGES } = await import(
     pathToFileURL(path.join(PKG, "dist", "copyh", "range.js")).href
@@ -192,7 +232,7 @@ async function main() {
   process.stdout.write(`wrote ${fout}: ${sha256(ftext)}\n`);
 }
 
-module.exports = { dataList, fundingList, listOf, manifestOf };
+module.exports = { dataList, finalProblems, fundingList, listOf, manifestOf };
 
 if (require.main === module)
   main().catch((err) => {
