@@ -1,0 +1,33 @@
+{
+ "rule": "the last record before an archive hole; its trade's other record falls inside the hole (K3's holes)",
+ "records": [
+  [
+   "node_fills/hourly/20250601/11.lz4",
+   1,
+   1748776570030,
+   "6896551551965",
+   true
+  ],
+  [
+   "node_fills/hourly/20250608/9.lz4",
+   178,
+   1749375864524,
+   "250170946875997",
+   false
+  ],
+  [
+   "node_fills/hourly/20250614/9.lz4",
+   60,
+   1749891772717,
+   "431488723710250",
+   false
+  ],
+  [
+   "node_fills/hourly/20250621/9.lz4",
+   41,
+   1750497427664,
+   "89773935895036",
+   true
+  ]
+ ]
+}
