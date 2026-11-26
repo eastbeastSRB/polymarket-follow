@@ -644,7 +644,24 @@ read from a venue's page is as that page read on the day.
   (2025-05-25T00:00Z to 1 ms before 2025-06-14T00:00Z; 2026-11-14 06:02Z,
   WAVE-H-FETCH's smoke test, `workers/WAVE-H-FETCH/smoke/`): HTTP 200,
   `Content-Type: application/json`, `Content-Length` 42,730, no
-  `Content-Encoding`. Stored as received; the tool never parses a reply.
+  `Content-Encoding`. Stored as received; the tool never parses a reply
+  (WAVE-H and FRESH; under `--copyh` it checks every reply, below).
+- **COPY-H's funding download** (`tools/waveh-fetch.cjs --copyh`,
+  COPYH-FUNDING; 2026-11-25; the supervisor's check
+  `verify/COPYH-FUNDING/store-check.cjs`):
+  - `{"type":"meta"}` at 21:12:56Z: 17,743 B, SHA-256 `3fcc7878…b8d8`, 235
+    main-dex coins in listing order, 56 `isDelisted`.
+  - `fundingHistory` replies over 20-day windows: 2 to 45,861 B, 480 rows
+    for a coin listed all window, `[]` for a coin listed after it (in the
+    window of 2025-06-30, the last 34 coins in `meta`'s order); a delisted
+    coin's windows before its delisting hold rows (77 of 78 read in
+    session 1).
+  - **Rows are not always on the hour:** every coin's row for 2025-07-19
+    10:00Z is stamped +887,645 ms (10:14:47Z), and for 2025-07-27 12:00Z
+    +110,963 ms (12:01:50Z, the archive's switch hour); every other row
+    read is within 1 s of its hour. Rounding a row's `time` to the nearest
+    hour (WAVE-H's H9, COPY-H's C9) puts both in their own hour.
+  - Weight: at most about 440 of the 1,200 a minute at one read every 6 s.
 - **A backstop liquidation (one example, 2026-08-22 05:13Z):** the liquidated
   account's own fill is `crossed` false, fee "0.0", `dir` "Liquidated Isolated
   Short", `side` "B"; the vault's is `crossed` true, `startPosition` "0.0",

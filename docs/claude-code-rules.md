@@ -289,6 +289,18 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   (it compares code units) (WAVE-H-BUILD, 2026-11-14).
 - **`node --test <directory>` fails in Node 24** (MODULE_NOT_FOUND): pass a
   glob.
+- **`Buffer.indexOf` is wrong past 2^31 bytes in Node 24.13:** a match at
+  2,147,484,148 comes back as −2,147,483,148; `Uint8Array.indexOf` is right
+  (COPYH-STORE-2, 2026-11-25; reproduced by the supervisor,
+  `verify/NODE-INDEXOF/`). Search a large buffer in windows under 2 GiB
+  (COPY-H's `eachLine`, 256 MB), never whole.
+- **`fs.readFileSync` of a Buffer opens the file through `fs.openSync("r")`;
+  a utf8 read does not,** so a test spying on one sees the other miss
+  (COPYH-FUNDING, 2026-11-25).
+- **`powershell -File` passes a string-array parameter as one string**
+  (COPYH-FUNDING, 2026-11-25).
+- **A breaks round counts a run where no test passed or failed as invalid,
+  never as a kill** (COPYH-FUNDING, 2026-11-25).
 - **A Task Scheduler time literal is local:** `-At 'HH:MM'` is read as local
   time when the task is registered and stored in UTC, so a registration made
   in summer time lands an hour earlier in UTC; compute the trigger from the
