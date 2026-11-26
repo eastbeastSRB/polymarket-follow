@@ -1134,6 +1134,13 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
 - `unpriced.ts` (C11): a reading's holes from every file's minutes across
   its stores (a gap that straddles two stores is one); the gap copy, a
   chain break inside its exits or a hole meeting [t, its last exit].
+- `judge.ts` (C10): d, the kit's `dAgainstNull` at 24 h in bps (a null
+  long share "no long share"); a line's removal at M, its members'
+  market trades' records in the week of M cut at END, through the kit's
+  `removalOf` and read back by coin at every minute that holds one (a
+  table a part can keep); the vote by END; x′, d less the copy's own
+  cost over the same 24 h (the kit's `leg` with C9's setting), null
+  exactly when d is.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
