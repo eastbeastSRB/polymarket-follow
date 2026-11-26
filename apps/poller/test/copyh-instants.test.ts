@@ -14,6 +14,7 @@ import {
   END_E,
   END_F2,
   END_S,
+  FRESH2_FILES,
   M0,
   SAMPLE_DAYS,
   SWITCH_HOUR,
@@ -32,6 +33,7 @@ import {
   RANGES,
   RANGE_NAMES,
   hourKeys,
+  listNameOf,
   monthsOf,
   sampleDaysOf,
 } from "../src/copyh/range.js";
@@ -143,6 +145,33 @@ describe("the ranges", { timeout: 60_000 }, () => {
       "2025-06-01",
       "2025-06-15",
     ]);
+    expect(sampleDaysOf("FRESH-2")).toEqual(SAMPLE_DAYS["FRESH-2"]);
+    expect(reread("FRESH-2")).toEqual(SAMPLE_DAYS["FRESH-2"]);
+  });
+
+  it("hold FRESH-2's range: its 4,368 hours of node_fills_by_block, [END_S, END_F2), its own list", () => {
+    const r = RANGES["FRESH-2"];
+    expect(r.fill).toHaveLength(FRESH2_FILES);
+    expect(r.fill.every((k) => k.startsWith("node_fills_by_block/"))).toBe(
+      true,
+    );
+    expect([r.fill[0], r.fill.at(-1)]).toEqual([
+      "node_fills_by_block/hourly/20261116/0.lz4",
+      "node_fills_by_block/hourly/20270516/23.lz4",
+    ]);
+    expect([r.start, r.end]).toEqual([END_S, END_F2]);
+    expect(r.months).toEqual([
+      "2026-11",
+      "2026-12",
+      "2027-01",
+      "2027-02",
+      "2027-03",
+      "2027-04",
+      "2027-05",
+    ]);
+    expect(listNameOf("FRESH-2")).toBe("copyh/fresh2.sha256");
+    for (const n of ["burnin", "E", "S"] as const)
+      expect(listNameOf(n)).toBe("copyh/data.sha256");
   });
 
   it("count the months a window touches, a month's end exclusive", () => {

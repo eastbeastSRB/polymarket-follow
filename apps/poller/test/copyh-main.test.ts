@@ -39,6 +39,7 @@ function folders() {
     WAVEH_STORE: path.join(root, "WAVE-H", "store"),
     COPYH_FUNDING: path.join(root, "COPY-H", "funding"),
     FRESH_STORE: path.join(root, "FRESH", "store"),
+    FRESH2_STORE: path.join(root, "FRESH-2", "store"),
   };
   for (const d of Object.values(f)) mkdirSync(d, { recursive: true });
   return f;
@@ -166,6 +167,16 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
       expect(r.stderr, c).toContain("sealed until step 2");
     }
     expect(existsSync(path.join(f.COPYH_ROOT, "S"))).toBe(false);
+  });
+
+  it("seals FRESH-2's range before its freeze (exit 5), and writes nothing there", () => {
+    const f = folders();
+    for (const c of ["build", "count", "integrity"]) {
+      const r = run([c, "--range", "FRESH-2"], f);
+      expect(r.code, c).toBe(5);
+      expect(r.stderr, c).toContain("sealed until FRESH-2's freeze");
+    }
+    expect(existsSync(path.join(f.COPYH_ROOT, "FRESH-2"))).toBe(false);
   });
 
   it("refuses the integrity of a store not built (exit 5)", () => {

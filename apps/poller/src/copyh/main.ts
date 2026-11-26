@@ -112,10 +112,15 @@ if (tool === "coins" && settings.COPYH_FUNDING === undefined)
   refuse("coins needs COPYH_FUNDING, COPYH-FUNDING's store");
 const heap = heapOf(process.env.COPYH_HEAP_GB);
 const heapGb: number = typeof heap === "string" ? refuse(heap) : heap;
-/** The range's raw store: FRESH's for S (step 2's), else WAVE-H's. */
+/** The range's raw store: FRESH's for S (step 2's), FRESH-2's for FRESH-2 (its stage's), else WAVE-H's. */
+const rawName =
+  range === "S"
+    ? "FRESH_STORE"
+    : range === "FRESH-2"
+      ? "FRESH2_STORE"
+      : "WAVEH_STORE";
 const raw: string =
-  (range === "S" ? settings.FRESH_STORE : settings.WAVEH_STORE) ??
-  refuse("S's range needs FRESH_STORE");
+  settings[rawName] ?? refuse(`${range ?? ""}'s range needs ${rawName}`);
 
 /** The run's folder of the range, and its roots: the folders its settings name that it reads or writes (seal 5). */
 const rangeDir = range === null ? null : path.join(settings.COPYH_ROOT, range);

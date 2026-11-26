@@ -6,7 +6,8 @@
  * - The lists a pass reads (`listsOf`): `copyh/coins.json` and `dirs.json`;
  *   a count takes those that exist, a build needs both.
  * - A range's files (`passOf`): its keys in its order, each held to its
- *   SHA-256 in `copyh/data.sha256`.
+ *   SHA-256 in its data list (`copyh/data.sha256`, FRESH-2's
+ *   `copyh/fresh2.sha256`).
  * - `buildStore`: the pass and the merge into `<base>\parts\` and
  *   `<base>\store\`; a built store is refused before any list is read.
  * - `checkStores`: the twin (`<base>\twin\store\`, when built) held to the
@@ -25,12 +26,19 @@ import {
   type PassLists,
   type PassSummary,
 } from "./pass.js";
-import { filesOf, readDataList, sampleDaysOf, type Range } from "./range.js";
+import {
+  filesOf,
+  listNameOf,
+  readDataList,
+  sampleDaysOf,
+  type Range,
+} from "./range.js";
 import {
   AlreadyRun,
   COINS_FILE,
   DATA_FILE,
   DIRS_FILE,
+  FRESH2_FILE,
   PACKAGE_ROOT,
   StoreError,
   UNPAIRED_FILE,
@@ -68,10 +76,10 @@ export function passOf(range: Range): {
   files: FileTask[];
   list: { name: string; sha256: string };
 } {
-  const data = readFileSync(DATA_FILE);
+  const data = readFileSync(range.name === "FRESH-2" ? FRESH2_FILE : DATA_FILE);
   return {
     files: filesOf(range, readDataList(data.toString("utf8"))),
-    list: { name: "copyh/data.sha256", sha256: sha256(data) },
+    list: { name: listNameOf(range.name), sha256: sha256(data) },
   };
 }
 

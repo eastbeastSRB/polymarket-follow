@@ -7,13 +7,19 @@
  * - `burnin`: WAVE-H's 850 files before M₀ (2025-05-25 14h to 06-29 23h),
  *   the counts and timing run outside E and S;
  * - `E`: WAVE-H's 8,845 files, [ARCHIVE_START, END_E);
- * - `S`: FRESH's 4,102 files, [END_E, END_S), sealed until step 2.
+ * - `S`: FRESH's 4,102 files, [END_E, END_S), sealed until step 2;
+ * - `FRESH-2`: FRESH-2's 4,368 files, [END_S, END_F2), sealed until
+ *   FRESH-2's freeze (its folder by name, its keys by date; C14 (4)).
+ * Each range's files are held to its data list: FRESH-2's
+ * `copyh/fresh2.sha256`, written at its download, every other's
+ * `copyh/data.sha256`.
  * In the switch hour both formats are read, `node_fills` first.
  */
 import { HOUR_MS } from "../schedule.js";
 import {
   ARCHIVE_START,
   END_E,
+  END_F2,
   END_S,
   M0,
   SAMPLE_DAYS,
@@ -22,7 +28,7 @@ import {
 import type { FileTask } from "./pass.js";
 import { StoreError } from "./run.js";
 
-export const RANGE_NAMES = ["burnin", "E", "S"] as const;
+export const RANGE_NAMES = ["burnin", "E", "S", "FRESH-2"] as const;
 export type RangeName = (typeof RANGE_NAMES)[number];
 
 export type Range = {
@@ -82,11 +88,20 @@ export const RANGES: Readonly<Record<RangeName, Range>> = {
   burnin: rangeOf("burnin", ARCHIVE_START, M0),
   E: rangeOf("E", ARCHIVE_START, END_E),
   S: rangeOf("S", END_E, END_S),
+  "FRESH-2": rangeOf("FRESH-2", END_S, END_F2),
 };
 
-/** A range's sample days for the integrity's re-read (C15; D11): S's for S, E's for E and for the burn-in, whose files are E's first (a day without a file of the range is not re-read). */
+/** A range's data list, as the program names it. */
+export const listNameOf = (name: RangeName): string =>
+  name === "FRESH-2" ? "copyh/fresh2.sha256" : "copyh/data.sha256";
+
+/** A range's sample days for the integrity's re-read (C15; D11): S's for S, FRESH-2's for FRESH-2, E's for E and for the burn-in, whose files are E's first (a day without a file of the range is not re-read). */
 export function sampleDaysOf(name: RangeName): readonly string[] {
-  return name === "S" ? SAMPLE_DAYS.S : SAMPLE_DAYS.E;
+  return name === "S"
+    ? SAMPLE_DAYS.S
+    : name === "FRESH-2"
+      ? SAMPLE_DAYS["FRESH-2"]
+      : SAMPLE_DAYS.E;
 }
 
 const LIST_LINE = /^([0-9a-f]{64}) \*(.+)$/;
@@ -113,7 +128,7 @@ export function filesOf(
   return range.fill.map((key, index) => {
     const sha256 = list.get(key);
     if (sha256 === undefined)
-      throw new StoreError(`${key}: not in copyh/data.sha256`);
+      throw new StoreError(`${key}: not in ${listNameOf(range.name)}`);
     return { index, key, sha256 };
   });
 }

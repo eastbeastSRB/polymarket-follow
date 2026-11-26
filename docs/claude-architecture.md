@@ -988,9 +988,14 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
 The ranges (`range.ts`): `burnin` WAVE-H's 850 files before M₀ (counts and
 timing only), `E` WAVE-H's 8,845 files [ARCHIVE_START, END_E), `S` FRESH's
 4,102 files [END_E, END_S), sealed until step 2 (`<COPYH_ROOT>\S` and
-FRESH's store refused by name and real path). Each store keeps the records
-of its own files timed in its own window; one outside is counted, never
-kept (D7).
+FRESH's store refused by name and real path), `FRESH-2` FRESH-2's 4,368
+files [END_S, END_F2), held to `copyh/fresh2.sha256` (the others to
+`copyh/data.sha256`), its raw store `FRESH2_STORE`, sealed until FRESH-2's
+freeze (`<COPYH_ROOT>\FRESH-2` and its keys). The integrity re-reads
+design.ts's sample days of its range: E's for E and the burn-in (which
+holds three of them), S's for S, the 15th of each of FRESH-2's months for
+FRESH-2. Each store keeps the records of its own files timed in its own
+window; one outside is counted, never kept (D7).
 
 **The boundary and the pass** (`scan.ts`, `schema.ts`, `pass.ts`,
 `worker.ts`, `part.ts`, `writers.ts`, `market-trades.ts`). A file is read
