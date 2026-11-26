@@ -1208,6 +1208,13 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   coin's marks and funding hours under both settlement rules (a coin
   without bars: no mark); the parts summed (`tripwireOf`) into the set's
   projection, whose share stops the step above 1%.
+- `phase-prices.ts` (C7–C11, C13): PRICES, a part a coin, its two market
+  objects and settings held one coin at a time: each copy's money (the
+  taker setting on the VWAP object), its thin flag, d and x′ in each of its
+  lines with that line's removal at M; a MAIN copy's own lines (STOP2 and
+  STOP5, DAYS7, JUMP's J, DELAY0, DELAY+5, DELAY+15, LAST) and the
+  cascade's and Binance's prints; a coin without an object, every reading
+  its reason; one positions line a copy, in BUILD's order.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

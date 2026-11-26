@@ -331,7 +331,7 @@ describe("C14's prior count", () => {
     const leg = (h: number) => ({
       h,
       part: 0.5,
-      kind: "REDUCE",
+      kind: "REDUCE" as const,
       forced: false,
       liq: false,
     });
@@ -371,7 +371,7 @@ describe("C14's prior count", () => {
     const leg = (h: number) => ({
       h,
       part: 1 / 200_000,
-      kind: "REDUCE",
+      kind: "REDUCE" as const,
       forced: false,
       liq: false,
     });

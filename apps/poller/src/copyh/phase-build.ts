@@ -103,6 +103,8 @@ export const BuildContext = ReadingContext.extend({
   large: z.string(),
 });
 
+/** The kit's event kinds (research.ts `EventKind`), and a plan's cut leg. */
+const KIND = z.enum(["OPEN", "ADD", "REDUCE", "CLOSE", "FLIP"]);
 /** A copy as BUILD plans it: no price. */
 export const Copy = z.object({
   id: z.string(),
@@ -118,7 +120,7 @@ export const Copy = z.object({
     z.object({
       t: z.number(),
       share: z.number(),
-      kind: z.string(),
+      kind: KIND,
       forced: z.boolean(),
       liq: z.boolean(),
     }),
@@ -128,7 +130,7 @@ export const Copy = z.object({
       z.object({
         h: z.number(),
         part: z.number(),
-        kind: z.string(),
+        kind: z.union([KIND, z.literal("cut")]),
         forced: z.boolean(),
         liq: z.boolean(),
       }),
