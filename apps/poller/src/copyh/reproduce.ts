@@ -192,6 +192,20 @@ export type Path = {
   readonly facts: readonly MondayFacts[];
 };
 
+/** An entry put by its id; a second entry of one id is refused, so that a seed which holds one is seen: the kit's id is account, coin, time and type, with no direction, and the reproduction compares entries by id (the engine review's L7). */
+function putEntry(
+  entries: Map<string, Entry>,
+  addr: string,
+  id: string,
+  entry: Entry,
+): void {
+  if (entries.has(id))
+    throw new ReproError(
+      `${addr}: two entries of one id, ${id}, which the reproduction compares by id`,
+    );
+  entries.set(id, entry);
+}
+
 /** R5's whole capture at M: the fills before M with the seed's page facts (the paper's `mondayValue`; C15 (a) in place of C5's 90 days). */
 const captureAt = (
   seed: SeedAccount,
@@ -237,7 +251,7 @@ export function referenceOf(
   )) {
     if (g.type !== "OPEN" && g.type !== "FLIP") continue;
     const id = kit.entries.entryId(seed.addr, g);
-    entries.set(id, {
+    putEntry(entries, seed.addr, id, {
       group: g,
       D: kit.entries.delayOf(id),
       exits: kit.exits.exitsOf(g, liqKeys),
@@ -283,7 +297,11 @@ export function copyhOf(
   const entries = new Map<string, Entry>();
   for (const g of entriesIn(h.groups, -Infinity, Infinity)) {
     const { id, D } = delayOf(kit, seed.addr, g);
-    entries.set(id, { group: g, D, exits: kit.exits.exitsOf(g, h.liqKeys) });
+    putEntry(entries, seed.addr, id, {
+      group: g,
+      D,
+      exits: kit.exits.exitsOf(g, h.liqKeys),
+    });
   }
   const facts = mondays.map((M) => {
     const label = labelOf(kit, captureAt(seed, fills, M), M, limits.labelFills);
@@ -329,6 +347,8 @@ export type AccountComparison = {
   readonly entries: { readonly kit: number; readonly copyh: number };
   readonly p1: { readonly kit: number; readonly copyh: number };
   readonly pnlLabels: number;
+  /** Each label pair pnl 0 made, listed: account, Monday, the kit's label and COPY-H's (C15 (a): every difference listed; the engine review's L8). */
+  readonly pnlPairs: string[];
   readonly allowed: string[];
   readonly differ: string[];
 };
@@ -409,7 +429,7 @@ export function compareAccount(
   }
   for (const id of mine.entries.keys())
     if (!ref.entries.has(id)) differ.push(`${id}: COPY-H's entry only`);
-  let pnlLabels = 0;
+  const pnlPairs: string[] = [];
   mondays.forEach((M, k) => {
     const a = ref.facts[k]!;
     const b = mine.facts[k]!;
@@ -418,7 +438,7 @@ export function compareAccount(
       differ.push(`${at}: P1 ${a.p1} / ${b.p1} (${a.label} / ${b.label})`);
     else if (a.label !== b.label) {
       if (PNL_LABELS.includes(a.label) && PNL_LABELS.includes(b.label))
-        pnlLabels += 1;
+        pnlPairs.push(`${at}: label ${a.label} / ${b.label}`);
       else differ.push(`${at}: label ${a.label} / ${b.label}`);
     }
     if (
@@ -437,7 +457,8 @@ export function compareAccount(
       kit: ref.facts.filter((f) => f.p1).length,
       copyh: mine.facts.filter((f) => f.p1).length,
     },
-    pnlLabels,
+    pnlLabels: pnlPairs.length,
+    pnlPairs,
     allowed,
     differ,
   };
@@ -898,6 +919,8 @@ export type AccountsReport = {
   readonly entries: { readonly kit: number; readonly copyh: number };
   readonly p1: { readonly kit: number; readonly copyh: number };
   readonly pnlLabels: number;
+  /** Every label pair pnl 0 made, in full (account, Monday, both labels). */
+  readonly pnlPairs: readonly string[];
   readonly sets: Readonly<Record<string, SetReport>>;
   readonly retired: readonly RetiredReport[];
   /** The account-Mondays in MAIN and in TEN (R7's account-level conditions at M). */
@@ -992,6 +1015,7 @@ export function reproduceAccounts(o: {
   const entries = { kit: 0, copyh: 0 };
   const p1 = { kit: 0, copyh: 0 };
   let pnlLabels = 0;
+  const pnlPairs: string[] = [];
   const beyond: string[] = [];
   const allowed: string[] = [];
   const differ: string[] = [];
@@ -1051,8 +1075,10 @@ export function reproduceAccounts(o: {
     p1.kit += c.p1.kit;
     p1.copyh += c.p1.copyh;
     pnlLabels += c.pnlLabels;
-    allowed.push(...c.allowed);
-    differ.push(...c.differ);
+    // Loops, never a list spread into a call (the engine review's section 8).
+    for (const p of c.pnlPairs) pnlPairs.push(p);
+    for (const a of c.allowed) allowed.push(a);
+    for (const d of c.differ) differ.push(d);
     const lines = o.mondays.map((M, k) => {
       const coverage = seedCoverage(o.kit, seed, M);
       const f = mine.path.facts[k]!;
@@ -1231,6 +1257,7 @@ export function reproduceAccounts(o: {
     entries,
     p1,
     pnlLabels,
+    pnlPairs,
     sets: Object.fromEntries(
       Object.entries(o.sets).map(([name, ids]): [string, SetReport] => {
         const found = ids.filter((id) => priced.has(id));

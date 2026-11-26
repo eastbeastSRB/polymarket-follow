@@ -14,8 +14,9 @@
  *   converted rows equal field for field (events, entries with their D and
  *   exits, labels, P1 and habits at each Monday) for a directional trader
  *   with multi-fill taker orders, an order over two timestamps, a flip and
- *   a liquidation; the churner pnl 0 makes of a mixed account counted, never
- *   a failure; R3's coverage at each window's start, 1 ms either side;
+ *   a liquidation; the churner pnl 0 makes of a mixed account counted and
+ *   listed, never a failure; a seed holding two entries of one id refused
+ *   in either path; R3's coverage at each window's start, 1 ms either side;
  * - the comparison: each planted difference a failure (a fill's head, an
  *   event, an entry in one path only, its D, its exits, P1, a label, the
  *   habits); an account whose heads move only in a matching event beyond the
@@ -384,12 +385,13 @@ describe("the two paths", () => {
       entries: { kit: ref.entries.size, copyh: ref.entries.size },
       p1: { kit: 1, copyh: 1 },
       pnlLabels: 0,
+      pnlPairs: [],
       allowed: [],
       differ: [],
     });
   });
 
-  it("count the churner pnl 0 makes of a mixed account, never a failure", () => {
+  it("count and list the churner pnl 0 makes of a mixed account, never a failure (the engine review's L8)", () => {
     const seed = churner("-0.5").seed();
     const { ref, mine, beyond } = both(seed, [M1]);
     expect([ref.facts[0]!.label, mine.facts[0]!.label]).toEqual([
@@ -397,11 +399,37 @@ describe("the two paths", () => {
       "churner",
     ]);
     const c = compareAccount(A, [M1], ref, mine, beyond);
-    expect([c.pnlLabels, c.differ]).toEqual([1, []]);
+    expect([c.pnlLabels, c.pnlPairs, c.differ]).toEqual([
+      1,
+      [`${A} 2026-10-12: label unclassified — mixed / churner`],
+      [],
+    ]);
     // With a pnl of 0 in the seed, the two labels are one.
     const zero = both(churner("0").seed(), [M1]);
     expect(zero.ref.facts[0]!.label).toBe("churner");
     expect(compareAccount(A, [M1], zero.ref, zero.mine, []).pnlLabels).toBe(0);
+  });
+
+  it("refuse a seed holding two entries of one id, in either path: an OPEN long, its CLOSE and an OPEN short in one millisecond (the engine review's L7)", () => {
+    const seedAt = (tShort: number) =>
+      new SeedBook()
+        .order({ t: T, oid: 1, side: 1, sizes: [1] })
+        .order({ t: T, oid: 2, side: -1, sizes: [1] })
+        .order({ t: tShort, oid: 3, side: -1, sizes: [1] })
+        .seed();
+    const seed = seedAt(T);
+    const twice = `${A}: two entries of one id, ${A}|6|${T}|OPEN`;
+    expect(() => referenceOf(kit, seed, [])).toThrow(ReproError);
+    expect(() => referenceOf(kit, seed, [])).toThrow(twice);
+    const { rows } = seedRows(seed);
+    expect(() => copyhOf(kit, seed, rows, [], NO_LIMITS)).toThrow(twice);
+    // The short opened 1 ms later: two ids, both entries kept in both paths.
+    const apart = seedAt(T + 1);
+    const ids = [`${A}|6|${T}|OPEN`, `${A}|6|${T + 1}|OPEN`];
+    expect([...referenceOf(kit, apart, []).entries.keys()]).toEqual(ids);
+    const mine = copyhOf(kit, apart, seedRows(apart).rows, [], NO_LIMITS);
+    if (mine.kind !== "built") throw new Error(mine.why);
+    expect([...mine.path.entries.keys()]).toEqual(ids);
   });
 
   it("give the reference the paper's own Monday facts (its accountData, mondayFacts and linesAt), truncated seeds covered and not among them", () => {
@@ -778,6 +806,7 @@ describe("the seed's source and the run", () => {
       mondays: ["2026-10-12", "2026-10-26"],
       p1: { kit: 1, copyh: 1 },
       pnlLabels: 1,
+      pnlPairs: [`${B} 2026-10-12: label unclassified — mixed / churner`],
       beyond: { count: 0, first: [] },
       allowed: { count: 0, first: [] },
       differ: { count: 0, first: [] },
@@ -1274,6 +1303,7 @@ describe("the known answers", () => {
     entries: { kit: 0, copyh: 0 },
     p1: { kit: 0, copyh: 0 },
     pnlLabels: 0,
+    pnlPairs: [],
     sets: {
       find6exits: setOf(1700, {
         exits: reading(1700),
