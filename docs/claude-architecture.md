@@ -964,7 +964,10 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
 - `reproduce` (C15 (a)): `reproduce.ts`, the reproduction: the paper's
   seed (PAPER_SEED, each file held to `experiment/seed.sha256`) converted
   record for record and run through COPY-H's mapping and the kit, every
-  value held to the kit's own reading of the seed; its `reproduce` gives
+  value held to the kit's own reading of the seed (each entry under its id
+  and its ordinal among the account's entries of that id, in the kit's
+  order: the kit's id holds no direction, so two entries may share one;
+  those ids listed, a known id of two refused); its `reproduce` gives
   `<COPYH_ROOT>\repro.json`'s body, written whole after its identity
   (the program's fingerprint, the kit's, lib-exits', the seed manifest's
   and `copyh/known.json`'s SHA-256); exit 6 unless it passed. A cap still

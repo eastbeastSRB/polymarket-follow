@@ -184,7 +184,7 @@ export type Entry = {
   readonly exits: readonly CopyExit[];
 };
 
-/** One account as one path gives it: fills in the kit's `normFill` fields, events, entries by id, the facts at each Monday. */
+/** One account as one path gives it: fills in the kit's `normFill` fields, events, entries by key (`entryKey`), the facts at each Monday. */
 export type Path = {
   readonly fills: readonly Fill[];
   readonly events: readonly OrderEvent[];
@@ -192,18 +192,34 @@ export type Path = {
   readonly facts: readonly MondayFacts[];
 };
 
-/** An entry put by its id; a second entry of one id is refused, so that a seed which holds one is seen: the kit's id is account, coin, time and type, with no direction, and the reproduction compares entries by id (the engine review's L7). */
-function putEntry(
-  entries: Map<string, Entry>,
+/**
+ * An entry's key in a path: its id and its ordinal among the account's
+ * entries of that id, in the kit's order (`<id>#0`, `<id>#1`, …). The kit's
+ * id is account, coin, time and type, with no direction, so an OPEN long,
+ * its CLOSE and an OPEN short of one millisecond give two entries of one id;
+ * both are entries (R4), and each is compared under its own key (the engine
+ * review's L7, as the supervisor reworked it on the real seed, 2026-11-26).
+ */
+export const entryKey = (id: string, n: number): string => `${id}#${n}`;
+
+/** An entry put under its id's next ordinal. */
+function putEntry(entries: Map<string, Entry>, id: string, entry: Entry): void {
+  let n = 0;
+  while (entries.has(entryKey(id, n))) n += 1;
+  entries.set(entryKey(id, n), entry);
+}
+
+/** A known id's entry in a path: its one entry, or none; an id of more than one entry is refused, since the record cannot say which one it meant. */
+export function knownEntry(
+  entries: ReadonlyMap<string, Entry>,
   addr: string,
   id: string,
-  entry: Entry,
-): void {
-  if (entries.has(id))
+): Entry | undefined {
+  if (entries.has(entryKey(id, 1)))
     throw new ReproError(
-      `${addr}: two entries of one id, ${id}, which the reproduction compares by id`,
+      `${addr}: the known entry ${id} is more than one entry of a path, and the record cannot say which one it meant`,
     );
-  entries.set(id, entry);
+  return entries.get(entryKey(id, 0));
 }
 
 /** R5's whole capture at M: the fills before M with the seed's page facts (the paper's `mondayValue`; C15 (a) in place of C5's 90 days). */
@@ -251,7 +267,7 @@ export function referenceOf(
   )) {
     if (g.type !== "OPEN" && g.type !== "FLIP") continue;
     const id = kit.entries.entryId(seed.addr, g);
-    putEntry(entries, seed.addr, id, {
+    putEntry(entries, id, {
       group: g,
       D: kit.entries.delayOf(id),
       exits: kit.exits.exitsOf(g, liqKeys),
@@ -297,7 +313,7 @@ export function copyhOf(
   const entries = new Map<string, Entry>();
   for (const g of entriesIn(h.groups, -Infinity, Infinity)) {
     const { id, D } = delayOf(kit, seed.addr, g);
-    putEntry(entries, seed.addr, id, {
+    putEntry(entries, id, {
       group: g,
       D,
       exits: kit.exits.exitsOf(g, h.liqKeys),
@@ -345,6 +361,8 @@ const day = (t: number) => new Date(t).toISOString().slice(0, 10);
 export type AccountComparison = {
   readonly events: { readonly kit: number; readonly copyh: number };
   readonly entries: { readonly kit: number; readonly copyh: number };
+  /** The reference's ids of more than one entry, each entry compared under its own key (COPY-H's are held to them by the keys). */
+  readonly idsTwice: string[];
   readonly p1: { readonly kit: number; readonly copyh: number };
   readonly pnlLabels: number;
   /** Each label pair pnl 0 made, listed: account, Monday, the kit's label and COPY-H's (C15 (a): every difference listed; the engine review's L8). */
@@ -359,8 +377,9 @@ export type AccountComparison = {
  * event holding a row beyond the boundary (`beyond`: a quantity of more
  * than 15 digits, whose chain no double gives back), its fills' heads, the
  * order events holding its fills and the exits at its instant. Every other
- * difference fails: a fill's head, an order event, an entry's id, D or
- * exits, P1, a label, the habits.
+ * difference fails: a fill's head, an order event, an entry's key, D,
+ * direction or exits, P1, a label, the habits. Each entry is compared under
+ * its key, so two entries of one id are both compared, in the kit's order.
  */
 export function compareAccount(
   addr: string,
@@ -414,21 +433,24 @@ export function compareAccount(
         `${addr}: ${list.length - ok} of ${whose} events not the other's`,
       );
   }
-  for (const [id, e] of ref.entries) {
-    const m = mine.entries.get(id);
+  const idsTwice: string[] = [];
+  for (const [key, e] of ref.entries) {
+    const m = mine.entries.get(key);
     const outside = (xs: readonly CopyExit[]) =>
       xs.filter((x) => !beyondAt.has(`${e.group.iid}|${x.t}`));
-    if (m === undefined) differ.push(`${id}: the kit's entry only`);
+    // An id's second entry: the key of its ordinal 1.
+    if (key.endsWith("#1")) idsTwice.push(key.slice(0, -2));
+    if (m === undefined) differ.push(`${key}: the kit's entry only`);
     else if (m.D !== e.D || m.group.dir !== e.group.dir)
-      differ.push(`${id}: its D or direction differs`);
+      differ.push(`${key}: its D or direction differs`);
     else if (!isDeepStrictEqual(m.exits, e.exits))
       (isDeepStrictEqual(outside(m.exits), outside(e.exits))
         ? allowed
         : differ
-      ).push(`${id}: its exits differ`);
+      ).push(`${key}: its exits differ`);
   }
-  for (const id of mine.entries.keys())
-    if (!ref.entries.has(id)) differ.push(`${id}: COPY-H's entry only`);
+  for (const key of mine.entries.keys())
+    if (!ref.entries.has(key)) differ.push(`${key}: COPY-H's entry only`);
   const pnlPairs: string[] = [];
   mondays.forEach((M, k) => {
     const a = ref.facts[k]!;
@@ -453,6 +475,7 @@ export function compareAccount(
   return {
     events: { kit: ref.events.length, copyh: mine.events.length },
     entries: { kit: ref.entries.size, copyh: mine.entries.size },
+    idsTwice,
     p1: {
       kit: ref.facts.filter((f) => f.p1).length,
       copyh: mine.facts.filter((f) => f.p1).length,
@@ -917,6 +940,8 @@ export type AccountsReport = {
   readonly mondays: readonly string[];
   readonly events: { readonly kit: number; readonly copyh: number };
   readonly entries: { readonly kit: number; readonly copyh: number };
+  /** The reference's ids of more than one entry, listed: each entry compared under its own key. */
+  readonly idsTwice: Listed;
   readonly p1: { readonly kit: number; readonly copyh: number };
   readonly pnlLabels: number;
   /** Every label pair pnl 0 made, in full (account, Monday, both labels). */
@@ -954,9 +979,10 @@ const FR1_MS = 28 * DAY_MS;
  * Every seed account through both paths, one at a time: never one of the
  * kit's holdout (`pool` holds the population's accounts outside it), no row
  * at or after the kit's cut (the paper's blind store); each known set's
- * entry ids (known.json's) looked up in both paths, and each one found in
- * both priced in both on the kit's panel (`market`, its markets by iid:
- * `kitPanel`, or a test's) with the kit's taker setting. The seed's weeks
+ * entry ids (known.json's) looked up in both paths (`knownEntry`: an id of
+ * two entries refused), and each one found in both priced in both on the
+ * kit's panel (`market`, its markets by iid: `kitPanel`, or a test's) with
+ * the kit's taker setting. The seed's weeks
  * end at the cut, under the paper's R8 and R11: no market of the kit's
  * panel is read as a settled coin (the supervisor's ruling on Q1,
  * 2026-11-26). At each Monday, each path's MAIN and TEN: COPY-H's by
@@ -1000,7 +1026,7 @@ export function reproduceAccounts(o: {
     copyh: new Map<string, TradeKey[][]>(),
     kit: new Map<string, Fill[][]>(),
   };
-  /** Each path's judged copies, by `<line>|<entry id>`. */
+  /** Each path's judged copies, by `<line>|<entry key>`. */
   const judged = {
     copyh: new Map<string, JudgedCopy>(),
     kit: new Map<string, JudgedCopy>(),
@@ -1014,6 +1040,7 @@ export function reproduceAccounts(o: {
   const events = { kit: 0, copyh: 0 };
   const entries = { kit: 0, copyh: 0 };
   const p1 = { kit: 0, copyh: 0 };
+  const idsTwice: string[] = [];
   let pnlLabels = 0;
   const pnlPairs: string[] = [];
   const beyond: string[] = [];
@@ -1046,8 +1073,8 @@ export function reproduceAccounts(o: {
       continue;
     }
     for (const id of wanted.get(addr) ?? []) {
-      const r = ref.entries.get(id);
-      const m = mine.path.entries.get(id);
+      const r = knownEntry(ref.entries, addr, id);
+      const m = knownEntry(mine.path.entries, addr, id);
       if (r === undefined || m === undefined) continue;
       const mk = marketOf(r.group.iid);
       /** Its plans at D and at D = 0 under a coin: its readings of exits copied are their prices, so they move only when a plan does. */
@@ -1076,6 +1103,7 @@ export function reproduceAccounts(o: {
     p1.copyh += c.p1.copyh;
     pnlLabels += c.pnlLabels;
     // Loops, never a list spread into a call (the engine review's section 8).
+    for (const id of c.idsTwice) idsTwice.push(id);
     for (const p of c.pnlPairs) pnlPairs.push(p);
     for (const a of c.allowed) allowed.push(a);
     for (const d of c.differ) differ.push(d);
@@ -1114,22 +1142,22 @@ export function reproduceAccounts(o: {
       k,
       longShare,
     });
-    for (const [id, e] of mine.path.entries) {
+    for (const [key, e] of mine.path.entries) {
       const k = mondayAt.get(mondayOf(e.group.t));
       if (k === undefined) continue;
       for (const L of entryLines(lines[k]!.copyh, primary(e.group)))
         if (L === "MAIN" || L === "TEN")
           judged.copyh.set(
-            `${L}|${id}`,
+            `${L}|${key}`,
             copyOf(e, k, mine.path.facts[k]!.longShare),
           );
     }
-    for (const [id, e] of ref.entries) {
+    for (const [key, e] of ref.entries) {
       const k = mondayAt.get(paperMonday(e.group.t));
       if (k === undefined || !primary(e.group)) continue;
       for (const L of JUDGED)
         if (lines[k]!.kit[L])
-          judged.kit.set(`${L}|${id}`, copyOf(e, k, ref.facts[k]!.longShare));
+          judged.kit.set(`${L}|${key}`, copyOf(e, k, ref.facts[k]!.longShare));
     }
   }
   const compared = new Map<string, Record<ReadingName, Compared>>();
@@ -1205,11 +1233,11 @@ export function reproduceAccounts(o: {
       ),
     );
     for (const key of keys) {
-      const id = key.slice(L.length + 1);
+      const entry = key.slice(L.length + 1);
       const a = judged.copyh.get(key);
       const b = judged.kit.get(key);
       if (a === undefined || b === undefined) {
-        differ.push(`${id}: in ${L} in one path only`);
+        differ.push(`${entry}: in ${L} in one path only`);
         continue;
       }
       const mk = marketOf(a.iid);
@@ -1222,15 +1250,18 @@ export function reproduceAccounts(o: {
       const r = referenceJudgement(o.kit, mk, b, removed, o.setting);
       if (dJ.reason !== undefined)
         nulls[dJ.reason] = (nulls[dJ.reason] ?? 0) + 1;
-      d.push([id, compareJudgement(dJ, r.d)]);
-      edge.push([id, compareJudgement(x === null ? dJ : { bps: x }, r.edge)]);
+      d.push([entry, compareJudgement(dJ, r.d)]);
+      edge.push([
+        entry,
+        compareJudgement(x === null ? dJ : { bps: x }, r.edge),
+      ]);
     }
     for (const [what, list] of [
       ["d", d],
       ["x′", edge],
     ] as const)
-      for (const [id, c] of list)
-        if (c.kind === "differ") differ.push(`${id}: ${L} ${what} ${c.why}`);
+      for (const [entry, c] of list)
+        if (c.kind === "differ") differ.push(`${entry}: ${L} ${what} ${c.why}`);
     return { copies: d.length, d: tallyOf(d), edge: tallyOf(edge), nulls };
   };
   const fr1Of = (p: "copyh" | "kit", L: JudgedLine): Count => {
@@ -1255,6 +1286,7 @@ export function reproduceAccounts(o: {
     mondays: o.mondays.map(day),
     events,
     entries,
+    idsTwice: listed(idsTwice),
     p1,
     pnlLabels,
     pnlPairs,

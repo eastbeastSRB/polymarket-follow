@@ -15,8 +15,10 @@
  *   exits, labels, P1 and habits at each Monday) for a directional trader
  *   with multi-fill taker orders, an order over two timestamps, a flip and
  *   a liquidation; the churner pnl 0 makes of a mixed account counted and
- *   listed, never a failure; a seed holding two entries of one id refused
- *   in either path; R3's coverage at each window's start, 1 ms either side;
+ *   listed, never a failure; two entries of one id kept in both paths under
+ *   their ordinals in the kit's order, each compared, a difference planted
+ *   in either caught, the id listed; R3's coverage at each window's start,
+ *   1 ms either side;
  * - the comparison: each planted difference a failure (a fill's head, an
  *   event, an entry in one path only, its D, its exits, P1, a label, the
  *   habits); an account whose heads move only in a matching event beyond the
@@ -26,7 +28,8 @@
  *   file sealed and inside the roots before the paper's loadSeed, a file it
  *   refuses a failed check; an account outside the kit's pool refused
  *   before its file is read; a row at the cut refused; an account the kit is
- *   not run on a failure; the pool from the kit's population;
+ *   not run on a failure; a known id of two entries refused, and the run's
+ *   ids of two listed; the pool from the kit's population;
  * - the known copies priced on a made-up panel of the kit's form with the
  *   kit's taker setting: COPY-H's readings (money.ts) equal to the
  *   reference's (lib-exits' planCopy and priceCopy) exits copied, at D = 0
@@ -58,8 +61,10 @@ import {
   compareReading,
   copyhOf,
   copyhReadings,
+  entryKey,
   kitInstruments,
   kitPanel,
+  knownEntry,
   poolOf,
   referenceJudgement,
   referenceLines,
@@ -354,6 +359,13 @@ function churner(pnl: string): SeedBook {
   return book;
 }
 
+/** On `book`, a long opened and closed at T, then a short opened at `tShort`: at T, two entries of one id (the kit's id holds no direction). */
+const twoOfOneId = (tShort = T, book = new SeedBook()): SeedBook =>
+  book
+    .order({ t: T, oid: 901, side: 1, sizes: [1] })
+    .order({ t: T, oid: 902, side: -1, sizes: [1] })
+    .order({ t: tShort, oid: 903, side: -1, sizes: [1] });
+
 const both = (seed: SeedAccount, mondays = [M1, M2]) => {
   const { rows, beyond } = seedRows(seed);
   const mine = copyhOf(kit, seed, rows, mondays, NO_LIMITS);
@@ -383,6 +395,7 @@ describe("the two paths", () => {
     expect(compareAccount(A, [M1, M2], ref, mine, beyond)).toEqual({
       events: { kit: ref.events.length, copyh: ref.events.length },
       entries: { kit: ref.entries.size, copyh: ref.entries.size },
+      idsTwice: [],
       p1: { kit: 1, copyh: 1 },
       pnlLabels: 0,
       pnlPairs: [],
@@ -410,26 +423,80 @@ describe("the two paths", () => {
     expect(compareAccount(A, [M1], zero.ref, zero.mine, []).pnlLabels).toBe(0);
   });
 
-  it("refuse a seed holding two entries of one id, in either path: an OPEN long, its CLOSE and an OPEN short in one millisecond (the engine review's L7)", () => {
-    const seedAt = (tShort: number) =>
-      new SeedBook()
-        .order({ t: T, oid: 1, side: 1, sizes: [1] })
-        .order({ t: T, oid: 2, side: -1, sizes: [1] })
-        .order({ t: tShort, oid: 3, side: -1, sizes: [1] })
-        .seed();
-    const seed = seedAt(T);
-    const twice = `${A}: two entries of one id, ${A}|6|${T}|OPEN`;
-    expect(() => referenceOf(kit, seed, [])).toThrow(ReproError);
-    expect(() => referenceOf(kit, seed, [])).toThrow(twice);
-    const { rows } = seedRows(seed);
-    expect(() => copyhOf(kit, seed, rows, [], NO_LIMITS)).toThrow(twice);
-    // The short opened 1 ms later: two ids, both entries kept in both paths.
-    const apart = seedAt(T + 1);
-    const ids = [`${A}|6|${T}|OPEN`, `${A}|6|${T + 1}|OPEN`];
-    expect([...referenceOf(kit, apart, []).entries.keys()]).toEqual(ids);
-    const mine = copyhOf(kit, apart, seedRows(apart).rows, [], NO_LIMITS);
-    if (mine.kind !== "built") throw new Error(mine.why);
-    expect([...mine.path.entries.keys()]).toEqual(ids);
+  it("keep two entries of one id in both paths, each under its ordinal in the kit's order, and compare each: an OPEN long, its CLOSE and an OPEN short in one millisecond (the engine review's L7, as the supervisor reworked it)", () => {
+    const { ref, mine, beyond } = both(twoOfOneId().seed(), []);
+    const id = `${A}|6|${T}|OPEN`;
+    expect([...ref.entries.keys()]).toEqual([`${id}#0`, `${id}#1`]);
+    expect(entryKey(id, 1)).toBe(`${id}#1`);
+    // The long first, closed in its millisecond; then the short, open.
+    expect(
+      [...ref.entries.values()].map((e) => [e.group.dir, e.exits.length]),
+    ).toEqual([
+      [1, 1],
+      [-1, 0],
+    ]);
+    expect(mine.entries).toEqual(ref.entries);
+    expect([...mine.entries.keys()]).toEqual([...ref.entries.keys()]);
+    expect(compareAccount(A, [], ref, mine, beyond)).toMatchObject({
+      entries: { kit: 2, copyh: 2 },
+      idsTwice: [id],
+      differ: [],
+    });
+    // A difference planted in either entry alone is caught under its key.
+    const planted = (key: string, e: (x: Entry) => Entry) =>
+      compareAccount(
+        A,
+        [],
+        ref,
+        {
+          ...mine,
+          entries: new Map(
+            [...mine.entries].map(([k, x]) => [k, k === key ? e(x) : x]),
+          ),
+        },
+        beyond,
+      ).differ;
+    const turned = (x: Entry): Entry => ({
+      ...x,
+      group: { ...x.group, dir: -x.group.dir },
+    });
+    expect(planted(`${id}#0`, turned)).toEqual([
+      `${id}#0: its D or direction differs`,
+    ]);
+    expect(planted(`${id}#1`, turned)).toEqual([
+      `${id}#1: its D or direction differs`,
+    ]);
+    const closed = (x: Entry): Entry => ({
+      ...x,
+      exits: ref.entries.get(`${id}#0`)!.exits,
+    });
+    expect(planted(`${id}#1`, closed)).toEqual([`${id}#1: its exits differ`]);
+    const first = new Map(mine.entries);
+    first.delete(`${id}#1`);
+    expect(
+      compareAccount(A, [], ref, { ...mine, entries: first }, beyond).differ,
+    ).toEqual([`${id}#1: the kit's entry only`]);
+    // The short opened 1 ms later: two ids, one entry each.
+    const apart = both(twoOfOneId(T + 1).seed(), []);
+    const keys = [`${id}#0`, `${A}|6|${T + 1}|OPEN#0`];
+    expect([...apart.ref.entries.keys()]).toEqual(keys);
+    expect([...apart.mine.entries.keys()]).toEqual(keys);
+    expect(
+      compareAccount(A, [], apart.ref, apart.mine, apart.beyond),
+    ).toMatchObject({ idsTwice: [], differ: [] });
+  });
+
+  it("refuse a known id of more than one entry in a path, which the record cannot place, and give a known id's one entry or none", () => {
+    const { ref } = both(twoOfOneId().seed(), []);
+    const id = `${A}|6|${T}|OPEN`;
+    expect(() => knownEntry(ref.entries, A, id)).toThrow(ReproError);
+    expect(() => knownEntry(ref.entries, A, id)).toThrow(
+      `${A}: the known entry ${id} is more than one entry of a path, and the record cannot say which one it meant`,
+    );
+    const one = new Map(ref.entries);
+    one.delete(`${id}#1`);
+    expect(knownEntry(one, A, id)).toBe(ref.entries.get(`${id}#0`));
+    expect(knownEntry(one, A, `${A}|6|${T + 1}|OPEN`)).toBeUndefined();
   });
 
   it("give the reference the paper's own Monday facts (its accountData, mondayFacts and linesAt), truncated seeds covered and not among them", () => {
@@ -514,8 +581,8 @@ describe("the two paths", () => {
     expect(ref.events.map((e) => e.kind)).toEqual(["OPEN", "CLOSE", "OPEN"]);
     expect(mine.events).toEqual(ref.events);
     expect([...mine.entries.keys()]).toEqual([
-      `${A}|6|${T}|OPEN`,
-      `${A}|6|${at}|OPEN`,
+      `${A}|6|${T}|OPEN#0`,
+      `${A}|6|${at}|OPEN#0`,
     ]);
     expect(compareAccount(A, [M2], ref, mine, beyond).differ).toEqual([]);
   });
@@ -710,7 +777,18 @@ const onRetired = (addr: string) =>
     .order({ t: M1 - 5 * DAY_MS, iid: 8, oid: 2, side: -1, sizes: [1] })
     .order({ t: M1 - 4 * DAY_MS, iid: 8, oid: 3, side: 1, sizes: [3] })
     .seed(addr);
-const entriesOf = (seed: SeedAccount) => referenceOf(kit, seed, []).entries;
+/** An entry key's id: the key less its ordinal. */
+const idOf = (key: string) => key.slice(0, key.lastIndexOf("#"));
+/** A made-up seed's entries by their ids, known.json's form: each id here one entry, its key's ordinal 0. */
+const entriesOf = (seed: SeedAccount): Map<string, Entry> => {
+  const byId = new Map<string, Entry>();
+  for (const [key, e] of referenceOf(kit, seed, []).entries) {
+    if (key !== entryKey(idOf(key), 0))
+      throw new Error(`${key}: a second entry`);
+    byId.set(idOf(key), e);
+  }
+  return byId;
+};
 
 describe("the seed's source and the run", () => {
   const B = `0x${"2".repeat(40)}`;
@@ -769,7 +847,7 @@ describe("the seed's source and the run", () => {
     const seeds = [directional().seed(A), churner("-0.5").seed(B)];
     const f = folder(seeds);
     const load = vi.fn(loadSeed);
-    const idA = [...referenceOf(kit, seeds[0]!, [M1]).entries.keys()][0]!;
+    const idA = [...entriesOf(seeds[0]!).keys()][0]!;
     const sets = {
       known: [idA, `${A}|6|1|OPEN`, `${H}|6|1|OPEN`],
       none: [],
@@ -838,6 +916,46 @@ describe("the seed's source and the run", () => {
         setting: SETTING,
       }),
     ).toThrow(/a seed row at or after the cut/);
+  });
+
+  it("compare and judge both entries of one id and list the id, and refuse that id in a known set (the engine review's L7, reworked)", () => {
+    // The directional trader, in MAIN at M1, with the two entries of one id
+    // at T, in M1's week and in FR1's four weeks.
+    const seed = twoOfOneId(T, directional()).seed(A);
+    const f = folder([seed]);
+    const id = `${A}|6|${T}|OPEN`;
+    const run = (sets: Record<string, string[]>) =>
+      reproduceAccounts({
+        kit,
+        seed: seedSource({ ...f, roots: [f.root], load: loadSeed }),
+        pool: new Set([A]),
+        mondays: [M1],
+        limits: NO_LIMITS,
+        sets,
+        instruments: INSTRUMENTS,
+        market,
+        setting: SETTING,
+      });
+    const n = entriesOf(directional().seed(A)).size + 2;
+    const r = run({});
+    expect(r).toMatchObject({
+      entries: { kit: n, copyh: n },
+      idsTwice: { count: 1, first: [id] },
+      lines: { MAIN: { kit: 1, copyh: 1 } },
+      differ: { count: 0, first: [] },
+    });
+    const two = { entries: 2, traders: 1 };
+    expect(r.fr1.MAIN).toEqual({ kit: two, copyh: two });
+    const j = r.judged.MAIN;
+    expect([
+      j.copies,
+      j.d.equal + j.d.unpriced,
+      j.edge.equal + j.edge.unpriced,
+    ]).toEqual([2, 2, 2]);
+    expect(() => run({ one: [id] })).toThrow(ReproError);
+    expect(() => run({ one: [id] })).toThrow(
+      `${A}: the known entry ${id} is more than one entry of a path`,
+    );
   });
 
   it("prices every known copy found in both paths: each set's readings counted with their figures by trader, a market loaded once, a retired market's copies and those its settled reading would change", () => {
@@ -1301,6 +1419,7 @@ describe("the known answers", () => {
     mondays: known.mondays,
     events: { kit: 0, copyh: 0 },
     entries: { kit: 0, copyh: 0 },
+    idsTwice: { count: 0, first: [] },
     p1: { kit: 0, copyh: 0 },
     pnlLabels: 0,
     pnlPairs: [],
