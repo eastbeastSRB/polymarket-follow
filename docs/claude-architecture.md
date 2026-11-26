@@ -961,6 +961,14 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
 `test/copyh-rules.test.ts` both ways.
 
 **Commands before the freeze** (each under the closed seal):
+- `reproduce` (C15 (a)): `reproduce.ts`, the reproduction: the paper's
+  seed (PAPER_SEED, each file held to `experiment/seed.sha256`) converted
+  record for record and run through COPY-H's mapping and the kit, every
+  value held to the kit's own reading of the seed; its `reproduce` gives
+  `<COPYH_ROOT>\repro.json`'s body, written whole after its identity
+  (the program's fingerprint, the kit's, lib-exits', the seed manifest's
+  and `copyh/known.json`'s SHA-256); exit 6 unless it passed. A cap still
+  unset reads none there (the seed's accounts lie far below either).
 - `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
   reply (`info/meta.json`), held to its one line in the funding store's
   `manifest.jsonl`, in the reply's `universe` order (iid = index, delisted

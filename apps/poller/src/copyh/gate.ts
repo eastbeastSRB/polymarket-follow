@@ -25,10 +25,12 @@ import type { Seal } from "./seal.js";
 
 export const FROZEN_FILE = "copyh/FROZEN.sha256";
 
-/** The compiled files of other programs that COPY-H's imports reach (C0; D14): the engine's `dist/paper/copy.js` and `stats.js` among them. */
+/** The compiled files of other programs that COPY-H's imports reach (C0; D14): the engine's `dist/paper/copy.js` and `stats.js` among them, and the reproduction's `seed.js` with its `routes.js` (C15 (a)). */
 export const COPYH_CLOSURE = [
   "dist/paper/copy.js",
   "dist/paper/research.js",
+  "dist/paper/routes.js",
+  "dist/paper/seed.js",
   "dist/paper/stats.js",
   "dist/polish/lz4.js",
   "dist/polish/tables.js",

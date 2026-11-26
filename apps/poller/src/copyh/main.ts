@@ -7,6 +7,7 @@
  *   node dist/copyh.js count --range burnin|E [--workers n] [--minutes m]
  *   node dist/copyh.js build --range burnin|E [--twin] [--workers n] [--minutes m]
  *   node dist/copyh.js integrity --range burnin|E [--minutes m]
+ *   node dist/copyh.js reproduce
  *   node dist/copyh.js step1 | tries | choice | step2 | fresh2
  *
  * `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
@@ -18,7 +19,15 @@
  * its own parts), from `copyh/data.sha256`, `coins.json` and `dirs.json`.
  * `integrity`: the twin held to the first build when it exists
  * (`<range>\integrity\builds.json`), then K0–K3 into
- * `<range>\integrity\integrity.json` (integrity.ts).
+ * `<range>\integrity\integrity.json` (integrity.ts). `reproduce` (C15
+ * (a)): the paper's seed (PAPER_SEED, its files held to
+ * `experiment/seed.sha256`) through reproduce.ts's `reproduce`, and
+ * `<COPYH_ROOT>\repro.json` written whole, its identity first; exit 6
+ * unless it passed. It reads the seed's accounts in one process, in under
+ * a minute, with no parts. A cap still unset (null, design.ts) reads no cap
+ * there: the seed's largest account lies far below either, and the kit's
+ * own reading of the seed, which the reproduction holds COPY-H to, has none;
+ * a step refuses an unset cap.
  * Before the freeze every command runs under the closed seal, so S's range
  * is refused. The gate's commands verify the freeze of their kind first
  * (gate.ts) and stop with exit 4, having read nothing, when it does not
@@ -35,12 +44,32 @@ import os from "node:os";
 import path from "node:path";
 import { getHeapStatistics } from "node:v8";
 import { createLog } from "../log.js";
+import {
+  LIB_EXITS_SHA256,
+  RESEARCH_ROOT,
+  loadResearch,
+} from "../paper/research.js";
+import { loadSeed, readManifest } from "../paper/seed.js";
 import { META_KEY, StoredLine, coinsFromMeta } from "./coins.js";
 import { countsOf } from "./count.js";
-import { RUN_MINUTES } from "./design.js";
+import {
+  EXITS_MAX,
+  HISTORY_FILLS_MAX,
+  LABEL_FILLS_MAX,
+  RUN_MINUTES,
+} from "./design.js";
 import { COMMANDS, sealOf, verifyGate, type Command } from "./gate.js";
+import { knownOf } from "./known.js";
 import { countFile, readCountFile, runPass } from "./pass.js";
 import { RANGES, RANGE_NAMES, type RangeName } from "./range.js";
+import {
+  ReproError,
+  kitInstruments,
+  kitPanel,
+  poolOf,
+  reproduce,
+  seedSource,
+} from "./reproduce.js";
 import {
   FreezeDiffers,
   PACKAGE_ROOT,
@@ -50,6 +79,7 @@ import {
   exitOf,
   fingerprintOf,
   heapOf,
+  sha256,
   sharedHashes,
   writeWhole,
 } from "./run.js";
@@ -63,7 +93,7 @@ function refuse(why: string): never {
 const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
   e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 
-const TOOLS = ["coins", "count", "build", "integrity"] as const;
+const TOOLS = ["coins", "count", "build", "integrity", "reproduce"] as const;
 const [command, ...options] = process.argv.slice(2);
 const tool = TOOLS.find((t) => t === command) ?? null;
 const gated = COMMANDS.find((c) => c === command) ?? null;
@@ -110,6 +140,8 @@ if (!parsed.success) refuse(issues(parsed.error));
 const settings = parsed.data;
 if (tool === "coins" && settings.COPYH_FUNDING === undefined)
   refuse("coins needs COPYH_FUNDING, COPYH-FUNDING's store");
+if (tool === "reproduce" && settings.PAPER_SEED === undefined)
+  refuse("reproduce needs PAPER_SEED, the paper's seed folder");
 const heap = heapOf(process.env.COPYH_HEAP_GB);
 const heapGb: number = typeof heap === "string" ? refuse(heap) : heap;
 /** The range's raw store: FRESH's for S (step 2's), FRESH-2's for FRESH-2 (its stage's), else WAVE-H's. */
@@ -127,7 +159,9 @@ const rangeDir = range === null ? null : path.join(settings.COPYH_ROOT, range);
 const roots =
   tool === "coins"
     ? [settings.COPYH_ROOT, settings.COPYH_FUNDING!]
-    : [settings.COPYH_ROOT, raw];
+    : tool === "reproduce"
+      ? [settings.COPYH_ROOT, settings.PAPER_SEED!]
+      : [settings.COPYH_ROOT, raw];
 
 // The seal before anything is opened or made, the log's folder included: before the freeze, closed.
 try {
@@ -224,6 +258,53 @@ async function count(r: RangeName): Promise<void> {
   });
 }
 
+/** `reproduce` (C15 (a)): the kit loaded and checked first, then the seed, the pool, the kit's instruments, the known answers and the caps through reproduce.ts's `reproduce`; repro.json written whole, its identity first. */
+async function reproduction(): Promise<void> {
+  const kit = await loadResearch();
+  const manifestText = readFileSync(
+    path.join(PACKAGE_ROOT, "experiment", "seed.sha256"),
+    "utf8",
+  );
+  const { bytes: knownBytes, known } = knownOf(
+    path.join(PACKAGE_ROOT, "copyh", "known.json"),
+  );
+  const r = reproduce({
+    kit,
+    seed: seedSource({
+      dir: settings.PAPER_SEED!,
+      manifest: readManifest(manifestText),
+      roots,
+      load: loadSeed,
+    }),
+    pool: poolOf(RESEARCH_ROOT),
+    instruments: kitInstruments(RESEARCH_ROOT),
+    known,
+    limits: {
+      labelFills: LABEL_FILLS_MAX ?? Infinity,
+      history: { fills: HISTORY_FILLS_MAX ?? Infinity, exits: EXITS_MAX },
+    },
+    market: kitPanel(kit),
+  });
+  const out = path.join(settings.COPYH_ROOT, "repro.json");
+  const identity = {
+    program: fingerprintOf(PACKAGE_ROOT),
+    kit: kit.fingerprint,
+    libExits: LIB_EXITS_SHA256,
+    seedManifest: sha256(manifestText),
+    known: sha256(knownBytes),
+    node: process.version,
+    shared: sharedHashes(PACKAGE_ROOT),
+    heapGb,
+  };
+  writeWhole(
+    out,
+    `${JSON.stringify({ identity, passed: r.passed, ...r.report }, null, 1)}\n`,
+  );
+  logOf("done: repro.json written", { file: out, passed: r.passed });
+  if (!r.passed)
+    throw new ReproError(`the reproduction did not pass: ${out} says where`);
+}
+
 /** A tool's store run: the range's folder (`--twin`: its `twin\`), under the closed seal. */
 const storeRun = (r: RangeName, base: string) => ({
   range: RANGES[r],
@@ -266,6 +347,7 @@ try {
   );
   if (gated !== null) await gate(gated);
   else if (tool === "coins") coins();
+  else if (tool === "reproduce") await reproduction();
   else if (tool === "count") await count(range!);
   else if (tool === "integrity") checkStores(storeRun(range!, rangeDir!));
   else

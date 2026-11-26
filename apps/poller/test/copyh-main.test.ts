@@ -8,7 +8,9 @@
  * writing coins.json from a stored meta reply held to its manifest line, the
  * program's heap ceiling exactly design.ts's, and refusing a reply that
  * differs or a manifest without exactly one line for it (exit 5); a build
- * over a built store refused (exit 5). Run in `pnpm verify`'s order: the
+ * over a built store refused (exit 5); `reproduce` refused without
+ * PAPER_SEED (exit 2) and its seed folder sealed by name (exit 5). Run in
+ * `pnpm verify`'s order: the
  * build first.
  */
 import { spawnSync } from "node:child_process";
@@ -157,6 +159,22 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
       "coins needs COPYH_FUNDING",
     );
     expect(run(["build", "--range", "S"], without("FRESH_STORE")).code).toBe(2);
+    expect(run(["reproduce"], f).stderr).toContain(
+      "reproduce needs PAPER_SEED",
+    );
+    expect(run(["reproduce", "--twin"], f).stderr).toContain(
+      'the option "--twin"',
+    );
+  });
+
+  it("seals the reproduction's seed folder by its name (exit 5), having written nothing", () => {
+    const f = folders();
+    const seed = path.join(path.dirname(f.COPYH_ROOT), "ANALYZER", "seed");
+    mkdirSync(seed, { recursive: true });
+    const r = run(["reproduce"], { ...f, PAPER_SEED: seed });
+    expect(r.code).toBe(5);
+    expect(r.stderr).toContain("not ready");
+    expect(existsSync(path.join(f.COPYH_ROOT, "repro.json"))).toBe(false);
   });
 
   it("seals S's range before the freeze (exit 5), and writes nothing there", () => {
