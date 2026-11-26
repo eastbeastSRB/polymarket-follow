@@ -1152,6 +1152,12 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   with a d, SE′ the larger of the errors by day and by week; the three
   sign conditions' means), MAIN's reading at a look's z with its
   sentences written in advance and R12's line, and "after the verdict".
+- `tripwire.ts` (C16): from a coin's bars, its funding rows' hours and
+  the copies' plans alone, each copy's reason to be unpriced as
+  `priceCopy` will find it, leg by leg (a minute holds a mark exactly when
+  it lies in the object's minutes with a market trade of a size above 0,
+  or is its coin's Settlement minute); the counts beside; the projected
+  share and the stop above 1% unless `--past-tripwire`.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
