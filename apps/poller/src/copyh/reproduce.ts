@@ -10,6 +10,8 @@
  * The rows are made here, not read from a store: the seed's instants lie at
  * or after END_E, which every store reader's seal refuses before step 2
  * (C0), and C15 (a) runs C3's chain heads and normalization, not the pass.
+ * The known copies are priced on the kit's own panel with its taker
+ * setting, COPY-H's way (money.ts) and the reference's (lib-exits).
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -18,15 +20,23 @@ import { z } from "zod";
 import type {
   Capture,
   CopyExit,
+  CopyPrice,
   Fill,
   Group,
+  Market,
   OrderEvent,
   Research,
+  Setting,
 } from "../paper/research.js";
 import type { SeedAccount } from "../paper/seed.js";
-import { DAY_MS } from "../schedule.js";
+import { DAY_MS, HOUR_MS } from "../schedule.js";
 import type { AccountRow } from "./accounts.js";
-import { MERGE_MS } from "./design.js";
+import {
+  D_HORIZON_HOURS,
+  MERGE_MS,
+  REPRODUCTION,
+  REPRODUCTION_TOLERANCE_BPS,
+} from "./design.js";
 import {
   delayOf,
   entriesIn,
@@ -41,6 +51,7 @@ import {
   labelOf,
   type Coverage,
 } from "./labels.js";
+import { moneyOf, planOf, type Money } from "./money.js";
 import { normOf } from "./normalize.js";
 import { CheckFailed } from "./run.js";
 import { exactInDouble } from "./schema.js";
@@ -417,6 +428,146 @@ export function compareAccount(
   };
 }
 
+/**
+ * The kit's own panel reader (C15 (a); the supervisor's ruling Q7):
+ * `loadMarket` reads a market's file where the kit keeps it, held to the
+ * kit's pinned hash. The paper's `Research` type leaves it out.
+ */
+export const kitPanel = (kit: Research): ((iid: number) => Market) =>
+  (kit.panel as Research["panel"] & { loadMarket: (iid: number) => Market })
+    .loadMarket;
+
+/** FIND-6-EXITS's and X3's hold: 24 h, C10's horizon. */
+const HELD_MS = D_HORIZON_HOURS * HOUR_MS;
+const BPS = 1e4;
+
+/**
+ * A copy's reading in bps of its $1,000 — its net, gross, fees and funding,
+ * and as text the fields held exactly (the hold and full exit, the funding
+ * hours missing, the spread fallback) — or why it is unpriced.
+ */
+export type Reading =
+  | {
+      readonly net: number;
+      readonly gross: number;
+      readonly fees: number;
+      readonly funding: number;
+      readonly exact: string;
+      readonly reason?: undefined;
+    }
+  | { readonly reason: string };
+
+/** C15 (a)'s readings of a known copy: exits copied at its D and at D = 0, and held 24 h from its follow instant. */
+export const READINGS = ["exits", "zero", "held"] as const;
+export type Readings = Readonly<Record<(typeof READINGS)[number], Reading>>;
+
+/** A coin as money.ts's `planOf` reads it: where its copies end, and its Settlement (C8). */
+export type Coin = { readonly end: number; readonly settlement: unknown };
+
+/** Held 24 h from the follow instant in bps, the kit's `leg` on the path's own t, D and direction, or lib-exits' reason. */
+function heldOf(
+  kit: Research,
+  mk: Market,
+  setting: Setting,
+  e: Entry,
+): Reading {
+  const tIn = e.group.t + e.D;
+  const r = kit.returns.leg(mk, {
+    dir: e.group.dir,
+    tIn,
+    h: HELD_MS,
+    setting,
+  });
+  if (r === null)
+    return { reason: kit.exits.unpricedReason(mk, tIn, tIn + HELD_MS) };
+  return {
+    net: r.net * BPS,
+    gross: r.gross * BPS,
+    fees: r.fees * BPS,
+    funding: r.funding * BPS,
+    exact: `${r.fundingMissing} ${r.spreadFallback}`,
+  };
+}
+
+/** COPY-H's readings of an entry (C8): money.ts's plan to the coin's end and its price. */
+export function copyhReadings(
+  kit: Research,
+  mk: Market,
+  setting: Setting,
+  e: Entry,
+  coin: Coin,
+): Readings {
+  const { t, dir } = e.group;
+  const at = (D: number): Reading => {
+    const plan = planOf({ t, D }, e.exits, coin);
+    const m: Money = moneyOf(kit, mk, { dir, tIn: t + D, plan }, setting);
+    if (m.reason !== undefined) return m;
+    return {
+      net: m.net,
+      gross: m.gross,
+      fees: m.fees,
+      funding: m.funding,
+      exact: `${m.holdMs} ${m.fullExitMs} ${m.fundingMissing} ${m.spreadFallback}`,
+    };
+  };
+  return { exits: at(e.D), zero: at(0), held: heldOf(kit, mk, setting, e) };
+}
+
+/** The reference's readings (C15 (a)): lib-exits' `planCopy` (the cut's) and `priceCopy`, in bps. */
+export function referenceReadings(
+  kit: Research,
+  mk: Market,
+  setting: Setting,
+  e: Entry,
+): Readings {
+  const { t, dir } = e.group;
+  const at = (D: number): Reading => {
+    const { legs } = kit.exits.planCopy({ t, D }, e.exits);
+    const p: CopyPrice = kit.exits.priceCopy(mk, {
+      dir,
+      tIn: t + D,
+      legs,
+      setting,
+    });
+    if (p.reason !== undefined) return p;
+    return {
+      net: p.net * BPS,
+      gross: p.gross * BPS,
+      fees: p.fees * BPS,
+      funding: p.funding * BPS,
+      exact: `${p.hold} ${p.fullExit} ${p.fundingMissing} ${p.spreadFallback}`,
+    };
+  };
+  return { exits: at(e.D), zero: at(0), held: heldOf(kit, mk, setting, e) };
+}
+
+/** A reading held to its reference: equal (with the largest difference of its bps fields), unpriced alike, or why the two differ. */
+export type Compared =
+  | { readonly kind: "equal"; readonly largest: number }
+  | { readonly kind: "unpriced" }
+  | { readonly kind: "differ"; readonly why: string };
+
+const BPS_FIELDS = ["net", "gross", "fees", "funding"] as const;
+
+/** Equal: both priced, the exact fields alike and each bps field within REPRODUCTION_TOLERANCE_BPS (C15 (a)); unpriced alike: one reason. */
+export function compareReading(mine: Reading, ref: Reading): Compared {
+  if (mine.reason !== undefined || ref.reason !== undefined)
+    return mine.reason === ref.reason
+      ? { kind: "unpriced" }
+      : {
+          kind: "differ",
+          why: `unpriced: ${mine.reason ?? "no"} / ${ref.reason ?? "no"}`,
+        };
+  if (mine.exact !== ref.exact)
+    return { kind: "differ", why: `${mine.exact} / ${ref.exact}` };
+  const largest = Math.max(
+    ...BPS_FIELDS.map((f) => Math.abs(mine[f] - ref[f])),
+  );
+  return largest <= REPRODUCTION_TOLERANCE_BPS
+    ? { kind: "equal", largest }
+    : { kind: "differ", why: `by ${largest} bps` };
+}
+
 /** The seed as the reproduction reads it: its accounts, in address order, and each one's file held to its manifest line. */
 export type SeedSource = {
   readonly accounts: readonly string[];
@@ -427,7 +578,8 @@ export type SeedSource = {
  * The seed's accounts from its frozen manifest (`experiment/seed.sha256`,
  * the paper's `readManifest`), each file sealed by name and real path and
  * held inside the run's roots (C0 seal 5; D15) before the paper's
- * `loadSeed` holds it to its line and parses it.
+ * `loadSeed` holds it to its line and parses it; a file it refuses is a
+ * failed check (exit 6; the supervisor's ruling, 2026-11-26).
  */
 export function seedSource(o: {
   dir: string;
@@ -452,7 +604,12 @@ export function seedSource(o: {
       const file = path.join(o.dir, `${addr}.json.gz`);
       checkPath(file, SEALED);
       checkInside(file, o.roots);
-      const seed = o.load(o.dir, o.manifest, addr);
+      let seed: SeedAccount | null;
+      try {
+        seed = o.load(o.dir, o.manifest, addr);
+      } catch (err) {
+        throw new ReproError(`${addr}: ${(err as Error).message}`);
+      }
       if (seed === null)
         throw new ReproError(`${addr}: the seed's manifest lists no file`);
       return seed;
@@ -487,11 +644,54 @@ const listed = (lines: readonly string[]): Listed => ({
   first: lines.slice(0, LISTED),
 });
 
-/** A known set's entries found in both paths (their equality is `compareAccount`'s), and those not found. */
+/** A mean in bps by trader: the kit's `cr1Test` clustered by address, as X3's figures (lib-exits' `meanCR1`). */
+export type Figure = {
+  readonly n: number;
+  readonly traders: number;
+  readonly mean: number | null;
+  readonly se: number | null;
+};
+
+/** One reading over a known set's copies found in both paths: equal, unpriced alike, the differences, the largest difference in bps, and each path's mean net and gross by trader over its priced copies. */
+export type ReadingReport = {
+  readonly equal: number;
+  readonly unpriced: number;
+  readonly largest: number;
+  readonly differ: Listed;
+  readonly copyh: { readonly net: Figure; readonly gross: Figure };
+  readonly kit: { readonly net: Figure; readonly gross: Figure };
+};
+
+type ReadingName = (typeof READINGS)[number];
+const byReading = <T>(f: (k: ReadingName) => T): Record<ReadingName, T> => ({
+  exits: f("exits"),
+  zero: f("zero"),
+  held: f("held"),
+});
+
+/** A known set's entries found in both paths (their equality is `compareAccount`'s), those not found, and its copies' readings. */
 export type SetReport = {
   readonly count: number;
   readonly found: number;
   readonly missing: Listed;
+  readonly readings: Readonly<Record<ReadingName, ReadingReport>>;
+};
+
+/**
+ * A retired market of the kit's panel holding known copies (the
+ * supervisor's ruling on Q1, 2026-11-26): each set's copies on it, and how
+ * many of them money.ts's settled rule would change, in plan and so in
+ * price, were the retirement read as a Settlement (the coin's end the
+ * panel's, its Settlement the retirement) in place of the paper's R8 and
+ * R11 at the cut.
+ */
+export type RetiredReport = {
+  readonly iid: number;
+  readonly symbol: string;
+  readonly end: string;
+  readonly sets: Readonly<
+    Record<string, { readonly copies: number; readonly changed: number }>
+  >;
 };
 
 /** What the accounts' part of the reproduction found (repro.json's `accounts`). */
@@ -506,16 +706,31 @@ export type AccountsReport = {
   readonly p1: { readonly kit: number; readonly copyh: number };
   readonly pnlLabels: number;
   readonly sets: Readonly<Record<string, SetReport>>;
+  readonly retired: readonly RetiredReport[];
   readonly beyond: Listed;
   readonly allowed: Listed;
   readonly differ: Listed;
+};
+
+/** A known copy priced in both paths; `changed`, on a retired market, whether the settled reading changes it (null on any other). */
+type PricedCopy = {
+  readonly addr: string;
+  readonly iid: number;
+  readonly mine: Readings;
+  readonly ref: Readings;
+  readonly changed: boolean | null;
 };
 
 /**
  * Every seed account through both paths, one at a time: never one of the
  * kit's holdout (`pool` holds the population's accounts outside it), no row
  * at or after the kit's cut (the paper's blind store); each known set's
- * entry ids (known.json's) looked up in both paths.
+ * entry ids (known.json's) looked up in both paths, and each one found in
+ * both priced in both on the kit's panel (`market`, its markets by iid:
+ * `kitPanel`, or a test's) with the kit's taker setting. The seed's weeks
+ * end at the cut, under the paper's R8 and R11: no market of the kit's
+ * panel is read as a settled coin (the supervisor's ruling on Q1,
+ * 2026-11-26).
  */
 export function reproduceAccounts(o: {
   kit: Research;
@@ -524,17 +739,24 @@ export function reproduceAccounts(o: {
   mondays: readonly number[];
   limits: Limits;
   sets: Readonly<Record<string, readonly string[]>>;
+  market: (iid: number) => Market;
+  setting: Setting;
 }): AccountsReport {
   const CUT = o.kit.constants.CUT;
-  const wanted = new Map<string, string[]>();
+  const seedCoin: Coin = { end: CUT, settlement: null };
+  const wanted = new Map<string, Set<string>>();
   for (const ids of Object.values(o.sets))
     for (const id of ids) {
       const addr = id.split("|")[0]!;
-      const list = wanted.get(addr);
-      if (list === undefined) wanted.set(addr, [id]);
-      else list.push(id);
+      wanted.set(addr, (wanted.get(addr) ?? new Set<string>()).add(id));
     }
-  const found = new Set<string>();
+  const markets = new Map<number, Market>();
+  const marketOf = (iid: number): Market => {
+    let mk = markets.get(iid);
+    if (mk === undefined) markets.set(iid, (mk = o.market(iid)));
+    return mk;
+  };
+  const priced = new Map<string, PricedCopy>();
   let rows = 0;
   const span = { first: Infinity, last: -Infinity };
   const events = { kit: 0, copyh: 0 };
@@ -570,8 +792,28 @@ export function reproduceAccounts(o: {
       differ.push(`${addr}: COPY-H did not run the kit on it (${mine.why})`);
       continue;
     }
-    for (const id of wanted.get(addr) ?? [])
-      if (ref.entries.has(id) && mine.path.entries.has(id)) found.add(id);
+    for (const id of wanted.get(addr) ?? []) {
+      const r = ref.entries.get(id);
+      const m = mine.path.entries.get(id);
+      if (r === undefined || m === undefined) continue;
+      const mk = marketOf(r.group.iid);
+      /** Its plans at D and at D = 0 under a coin: its readings of exits copied are their prices, so they move only when a plan does. */
+      const plans = (coin: Coin) =>
+        [m.D, 0].map((D) => planOf({ t: m.group.t, D }, m.exits, coin));
+      priced.set(id, {
+        addr,
+        iid: mk.iid,
+        mine: copyhReadings(o.kit, mk, o.setting, m, seedCoin),
+        ref: referenceReadings(o.kit, mk, o.setting, r),
+        changed:
+          mk.retired === null
+            ? null
+            : !isDeepStrictEqual(
+                plans(seedCoin),
+                plans({ end: mk.end, settlement: mk.retired }),
+              ),
+      });
+    }
     const c = compareAccount(addr, o.mondays, ref, mine.path, converted.beyond);
     events.kit += c.events.kit;
     events.copyh += c.events.copyh;
@@ -583,6 +825,76 @@ export function reproduceAccounts(o: {
     allowed.push(...c.allowed);
     differ.push(...c.differ);
   }
+  const compared = new Map<string, Record<ReadingName, Compared>>();
+  for (const [id, p] of priced) {
+    const c = byReading((k) => compareReading(p.mine[k], p.ref[k]));
+    for (const k of READINGS) {
+      const x = c[k];
+      if (x.kind === "differ") differ.push(`${id}: ${k} ${x.why}`);
+    }
+    compared.set(id, c);
+  }
+  const readingOf = (ids: readonly string[], k: ReadingName): ReadingReport => {
+    let equal = 0;
+    let unpriced = 0;
+    let largest = 0;
+    const lines: string[] = [];
+    for (const id of ids) {
+      const c = compared.get(id)![k];
+      if (c.kind === "equal") {
+        equal += 1;
+        largest = Math.max(largest, c.largest);
+      } else if (c.kind === "unpriced") unpriced += 1;
+      else lines.push(`${id}: ${c.why}`);
+    }
+    const figures = (path: "mine" | "ref") => {
+      const items = ids.flatMap((id) => {
+        const p = priced.get(id)!;
+        const r = p[path][k];
+        return r.reason === undefined ? [{ addr: p.addr, r }] : [];
+      });
+      const figure = (f: "net" | "gross"): Figure => {
+        const t = o.kit.stats.cr1Test(
+          items,
+          (i) => i.addr,
+          (i) => i.r[f],
+        );
+        return { n: t.n, traders: t.clusters, mean: t.estimate, se: t.se };
+      };
+      return { net: figure("net"), gross: figure("gross") };
+    };
+    return {
+      equal,
+      unpriced,
+      largest,
+      differ: listed(lines),
+      copyh: figures("mine"),
+      kit: figures("ref"),
+    };
+  };
+  const retired = [...markets.values()]
+    .filter((mk) => mk.retired !== null)
+    .sort((a, b) => a.iid - b.iid)
+    .map((mk): RetiredReport => ({
+      iid: mk.iid,
+      symbol: mk.symbol,
+      end: new Date(mk.end).toISOString(),
+      sets: Object.fromEntries(
+        Object.entries(o.sets).map(([name, ids]) => {
+          const on = ids.flatMap((id) => {
+            const p = priced.get(id);
+            return p?.iid === mk.iid ? [p] : [];
+          });
+          return [
+            name,
+            {
+              copies: on.length,
+              changed: on.filter((p) => p.changed === true).length,
+            },
+          ];
+        }),
+      ),
+    }));
   return {
     accounts: o.seed.accounts.length,
     rows,
@@ -593,17 +905,161 @@ export function reproduceAccounts(o: {
     p1,
     pnlLabels,
     sets: Object.fromEntries(
-      Object.entries(o.sets).map(([name, ids]) => [
-        name,
-        {
-          count: ids.length,
-          found: ids.filter((id) => found.has(id)).length,
-          missing: listed(ids.filter((id) => !found.has(id))),
-        },
-      ]),
+      Object.entries(o.sets).map(([name, ids]): [string, SetReport] => {
+        const found = ids.filter((id) => priced.has(id));
+        return [
+          name,
+          {
+            count: ids.length,
+            found: found.length,
+            missing: listed(ids.filter((id) => !priced.has(id))),
+            readings: byReading((k) => readingOf(found, k)),
+          },
+        ];
+      }),
     ),
+    retired,
     beyond: listed(beyond),
     allowed: listed(allowed),
     differ: listed(differ),
   };
+}
+
+const Ids = z.array(z.string());
+
+/** copyh/known.json, as tools/copyh-known.cjs writes it (C15 (a)): the 26 Mondays, the known sets' entry ids and X3's printed figures. */
+export const Known = z.object({
+  mondays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  find6exits: Ids,
+  x3: Ids,
+  x3voted: Ids,
+  x3find3: Ids,
+  x3printed: z.object({
+    exitsCopied: z.object({
+      over: z.literal("x3"),
+      mean: z.number(),
+      se: z.number(),
+    }),
+    gross: z.object({ over: z.literal("x3"), mean: z.number() }),
+    held24h: z.object({
+      over: z.literal("x3voted"),
+      mean: z.number(),
+      se: z.number(),
+    }),
+  }),
+});
+export type Known = z.infer<typeof Known>;
+
+/** One known answer held to the record (C15 (a)): what it must be and what the run gave, as text. */
+export type Answer = {
+  readonly answer: string;
+  readonly want: string;
+  readonly got: string;
+  readonly passed: boolean;
+};
+
+/** A figure at one decimal, as X3 printed it. */
+const decimal = (mean: number | null, se?: number | null) =>
+  `${mean?.toFixed(1) ?? "none"}${se === undefined ? "" : ` ± ${se?.toFixed(1) ?? "none"}`}`;
+
+/**
+ * C15 (a)'s known answers of the accounts' part, each held to the record
+ * (design.ts REPRODUCTION; known.json's `x3printed`): no difference; every
+ * known entry found in both paths; FIND-6-EXITS's 1,700 equal in each
+ * reading; X3's 1,366 equal exits copied, and its figures by trader at one
+ * decimal in both paths (exits copied and gross over X3's set, held 24 h
+ * over its voted set); X3's 1,104 equal held 24 h; the 26 Mondays.
+ */
+export function answersOf(
+  r: AccountsReport,
+  printed: Known["x3printed"],
+): Answer[] {
+  const [F6, X3, X3_FIND3, MONDAYS] = REPRODUCTION;
+  const set = (name: string): SetReport => {
+    const s = r.sets[name];
+    if (s === undefined) throw new ReproError(`no known set ${name}`);
+    return s;
+  };
+  const equal = (
+    answer: string,
+    name: string,
+    k: ReadingName,
+    want: number,
+  ): Answer => {
+    const s = set(name);
+    const x = s.readings[k];
+    return {
+      answer,
+      want: `${want} of ${want}`,
+      got: `${x.equal} of ${s.count} (the largest difference ${x.largest} bps)`,
+      passed: x.equal === want && s.count === want,
+    };
+  };
+  const figure = (
+    answer: string,
+    x: ReadingReport,
+    f: "net" | "gross",
+    p: { readonly mean: number; readonly se?: number },
+  ): Answer => {
+    const at = (g: Figure) =>
+      decimal(g.mean, p.se === undefined ? undefined : g.se);
+    const want = decimal(p.mean, p.se);
+    return {
+      answer,
+      want,
+      got: `COPY-H ${at(x.copyh[f])}, the kit ${at(x.kit[f])}`,
+      passed: at(x.copyh[f]) === want && at(x.kit[f]) === want,
+    };
+  };
+  const sets = Object.values(r.sets);
+  const count = sets.reduce((s, x) => s + x.count, 0);
+  const found = sets.reduce((s, x) => s + x.found, 0);
+  return [
+    {
+      answer: "every value of COPY-H's path equal to the kit's",
+      want: "0 differences",
+      got: `${r.differ.count} differences`,
+      passed: r.differ.count === 0,
+    },
+    {
+      answer: "every known entry found in both paths",
+      want: `${count} of ${count}`,
+      got: `${found} of ${count}`,
+      passed: found === count,
+    },
+    equal("FIND-6-EXITS's copies, exits copied", "find6exits", "exits", F6),
+    equal("FIND-6-EXITS's copies, held 24 h", "find6exits", "held", F6),
+    equal("FIND-6-EXITS's copies at D = 0", "find6exits", "zero", F6),
+    equal("X3's copies, exits copied", "x3", "exits", X3),
+    figure(
+      "X3's exits copied by trader",
+      set("x3").readings.exits,
+      "net",
+      printed.exitsCopied,
+    ),
+    figure(
+      "X3's gross by trader",
+      set("x3").readings.exits,
+      "gross",
+      printed.gross,
+    ),
+    figure(
+      "X3's held 24 h by trader, over its voted set",
+      set("x3voted").readings.held,
+      "net",
+      printed.held24h,
+    ),
+    equal(
+      "X3's 1,104 in FIND-3's look, held 24 h",
+      "x3find3",
+      "held",
+      X3_FIND3,
+    ),
+    {
+      answer: "the Mondays",
+      want: String(MONDAYS),
+      got: String(r.mondays.length),
+      passed: r.mondays.length === MONDAYS,
+    },
+  ];
 }

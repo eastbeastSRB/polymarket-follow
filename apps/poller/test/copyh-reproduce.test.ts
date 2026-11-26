@@ -22,40 +22,69 @@
  *   boundary's digits has its events' and exits' differences allowed and
  *   listed, its P1 still a failure;
  * - the seed's source and the run: the manifest's accounts in order, each
- *   file sealed and inside the roots before the paper's loadSeed; an account
- *   outside the kit's pool refused before its file is read; a row at the cut
- *   refused; an account the kit is not run on a failure; the pool from the
- *   kit's population.
+ *   file sealed and inside the roots before the paper's loadSeed, a file it
+ *   refuses a failed check; an account outside the kit's pool refused
+ *   before its file is read; a row at the cut refused; an account the kit is
+ *   not run on a failure; the pool from the kit's population;
+ * - the known copies priced on a made-up panel of the kit's form with the
+ *   kit's taker setting: COPY-H's readings (money.ts) equal to the
+ *   reference's (lib-exits' planCopy and priceCopy) exits copied, at D = 0
+ *   and held 24 h, with funding and a missing hour, a liquidation's share
+ *   closed; a copy open at the cut, one in a stretch without marks,
+ *   unpriced alike; each planted difference
+ *   of a reading caught, the tolerance on both sides; each set's counts and
+ *   figures by trader, a market loaded once; a retired market's copies and
+ *   those the settled reading would change; the known answers held to the
+ *   record, each failing alone; the kit's own loadMarket.
  * A maker order hit twice in one millisecond keeps the paper's two events
  * (C3's cut E, the supervisor's ruling of 2026-11-26).
  */
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 import { describe, expect, it, vi } from "vitest";
 import { chainHeads } from "../src/copyh/chains.js";
+import { REPRODUCTION_TOLERANCE_BPS } from "../src/copyh/design.js";
 import { normOf } from "../src/copyh/normalize.js";
 import {
+  Known,
   ReproError,
+  answersOf,
   compareAccount,
+  compareReading,
   copyhOf,
+  copyhReadings,
+  kitPanel,
   poolOf,
   referenceOf,
+  referenceReadings,
   reproduceAccounts,
   seedCoverage,
   seedRows,
   seedSource,
+  type AccountsReport,
+  type Entry,
+  type Figure,
   type Limits,
   type Path,
+  type Reading,
+  type ReadingReport,
+  type SetReport,
 } from "../src/copyh/reproduce.js";
-import { sha256 } from "../src/copyh/run.js";
+import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
 import { SealedError } from "../src/copyh/seal.js";
 import { accountData, linesAt, mondayFacts } from "../src/paper/account.js";
-import { RESEARCH_ROOT, loadResearch } from "../src/paper/research.js";
+import {
+  RESEARCH_ROOT,
+  loadResearch,
+  type Market,
+  type PanelFile,
+} from "../src/paper/research.js";
 import { loadSeed, type SeedAccount } from "../src/paper/seed.js";
 import type { StoredRow } from "../src/paper/store.js";
-import { DAY_MS, HOUR_MS } from "../src/schedule.js";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 
 const kit = await loadResearch();
 const A = `0x${"1".repeat(40)}`;
@@ -567,6 +596,79 @@ describe("the comparison", () => {
   });
 });
 
+const CUT = kit.constants.CUT;
+const PANEL_START = M1 - 14 * DAY_MS;
+/** The funding hour without a row: inside the hold of the directional trader's first round trip, 24 h to 36 h after PANEL_START. */
+const MISSING_HOUR = PANEL_START + 30 * HOUR_MS;
+/** A made-up panel file of the kit's form from PANEL_START to the cut, or to `end`: uneven marks every minute but in `quiet`, a funding row each hour but MISSING_HOUR, stamped a few ms late, uneven rates. */
+function panelOf(
+  iid: number,
+  o: {
+    end?: number;
+    retired?: unknown;
+    quiet?: readonly [number, number];
+  } = {},
+): PanelFile {
+  const end = o.end ?? CUT;
+  const hours: number[] = [];
+  for (let h = PANEL_START + HOUR_MS; h < end; h += HOUR_MS)
+    if (h !== MISSING_HOUR) hours.push(h);
+  return {
+    iid,
+    symbol: `I${iid}`,
+    category: "crypto",
+    start: PANEL_START,
+    end,
+    firstTrade: PANEL_START,
+    retired: o.retired ?? null,
+    marks: Array.from({ length: (end - PANEL_START) / MINUTE_MS }, (_, i) => {
+      const t = PANEL_START + i * MINUTE_MS;
+      return o.quiet !== undefined && t >= o.quiet[0] && t < o.quiet[1]
+        ? null
+        : 100 + iid + ((i * i) % 53) / 7;
+    }),
+    klines: { minute: [], trades: [], volume: [] },
+    funding: hours.map((h, k): [number, number, number] => [
+      h,
+      ((k % 3) - 1) * 1e-5 + 2e-6,
+      h + 7 * ((k % 5) + 1),
+    ]),
+  };
+}
+const SETTING = kit.costs.SETTINGS.taker;
+/** The directional trader's fifth open (instrument 6), whose follow instant lies in its panel's quiet stretch. */
+const QUIET_T = M1 - 13 * DAY_MS + 4 * 36 * HOUR_MS;
+/** A retired market's panel end (instrument 8) and its record. */
+const RETIRED_END = M1 - 3 * DAY_MS;
+const RETIREMENT = { timestamp: RETIRED_END - 30_000, price: "123.4" };
+const MARKETS = new Map<number, Market>([
+  [
+    6,
+    kit.panel.marketFrom(
+      panelOf(6, { quiet: [QUIET_T - 6 * MINUTE_MS, QUIET_T + 6 * MINUTE_MS] }),
+    ),
+  ],
+  [7, kit.panel.marketFrom(panelOf(7))],
+  [
+    8,
+    kit.panel.marketFrom(panelOf(8, { end: RETIRED_END, retired: RETIREMENT })),
+  ],
+]);
+const market = (iid: number): Market => MARKETS.get(iid)!;
+/** A long opened at CUT − 10 h on instrument 7, never closed: open at the cut. */
+const atCut = (addr: string) =>
+  new SeedBook()
+    .order({ t: CUT - 10 * HOUR_MS, iid: 7, oid: 1, side: 1, sizes: [2] })
+    .seed(addr);
+/** Two longs on the retired instrument 8: one closed a day later, before its panel ends; one never closed, open at the panel's end. */
+const onRetired = (addr: string) =>
+  new SeedBook()
+    .order({ t: M1 - 6 * DAY_MS, iid: 8, oid: 1, side: 1, sizes: [1] })
+    .order({ t: M1 - 5 * DAY_MS, iid: 8, oid: 2, side: -1, sizes: [1] })
+    .order({ t: M1 - 4 * DAY_MS, iid: 8, oid: 3, side: 1, sizes: [3] })
+    .seed(addr);
+const entriesOf = (seed: SeedAccount) => referenceOf(kit, seed, []).entries;
+
 describe("the seed's source and the run", () => {
   const B = `0x${"2".repeat(40)}`;
   const H = `0x${"3".repeat(40)}`;
@@ -612,7 +714,12 @@ describe("the seed's source and the run", () => {
     ).toThrow(/the seed's manifest names MANIFEST\.sha256/);
     const bytes = gzipSync("{}");
     writeFileSync(path.join(f.dir, `${A}.json.gz`), bytes);
-    expect(() => source.load(A)).toThrow(/differs from the manifest's/);
+    expect(() => source.load(A)).toThrow(ReproError);
+    expect(() => source.load(A)).toThrow(
+      new RegExp(
+        `^${A}: seed ${A}\\.json\\.gz: SHA-256 .* differs from the manifest's`,
+      ),
+    );
   });
 
   it("runs every account through both paths, a known set's ids looked up in both, refusing one outside the pool before its file is read and a row at the cut", () => {
@@ -632,9 +739,11 @@ describe("the seed's source and the run", () => {
         mondays: [M1, M2],
         limits,
         sets,
+        market,
+        setting: SETTING,
       });
     const r = run([A, B]);
-    expect(r.sets).toEqual({
+    expect(r.sets).toMatchObject({
       known: {
         count: 3,
         found: 1,
@@ -679,8 +788,143 @@ describe("the seed's source and the run", () => {
         mondays: [M1],
         limits: NO_LIMITS,
         sets: {},
+        market,
+        setting: SETTING,
       }),
     ).toThrow(/a seed row at or after the cut/);
+  });
+
+  it("prices every known copy found in both paths: each set's readings counted with their figures by trader, a market loaded once, a retired market's copies and those its settled reading would change", () => {
+    const C = `0x${"4".repeat(40)}`;
+    const R = `0x${"5".repeat(40)}`;
+    const seeds = [directional().seed(A), atCut(C), onRetired(R)];
+    const f = folder(seeds);
+    const byId = new Map(seeds.flatMap((s) => [...entriesOf(s)]));
+    const ids = [...byId.keys()];
+    const nA = entriesOf(seeds[0]!).size;
+    const atCutId = [...entriesOf(seeds[1]!).keys()][0]!;
+    const loads = vi.fn(market);
+    const r = reproduceAccounts({
+      kit,
+      seed: seedSource({ ...f, roots: [f.root], load: loadSeed }),
+      pool: new Set([A, C, R]),
+      mondays: [M1],
+      limits: NO_LIMITS,
+      sets: { all: [...ids, `${H}|6|1|OPEN`], cut: [atCutId] },
+      market: loads,
+      setting: SETTING,
+    });
+    expect(loads.mock.calls.map(([iid]) => iid)).toEqual([6, 7, 8]);
+    expect(r.differ).toEqual({ count: 0, first: [] });
+    const all = r.sets.all!;
+    expect([all.count, all.found, all.missing.first]).toEqual([
+      ids.length + 1,
+      ids.length,
+      [`${H}|6|1|OPEN`],
+    ]);
+    // Unpriced alike: the quiet entry's three readings, the copy open at the
+    // retired panel's end (exits, D = 0, 24 h), and the copy open at the cut
+    // held 24 h past it.
+    const counts = (x: ReadingReport) => [x.equal, x.unpriced, x.largest];
+    expect(counts(all.readings.exits)).toEqual([nA + 1, 2, 0]);
+    expect(counts(all.readings.zero)).toEqual([nA + 1, 2, 0]);
+    expect(counts(all.readings.held)).toEqual([nA, 3, 0]);
+    const cut = r.sets.cut!.readings;
+    expect([cut.exits, cut.zero, cut.held].map(counts)).toEqual([
+      [1, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+    ]);
+    // Each figure the kit's cr1Test by trader over the path's priced copies, in the set's order.
+    for (const k of ["exits", "held"] as const) {
+      const items = ids.flatMap((id) => {
+        const e = byId.get(id)!;
+        const x = referenceReadings(kit, market(e.group.iid), SETTING, e)[k];
+        return x.reason === undefined ? [{ addr: id.slice(0, 42), x }] : [];
+      });
+      const figure = (v: "net" | "gross"): Figure => {
+        const t = kit.stats.cr1Test(
+          items,
+          (i) => i.addr,
+          (i) => i.x[v],
+        );
+        return { n: t.n, traders: t.clusters, mean: t.estimate, se: t.se };
+      };
+      const x = all.readings[k];
+      expect(x.copyh).toEqual({ net: figure("net"), gross: figure("gross") });
+      expect(x.kit).toEqual(x.copyh);
+      expect(x.copyh.net.traders).toBe(k === "exits" ? 3 : 2);
+    }
+    expect(r.retired).toEqual([
+      {
+        iid: 8,
+        symbol: "I8",
+        end: new Date(RETIRED_END).toISOString(),
+        sets: {
+          all: { copies: 2, changed: 1 },
+          cut: { copies: 0, changed: 0 },
+        },
+      },
+    ]);
+  });
+
+  it("lists a reading that differs from its reference beyond the tolerance as a difference, and keeps the largest one within it", () => {
+    // A setting whose fee moves by `by` once COPY-H's path has priced the
+    // one known copy: only the reference's readings of it see the move.
+    const seed = directional().seed(A);
+    const f = folder([seed]);
+    const [id, e] = [...entriesOf(seed)][0]!;
+    let calls = 0;
+    const counting = {
+      ...SETTING,
+      fee: (iid: number, t: number) => {
+        calls += 1;
+        return SETTING.fee(iid, t);
+      },
+    };
+    copyhReadings(kit, market(e.group.iid), counting, e, {
+      end: CUT,
+      settlement: null,
+    });
+    const first = calls;
+    const drifted = (by: number) => {
+      calls = 0;
+      return reproduceAccounts({
+        kit,
+        seed: seedSource({ ...f, roots: [f.root], load: loadSeed }),
+        pool: new Set([A]),
+        mondays: [M1],
+        limits: NO_LIMITS,
+        sets: { one: [id] },
+        market,
+        setting: {
+          ...SETTING,
+          fee: (iid, t) =>
+            SETTING.fee(iid, t) + ((calls += 1) > first ? by : 0),
+        },
+      });
+    };
+    const r = drifted(5e-5);
+    expect(r.differ.first.map((l) => l.split(" by ")[0])).toEqual([
+      `${id}: exits`,
+      `${id}: zero`,
+      `${id}: held`,
+    ]);
+    const x = r.sets.one!.readings.exits;
+    expect([x.equal, x.unpriced, x.differ.count]).toEqual([0, 0, 1]);
+    expect(x.differ.first[0]!.startsWith(`${id}: by `)).toBe(true);
+    // Each path's figure from its own readings: the reference's two fees
+    // each 0.5 bps higher.
+    expect(x.kit.net.mean! - x.copyh.net.mean!).toBeCloseTo(-1, 0);
+    // A fee 1e-14 higher moves the net by about 2e-10 bps: equal, kept.
+    const near = drifted(1e-14);
+    expect(near.differ.count).toBe(0);
+    for (const k of ["exits", "zero", "held"] as const) {
+      const y = near.sets.one!.readings[k];
+      expect(y.equal).toBe(1);
+      expect(y.largest).toBeGreaterThan(0);
+      expect(y.largest).toBeLessThanOrEqual(REPRODUCTION_TOLERANCE_BPS);
+    }
   });
 
   it("takes the pool from the kit's population, outside its holdout", () => {
@@ -696,5 +940,426 @@ describe("the seed's source and the run", () => {
     );
     expect(accounts.some((a) => a.holdout && pool.has(a.addr))).toBe(false);
     expect(pool.size).toBe(1602);
+  });
+});
+
+describe("a known copy's readings", () => {
+  const seed = directional().seed();
+  const { ref, mine } = both(seed, [M1]);
+  const SEED_COIN = { end: CUT, settlement: null };
+
+  it("are COPY-H's equal to the reference's, exits copied, at D = 0 and held 24 h, on funding with a missing hour", () => {
+    let priced = 0;
+    for (const [id, e] of ref.entries) {
+      const mk = market(e.group.iid);
+      const a = copyhReadings(
+        kit,
+        mk,
+        SETTING,
+        mine.entries.get(id)!,
+        SEED_COIN,
+      );
+      const b = referenceReadings(kit, mk, SETTING, e);
+      expect(a).toEqual(b);
+      for (const k of ["exits", "zero", "held"] as const)
+        if (b[k].reason === undefined) {
+          priced += 1;
+          expect(compareReading(a[k], b[k])).toEqual({
+            kind: "equal",
+            largest: 0,
+          });
+        }
+    }
+    expect(priced).toBe(3 * (ref.entries.size - 1));
+    // A third of a long liquidated: its share closed, not the whole copy
+    // (FIND-6-EXITS's reading), alike in both paths.
+    const liquidated = new SeedBook()
+      .order({ t: M1 - 10 * DAY_MS, iid: 7, oid: 1, side: 1, sizes: [1, 2] })
+      .order({
+        t: M1 - 10 * DAY_MS + 2 * HOUR_MS,
+        iid: 7,
+        oid: 2,
+        side: -1,
+        sizes: [1],
+        liquidation: true,
+      })
+      .order({
+        t: M1 - 10 * DAY_MS + 5 * HOUR_MS,
+        iid: 7,
+        oid: 3,
+        side: -1,
+        sizes: [2],
+      })
+      .seed();
+    const l = both(liquidated, []);
+    const [[lid, le]] = [...l.ref.entries] as [[string, Entry]];
+    expect(le.exits.map((x) => [x.share, x.liq])).toEqual([
+      [1 / 3, true],
+      [1, false],
+    ]);
+    expect(
+      kit.exits
+        .planCopy({ t: le.group.t, D: le.D }, le.exits)
+        .legs.map((x) => x.part),
+    ).toEqual([1 / 3, 1 - 1 / 3]);
+    expect(
+      copyhReadings(
+        kit,
+        market(7),
+        SETTING,
+        l.mine.entries.get(lid)!,
+        SEED_COIN,
+      ),
+    ).toEqual(referenceReadings(kit, market(7), SETTING, le));
+    // The first round trip, closed whole by one exit 12 h in: every field
+    // the kit's leg in bps; its hold spans MISSING_HOUR.
+    const [, e] = [...ref.entries][0]!;
+    const mk = market(e.group.iid);
+    const x = e.exits[0]!;
+    expect(e.exits).toHaveLength(1);
+    expect(MISSING_HOUR > e.group.t && MISSING_HOUR < x.t).toBe(true);
+    const legOf = (tIn: number, h: number): Reading => {
+      const r = kit.returns.leg(mk, {
+        dir: e.group.dir,
+        tIn,
+        h,
+        setting: SETTING,
+      })!;
+      return {
+        net: r.net * 1e4,
+        gross: r.gross * 1e4,
+        fees: r.fees * 1e4,
+        funding: r.funding * 1e4,
+        exact: `${r.fundingMissing} ${r.spreadFallback}`,
+      };
+    };
+    const h = x.t - e.group.t;
+    const at = (D: number) => {
+      const l = legOf(e.group.t + D, h);
+      if (l.reason !== undefined) throw new Error(l.reason);
+      const [missing, fallback] = l.exact.split(" ");
+      return { ...l, exact: `${h} ${h} ${missing} ${fallback}` };
+    };
+    const got = referenceReadings(kit, mk, SETTING, e);
+    expect(got.exits).toEqual(at(e.D));
+    expect(got.zero).toEqual(at(0));
+    expect(got.held).toEqual(legOf(e.group.t + e.D, 24 * HOUR_MS));
+    const exits = got.exits;
+    if (exits.reason !== undefined) throw new Error(exits.reason);
+    expect(exits.exact.split(" ")[2]).toBe("1");
+    expect(exits.funding).not.toBe(0);
+  });
+
+  it("are unpriced alike, with lib-exits' reasons, in a stretch without marks and past the cut", () => {
+    const [id, e] = [...ref.entries].find(([, x]) => x.group.t === QUIET_T)!;
+    const mk = market(6);
+    const quiet = copyhReadings(
+      kit,
+      mk,
+      SETTING,
+      mine.entries.get(id)!,
+      SEED_COIN,
+    );
+    const follow = { reason: "no mark at the follow instant" };
+    expect(quiet).toEqual({ exits: follow, zero: follow, held: follow });
+    expect(referenceReadings(kit, mk, SETTING, e)).toEqual(quiet);
+    expect(compareReading(quiet.exits, follow)).toEqual({ kind: "unpriced" });
+    // Open at the cut: its part marked at CUT − 1 ms, its 24 h past the panel.
+    const open = [...entriesOf(atCut(A)).values()][0]!;
+    const r = referenceReadings(kit, market(7), SETTING, open);
+    const tIn = open.group.t + open.D;
+    expect(r.exits.reason === undefined && r.exits.exact.split(" ")[0]).toBe(
+      String(CUT - 1 - tIn),
+    );
+    expect(r.held).toEqual({ reason: "no mark at an exit instant" });
+    expect(copyhReadings(kit, market(7), SETTING, open, SEED_COIN)).toEqual(r);
+  });
+});
+
+describe("a reading held to its reference", () => {
+  const priced = {
+    net: 0.5,
+    gross: 9.75,
+    fees: 9,
+    funding: -0.25,
+    exact: "3600000 3600000 0 false",
+  };
+  const TOL = REPRODUCTION_TOLERANCE_BPS;
+  const moved = (f: "net" | "gross" | "fees" | "funding", by: number) => {
+    const r = { ...priced };
+    r[f] += by;
+    return r;
+  };
+
+  it("is equal within the tolerance, its largest difference kept, and differs beyond it, field by field", () => {
+    expect(compareReading(priced, priced)).toEqual({
+      kind: "equal",
+      largest: 0,
+    });
+    for (const f of ["net", "gross", "fees", "funding"] as const) {
+      const near = compareReading(moved(f, TOL / 2), priced);
+      expect(near.kind).toBe("equal");
+      expect(near.kind === "equal" && near.largest).toBeCloseTo(TOL / 2, 15);
+      expect(compareReading(moved(f, 2 * TOL), priced)).toMatchObject({
+        kind: "differ",
+        why: expect.stringMatching(/^by .* bps$/) as unknown,
+      });
+      for (const [a, b] of [
+        [moved(f, -2 * TOL), priced],
+        [priced, moved(f, 2 * TOL)],
+        [priced, moved(f, -2 * TOL)],
+      ] as const)
+        expect(compareReading(a, b).kind).toBe("differ");
+    }
+    expect(compareReading({ ...priced, net: NaN }, priced).kind).toBe("differ");
+  });
+
+  it("differs on an exact field, on one side unpriced or two reasons, and is unpriced alike on one reason", () => {
+    expect(
+      compareReading({ ...priced, exact: "3600001 3600000 0 false" }, priced),
+    ).toEqual({
+      kind: "differ",
+      why: "3600001 3600000 0 false / 3600000 3600000 0 false",
+    });
+    const follow = { reason: "no mark at the follow instant" };
+    const exit = { reason: "no mark at an exit instant" };
+    expect(compareReading(priced, follow)).toEqual({
+      kind: "differ",
+      why: "unpriced: no / no mark at the follow instant",
+    });
+    expect(compareReading(exit, priced)).toEqual({
+      kind: "differ",
+      why: "unpriced: no mark at an exit instant / no",
+    });
+    expect(compareReading(exit, follow).kind).toBe("differ");
+    expect(compareReading(exit, { ...exit })).toEqual({ kind: "unpriced" });
+  });
+});
+
+describe("the known answers", () => {
+  const known = Known.parse(
+    JSON.parse(
+      readFileSync(path.join(PACKAGE_ROOT, "copyh", "known.json"), "utf8"),
+    ),
+  );
+  const printed = known.x3printed;
+  const fig = (mean: number | null, se: number | null = null): Figure => ({
+    n: 2,
+    traders: 2,
+    mean,
+    se,
+  });
+  const none = fig(null);
+  const reading = (
+    equal: number,
+    net: Figure = none,
+    gross: Figure = none,
+  ): ReadingReport => ({
+    equal,
+    unpriced: 0,
+    largest: 2.5e-14,
+    differ: { count: 0, first: [] },
+    copyh: { net, gross },
+    kit: { net, gross },
+  });
+  const setOf = (
+    count: number,
+    r: Partial<SetReport["readings"]>,
+  ): SetReport => ({
+    count,
+    found: count,
+    missing: { count: 0, first: [] },
+    readings: { exits: reading(0), zero: reading(0), held: reading(0), ...r },
+  });
+  const empty = { count: 0, first: [] };
+  /** A report that gives every known answer: X3's figures a little off the printed decimals. */
+  const good: AccountsReport = {
+    accounts: 1602,
+    rows: 0,
+    span: { first: 0, last: 0 },
+    mondays: known.mondays,
+    events: { kit: 0, copyh: 0 },
+    entries: { kit: 0, copyh: 0 },
+    p1: { kit: 0, copyh: 0 },
+    pnlLabels: 0,
+    sets: {
+      find6exits: setOf(1700, {
+        exits: reading(1700),
+        zero: reading(1700),
+        held: reading(1700),
+      }),
+      x3: setOf(1366, { exits: reading(1366, fig(-9.94, 9.06), fig(1.12)) }),
+      x3voted: setOf(1293, { held: reading(1293, fig(9.14, 13.66)) }),
+      x3find3: setOf(1104, { held: reading(1104) }),
+    },
+    retired: [],
+    beyond: empty,
+    allowed: empty,
+    differ: empty,
+  };
+
+  it("reads the committed known.json: the 26 Mondays, the sets and X3's printed figures", () => {
+    expect(printed).toEqual({
+      exitsCopied: { over: "x3", mean: -9.9, se: 9.1 },
+      gross: { over: "x3", mean: 1.1 },
+      held24h: { over: "x3voted", mean: 9.1, se: 13.7 },
+    });
+    expect(
+      [
+        known.mondays,
+        known.find6exits,
+        known.x3,
+        known.x3voted,
+        known.x3find3,
+      ].map((x) => x.length),
+    ).toEqual([26, 1700, 1366, 1293, 1104]);
+  });
+
+  it("holds each to the record, X3's figures at one decimal in both paths", () => {
+    const answers = answersOf(good, printed);
+    expect(answers.map((a) => [a.answer, a.want, a.passed])).toEqual([
+      [
+        "every value of COPY-H's path equal to the kit's",
+        "0 differences",
+        true,
+      ],
+      ["every known entry found in both paths", "5463 of 5463", true],
+      ["FIND-6-EXITS's copies, exits copied", "1700 of 1700", true],
+      ["FIND-6-EXITS's copies, held 24 h", "1700 of 1700", true],
+      ["FIND-6-EXITS's copies at D = 0", "1700 of 1700", true],
+      ["X3's copies, exits copied", "1366 of 1366", true],
+      ["X3's exits copied by trader", "-9.9 ± 9.1", true],
+      ["X3's gross by trader", "1.1", true],
+      ["X3's held 24 h by trader, over its voted set", "9.1 ± 13.7", true],
+      ["X3's 1,104 in FIND-3's look, held 24 h", "1104 of 1104", true],
+      ["the Mondays", "26", true],
+    ]);
+    expect(answers[2]!.got).toBe(
+      "1700 of 1700 (the largest difference 2.5e-14 bps)",
+    );
+    expect(answers[6]!.got).toBe("COPY-H -9.9 ± 9.1, the kit -9.9 ± 9.1");
+  });
+
+  it("fails each answer alone when its number moves", () => {
+    const failed = (r: AccountsReport) =>
+      answersOf(r, printed)
+        .filter((a) => !a.passed)
+        .map((a) => a.answer);
+    const sets = good.sets;
+    const withSet = (name: string, s: SetReport): AccountsReport => ({
+      ...good,
+      sets: { ...sets, [name]: s },
+    });
+    const x3 = sets.x3!;
+    const x3exits = (copyh: Figure, gross: Figure = fig(1.12)) =>
+      withSet("x3", {
+        ...x3,
+        readings: {
+          ...x3.readings,
+          exits: { ...reading(1366, copyh, gross), kit: x3.readings.exits.kit },
+        },
+      });
+    expect(failed({ ...good, differ: { count: 1, first: ["x"] } })).toEqual([
+      "every value of COPY-H's path equal to the kit's",
+    ]);
+    expect(
+      failed(withSet("x3voted", { ...sets.x3voted!, found: 1292 })),
+    ).toEqual(["every known entry found in both paths"]);
+    for (const [k, answer] of [
+      ["exits", "FIND-6-EXITS's copies, exits copied"],
+      ["held", "FIND-6-EXITS's copies, held 24 h"],
+      ["zero", "FIND-6-EXITS's copies at D = 0"],
+    ] as const) {
+      const f6 = sets.find6exits!;
+      const less = { ...f6, readings: { ...f6.readings, [k]: reading(1699) } };
+      expect(failed(withSet("find6exits", less))).toEqual([answer]);
+    }
+    expect(
+      failed(
+        withSet("find6exits", {
+          ...sets.find6exits!,
+          count: 1701,
+          found: 1701,
+        }),
+      ),
+    ).toEqual([
+      "FIND-6-EXITS's copies, exits copied",
+      "FIND-6-EXITS's copies, held 24 h",
+      "FIND-6-EXITS's copies at D = 0",
+    ]);
+    expect(
+      failed(
+        withSet("x3", {
+          ...x3,
+          readings: {
+            ...x3.readings,
+            exits: { ...x3.readings.exits, equal: 1365 },
+          },
+        }),
+      ),
+    ).toEqual(["X3's copies, exits copied"]);
+    expect(failed(x3exits(fig(-9.96, 9.06)))).toEqual([
+      "X3's exits copied by trader",
+    ]);
+    expect(failed(x3exits(fig(-9.94, 9.04)))).toEqual([
+      "X3's exits copied by trader",
+    ]);
+    expect(failed(x3exits(fig(-9.94, 9.06), fig(1.04)))).toEqual([
+      "X3's gross by trader",
+    ]);
+    // The kit's path off alone fails too.
+    expect(
+      failed(
+        withSet("x3", {
+          ...x3,
+          readings: {
+            ...x3.readings,
+            exits: {
+              ...x3.readings.exits,
+              kit: { net: fig(-9.94, 9.16), gross: fig(1.12) },
+            },
+          },
+        }),
+      ),
+    ).toEqual(["X3's exits copied by trader"]);
+    const voted = (net: Figure) =>
+      withSet("x3voted", {
+        ...sets.x3voted!,
+        readings: { ...sets.x3voted!.readings, held: reading(1293, net) },
+      });
+    expect(failed(voted(fig(9.14, null)))).toEqual([
+      "X3's held 24 h by trader, over its voted set",
+    ]);
+    expect(failed(voted(fig(9.16, 13.66)))).toEqual([
+      "X3's held 24 h by trader, over its voted set",
+    ]);
+    const f3 = sets.x3find3!;
+    expect(
+      failed(
+        withSet("x3find3", {
+          ...f3,
+          readings: { ...f3.readings, held: reading(1103) },
+        }),
+      ),
+    ).toEqual(["X3's 1,104 in FIND-3's look, held 24 h"]);
+    expect(failed({ ...good, mondays: good.mondays.slice(1) })).toEqual([
+      "the Mondays",
+    ]);
+    const noX3 = Object.fromEntries(
+      Object.entries(sets).filter(([name]) => name !== "x3"),
+    );
+    expect(() => answersOf({ ...good, sets: noX3 }, printed)).toThrow(
+      /no known set x3/,
+    );
+  });
+});
+
+describe("the kit's own panel", () => {
+  it("is read by the kit's loadMarket, the panel module the kit's loader checked", async () => {
+    const panel = (await import(
+      pathToFileURL(path.join(RESEARCH_ROOT, "kit", "panel.mjs")).href
+    )) as { loadMarket: unknown };
+    expect(typeof panel.loadMarket).toBe("function");
+    expect(kitPanel(kit)).toBe(panel.loadMarket);
   });
 });
