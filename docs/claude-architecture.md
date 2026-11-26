@@ -1147,6 +1147,11 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   only; MAIN's copies at another delay or on other marks (DELAY0 and LAST
   on the minute's last price, DELAY+5 and DELAY+15 on C9's marks); RANK's
   top fifth at M; SLICES, the address's number mod 4.
+- `verdict.ts` (C12): C12's forms on a set (m and SE by
+  `dist/paper/stats.js`'s `twoWay` over the priced copies; m′ over those
+  with a d, SE′ the larger of the errors by day and by week; the three
+  sign conditions' means), MAIN's reading at a look's z with its
+  sentences written in advance and R12's line, and "after the verdict".
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

@@ -321,12 +321,9 @@ const under = (rel: string): string[] =>
           .flatMap((n) => under(`${rel}/${n}`))
       : [rel];
 
-/** Named in the closure (D14) for the engine (part 3), which is to import it. */
-const PENDING = ["dist/paper/stats.js"];
-
 describe("COPY-H's closure", () => {
   it.runIf(existsSync(path.join(PACKAGE_ROOT, "dist", "copyh")))(
-    "is what the program's compiled files reach outside dist/copyh, the shared files aside, and the files the engine is to import",
+    "is what the program's compiled files reach outside dist/copyh, the shared files aside",
     () => {
       const reached = [
         ...closureOf([...under("dist/copyh.js"), ...under("dist/copyh")]),
@@ -340,7 +337,6 @@ describe("COPY-H's closure", () => {
               f !== "dist/schedule.js" &&
               f !== "dist/log.js",
           )
-          .concat(PENDING)
           .sort(),
       ).toEqual([...COPYH_CLOSURE].sort());
     },
