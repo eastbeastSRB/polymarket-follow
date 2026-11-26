@@ -1604,8 +1604,10 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | hole seconds | 60 |
 | merge ms | 60000 |
 | EXITS_MAX | 20000000 |
+| HISTORY_FILLS_MAX | [SET BEFORE THE FREEZE] |
 | float residue bounds | 1e-9 1e-6 |
 | label capture days | 90 |
+| LABEL_FILLS_MAX | [SET BEFORE THE FREEZE] |
 | main hold hours, closed cycles | 6 3 |
 | ten closed cycles | 10 |
 | day hold hours | 24 |
@@ -1653,3 +1655,4 @@ holds it to the code (`test/copyh-rules.test.ts`). The kit's own constants
 | reproduction tolerance bps | 1e-9 |
 | sample days, E | 2025-05-31 2025-06-01 2025-06-15 2025-07-27 2025-08-15 2025-09-15 2025-10-10 2025-11-15 2025-12-15 2026-01-15 2026-02-15 2026-03-15 2026-04-15 2026-05-28 2026-05-29 |
 | sample days, S | 2026-06-15 2026-07-15 2026-08-15 2026-09-15 2026-10-15 2026-11-15 |
+| sample days, FRESH-2 | 2026-12-15 2027-01-15 2027-02-15 2027-03-15 2027-04-15 2027-05-15 |

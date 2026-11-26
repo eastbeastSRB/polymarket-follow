@@ -31,8 +31,11 @@ const ROWS: Record<string, readonly (number | string)[] | null> = {
   "hole seconds": [D.HOLE_MS / 1000],
   "merge ms": [D.MERGE_MS],
   EXITS_MAX: [D.EXITS_MAX],
+  HISTORY_FILLS_MAX:
+    D.HISTORY_FILLS_MAX === null ? null : [D.HISTORY_FILLS_MAX],
   "float residue bounds": D.RESIDUE_BOUNDS,
   "label capture days": [D.LABEL_CAPTURE_DAYS],
+  LABEL_FILLS_MAX: D.LABEL_FILLS_MAX === null ? null : [D.LABEL_FILLS_MAX],
   "main hold hours, closed cycles": [D.MAIN_HOLD_HOURS, D.MAIN_CLOSED_CYCLES],
   "ten closed cycles": [D.TEN_CLOSED_CYCLES],
   "day hold hours": [D.DAY_HOLD_HOURS],
@@ -89,6 +92,7 @@ const ROWS: Record<string, readonly (number | string)[] | null> = {
   "reproduction tolerance bps": [D.REPRODUCTION_TOLERANCE_BPS],
   "sample days, E": D.SAMPLE_DAYS.E,
   "sample days, S": D.SAMPLE_DAYS.S,
+  "sample days, FRESH-2": D.SAMPLE_DAYS["FRESH-2"],
 };
 
 /** C18's rows: name and value text, as the table writes them. */

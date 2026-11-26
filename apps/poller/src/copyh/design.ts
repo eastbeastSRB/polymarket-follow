@@ -161,7 +161,7 @@ export const LABEL_CHECK_PASS = 0.01;
 /** The reproduction's known answers and its tolerance (C15 (a)). */
 export const REPRODUCTION = [1700, 1366, 1104, 26, 1137, 157, 525, 61] as const;
 export const REPRODUCTION_TOLERANCE_BPS = 1e-9;
-/** The integrity's sample days, re-read by `reread.ts`: the analyzer's G6 days on E, the 15th of each of S's months (C15; D11, the supervisor's ruling Q6). */
+/** The integrity's sample days, re-read by `reread.ts`: the analyzer's G6 days on E, the 15th of each of S's months and of FRESH-2's (C15, C14; D11, the supervisor's ruling Q6, and on COPYH-ENGINE's Q17, 2026-11-26). */
 export const SAMPLE_DAYS = {
   E: [
     "2025-05-31",
@@ -187,5 +187,13 @@ export const SAMPLE_DAYS = {
     "2026-09-15",
     "2026-10-15",
     "2026-11-15",
+  ],
+  "FRESH-2": [
+    "2026-12-15",
+    "2027-01-15",
+    "2027-02-15",
+    "2027-03-15",
+    "2027-04-15",
+    "2027-05-15",
   ],
 } as const;
