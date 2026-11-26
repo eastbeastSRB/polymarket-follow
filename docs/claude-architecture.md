@@ -926,3 +926,172 @@ reproduce → 1 → 2 on a synthetic world, in a scratch repository whose
 design and ranges are patched to it and whose synthetic list a tag holds,
 passed (2026-11-20, POLISH-FIX; its scripts outside the repository,
 decisions 2026-11-20, the code review's fix round).
+
+## COPY-H (parts 1–2 built 2026-11-25 by COPYH-STORE and COPYH-STORE-2: the store, its readers, seals and gate; the engine, the steps' phases and the freeze to come; not frozen; nothing run on real data)
+
+**What it is.** A sixth entry point of the same package, `dist/copyh.js`
+(`src/copyh.ts`, `src/copyh/`): COPY-H's rules, `apps/poller/copyh/rules.md`
+(C0–C18, `5a80af5`), the plan `docs/reviews/copy-h-plan-2026-11-25.md`
+section 7 parts 1–2. Run by hand from the repository's build, one command
+at a time, at idle priority, as `node dist\copyh.js <command>` with no heap
+flag; it makes no network request. `copyh.ts` is a launcher: it runs the
+program (`copyh/main.ts`) in a worker thread whose old-generation ceiling
+is `design.ts`'s `WORKER_HEAP_GB` (8 GB, measured below), the same for
+every pass worker; `COPYH_HEAP_GB` raises it for a later step when a
+decisions entry names it (a whole number above `WORKER_HEAP_GB`, at most
+`WORKER_HEAP_CAP_GB` 20; else exit 2), and a heap flag on the command line
+or in NODE_OPTIONS is refused (exit 2). Settings (`run.ts` `Settings`), no
+defaults, each held to its folder's name and outside the others but the
+funding store inside COPYH_ROOT: `COPYH_ROOT` (`…\COPY-H`, written),
+`WAVEH_STORE` (`…\WAVE-H\store`), `COPYH_FUNDING` (`…\COPY-H\funding`,
+COPYH-FUNDING's, never written), `FRESH_STORE` (`…\FRESH\store`, step 2),
+`FRESH2_STORE` (`…\FRESH-2\store`, FRESH-2's stage), `PAPER_SEED` (the
+paper's `…\seed`, the reproduction). Every line goes to the pino log
+`<COPYH_ROOT>\logs\copyh-<day>.log` (its start line: node, the code's
+fingerprint, the shared files' hashes, the heap); stderr says only why the
+program stopped before its log was open. Exit codes (`run.ts` `exitOf`): 0
+done, 1 a crash, 2 bad settings, options or heap, 3 not finished (the
+run's minutes, 14 or `--minutes`, are spent or a closed window began: run
+it again; every heavy command resumes from whole parts), 4 the freeze does
+not verify, 5 not ready (sealed; a file missing, differing or failing; a
+day over the failure limit; a `dir` or coin outside its list; a record
+twice; a taker out of time order across files; a store built), 6 a check
+failed, 7 two builds differ. No part starts in 02:30–06:00Z or
+10:25–11:15Z. Every number the rules fix is in `design.ts`, held to C18 by
+`test/copyh-rules.test.ts` both ways.
+
+**Commands before the freeze** (each under the closed seal):
+- `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
+  reply (`info/meta.json`), held to its one line in the funding store's
+  `manifest.jsonl`, in the reply's `universe` order (iid = index, delisted
+  kept with its flag, `szDecimals` kept), for the supervisor to commit as
+  `copyh/coins.json` (append-only: `coins.ts` `checkAppendOnly`).
+- `count --range burnin|E`: the pass in counting mode (each file's scan a
+  small JSON under `<range>\counts\`, resumed from whole files of the same
+  input, code and lists; without `copyh/dirs.json` every `dir` counts as a
+  trade's; a `dir` or coin outside the lists counted, never a stop), then
+  `<range>\counts.json`: the records by class, every `dir` value exactly as
+  written with its count (from which `copyh/dirs.json` is ruled), the
+  takers by `dir` and method, the values outside the lists, the coins, the
+  vault accounts, the records by day, the holes.
+- `build --range burnin|E [--twin] [--workers n]`: the pass and the merge
+  into `<range>\store\` (`--twin`: `<range>\twin\store\` from its own
+  parts) from `copyh/data.sha256`, `coins.json` and `dirs.json`; a built
+  store is refused.
+- `integrity --range burnin|E`: the twin (when built) and K0–K3, below.
+- `step1`, `tries`, `choice`, `step2`, `fresh2`: the gate first (exit 4,
+  nothing read); their phases are the engine's parts, still to be built.
+
+The ranges (`range.ts`): `burnin` WAVE-H's 850 files before M₀ (counts and
+timing only), `E` WAVE-H's 8,845 files [ARCHIVE_START, END_E), `S` FRESH's
+4,102 files [END_E, END_S), sealed until step 2 (`<COPYH_ROOT>\S` and
+FRESH's store refused by name and real path). Each store keeps the records
+of its own files timed in its own window; one outside is counted, never
+kept (D7).
+
+**The boundary and the pass** (`scan.ts`, `schema.ts`, `pass.ts`,
+`worker.ts`, `part.ts`, `writers.ts`, `market-trades.ts`). A file is read
+past the seals (its key's date, its path by name then real path, inside
+the run's roots) and held to its SHA-256 in `copyh/data.sha256`; decoded
+block by block by the analyzer's `dist/polish/lz4.js`; each record tiled
+from the text; builder-dex (`dex:COIN`) and spot (`@n`, `A/B`) records
+counted by their coin's form and never parsed; a main-dex-shaped record cut
+of `closedPnl`, `fee` and `builderFee` before `JSON.parse` (`cutText`; a
+text the cut cannot settle goes to the slow path's reviver, which drops
+them at any depth), then held to Zod (`sz` and `startPosition` of at most
+15 significant digits, ids above 2^53 as digits); a record that fails is
+counted, and a UTC day with more than 1% and at least 10 failing stops
+(exit 5). Each kept record goes to its account's bucket group (the
+address's last two hex digits; 16 buckets a group); each trade's two
+records, paired by (coin, `tid`, `time`), take the taker's market reading
+(not "backstop", not "Auto-Deleveraging", "Settlement" or "Net Child
+Vaults"); the bars from the market takers in time order (trades, Σ sz,
+Σ px·sz, the latest price, opposite-side pairs within 2 s, the left-out
+takers by cause, the Settlement records' Σ sz and Σ px·sz). One part a
+file (`COPYHPT1`: a JSON header, the stretches each held to its SHA-256),
+written whole by a pool of worker threads (3 by default), resumed from
+whole parts of the same input, code and lists.
+
+**The merge and the store** (`merge.ts`, `store.ts`). The trades split
+across two files next to each other are paired (the maker takes its
+taker's reading), the bars' pairs across files added, a file whose first
+market taker of a coin is timed before the previous file's last stops
+(exit 5); the dictionaries (every address sorted, the `dir` values and
+methods); then the units, each written whole with its record, resumed: the
+fills by (month, bucket group), or bucket by bucket above `UNIT_ROWS`
+(12,000,000 rows, measured below; a bucket above it refused), rows by
+(account, `time`), ties in the pass's order; a record found in both of the
+switch hour's files kept once and counted, a market taker twice there or
+any other record met twice a stop; the bars by month; `files.jsonl` (each
+input's counts); `manifest.json` last. Tables: `fills\<bucket>\<YYYY-MM>\`
+(`user` the dictionary's index, `time`, `iid`, `px`, `sz`, `side`,
+`startPosition`, `oid` and `tid` as u64, `flags` (taker, own/other/unnamed
+liquidation, backstop, market), `dir`, `method`, `file`) and
+`bars\<iid>\<YYYY-MM>\` (row k the minute `start + k`: `trades`, `sz`,
+`ntl`, `last`, `pairGap`, `pairs`, `leftBackstop`, `leftAdl`,
+`leftSettlement`, `leftVault`, `settleSz`, `settleNtl`). Chain heads are
+computed when an account is read (`chains.ts`, `normalize.ts`: the kit's
+`normFill` fields); the holes from each file's records' first and last
+time by minute (`holes.ts`, exact for the union of files).
+
+**The integrity** (`integrity.ts`, `twin.ts`, `reread.ts`, `digest.ts`), in
+units of whole partitions of at most `UNIT_BYTES` (2 GB), each record
+written whole and resumed: the twin's manifest equal to the first's but
+for the run's fields, every file of the second read back and held to its
+line (`builds.json`; exit 7); K0 every file read whole and held to the
+manifest, each partition's files and sizes, the inputs and code, each
+input's classes, every kept record conserved file by file; K1 no odd
+trade, every unpaired record in the range's first or last file or in
+`copyh/unpaired.json`; K2 C18's sample days re-read by `reread.ts`, which
+shares no code with the pass (lz4js through `dist/waveh/lz4.js`, a
+whole-line `JSON.parse` with its own reviver and checks, the day's files
+with one file either side), each sample file's rows held to the store's by
+a digest of every cell (SHA-256 a row, added lane by lane), its classes to
+the pass's, and the day's bars minute by minute; K3 printed: the holes,
+the records by day, the matching events with more than one chain. Written
+whole to `<range>\integrity\integrity.json`; a K0–K2 failure is exit 6.
+
+**Seals and gate** (`seal.ts`, `gate.ts`; C0). Always refused: a key whose
+date does not parse, anything at or after END_F2, an `ANALYZER` folder, a
+path outside the run's roots (by name, then by real path). Until step 2:
+FRESH's store, `COPY-H\S`, anything at or after END_E. Until FRESH-2's
+freeze: a `FRESH-2` folder and anything at or after END_S. Nothing is
+written in `COPY-H\funding`. A reader of rows checks each instant
+(`checkInstant`). The gate (`verifyGate`): `copyh/FROZEN.sha256` lists every
+file of what runs (the program, the closure of other programs' compiled
+files its imports reach — D14's list, the engine's `dist/paper/copy.js` and
+`stats.js` among them — the kit, lz4js's three files and `copyh/`), its one
+tag holds this very list, the kit's `checkKit()` and lib-exits' hash pass,
+and the list is of the command's kind by what it holds (RM2: step 1 a list
+without `look1.sha256`; the rounds the same with `tries.json` beside it;
+step 2 one with `look1.sha256` and `choice.json` and no `fresh2.sha256`;
+FRESH-2's stage one with `fresh2.sha256`, `funding2.sha256` and
+`look2.sha256`). `sealOf` opens S for step 2 and FRESH-2's stage, and
+FRESH-2 for its stage, only on a freeze verified for that very command.
+
+**The lists** (`copyh/`, committed): `rules.md`; `data.sha256` (`tools/
+copyh-freeze.cjs --data`: E's 8,845 and S's 4,102 files from the frozen
+lists' names and hashes, no data file opened); `coins.json` (the `coins`
+command); `dirs.json` (ruled from `count`'s values); `unpaired.json` (ruled
+from the rehearsal); `funding.sha256` (`--data --funding <COPYH_FUNDING>`:
+the meta reply and every window of every coin, each held to the funding
+store's list and manifest and read by `funding.ts`, C9's reader: the
+reply's shape, rows of the file's coin, the nominal hour the time rounded
+to the nearest hour, no coin's hour twice, no rate used). The freeze list
+itself (`--final`, `--rounds`, `--fresh2`, the marker refusal) comes at
+part 5.
+
+**Measured** (2026-11-25, COPYH-STORE-2, synthetic hours only: 5.8–6 million
+records, 2.5 GB decoded, a 14 MB line; each thread's heap polled every 100
+ms): a pass worker 1,899 MB of heap with 400,000 accounts in its file and
+2,525 MB with 2.6 million (the process 3.6 and 4.2 GB, about 150 s a file);
+the merge of a 12-million-row unit with 2,967,257 accounts 1,765 MB (3.8
+GB); an integrity unit holding an 11.6-million-row partition 346 MB (1.3
+GB); the re-read of a day of three such files 652 MB (4.3 GB, 279 s).
+`WORKER_HEAP_GB` = 8, three times the largest, rounded up (D10); three pass
+workers at their measured peaks sum to about 12.5 GB of the PC's 31.9 GB,
+and the merge and the integrity run alone. The measurement found that
+Buffer.indexOf gives a wrong, negative offset for a match past 2^31 bytes
+(Node 24.13): the re-reader finds lines a 256 MB window at a time
+(`eachLine`); the pass decodes block by block. The scripts and results are
+in the supervisor's folder, `workers\COPYH-STORE-2\measure\`.
