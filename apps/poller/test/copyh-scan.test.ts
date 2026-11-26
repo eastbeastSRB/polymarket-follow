@@ -4,12 +4,14 @@
  * outcome, before and after the range's time, failing, a value beyond 15
  * significant digits among them), each record in exactly one; the 2025-07-27 switch hour's two files; ADL,
  * Settlement and "Liquidated …" kept; the vault accounts; the coins' first,
- * last and Settlement times; the slow path and `misread`; a `dir` or coin
+ * last and Settlement times; a last line without its newline; the slow path
+ * and `misread`; a blank line one failed record; `JSON.parse` never handed a
+ * cut field on the fast path; a `dir` or coin
  * outside its list stopping a build and counted by a counting run; the
  * records by hour and minute, the holes of the union of files' records
  * (holes.ts) and the block runs.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { holesOf } from "../src/copyh/holes.js";
 import { scanFile, type Lists, type Scan } from "../src/copyh/scan.js";
 import { Writers } from "../src/copyh/writers.js";
@@ -22,6 +24,7 @@ import {
   lz4Of,
   record,
   trade,
+  type FillSpec,
 } from "./copyh-world.js";
 
 const T = Date.parse("2025-09-15T13:00:00Z");
@@ -206,6 +209,52 @@ describe("the classes", { timeout: 60_000 }, () => {
     );
     expect([...s.vaults]).toEqual([addr(9)]);
   });
+
+  it("read the last line of a file with no final newline, in either format", () => {
+    const r1 = record(addr(1), {
+      coin: "BTC",
+      side: "B",
+      time: T,
+      crossed: true,
+      tid: 1,
+    });
+    const r2 = record(addr(2), {
+      coin: "BTC",
+      side: "A",
+      time: T + 1,
+      crossed: false,
+      tid: 1,
+    });
+    const { scan: s } = scan(`${byBlock(1, [r1])}\n${byBlock(2, [r2])}`);
+    expect([s.classes.kept, s.seen, s.runs]).toEqual([2, 2, [[1, 2]]]);
+    expect(scan(`${r1}\n${r2}`, "node_fills").scan.classes.kept).toBe(2);
+  });
+
+  it("count a record whose text's coin differs from its parse as misread, the parse standing", () => {
+    const raw = `["${addr(1)}",{"coin":"BTC","px":"100.5","sz":"2.0","side":"B","time":${T},"startPosition":"0.0","dir":"Open Long","coin":"ETH","oid":7,"crossed":true,"tid":1}]`;
+    const { scan: s } = scan(`${byBlock(1, [raw])}\n`);
+    expect([s.misread, s.classes.kept, [...s.coins.keys()]]).toEqual([
+      1,
+      1,
+      [1],
+    ]);
+  });
+
+  it("give a coin's first Settlement: the earliest of two in a file", () => {
+    const settle = (time: number, tid: number) =>
+      record(addr(tid), {
+        coin: "HYPE",
+        side: "A",
+        time,
+        crossed: false,
+        tid,
+        dir: "Settlement",
+      });
+    const { scan: s } = scan(
+      `${byBlock(1, [settle(T + 10, 1), settle(T + 30, 2)])}\n`,
+    );
+    expect(s.coins.get(3)).toEqual([2, T + 10, T + 30, T + 10]);
+  });
 });
 
 describe("the lists", { timeout: 60_000 }, () => {
@@ -308,6 +357,58 @@ describe("the slow path", { timeout: 60_000 }, () => {
     const { scan: s } = scan(`${broken}\nnot json at all\n`);
     expect(s.classes.failed).toBe(2 + 1);
     expect(s.seen).toBe(3);
+  });
+
+  it("counts a blank line as one failed record, as a line that fails its own shape (C3)", () => {
+    const line = (block: number, tid: number) =>
+      byBlock(block, [
+        record(addr(1), {
+          coin: "BTC",
+          side: "B",
+          time: T,
+          crossed: true,
+          tid,
+        }),
+      ]);
+    const one = scan(`${line(1, 1)}\n\n${line(2, 2)}\n`).scan;
+    expect([one.seen, one.classes.kept, one.classes.failed]).toEqual([3, 2, 1]);
+    const two = scan(`${line(1, 1)}\n\n\n${line(2, 2)}\n`).scan;
+    expect([two.seen, two.classes.kept, two.classes.failed]).toEqual([4, 2, 2]);
+  });
+
+  it("hands JSON.parse no text holding closedPnl, fee or builderFee on the fast path, and the slow path's text with its reviver", () => {
+    const at = (user: number, tid: number, more: Partial<FillSpec> = {}) =>
+      record(addr(user), {
+        coin: "BTC",
+        side: "B",
+        time: T,
+        crossed: true,
+        tid,
+        ...more,
+      });
+    const text = `${byBlock(1, [
+      at(1, 1),
+      at(2, 2, { builderFee: "0.01" }),
+      at(3, 3),
+      at(4, 4).replace('"fee":"0.009"', '"fee":null'),
+    ])}\n`;
+    const spy = vi.spyOn(JSON, "parse");
+    let s: Scan;
+    let calls: typeof spy.mock.calls;
+    try {
+      s = scan(text).scan;
+    } finally {
+      calls = [...spy.mock.calls];
+      spy.mockRestore();
+    }
+    expect([s.classes.kept, s.slowRecords]).toEqual([4, 1]);
+    const named = calls.filter(
+      ([t]) =>
+        typeof t === "string" && /"(?:closedPnl|fee|builderFee)":/.test(t),
+    );
+    expect(named).toHaveLength(1);
+    expect(typeof named[0]![1]).toBe("function");
+    expect(calls.length).toBeGreaterThanOrEqual(4);
   });
 });
 

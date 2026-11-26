@@ -248,6 +248,21 @@ describe("the schema", { timeout: 60_000 }, () => {
     expect(recordOf(["0x12", good])).toBeNull();
     expect(RecordSchema.safeParse([U, good]).success).toBe(true);
   });
+
+  it("holds sz and startPosition to 15 significant digits", () => {
+    for (const field of ["sz", "startPosition"] as const) {
+      expect(
+        recordOf([U, { ...good, [field]: "123456789012345" }]),
+        field,
+      ).not.toBeNull();
+      expect(
+        recordOf([U, { ...good, [field]: "1234567890123456" }]),
+        field,
+      ).toBeNull();
+    }
+    for (const v of ["-1234567890123456", "0.1234567890123456"])
+      expect(recordOf([U, { ...good, startPosition: v }]), v).toBeNull();
+  });
 });
 
 describe("a double's exactness", { timeout: 60_000 }, () => {
