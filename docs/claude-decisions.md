@@ -1,5 +1,59 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's STORE BUILT TO ITS MEASURED CEILINGS;
+A NODE BUG CHECKED AGAINST EVERY PAST READ; THE BREAKS ROUND RUNS): **PARTS
+1–2 ARE BUILT BUT FOR THE BREAKS ROUND'S TESTS. NO PAST RESULT IS TOUCHED BY
+THE BUG.**
+
+**COPYH-STORE-2's last commits** (Opus 5.5, max; context peak 733,201 by
+the meter; each `pnpm verify` green, its files only):
+- `1f7a376` commit 6: the twin, integrity K0–K3, the independent re-reader,
+  `integrity --range`.
+- `45b5f4c` commit 7: `funding.ts` (C9's reader, the nominal hour by
+  `Math.round`) and `copyh-freeze.cjs --data --funding`; a data-list reader
+  bug of commit 5 fixed before any run.
+- `5121a97` commit 8: `WORKER_HEAP_GB` = 8, three times the largest peak
+  measured on full-size synthetic hours (pass worker 2,525 MB heap; merge
+  1,765 MB; integrity 346 MB; a re-read day 652 MB; three pass workers at
+  their peaks about 12.5 GB of the PC's 31.9 GB). `UNIT_ROWS` 12,000,000
+  and `UNIT_BYTES` 2 GB kept. 981 tests + 6 skipped.
+- `e77bd6d` commit 9: architecture's "COPY-H" section.
+- My rulings on commits 6–7's notes: the re-reader's ±1-file pairing
+  accepted; `integrity --diff` only if a K2 failure happens; C3's "a line
+  that does not tile" queued for the rules' last touch; `--funding` after
+  the download.
+
+**The Node bug** (found by the measurement):
+- Node 24.13's `Buffer.indexOf` returns a wrong negative offset for a match
+  past 2^31 bytes. The supervisor reproduced it
+  (`verify/NODE-INDEXOF/demo.out`: −2,147,483,148 for 2,147,484,148;
+  `Uint8Array.indexOf` right).
+- COPY-H's re-reader now searches 256 MB windows (`eachLine`).
+- The frozen `linesOf` (`src/waveh/store.ts`) searches whole decoded
+  files. WAVE-H's pass, WAVE-H's books reader and the analyzer's sample
+  days (`polish/days.ts`) read through it.
+- **Checked against every file they read:** the stores' manifests rank the
+  files. The four over 200 MB were decoded block by block. The largest,
+  the crash hour 2025-10-10 21h, is 2,100,288,284 B, 97.8% of 2^31. Every
+  other fill file is at most 198 MB compressed against ratios of 4.95–5.85
+  (external-apis, "the largest hours"). So no file passed the bound, and
+  WAVE-H's look, the analyzer's builds and the exam's look 1 stand as
+  recorded.
+- COPY-H reads FRESH-2 with its own code, so a larger future hour is safe
+  there.
+
+**The breaks round:** COPYH-BREAKS (Sonnet 5.5, max, fresh). Its plan: 201
+breaks in 24 files, 117 predicted killed, 83 survivors, 1 equivalent, pinned
+before any run. GO at 00:12Z on `e77bd6d`: the 83 survivors and the
+equivalent first, then tier 1's kills, a report; then the killing tests
+committed. Its rulings: the funding seal by a row's time, tested at
+END_E − 500 ms and at END_E (C0's wording queued); blank lines pinned in the
+pass and their alignment with the re-reader on the code's fix list.
+
+**Queued for the rules' last touch at part 5:** five sentences (another
+repeated record a stop; the heap cap; holes at the ends; a line that does
+not tile; C0's funding seal by time).
+
 2026-11-25 (the supervisor — COPY-H's STORE: COMMITS 4 AND 5; THE BUILDER'S
 EIGHT QUESTIONS RULED; THREE SENTENCES QUEUED FOR THE RULES' LAST TOUCH):
 **`dist/copyh.js` EXISTS (THE SIXTH ENTRY POINT): `coins`, `count`, `build`;

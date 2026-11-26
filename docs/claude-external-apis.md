@@ -416,6 +416,17 @@ read from a venue's page is as that page read on the day.
   `l2Book` 2025-07-28 12h: 201 coin files, 101,180,205 B, 0.1–0.7 MB each.
   Files carry the `.lz4` frame format (decoded by `lz4js` 0.2.0): 25,096,071 B
   of 2025-07-28 12h became 120,851,547 B.
+- **The largest hours, decoded** (2026-11-26 00:17Z, the supervisor,
+  `verify/NODE-INDEXOF/decoded.mjs` through the analyzer's block decoder,
+  the stores' manifests for the ranking): `node_fills_by_block`
+  2025-10-10 21h, the crash hour, 359,334,134 B → **2,100,288,284 B, 97.8%
+  of 2^31**; 2025-10-10 22h 216,563,602 → 1,212,756,069; FRESH's two largest
+  (2026-11-05 15h, 2026-10-29 20h) 257,597,794 → 1,275,999,708 and
+  236,814,236 → 1,250,036,414; `node_fills` 2025-06-13 0h 120,058,345 →
+  624,169,513. Ratios 4.95–5.85. Every other fill file of both stores is
+  at most 198 MB compressed, so no file read so far decodes past 2^31 (a
+  bound Node's `Buffer.indexOf` needs: code-rules). A larger crash hour
+  could.
 - **A month's listing and a file, as WAVE-H's download tool reads them**
   (2026-11-14 06:02Z, WAVE-H-FETCH's smoke test, through the tool's own
   code; evidence in the supervisor folder, `workers/WAVE-H-FETCH/smoke/`):

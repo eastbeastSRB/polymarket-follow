@@ -293,7 +293,9 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   2,147,484,148 comes back as −2,147,483,148; `Uint8Array.indexOf` is right
   (COPYH-STORE-2, 2026-11-25; reproduced by the supervisor,
   `verify/NODE-INDEXOF/`). Search a large buffer in windows under 2 GiB
-  (COPY-H's `eachLine`, 256 MB), never whole.
+  (COPY-H's `eachLine`, 256 MB), never whole. WAVE-H's frozen `linesOf`
+  searches whole decoded files; no file it has read passes 2^31 (the
+  largest hour is 97.8% of it: external-apis, "the largest hours").
 - **`fs.readFileSync` of a Buffer opens the file through `fs.openSync("r")`;
   a utf8 read does not,** so a test spying on one sees the other miss
   (COPYH-FUNDING, 2026-11-25).
