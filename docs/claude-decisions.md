@@ -1,5 +1,180 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — E COUNTED; THE "#" COIN FORM; THE REPRODUCTION
+PASSES; THE ENGINE TO COMMIT 9): **E'S COUNT IS CLEAN; ONE NEW COIN FORM IS
+LEFT OUT BEFORE THE BUILD; THE ENGINE REPRODUCES EVERY KNOWN ANSWER EXACTLY.
+NO OUTCOME OF E HAS BEEN SEEN.**
+
+**E's count** (COPYH-BURNIN, `count --range E` from the runner snapshot of
+`79250a6`: program fingerprint `0d2a8450…ea28`, store closure
+`e3a1ad5b…71ba`). It took 17 runs (13,786 s) and ended 2026-11-26 18:52:11Z.
+`counts.json` is `8a94dd13…84db`.
+- 8,845 files: 218,319,414,670 B compressed, 1,116,886,926,702 B decoded,
+  2,658,921,516 records.
+- Kept 1,932,007,778. Left out: spot 271,309,193 and builder 453,099,730.
+  Unknown `dir` 2,482,261: ten values new since the burn-in.
+- Failed 22,554 records:
+  - `1.px` 22,286, each day's 06h file from 2026-05-03 to 05-28;
+  - `1.sz` 268, which is 134 whole trades.
+- The largest day failure share is 0.0512%, against the 1% stop. The largest
+  bucket-month is 11,325,146, under UNIT_ROWS.
+- The supervisor's check (`verify/COPYH-BURNIN/E-count-check.out`, from
+  counts.json alone):
+  - the classes sum to the records seen;
+  - the unknown `dir` class is the sum of the ten values;
+  - the failed class is the sum of its causes.
+
+**The kinds** (C3, from the text alone):
+- `forced`: "Auto-Deleveraging" 38,921, "Settlement" 49,674, "Liquidated
+  Cross Short" 666, "Liquidated Isolated Short" 2,920.
+- `outcome`: "Merge Outcome", "Merge Question", "Negate Outcome", "Split
+  Outcome", and "Buy" / "Sell".
+  - "Buy" / "Sell" first appear 2026-05-02. On three files, every one of their
+    coin names has the form "#n" and none is in `coins.json` (names and counts
+    only).
+
+**The "#" coin form, left out and counted** (C3's RL5 route, ruled from the
+name alone; the rules' text unchanged). Why:
+- Hyperliquid's outcome markets write their coins as "#n".
+- Their "Settlement" records carry the same `dir` text as a perp delisting,
+  so `dirs.json` cannot tell the two apart:
+  - ruled `outcome`, it would lose the perp delistings that C6 and C9 read;
+  - ruled `forced`, it stops E's build at the first "#n" one (exit 5, file
+    20260503/6, about 3½ hours in).
+- The 06h `px` failures are the same markets' settlements at px 0 (three
+  files diagnosed by form only: dir "Settlement", "#n" coins, taker and maker
+  in pairs).
+
+So `formOfCoin` gives a coin starting with "#" the form `outcome`. It is
+counted in `classes.outcome`, as spot and builder coins are counted by form,
+on both the pass and the re-reader. It is a store-closure change made before
+E's build, so E is built from a new snapshot and records its new closure
+(the (a-lite) record). The same commit (COPYH-BURNIN `21d2a11`; verify
+1,225 + 6 skipped, 126 files) replaces chains.ts's spread of an event's
+fills into `Math.max` with a loop (the engine review's observation: an
+event of more than about 62,000 fills would have thrown in K3 hours into
+the build), and writes `dirs.json` with the 19 values and their kinds
+(`51d9774b…5153`). After it, no store-closure file changes, comments
+included.
+
+**The sz residue: not widened.** 268 records are 134 whole trades: a 17-digit
+`sz`, under 1e-6 of a lot (like `startPosition`'s residue). Each trade drops
+both its records, so pairing holds, and each break in a trader's chain is read
+by C11 (a copy crossing it is a gap copy, never priced). Why: the share is
+negligible, and a widening would change a closed rule (RM8) and the store's
+closure for 134 trades in 11 months. A count over the 63 files confirms the
+pattern after the build, for the record.
+
+**No second count.** The build's own manifest gives the classes under the new
+code, and each change against `counts.json` is fixed in advance:
+- kept = 1,932,007,778 + the forced perp records;
+- failed = 268 + any `px` failure off the "#" form (expected 0);
+- unknown `dir` = unknown coin = 0;
+- every class sums to the records seen.
+Any other difference stops the build. Why: a second count costs about 4
+hours of the machine and would only move records between the left-out
+classes.
+
+**The reproduction passes** (C15 (a); COPYH-REPRO `00fa9da`, `8d9053f`;
+COPYH-REPRO-2 `1b2afe0`, `1eea92c`). On the paper's seed (1,602 accounts,
+1,136,327 rows, 45 s), COPY-H's path equals the kit's own reading of every
+known answer, with the largest difference 0 bps:
+- FIND-6-EXITS: 1,700 of 1,700, in each of its three readings (exits copied,
+  D = 0, held 24 h).
+- X3: 1,366 of 1,366, at its printed −9.9 ± 9.1, gross +1.1; held 24 h over
+  its voted 1,293, +9.1 ± 13.7.
+- The 1,104 held 24 h, and the 26 Mondays.
+- FR1: 1,137 / 157 and 525 / 61.
+- d and x′, MAIN: 4,107 copies, 214 null for the same reason in both paths.
+  TEN: 2,378 copies, 144 null alike.
+- Account-Mondays: MAIN 1,486 and TEN 540.
+
+The supervisor's anchor (`verify/COPYH-REPRO/repro-anchor-scratch.out`):
+from the record's own FIND-6-EXITS `copies.jsonl.gz`, the 1,700 copies'
+mean net is −15.362 (exits copied), −16.215 (D = 0) and −11.204 (held 24 h),
+equal to the reproduction's.
+
+The rulings along the way:
+- The seed's markets are planned at END = CUT with no settlement, the
+  paper's R11. KIOXIA (iid 51, retired) holds one copy in each X3 set, and the
+  settled alternative changes none of them.
+- `poolOf` and `kitInstruments` hold their kit file to its FINGERPRINT line
+  before parsing it.
+- One pure `reproduce()`; the `reproduce` command is wired by the engine's
+  builder.
+- `known.json` needs no rules change (the `copyh/` wildcard freezes it).
+- repro.json's schema lives in steps.ts.
+- A null cap means none for the seed only, never for E's steps.
+
+**The engine, commits 3–9:**
+- `d2ed7e5`: markets and the taker setting;
+- `e153700`, `79250a6`: the store's shared files, before E;
+- `fec8b56`: cut E;
+- `3dadb2b`: money and unpriced;
+- `1d24c5c`: judge;
+- `84a3cb7`: lines;
+- `929bc56`: verdict;
+- `b689dbc`: the tripwire;
+- `afed73c`: the freeze tool's `--closure` print;
+- `be291e9`: the runner.
+
+The engine is reviewed in two pieces: COPYH-ENGINE-REVIEW (Fable 5.2, max)
+on commits 1–8 at `b689dbc`, and a second, short review for 9–16 and the "#"
+fix. Why: so that the freeze does not wait for one large review at the end.
+
+**The review of commits 1–8** (`3111dcf`): "may freeze after these fixes,
+no rework". Where a rule says "unchanged", the code calls the paper's own
+code; it found no look-ahead and no silent failure. Its fixes are all in:
+- M1, the tripwire's legs spread into one call;
+- L1–L6, the refusals at the modules' edges and the settled flag;
+- L7, L8, the reproduction's entries and pairs;
+- L9, two tests;
+- L10, the tidying.
+
+That is COPYH-ENGINE-4's `484573c`, `d013327` and `4c3c8b7`. M2, FRESH-2's
+missing hours, is fixed in `stores.ts` at commit 15, never in `range.ts`.
+
+Its questions, ruled:
+- Two entries of one id are both copies; never key one by its id alone.
+- An entry-opening group of size 0 stays an entry (R4 unchanged). It is
+  counted at every step, and no filter is written.
+- Step 1 refuses while the rehearsal's store manifest exists (C15 (c)'s
+  seal).
+
+**L7 reworked** (COPYH-ENGINE-5 `e1f8dc9`). The supervisor's own run of the
+wired `reproduce` command on the real seed (`verify/COPYH-REPRO/run/`)
+exited 6 on L7's first form: the seed holds 5 ids with two entries (two
+FLIPs of one account, coin and millisecond), so a refusal could never pass.
+Each path's entries are now keyed by id and ordinal in the kit's order, and
+all of them are compared. A known-set id with two entries is refused; none
+has two.
+
+The supervisor's second run (`verify/COPYH-REPRO/run2/`, 2026-11-26
+22:19Z, program `d6b013ca…9a9b`) passed 17 of 17 answers:
+- 114,811 entries in each path;
+- FIND-6-EXITS' means −15.362 / −16.215 / −11.204, equal to the record's
+  own file.
+
+**The builders' technical calls:**
+- A part's identity holds no heap and no time.
+- A lane of null means no lane.
+- The tripwire reads the market object's minutes.
+- RANK keeps ⌈0.2n⌉, ties going to the smaller address.
+- An account the kit is not run on is in no line.
+- Prints keep the paper's one decimal. Every decision reads the unrounded
+  values and states itself in words.
+- An unset cap reads as none in the reproduction only; E's steps refuse
+  one.
+- The rehearsal prints the largest merged order event's fills among the
+  built accounts, because the frozen kit spreads its tids. Above 100,000 it
+  is ruled before the freeze.
+
+Engine commits landed:
+- COPYH-ENGINE-3: `be291e9` (9), `dc8056b` (10a).
+- COPYH-ENGINE-4: `5251433` (10b), `e7a9aa9` (the command), `a5041a2`
+  (11a), `5d90334` (11b), `d6e1296` (11c).
+- COPYH-ENGINE-5: `d725b52` (11d).
+
 2026-11-26 (the supervisor — COPY-H's STORE REVIEWED AND FIXED; THE RULES'
 LAST TOUCH WRITTEN AND CHECKED; CUT E; THE REPRODUCTION ON THE WHOLE SEED):
 **THE STORE MAY FREEZE AFTER ITS FIXES, WHICH ARE IN. THE RULES ARE READY
