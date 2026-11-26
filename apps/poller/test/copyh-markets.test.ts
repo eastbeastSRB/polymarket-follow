@@ -13,8 +13,10 @@
  * END not read; funding rows by nominal hour (±30 min), two rows in an hour
  * a stop; a coin settling at 23:02 whose 23:00 row is stamped 23:14, held
  * through 23:00, charged (the supervisor's ruling in place of Q9), a row
- * stamped at END refused; C6's rule 2 either side of the day's end (rule 1
- * is the pass's: copyh-scan's test); thin legs at $999.99 and $1,000.
+ * stamped at END refused, a row of another coin refused; a minute of
+ * size-0 trades marked in neither object; C6's rule 2 either side of the
+ * day's end (rule 1 is the pass's: copyh-scan's test); thin legs at
+ * $999.99 and $1,000.
  */
 import { describe, expect, it } from "vitest";
 import { END_E } from "../src/copyh/design.js";
@@ -721,6 +723,45 @@ describe("a coin's end and its objects", { timeout: 60_000 }, () => {
         5,
       ),
     ).toBeNull();
+  });
+
+  it("gives a minute whose market trades' Σ sz is 0 no mark in either object, its trade still counted (the engine review's L4)", () => {
+    const b = blank(H0, 60);
+    const put = (k: number, sz: number, last: number) => {
+      b.trades[k] = 1;
+      b.sz[k] = sz;
+      b.ntl[k] = sz * last;
+      b.last[k] = last;
+    };
+    put(0, 2, 100);
+    put(3, 0, 101.1);
+    put(5, 1, 102);
+    const m = coinMarkets(
+      kit,
+      { bars: b, end: H1, settlement: null, name: "SOL" },
+      [],
+      5,
+    )!;
+    expect([m.vwap.marks[3], m.last.marks[3]]).toEqual([NaN, NaN]);
+    expect([m.vwap.marks[0], m.last.marks[0], m.last.marks[5]]).toEqual([
+      100, 100, 102,
+    ]);
+    expect([m.vwap.trades[3], m.last.trades[3]]).toEqual([1, 1]);
+  });
+
+  it("refuses a funding row of another coin (the engine review's L5)", async () => {
+    const coin = {
+      ...coinOf([await solStore()], SOL, H2 + HOUR_MS)!,
+      name: "SOL",
+    };
+    const row = (c: string) =>
+      sealedRows(c, [windowOf(c, [{ time: H1, rate: "0.00001" }])], SEALED);
+    expect(() => coinMarkets(kit, coin, row("ETH"), 5)).toThrow(
+      "coin SOL's object given a row of ETH",
+    );
+    expect([
+      ...coinMarkets(kit, coin, row("SOL"), 5)!.vwap.funding.hour,
+    ]).toEqual([H1]);
   });
 });
 

@@ -5,7 +5,8 @@
  * M − 14 d not; a capture past LABEL_FILLS_MAX not run through the kit, at
  * the limit run; a directional account P1 and a market maker not, each the
  * kit's own label; an account the churner rule reaches never directional
- * with pnl 0 (nor with pnl); the coverage of P1's and the habits' windows;
+ * with pnl 0 (nor with pnl); a capture holding a fill at or after M
+ * refused; the coverage of P1's and the habits' windows;
  * the habits from the fills before M equal to the whole history's without a
  * straddling event, and computed apart with one.
  */
@@ -155,6 +156,22 @@ describe("the label", { timeout: 60_000 }, () => {
     // The close earns 2% of the side's notional: 200 bp, past the churner's 10.
     const paid = boundedCapture(churner((q) => 2 * q).fills, M);
     expect(labelOf(kit, paid, M, NO_LIMIT)).toBe("unclassified — mixed");
+  });
+
+  it("refuses a capture that holds a fill at or after M, and takes one whose last fill is 1 ms before it (the engine review's L3)", () => {
+    const book = directional();
+    const before = boundedCapture(book.fills, M);
+    const capture = (t: number) => ({
+      ...before,
+      fills: [...before.fills, { ...before.fills.at(-1)!, t }],
+    });
+    for (const t of [M, M + 1])
+      expect(() => labelOf(kit, capture(t), M, NO_LIMIT)).toThrow(
+        "holds a fill at or after it",
+      );
+    expect(labelOf(kit, capture(M - 1), M, NO_LIMIT)).toBe(
+      kit.labels.labelAt(capture(M - 1), M).label,
+    );
   });
 });
 

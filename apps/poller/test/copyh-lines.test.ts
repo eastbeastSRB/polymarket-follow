@@ -1,7 +1,8 @@
 /**
  * The lines (src/copyh/lines.ts; rules.md C7): each account-level condition
  * on both sides of its threshold, the coverage the caller's, an account the
- * kit is not run on in no line; an entry's lines only in a primary market;
+ * kit is not run on in no line; the account-level lines equal to the
+ * paper's own `linesAt` on a grid; an entry's lines only in a primary market;
  * DELAY0 and LAST on the minute's last price, DELAY+5 and DELAY+15 on C9's
  * marks with every leg moved, each priced as written out; RANK's top fifth
  * (⌈n ÷ 5⌉), its five copies, its window's two edges and its ties by
@@ -23,6 +24,7 @@ import {
 } from "../src/copyh/lines.js";
 import { coinMarkets, type Bars } from "../src/copyh/markets.js";
 import { moneyOf, planOf } from "../src/copyh/money.js";
+import { linesAt } from "../src/paper/account.js";
 import { loadResearch, type Setting } from "../src/paper/research.js";
 import { HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { addr } from "./copyh-world.js";
@@ -84,6 +86,48 @@ describe("an account's lines at M (C7; R7)", () => {
       lines("directional", 10, 24, { labelCovered: false, habitCovered: true }),
     ).toEqual(set());
     expect(accountLines("directional", null, COVERED)).toEqual(set());
+  });
+
+  it("equals the paper's own linesAt on a grid of labels, coverage, holds and cycles: MAIN the paper's rule as frozen (the engine review's L9)", () => {
+    const labels = [
+      "directional",
+      "market maker",
+      "no fills in window",
+      "unclassified — mixed",
+    ];
+    const holds = [null, 6, 24, 30].flatMap((h) =>
+      h === null ? [null] : [h * HOUR_MS - 1, h * HOUR_MS],
+    );
+    let cells = 0;
+    for (const label of labels)
+      for (const labelCovered of [true, false])
+        for (const habitCovered of [true, false])
+          for (const medianHoldMs of holds)
+            for (const closed of [0, 2, 3, 9, 10, 11]) {
+              const paper = linesAt({
+                label,
+                closed,
+                medianHoldMs,
+                longShare: 0.5,
+                labelCovered,
+                habitCovered,
+              });
+              expect(
+                accountLines(
+                  label,
+                  { closed, medianHoldMs },
+                  { labelCovered, habitCovered },
+                ),
+                `${label} ${labelCovered} ${habitCovered} ${medianHoldMs} ${closed}`,
+              ).toEqual({
+                MAIN: paper.main,
+                TEN: paper.ten,
+                BROAD: paper.p1,
+                DAY: paper.day,
+              });
+              cells += 1;
+            }
+    expect(cells).toBe(4 * 2 * 2 * 7 * 6);
   });
 
   it("gives an entry its account's lines in C7's order, and none outside a primary market", () => {

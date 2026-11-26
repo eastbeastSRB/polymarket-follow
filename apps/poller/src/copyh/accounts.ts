@@ -112,7 +112,7 @@ function lowerBound(time: Float64Array, lo: number, hi: number, t: number) {
   return lo;
 }
 
-/** One account of a bucket: its address and its rows in the windows asked. */
+/** One account of a bucket: its address and its rows in the windows asked, each inside the window its bucket was read over. */
 export type AccountView = {
   readonly addr: string;
   /** Its rows with `time` in [from, to). */
@@ -121,10 +121,24 @@ export type AccountView = {
   rows(from: number, to: number): AccountRow[];
 };
 
-function viewOf(addr: string, segments: readonly Segment[]): AccountView {
+const iso = (t: number) => new Date(t).toISOString();
+
+function viewOf(
+  addr: string,
+  segments: readonly Segment[],
+  window: { readonly from: number; readonly to: number },
+): AccountView {
+  /** A range outside the window read is refused: the partitions held would say nothing of it (the engine review's L2). */
+  const inside = (from: number, to: number) => {
+    if (from < window.from || to > window.to)
+      throw new Error(
+        `${addr}: rows asked over [${iso(from)}, ${iso(to)}), outside the window read [${iso(window.from)}, ${iso(window.to)})`,
+      );
+  };
   return {
     addr,
     count(from, to) {
+      inside(from, to);
       let n = 0;
       for (const s of segments)
         n +=
@@ -133,6 +147,7 @@ function viewOf(addr: string, segments: readonly Segment[]): AccountView {
       return n;
     },
     rows(from, to) {
+      inside(from, to);
       const out: AccountRow[] = [];
       for (const s of segments) {
         const c = s.cols;
@@ -141,6 +156,11 @@ function viewOf(addr: string, segments: readonly Segment[]): AccountView {
           const time = c.time[i]!;
           checkInstant(time, `${addr}'s fill`, s.store.seal);
           const flags = c.flags[i]!;
+          const dirKind = s.kinds[c.dir[i]!];
+          if (dirKind === undefined)
+            throw new StoreError(
+              `${s.store.manifest.range}: a dir index past its store's names`,
+            );
           out.push({
             time,
             iid: c.iid[i]!,
@@ -152,7 +172,7 @@ function viewOf(addr: string, segments: readonly Segment[]): AccountView {
             tid: digitsOf(c.tid[2 * i]!, c.tid[2 * i + 1]!),
             crossed: (flags & TAKER) !== 0,
             ownLiquidation: (flags & OWN_LIQUIDATION) !== 0,
-            dirKind: s.kinds[c.dir[i]!]!,
+            dirKind,
             market: (flags & MARKET) !== 0,
           });
         }
@@ -231,5 +251,5 @@ export function readBucket(
   }
   return [...segments.keys()]
     .sort()
-    .map((addr) => viewOf(addr, segments.get(addr)!));
+    .map((addr) => viewOf(addr, segments.get(addr)!, window));
 }

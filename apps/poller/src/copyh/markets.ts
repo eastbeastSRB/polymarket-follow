@@ -273,7 +273,7 @@ export function marketOf(
 /** A coin's two market objects (C9; M7). */
 export type CoinMarkets = { readonly vwap: Market; readonly last: Market };
 
-/** A coin's market objects on its funding rows (funding.ts's, of its windows), cut at the reading's END, where its bars end; null when it has no market trade before its end. */
+/** A coin's market objects on its funding rows (funding.ts's, of its windows), cut at the reading's END, where its bars end; null when it has no market trade before its end. A row of another coin is refused (the engine review's L5). */
 export function coinMarkets(
   kit: Research,
   coin: Coin & { readonly name: string },
@@ -289,11 +289,11 @@ export function coinMarkets(
   const start = bars.start + k0 * MINUTE_MS;
   const n = kEnd - k0;
   const rows = funding
-    .map((r): [number, number, number] => [
-      r.hour,
-      Number(r.fundingRate),
-      r.time,
-    ])
+    .map((r): [number, number, number] => {
+      if (r.coin !== coin.name)
+        throw new Error(`coin ${coin.name}'s object given a row of ${r.coin}`);
+      return [r.hour, Number(r.fundingRate), r.time];
+    })
     .sort((a, b) => a[0] - b[0]);
   const klines = {
     minute: [] as number[],
@@ -330,9 +330,10 @@ export function coinMarkets(
       cut,
       markMinutes,
     ),
+    // A minute whose market trades' Σ sz is 0 has no mark here either (C9; the engine review's L4).
     last: marketOf(
       kit,
-      panel((k) => bars.last[k]!),
+      panel((k) => (bars.sz[k]! > 0 ? bars.last[k]! : NaN)),
       cut,
       markMinutes,
     ),

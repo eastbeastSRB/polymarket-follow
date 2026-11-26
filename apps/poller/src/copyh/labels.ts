@@ -69,6 +69,8 @@ export function boundedCapture(fills: readonly Fill[], M: number): Capture {
  * The label at M on a capture of fills before M, oldest first: "no fills in
  * window" at once when the kit's 14 days before M hold none; TOO_LARGE past
  * `fillsMax` fills (LABEL_FILLS_MAX; a test passes its own); else the kit's.
+ * A capture holding a fill at or after M is refused: the kit's classifier
+ * reads every fill it is given (C5's first sentence; the engine review's L3).
  */
 export function labelOf(
   kit: Research,
@@ -77,6 +79,10 @@ export function labelOf(
   fillsMax: number,
 ): string {
   const last = capture.fills.at(-1);
+  if (last !== undefined && last.t >= M)
+    throw new Error(
+      `a label's capture at ${new Date(M).toISOString()} holds a fill at or after it`,
+    );
   if (last === undefined || last.t < M - kit.labels.LABEL_DAYS * DAY_MS)
     return NO_FILLS;
   if (capture.fills.length > fillsMax) return TOO_LARGE;

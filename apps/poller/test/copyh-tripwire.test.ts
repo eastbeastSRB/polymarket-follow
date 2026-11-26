@@ -6,7 +6,8 @@
  * :54 → :59 before an hour inside a hold of days (unmarked under the
  * 5-minute rule, marked under the 60-minute one); a settled copy on a coin
  * quiet for its last six minutes counted and never unpriced; the counts
- * beside (settled, funding hours missing, gap); the 1% stop on both sides
+ * beside (settled, funding hours missing, gap), a copy followed after its
+ * coin's end not settled; a copy of 200,000 legs; the 1% stop on both sides
  * with a margin, and `--past-tripwire` running on; and, on every copy of
  * the world under both settlement rules, each projected reason equal to
  * the one lib-exits' `priceCopy` then finds on the market object.
@@ -304,10 +305,30 @@ describe("each reason alone (C16)", () => {
         "a funding settlement without a mark": 1,
       },
       share: 9 / 12,
-      settled: 4,
+      // The copy followed after its coin's end was never opened, so is not settled (the engine review's L6).
+      settled: 3,
       missingHours: 20,
       copiesMissing: 4,
       gap: 1,
+    });
+  });
+
+  it("projects a copy of 200,000 legs (no legs spread into a call: the engine review's M1)", () => {
+    const tIn = at(2, 0) + D;
+    const legs = Array.from(
+      { length: 200_000 },
+      (_, k) => tIn + 1_000 * (k + 1),
+    );
+    const { projection, reasons } = projectionOf(
+      [{ iid: 0, tIn, legs, settled: false, gap: false }],
+      (iid) => five[iid]!,
+    );
+    // Its legs run to about 57 h 34 min: through QUIET_6's six quiet minutes, and the 9 h row missing.
+    expect(reasons).toEqual(["no mark at an exit instant"]);
+    expect(projection).toMatchObject({
+      copies: 1,
+      missingHours: 1,
+      copiesMissing: 1,
     });
   });
 });

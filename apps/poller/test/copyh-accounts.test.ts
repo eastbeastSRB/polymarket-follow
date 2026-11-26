@@ -3,8 +3,9 @@
  * C2, C3): a bucket's accounts in address order, lower-cased, each row's
  * every field as the archive wrote it (ids above 2^53 by their digits, the
  * trade's market reading on both records, a backstop's leg none, an own
- * liquidation, each dir's kind); the window [from, to) at its two edges; an
- * account's rows across a month and across two stores in time order; the
+ * liquidation, each dir's kind); the window [from, to) at its two edges,
+ * rows asked outside the window read refused; an account's rows across a
+ * month and across two stores in time order; the
  * vault accounts of a reading, an account whose one "Net Child Vaults"
  * record lies in the later store in the first reading's population and out
  * of the second's; a partition at or after the seal's end never opened; and
@@ -347,10 +348,16 @@ describe("a bucket's accounts", { timeout: 60_000 }, () => {
     expect(a.count(H1 + 1_001, H2 + 5_001)).toBe(1);
     expect(a.count(H1, H2 + HOUR_MS)).toBe(2);
     expect(a.rows(H2 + 5_001, H2 + HOUR_MS)).toEqual([]);
-    // A window of the reader opens only the months it touches.
+    // A window of the reader opens only the months it touches, and refuses rows asked outside it (the engine review's L2).
     const late = readBucket([store], 1, { from: H2, to: H2 + HOUR_MS }, KINDS);
     expect(late.map((x) => x.addr)).toEqual([A, B, W, X]);
-    expect(late[0]!.rows(H1, H2 + HOUR_MS)).toEqual([A_ROWS[1]]);
+    expect(late[0]!.rows(H2, H2 + HOUR_MS)).toEqual([A_ROWS[1]]);
+    expect(() => late[0]!.rows(H2 - 1, H2 + HOUR_MS)).toThrow(
+      "outside the window read",
+    );
+    expect(() => late[0]!.count(H2, H2 + HOUR_MS + 1)).toThrow(
+      "outside the window read",
+    );
   });
 
   it("join an account's rows across two stores in time order, and refuse stores out of it", async () => {
@@ -529,6 +536,15 @@ describe("the reader's refusals", () => {
     expect(() =>
       readStub(stub({ user: Uint32Array.from([5]) }, { users: 1 })),
     ).toThrow("a user index past its dictionary");
+  });
+
+  it("refuses a dir index past the store's names when the row is made (the engine review's L1)", () => {
+    const [a] = readStub(stub({ dir: Uint8Array.from([1]) }));
+    expect(() => a!.rows(H2, H2 + 1)).toThrow(
+      "stub: a dir index past its store's names",
+    );
+    const [b] = readStub(stub({ dir: Uint8Array.from([0]) }));
+    expect(b!.rows(H2, H2 + 1).map((r) => r.dirKind)).toEqual(["trade"]);
   });
 
   it("refuses a dir outside dirs.json", () => {

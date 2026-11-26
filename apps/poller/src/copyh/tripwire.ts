@@ -146,7 +146,10 @@ export function projectionOf(
     if (reason !== null) unpriced[reason] += 1;
     if (c.settled) settled += 1;
     if (c.gap) gap += 1;
-    const missing = marks.missing(c.tIn, Math.max(c.tIn, ...c.legs));
+    // A loop, never a copy's legs spread into a call: a call takes about 124,600 arguments in a process's main thread (the engine review's M1).
+    let last = c.tIn;
+    for (const x of c.legs) if (x > last) last = x;
+    const missing = marks.missing(c.tIn, last);
     missingHours += missing;
     if (missing > 0) copiesMissing += 1;
     return reason;

@@ -1,6 +1,7 @@
 /**
  * The judgement reading and the edge over the market (src/copyh/judge.ts;
- * rules.md C10, C11): the vote at its bound; a member's records, its market
+ * rules.md C10, C11): the vote at its bound, equal to the paper's own
+ * votedBy around its bound; a member's records, its market
  * trades' in the week of M cut at END; a line's removal through the real
  * pass and merge — a trade between two members in two buckets counted once,
  * a backstop's leg and an ADL not removed, two coins apart — read back equal
@@ -26,6 +27,7 @@ import {
 } from "../src/copyh/judge.js";
 import { marketOf } from "../src/copyh/markets.js";
 import { normOf } from "../src/copyh/normalize.js";
+import { votedBy as paperVotedBy } from "../src/paper/score.js";
 import {
   loadResearch,
   type PanelFile,
@@ -54,6 +56,24 @@ describe("the vote (C10)", () => {
     expect(votedBy(kit, t, edge - 1)).toBe(false);
     expect(votedBy(kit, T + HOUR_MS - 1, edge)).toBe(true);
     expect(votedBy(kit, T + HOUR_MS, edge)).toBe(false);
+  });
+
+  it("equals the paper's own votedBy on 2,000 instants across many hours, 1 ms either side of each bound (the engine review's L9)", () => {
+    let held = 0;
+    for (let k = 0; k < 2_000; k++) {
+      const t = T + k * 12_961;
+      const bound =
+        Math.floor(t / HOUR_MS) * HOUR_MS +
+        HOUR_MS +
+        kit.entries.maxDelay() +
+        DAY_MS;
+      for (const end of [bound - 1, bound, bound + 1]) {
+        const v = votedBy(kit, t, end);
+        expect(v, `${t} ${end}`).toBe(paperVotedBy(kit, t, end));
+        if (v) held += 1;
+      }
+    }
+    expect(held).toBe(4_000);
   });
 });
 

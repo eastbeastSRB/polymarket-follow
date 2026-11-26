@@ -26,10 +26,10 @@ import type {
 
 const BPS = 1e4;
 
-/** A copy's plan: the paper's, and whether it was still open at its coin's Settlement (its flag then `open` or `crossing`, from the coin's end). */
+/** A copy's plan: the paper's, and whether it was still open at its coin's Settlement (its flag then `open` or `crossing`, from the coin's end), having been opened before it. */
 export type Plan = CopyPlan & { readonly settled: boolean };
 
-/** A copy's legs (C8), to END or its coin's end; `closeAt`, STOP's or DAYS7's extra close (R13). */
+/** A copy's legs (C8), to END or its coin's end; `closeAt`, STOP's or DAYS7's extra close (R13). A copy followed at or after its coin's end opens nothing, so is not settled (it is unpriced, no mark at its follow instant: the engine review's L6). */
 export function planOf(
   entry: { readonly t: number; readonly D: number },
   exits: readonly CopyExit[],
@@ -37,7 +37,13 @@ export function planOf(
   closeAt: number | null = null,
 ): Plan {
   const plan = planCopyThrough(entry, exits, coin.end, closeAt);
-  return { ...plan, settled: coin.settlement !== null && plan.flag !== null };
+  return {
+    ...plan,
+    settled:
+      coin.settlement !== null &&
+      plan.flag !== null &&
+      entry.t + entry.D < coin.end,
+  };
 }
 
 /** A copy's money in bps of its $1,000 (C8), or why it is unpriced (C11). */

@@ -121,6 +121,13 @@ describe("a copy's plan", () => {
     // Closed by its exits before the coin's end: not settled.
     const later = { end: T0 + 7 * HOUR_MS, settlement: { t: 0, price: 1 } };
     expect(planOf({ t: LONG.t, D }, exits(LONG), later).settled).toBe(false);
+    // Followed at its coin's end, never opened: not settled; followed 1 ms before it: settled (the engine review's L6).
+    const tIn = LONG.t + D;
+    const at = { end: tIn, settlement: { t: tIn - 30_000, price: 1 } };
+    const atEnd = planOf({ t: LONG.t, D }, exits(LONG), at);
+    expect([atEnd.flag, atEnd.settled]).toEqual(["crossing", false]);
+    const before = { end: tIn + 1, settlement: { t: tIn - 30_000, price: 1 } };
+    expect(planOf({ t: LONG.t, D }, exits(LONG), before).settled).toBe(true);
   });
 
   it("ends STOP's search at the last exit instant of a closed copy, else at the plan's end", () => {
