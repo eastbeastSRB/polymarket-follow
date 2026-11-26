@@ -61,6 +61,7 @@ import {
   makeStore,
   record,
   trade,
+  type FillSpec,
 } from "./copyh-world.js";
 
 const H0 = Date.parse("2025-09-15T12:00:00Z");
@@ -794,6 +795,42 @@ describe("the integrity", { timeout: 60_000 }, () => {
     const store = openStore(w.first, w.roots);
     const bars = store.partition("bars", "000", "2025-09")!;
     expect(store.column(bars, "pairs")[120]).toBe(1);
+  });
+
+  it("re-reads startPosition as its double and sz as its text, as the pass reads them, and counts the records read so", async () => {
+    const at = (n: number, more: Partial<FillSpec>) =>
+      record(addr(n), {
+        coin: "SOL",
+        side: "B",
+        time: H0 + n * 1_000,
+        crossed: false,
+        tid: n,
+        ...more,
+      });
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(H0),
+          `${byBlock(1, [
+            // Kept: a residue under a lot past 15 digits; an exponent form of 15 digits.
+            at(1, { startPosition: "1234567.1200000001" }),
+            at(2, { startPosition: "0.000000123456789012345" }),
+            // Failing: a double of 17 digits; a sz of 16; no double at all.
+            at(3, { startPosition: "0.30000000000000004" }),
+            at(4, { sz: "1234567.120000001" }),
+            at(5, { startPosition: `1${"0".repeat(400)}` }),
+          ])}
+`,
+        ],
+      ]),
+    );
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect(r.counts.classes).toMatchObject({ kept: 2, failed: 3 });
+    const [line] = openStore(w.first, w.roots).fileLines() as {
+      scan: { startByDouble: number };
+    }[];
+    expect(line!.scan.startByDouble).toBe(1);
   });
 
   it("re-reads a blank line as the pass reads it, one failed record: leading, between lines and two trailing", async () => {

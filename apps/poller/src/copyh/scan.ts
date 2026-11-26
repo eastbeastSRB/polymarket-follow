@@ -23,7 +23,14 @@ import { formOfCoin } from "./coins.js";
 import { SETTLEMENT_DIR } from "./design.js";
 import type { DirKind } from "./dirs.js";
 import { StoreError } from "./run.js";
-import { cutText, parseFast, parseSlow, recordOf, type Rec } from "./schema.js";
+import {
+  cutText,
+  exactInDouble,
+  parseFast,
+  parseSlow,
+  recordOf,
+  type Rec,
+} from "./schema.js";
 
 export type Format = "node_fills" | "node_fills_by_block";
 
@@ -57,6 +64,8 @@ export type Scan = {
   slowRecords: number;
   /** Main-dex-shaped records whose text's coin or time differs from their parse (the parse stands). */
   misread: number;
+  /** Records past the boundary whose `startPosition` text has more than 15 significant digits, read as its double (schema.ts `exactAsDouble`). */
+  startByDouble: number;
   /** Every record by the UTC hour of its time. */
   byHour: Map<number, number>;
   /** Main-dex-shaped records in the range's time, by `dir`. */
@@ -170,6 +179,7 @@ class Scanner {
     slowLines: 0,
     slowRecords: 0,
     misread: 0,
+    startByDouble: 0,
     byHour: new Map(),
     dirs: new Map(),
     takers: new Map(),
@@ -374,6 +384,7 @@ class Scanner {
   private take(rec: Rec): void {
     const f = rec.fill;
     const c = this.scan.classes;
+    if (!exactInDouble(f.startPosition)) this.scan.startByDouble += 1;
     this.count(f.time);
     if (f.time < this.start) {
       c.early += 1;

@@ -58,6 +58,7 @@ export function countsOf(
     slowLines: sum((c) => c.scan.slowLines),
     slowRecords: sum((c) => c.scan.slowRecords),
     misread: sum((c) => c.scan.misread),
+    startByDouble: sum((c) => c.scan.startByDouble),
     dirs: summed(files.map((c) => c.scan.dirs)),
     takers: summed(files.map((c) => c.scan.takers)),
     unknownDirs: summed(files.map((c) => c.scan.unknownDirs)),

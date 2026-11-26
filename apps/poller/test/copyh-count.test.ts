@@ -232,6 +232,38 @@ describe("the counting pass", { timeout: 60_000 }, () => {
     expect(c2.vaults).toEqual([addr(8)]);
   });
 
+  it("counts the records whose startPosition was read as its double, its text past 15 digits", async () => {
+    const w = worldOf(
+      new Map([
+        [
+          keyOf(T),
+          `${byBlock(1, [
+            ...trade(addr(1), addr(2), {
+              coin: "BTC",
+              side: "B",
+              time: T + 5,
+              tid: 1,
+              startPosition: "1234567.1200000001",
+            }),
+            record(addr(3), {
+              coin: "BTC",
+              side: "B",
+              time: T + 6,
+              crossed: true,
+              tid: 2,
+            }),
+          ])}
+`,
+        ],
+      ]),
+    );
+    const dir = mkdtempSync(path.join(tmpdir(), "copyh-counts-"));
+    await count(w, dir, NO_DIRS);
+    const file = readCountFile(countFile(dir, 0))!;
+    expect([file.scan.startByDouble, file.scan.classes.kept]).toEqual([2, 3]);
+    expect(countsOf([file], window).startByDouble).toBe(2);
+  });
+
   it("takes a coin's first time, last time and first Settlement across files", async () => {
     const btc = (time: number, tid: number) =>
       record(addr(1), { coin: "BTC", side: "B", time, crossed: true, tid });

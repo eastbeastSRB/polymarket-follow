@@ -14,10 +14,14 @@
  *   below 2^53 by its value, a longer one by `JSON.parse`'s `context.source`.
  * - Zod checks the rest (`RecordSchema`): `user` 0x and 40 hex digits,
  *   lower-cased when read; `coin` and `dir` non-empty text; `px` decimal
- *   text above 0; `sz` unsigned and `startPosition` signed decimal text,
- *   each of at most EXACT_DIGITS significant digits (`exactInDouble`), so
- *   that a double gives the decimal value back exactly (the chain rule's
- *   exactness; D5); `side` "A" or "B"; `time` a safe integer; `crossed` a
+ *   text above 0; `sz` unsigned decimal text of at most EXACT_DIGITS
+ *   significant digits (`exactInDouble`), so that a double gives the
+ *   decimal value back exactly (the chain rule's exactness; D5);
+ *   `startPosition` signed decimal text read as its double, whose shortest
+ *   text must have at most EXACT_DIGITS (`exactAsDouble`: the archive writes
+ *   some with 16-18 digits, a residue under a lot past the coin's decimals,
+ *   whose double is the lot value's; the burn-in, decisions 2026-11-26);
+ *   `side` "A" or "B"; `time` a safe integer; `crossed` a
  *   boolean; `liquidation` optional, its `liquidatedUser` (if any) an
  *   address.
  */
@@ -149,7 +153,7 @@ const FillSchema = z.object({
   startPosition: z
     .string()
     .regex(SIGNED)
-    .refine(exactInDouble, "beyond 15 digits"),
+    .refine(exactAsDouble, "its double beyond 15 digits"),
   crossed: z.boolean(),
   oid: Id,
   tid: Id,
@@ -183,4 +187,10 @@ export function exactInDouble(text: string): boolean {
   let last = digits.length - 1;
   while (digits[last] === "0") last--;
   return last - first + 1 <= EXACT_DIGITS;
+}
+
+/** Whether a decimal text's double has a shortest text of at most EXACT_DIGITS significant digits (the digits before an "e", which it has below 1e-6 and from 1e21): the double then gives that value back exactly. */
+export function exactAsDouble(text: string): boolean {
+  const n = Number(text);
+  return Number.isFinite(n) && exactInDouble(String(n).split("e")[0]!);
 }

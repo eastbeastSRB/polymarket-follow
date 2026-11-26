@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   RecordSchema,
   cutText,
+  exactAsDouble,
   exactInDouble,
   parseFast,
   parseSlow,
@@ -262,6 +263,33 @@ describe("the schema", { timeout: 60_000 }, () => {
     }
     for (const v of ["-1234567890123456", "0.1234567890123456"])
       expect(recordOf([U, { ...good, startPosition: v }]), v).toBeNull();
+  });
+
+  it("reads startPosition as its double, whose shortest text has at most 15 significant digits, and sz as its text", () => {
+    // 7 + 10 digits as the archive writes some: a residue under a lot, the double the lot value's.
+    const residue = "1234567.1200000001";
+    expect([exactInDouble(residue), Number(residue)]).toEqual([
+      false,
+      Number("1234567.12"),
+    ]);
+    expect(
+      recordOf([U, { ...good, startPosition: residue }])?.fill.startPosition,
+    ).toBe(residue);
+    // A double whose shortest text has 17 digits.
+    expect(String(Number("0.30000000000000004"))).toBe("0.30000000000000004");
+    expect(
+      recordOf([U, { ...good, startPosition: "0.30000000000000004" }]),
+    ).toBeNull();
+    expect(recordOf([U, { ...good, sz: "1234567.120000001" }])).toBeNull();
+    // Below 1e-6 and from 1e21 the shortest text has an exponent: its digits before the "e"; no double, no value.
+    for (const [t, ok] of [
+      ["0.000000123456789012345", true],
+      ["-0.0000001234567890123456", false],
+      ["2000000000000000000000", true],
+      ["1234567890123456789012", false],
+      [`1${"0".repeat(400)}`, false],
+    ] as const)
+      expect(exactAsDouble(t), t).toBe(ok);
   });
 });
 

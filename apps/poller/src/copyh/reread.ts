@@ -122,6 +122,12 @@ function exact(text: string): boolean {
   return d.replace(/0+$/, "").length <= EXACT_DIGITS;
 }
 
+/** A `startPosition`'s double: its shortest text (the digits before an "e") of at most EXACT_DIGITS significant digits, as the pass reads it. */
+function exactDouble(text: string): boolean {
+  const n = Number(text);
+  return Number.isFinite(n) && exact(String(n).split("e")[0]!);
+}
+
 /** An id's digits as a whole number, or null. */
 function idOf(v: unknown): bigint | null {
   if (typeof v === "number")
@@ -349,7 +355,7 @@ class Reader {
       time === null ||
       typeof f.startPosition !== "string" ||
       !SIGNED.test(f.startPosition) ||
-      !exact(f.startPosition) ||
+      !exactDouble(f.startPosition) ||
       typeof f.crossed !== "boolean" ||
       oid === null ||
       tid === null ||

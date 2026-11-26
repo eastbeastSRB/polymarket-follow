@@ -11,8 +11,9 @@
  * when two could precede b, the one earlier in the archive does; otherwise b
  * heads a new chain. Every fill takes its chain head's `startPosition`.
  * Exact: each value is the decimal its double's shortest text gives back,
- * which is the archive's own value when it has at most 15 significant digits
- * (schema.ts `exactInDouble`, checked at parse), compared as scaled integers.
+ * which has at most 15 significant digits (schema.ts, checked at parse: a
+ * `startPosition` by its double's shortest text, `exactAsDouble`; a `sz` by
+ * its own, `exactInDouble`), compared as scaled integers.
  */
 
 /** A fill of a matching event, as the store keeps it. */
