@@ -1231,7 +1231,17 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   its prior mean net and RANK's membership) hashed uncompressed as it
   comes, never one string; MAIN's copies voted by END the look's set:
   `statisticOf`, MAIN's reading at the look's z, "after the verdict"; its
-  bytes what `result.json` holds of the outcome.
+  bytes two lines, what `result.json` holds of the outcome, then the
+  look's prints for `report.json`.
+- `prints.ts` (C13): the prints of a look's voted copies, deciding nothing
+  and with no verdict word: R14's list on MAIN's set (the paper's look's
+  forms; the smallest edge visible at look 2 at look 1), every line's C12
+  figures (TEN, BROAD, DAY on their own x′; STOP2, STOP5, DAYS7 on their own
+  net with MAIN's x′; JUMP above and at most 3 and without J; the moved
+  lines; RANK), SIDES, MONTHS and SLICES, the venues, H1's prints,
+  concentration, the settled and thin copies and the cascade print. The
+  step's counts (the tripwire's, the accounts left out, the stores') are set
+  beside them by the step.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

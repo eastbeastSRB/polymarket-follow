@@ -12,18 +12,21 @@
  *   x′ its MAIN edge, its thin tape; the statistic (verdict.ts `statisticOf`)
  *   and MAIN's reading at the look's z (`readingOf`), "after the verdict"
  *   when an earlier look gave KEEP or DROP.
- * A part's bytes: one JSON line, {look, z, verdict, sentences, after,
- * statistic, positions: {lines, sha256}}: what `result.json` holds of the
- * outcome (the step writes it, its identity first, before anything about an
- * outcome is logged).
+ * - The look's prints (prints.ts `reportOf`, C13) on its voted copies.
+ * A part's bytes: two JSON lines, {look, z, verdict, sentences, after,
+ * statistic, positions: {lines, sha256}}, what `result.json` holds of the
+ * outcome, then the prints, what `report.json` holds of the positions (the
+ * step writes both, each with its identity first, the result before
+ * anything about an outcome is logged and the report after the positions).
  */
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { Z_LOOKS } from "./design.js";
+import { END_S, Z_LOOKS } from "./design.js";
 import type { PartFunction, PartSpec, PhaseRecord } from "./engine.js";
 import { partBytes, partLines, recordAt } from "./engine.js";
 import { positionOf, type Position } from "./phase-prices.js";
 import { rankTablesOf } from "./phase-rank.js";
+import { printCopyOf, reportOf, type PrintCopy } from "./prints.js";
 import { StoreError } from "./run.js";
 import {
   afterTheVerdict,
@@ -40,6 +43,9 @@ export const ResultInputs = z.object({
   prices: SHA256,
   rank: SHA256,
   mondays: z.array(z.number()),
+  /** The stage's first instant and END: the prints' weeks (copies a week, the smallest edge at look 2). */
+  start: z.number(),
+  end: z.number(),
   look: z.union([z.literal(1), z.literal(2)]),
   /** The earlier looks' verdicts (C12's "after the verdict"). */
   earlier: z.array(VERDICT),
@@ -161,7 +167,7 @@ export function* positionLines(o: {
   prices: { dir: string; record: PhaseRecord };
   rank: { dir: string; record: PhaseRecord };
   mondays: readonly number[];
-}): Generator<{ p: Position; line: string }> {
+}): Generator<{ p: Position; line: string; rank: boolean }> {
   const t = rankTablesOf(o.rank.dir, o.rank.record);
   for (const p of positionsInOrder(o.prices.dir, o.prices.record)) {
     const k = o.mondays.indexOf(p.M);
@@ -169,7 +175,7 @@ export function* positionLines(o: {
       throw new StoreError(`${p.id}: a copy of a Monday not the step's`);
     // An account in RANK at M is in MAIN there, so each of its copies of M is MAIN's (C7).
     const rank = t.inRank(p.addr, k);
-    yield { p, line: positionLine(p, t.prior(p.addr, k), rank) };
+    yield { p, line: positionLine(p, t.prior(p.addr, k), rank), rank };
   }
 }
 
@@ -193,7 +199,8 @@ export const resultPart: PartFunction = (inputs, ctx) => {
   const hash = createHash("sha256");
   let lines = 0;
   const set: JudgedCopy[] = [];
-  for (const { p, line } of positionLines({
+  const voted: PrintCopy[] = [];
+  for (const { p, line, rank } of positionLines({
     prices: { dir: c.prices, record: recordAt(c.prices, i.prices) },
     rank: { dir: c.rank, record: recordAt(c.rank, i.rank) },
     mondays: i.mondays,
@@ -201,6 +208,7 @@ export const resultPart: PartFunction = (inputs, ctx) => {
     hash.update(`${line}\n`);
     lines += 1;
     if (inLookSet(p)) set.push(judgedCopyOf(p));
+    if (p.voted) voted.push(printCopyOf(p, rank));
   }
   const statistic = statisticOf(ctx.kit, set);
   const z = Z_LOOKS[i.look - 1]!;
@@ -212,7 +220,17 @@ export const resultPart: PartFunction = (inputs, ctx) => {
     statistic,
     positions: { lines, sha256: hash.digest("hex") },
   };
-  return Buffer.from(`${JSON.stringify(result)}\n`, "utf8");
+  const report = reportOf(ctx.kit, voted, {
+    z,
+    look: i.look,
+    start: i.start,
+    end: i.end,
+    endS: END_S,
+  });
+  return Buffer.from(
+    `${JSON.stringify(result)}\n${JSON.stringify(report)}\n`,
+    "utf8",
+  );
 };
 
 /** RESULT's one part. */
@@ -220,6 +238,23 @@ export const resultParts = (o: ResultInputs): PartSpec[] => [
   { id: "result", inputs: o },
 ];
 
+/** A closed RESULT phase's two lines, held to its record. */
+function resultLines(dir: string, record: PhaseRecord): [string, string] {
+  const lines = partBytes(dir, record, "result").toString("utf8").split("\n");
+  if (lines.length !== 3 || lines[2] !== "")
+    throw new StoreError(`${dir}: RESULT's part is not its two lines`);
+  return [lines[0]!, lines[1]!];
+}
+
 /** A closed RESULT phase's result, held to its record. */
 export const resultOf = (dir: string, record: PhaseRecord): Result =>
-  Result.parse(JSON.parse(partBytes(dir, record, "result").toString("utf8")));
+  Result.parse(JSON.parse(resultLines(dir, record)[0]));
+
+/** A closed RESULT phase's prints, held to its record (report.json's figures; they decide nothing). */
+export const reportFrom = (
+  dir: string,
+  record: PhaseRecord,
+): Record<string, unknown> =>
+  z
+    .record(z.string(), z.unknown())
+    .parse(JSON.parse(resultLines(dir, record)[1]));

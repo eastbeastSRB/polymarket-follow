@@ -21,7 +21,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { DAYS7_MS, jumpRatio, stopInstant } from "../src/paper/copy.js";
 import { loadResearch } from "../src/paper/research.js";
-import { STOPS } from "../src/copyh/design.js";
+import { END_S, STOPS } from "../src/copyh/design.js";
 import { runPhase } from "../src/copyh/engine.js";
 import { dOf, edgeOf, removedBy } from "../src/copyh/judge.js";
 import { MOVED } from "../src/copyh/lines.js";
@@ -40,9 +40,11 @@ import { removalParts, removalTablesOf } from "../src/copyh/phase-removal.js";
 import {
   judgedCopyOf,
   positionLine,
+  reportFrom,
   resultOf,
   resultParts,
 } from "../src/copyh/phase-result.js";
+import { printCopyOf, reportOf } from "../src/copyh/prints.js";
 import { sha256 } from "../src/copyh/run.js";
 import { settingsOf } from "../src/copyh/setting.js";
 import { R12_LINE, statisticOf, type Verdict } from "../src/copyh/verdict.js";
@@ -358,12 +360,18 @@ describe(
             prices: recordSha(r.prices),
             rank: recordSha(rank.dir),
             mondays: [M1, M2],
+            start: M1,
+            end: END,
             look,
             earlier,
           }),
           { prices: r.prices, rank: rank.dir },
         );
-        return resultOf(result.dir, await runPhase(result));
+        const record = await runPhase(result);
+        return {
+          ...resultOf(result.dir, record),
+          report: reportFrom(result.dir, record),
+        };
       };
       const line = positionLine(r.positions[0]!, null, false);
       expect(JSON.parse(line)).toMatchObject({
@@ -373,6 +381,7 @@ describe(
       });
       const statistic = statisticOf(kit, [judgedCopyOf(r.positions[0]!)]);
       expect(statistic).toMatchObject({ copies: 1, unpriced: 0 });
+      const o = { z: 2.81, look: 1 as const, start: M1, end: END, endS: END_S };
       expect(await resultAt("RESULT", 1, [])).toEqual({
         look: 1,
         z: 2.81,
@@ -381,6 +390,12 @@ describe(
         after: false,
         statistic,
         positions: { lines: 1, sha256: sha256(`${line}\n`) },
+        // The prints of the voted copy, as reportOf gives them through JSON.
+        report: JSON.parse(
+          JSON.stringify(
+            reportOf(kit, [printCopyOf(r.positions[0]!, false)], o),
+          ),
+        ) as unknown,
       });
       expect(await resultAt("RESULT-2", 2, ["KEEP"])).toMatchObject({
         look: 2,
