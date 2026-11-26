@@ -30,45 +30,19 @@
  * differ. Every line goes to `<COPYH_ROOT>\logs\copyh-<day>.log`; stderr
  * says only why the program stopped before its log was open.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { getHeapStatistics } from "node:v8";
 import { createLog } from "../log.js";
-import {
-  CoinsFile,
-  META_KEY,
-  StoredLine,
-  coinsFromMeta,
-  iidsOf,
-} from "./coins.js";
+import { META_KEY, StoredLine, coinsFromMeta } from "./coins.js";
 import { countsOf } from "./count.js";
 import { RUN_MINUTES } from "./design.js";
-import { DirsFile, kindsOf } from "./dirs.js";
 import { COMMANDS, sealOf, verifyGate, type Command } from "./gate.js";
-import { UNIT_ROWS, merge } from "./merge.js";
+import { countFile, readCountFile, runPass } from "./pass.js";
+import { RANGES, RANGE_NAMES, type RangeName } from "./range.js";
 import {
-  countFile,
-  readCountFile,
-  runPass,
-  type PassLists,
-  type PassSummary,
-} from "./pass.js";
-import {
-  RANGES,
-  RANGE_NAMES,
-  filesOf,
-  readDataList,
-  sampleDaysOf,
-  type RangeName,
-} from "./range.js";
-import {
-  AlreadyRun,
-  COINS_FILE,
-  DATA_FILE,
-  DIRS_FILE,
   FreezeDiffers,
-  UNPAIRED_FILE,
   PACKAGE_ROOT,
   Settings,
   StoreError,
@@ -76,13 +50,11 @@ import {
   exitOf,
   fingerprintOf,
   heapOf,
-  sha256,
   sharedHashes,
   writeWhole,
 } from "./run.js";
 import { SEALED, checkInside, checkPath, checkWrite } from "./seal.js";
-import { MANIFEST, openStore } from "./store.js";
-import { UNIT_BYTES, UnpairedFile, runIntegrity } from "./integrity.js";
+import { buildStore, checkStores, listsOf, passOf } from "./stores.js";
 
 function refuse(why: string): never {
   process.stderr.write(`copyh: refused: ${why}\n`);
@@ -166,28 +138,6 @@ os.setPriority(os.constants.priority.PRIORITY_LOW);
 const { log, close } = createLog(settings.COPYH_ROOT, "copyh");
 const logOf = (event: string, fields: object) => log.info(fields, event);
 
-/** The lists a pass reads: a count takes those that exist, a build needs both. */
-function listsOf(counting: boolean): PassLists {
-  const read = (file: string) => {
-    if (existsSync(file)) return readFileSync(file);
-    if (counting) return null;
-    throw new StoreError(
-      `no ${path.relative(PACKAGE_ROOT, file)}: a build needs it`,
-    );
-  };
-  const coins = read(COINS_FILE);
-  const dirs = read(DIRS_FILE);
-  const parse = (b: Buffer) => JSON.parse(b.toString("utf8")) as unknown;
-  return {
-    iids: coins === null ? [] : [...iidsOf(CoinsFile.parse(parse(coins)))],
-    kinds: dirs === null ? null : [...kindsOf(DirsFile.parse(parse(dirs)))],
-    hashes: {
-      coins: coins === null ? "none" : sha256(coins),
-      dirs: dirs === null ? "none" : sha256(dirs),
-    },
-  };
-}
-
 /** `coins`: the stored reply's manifest line, the reply held to it, coins.json written whole. */
 function coins(): void {
   const store = settings.COPYH_FUNDING!;
@@ -225,20 +175,10 @@ function coins(): void {
   });
 }
 
-/** A pass's run: its files from the data list, its time budget, its log. */
-function passOf(r: RangeName) {
-  const data = readFileSync(DATA_FILE);
-  return {
-    files: filesOf(RANGES[r], readDataList(data.toString("utf8"))),
-    list: { name: "copyh/data.sha256", sha256: sha256(data) },
-    budget: budgetOf(minutes),
-  };
-}
-
 async function count(r: RangeName): Promise<void> {
   const dir = path.join(rangeDir!, "counts");
   const lists = listsOf(true);
-  const p = passOf(r);
+  const p = passOf(RANGES[r]);
   const code = fingerprintOf(PACKAGE_ROOT);
   const summary = await runPass({
     store: raw,
@@ -252,7 +192,7 @@ async function count(r: RangeName): Promise<void> {
     workers,
     heapGb,
     roots,
-    budget: p.budget,
+    budget: budgetOf(minutes),
     log: logOf,
   });
   const files = p.files.map((f) => {
@@ -279,114 +219,16 @@ async function count(r: RangeName): Promise<void> {
   });
 }
 
-async function build(r: RangeName): Promise<void> {
-  const base = twin ? path.join(rangeDir!, "twin") : rangeDir!;
-  const store = path.join(base, "store");
-  if (existsSync(path.join(store, MANIFEST)))
-    throw new AlreadyRun(`${store} is built: move it aside to build it again`);
-  const lists = listsOf(false);
-  const p = passOf(r);
-  const code = fingerprintOf(PACKAGE_ROOT);
-  const pass: PassSummary = await runPass({
-    store: raw,
-    parts: path.join(base, "parts"),
-    files: p.files,
-    start: RANGES[r].start,
-    end: RANGES[r].end,
-    code,
-    lists,
-    workers,
-    heapGb,
-    roots,
-    budget: p.budget,
-    log: logOf,
-  });
-  const m = merge(
-    {
-      parts: path.join(base, "parts"),
-      dir: store,
-      files: p.files,
-      code,
-      lists: lists.hashes,
-      range: RANGES[r],
-      list: p.list,
-      budget: p.budget,
-      unitRows: UNIT_ROWS,
-      log: logOf,
-    },
-    {
-      peaks: () => ({
-        pass: pass.peaks,
-        merge: {
-          rss: process.memoryUsage().rss,
-          heapLimit: getHeapStatistics().heap_size_limit,
-        },
-      }),
-      seconds: { pass: pass.seconds },
-    },
-  );
-  logOf("done: the store is built", {
-    store,
-    partitions: m.partitions.length,
-    merge: m.counts.merge,
-    classes: m.counts.classes,
-  });
-}
-
-/** `integrity`: the store and its twin (when built) through the twin compare and K0–K3. */
-function integrity(r: RangeName): void {
-  const base = rangeDir!;
-  const store = openStore(path.join(base, "store"), roots, SEALED);
-  const twinDir = path.join(base, "twin", "store");
-  const twin = existsSync(path.join(twinDir, MANIFEST))
-    ? openStore(twinDir, roots, SEALED)
-    : null;
-  const lists = listsOf(false);
-  const p = passOf(r);
-  if (!existsSync(UNPAIRED_FILE))
-    throw new StoreError(
-      `no ${path.relative(PACKAGE_ROOT, UNPAIRED_FILE)}: the integrity needs it`,
-    );
-  const unpaired = UnpairedFile.parse(
-    JSON.parse(readFileSync(UNPAIRED_FILE, "utf8")),
-  );
-  const result = runIntegrity({
-    range: RANGES[r],
-    files: p.files,
-    store,
-    twin,
-    dir: path.join(base, "integrity"),
-    inputs: {
-      listSha256: p.list.sha256,
-      coinsSha256: lists.hashes.coins,
-      dirsSha256: lists.hashes.dirs,
-    },
-    code: fingerprintOf(PACKAGE_ROOT),
-    unpaired,
-    sampleDays: sampleDaysOf(r),
-    reread: {
-      raw,
-      roots,
-      seal: SEALED,
-      files: p.files,
-      start: RANGES[r].start,
-      end: RANGES[r].end,
-      iids: new Map(lists.iids),
-      kinds: new Map(lists.kinds),
-    },
-    budget: p.budget,
-    unitBytes: UNIT_BYTES,
-    log: logOf,
-  });
-  logOf("done: the integrity passed", {
-    twin: twin !== null,
-    unpaired: unpaired.records.length,
-    edges: result.k1.edges,
-    holes: result.k3.holes.length,
-    multiChain: result.k3.multiChain,
-    seconds: result.seconds,
-  });
-}
+/** A tool's store run: the range's folder (`--twin`: its `twin\`), under the closed seal. */
+const storeRun = (r: RangeName, base: string) => ({
+  range: RANGES[r],
+  raw,
+  base,
+  roots,
+  seal: SEALED,
+  budget: budgetOf(minutes),
+  log: logOf,
+});
 
 /** A gated command: the gate first (exit 4, nothing read); its phases are the engine's parts, still to be built. */
 async function gate(c: Command): Promise<void> {
@@ -420,8 +262,13 @@ try {
   if (gated !== null) await gate(gated);
   else if (tool === "coins") coins();
   else if (tool === "count") await count(range!);
-  else if (tool === "integrity") integrity(range!);
-  else await build(range!);
+  else if (tool === "integrity") checkStores(storeRun(range!, rangeDir!));
+  else
+    await buildStore({
+      ...storeRun(range!, twin ? path.join(rangeDir!, "twin") : rangeDir!),
+      workers,
+      heapGb,
+    });
 } catch (err) {
   const exit = exitOf(err);
   if (exit.code === 1)

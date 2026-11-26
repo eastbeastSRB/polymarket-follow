@@ -10,6 +10,9 @@
  *   END_E only;
  * - until FRESH-2's freeze: a path in a `FRESH-2` folder and a key, fill,
  *   row or minute at or after END_S (RM7);
+ * - a path in a step's engine folder (`look1\engine`, `look2\engine`,
+ *   `fresh2\engine`: its parts, priced ones among them) to every reader but
+ *   that step's own engine, whose seal names it (C15; the plan's Q7);
  * - a path outside the run's roots, the folders its settings name
  *   (`checkInside`): so no other program's data, run folder, backups or
  *   holdout files, and no other project, is ever reached, even through a
@@ -28,8 +31,16 @@ import { END_E, END_F2, END_S } from "./design.js";
 
 export class SealedError extends Error {}
 
-/** The seal's state; only the gate opens it (gate.ts `sealOf`): S at step 2, S and FRESH-2 at FRESH-2's stage. */
-export type Seal = { readonly sOpen: boolean; readonly f2Open: boolean };
+/** The steps' folders whose `engine` folder only their own engine reads (Q7). */
+export const ENGINE_STEPS = ["look1", "look2", "fresh2"] as const;
+export type EngineStep = (typeof ENGINE_STEPS)[number];
+
+/** The seal's state; only the gate opens S and FRESH-2 (gate.ts `sealOf`): S at step 2, S and FRESH-2 at FRESH-2's stage; only a step's engine names its own engine folder. */
+export type Seal = {
+  readonly sOpen: boolean;
+  readonly f2Open: boolean;
+  readonly engine?: EngineStep;
+};
 /** S and FRESH-2 closed: every reader's default. */
 export const SEALED: Seal = { sOpen: false, f2Open: false };
 
@@ -74,6 +85,12 @@ function sealedBy(p: string, seal: Seal): string | null {
   const parts = partsOf(p);
   const always = within(parts, ALWAYS);
   if (always !== null) return `in ${always.join("\\")}, sealed always`;
+  const engine = ENGINE_STEPS.find(
+    (step) =>
+      step !== seal.engine && within(parts, [[step, "engine"]]) !== null,
+  );
+  if (engine !== undefined)
+    return `in ${engine}\\engine, sealed to all but ${engine}'s engine`;
   const f2 = seal.f2Open ? null : within(parts, UNTIL_FRESH_2);
   if (f2 !== null)
     return `in FRESH-2 (${f2.join("\\")}), sealed until FRESH-2's freeze`;

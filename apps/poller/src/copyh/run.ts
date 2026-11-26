@@ -36,6 +36,8 @@ const COPYH_DIR = path.join(PACKAGE_ROOT, "copyh");
 export const COINS_FILE = path.join(COPYH_DIR, "coins.json");
 export const DIRS_FILE = path.join(COPYH_DIR, "dirs.json");
 export const DATA_FILE = path.join(COPYH_DIR, "data.sha256");
+/** FRESH-2's fill files, listed at its download (C14 (4)). */
+export const FRESH2_FILE = path.join(COPYH_DIR, "fresh2.sha256");
 export const UNPAIRED_FILE = path.join(COPYH_DIR, "unpaired.json");
 
 /** A file missing, differing or failing, an unknown coin or `dir`, a part set aside: not ready (exit 5). */
@@ -46,9 +48,9 @@ export class NotFinished extends Error {}
 export class FreezeDiffers extends Error {}
 /** A step's output exists: it ran (exit 5). */
 export class AlreadyRun extends Error {}
-/** A gate of the store failed (exit 6). */
-export class GateFailed extends Error {}
-/** The two builds differ (exit 7): a fault in one, never repaired in code. */
+/** A check failed (exit 6): a gate of the store, the reproduction, a held number, the tripwire (C15, C16). */
+export class CheckFailed extends Error {}
+/** The two builds of a store, or the two copies of an engine part, differ (exit 7): a fault in one, never repaired in code. */
 export class BuildsDiffer extends Error {}
 
 /** The program's exit for an error, and its log line. */
@@ -62,7 +64,7 @@ export function exitOf(err: unknown): {
   if (err instanceof StoreError || err instanceof SealedError)
     return { code: 5, event: "not ready" };
   if (err instanceof AlreadyRun) return { code: 5, event: "already run" };
-  if (err instanceof GateFailed) return { code: 6, event: "a gate failed" };
+  if (err instanceof CheckFailed) return { code: 6, event: "a check failed" };
   if (err instanceof BuildsDiffer)
     return { code: 7, event: "the two builds differ" };
   return { code: 1, event: "crash" };

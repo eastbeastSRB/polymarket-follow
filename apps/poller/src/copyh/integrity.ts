@@ -43,7 +43,7 @@ import {
 } from "./reread.js";
 import {
   BuildsDiffer,
-  GateFailed,
+  CheckFailed,
   NotFinished,
   StoreError,
   writeWhole,
@@ -128,8 +128,8 @@ const DayRecord = z.object({
 });
 type DayRecord = z.infer<typeof DayRecord>;
 
-/** A files.jsonl line as the integrity reads it (the merge writes the part header's input and scan). */
-const FileLine = z.object({
+/** A files.jsonl line as the integrity and the engine's holes read it (the merge writes the part header's input and scan). */
+export const FileLine = z.object({
   index: z.number(),
   key: z.string(),
   sha256: z.string(),
@@ -662,7 +662,7 @@ export function runIntegrity(o: IntegrityInput) {
     `${JSON.stringify({ ...result, passed }, null, 1)}\n`,
   );
   if (!passed)
-    throw new GateFailed(
+    throw new CheckFailed(
       `the integrity failed: K0 ${result.k0.count}, K1 ${result.k1.unexpectedCount + result.k1.odd.length}, K2 ${result.k2.count} (integrity.json)`,
     );
   return result;

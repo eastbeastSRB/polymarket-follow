@@ -9,7 +9,11 @@
  * a fill a that no fill follows yet when a's `startPosition` plus its signed
  * size (+`sz` for "B", −`sz` for "A") equals b's `startPosition` exactly;
  * when two could precede b, the one earlier in the archive does; otherwise b
- * heads a new chain. Every fill takes its chain head's `startPosition`.
+ * heads a new chain. Each fill so chained takes its chain head's
+ * `startPosition`: in the engine's reading (normalize.ts `normOf`) only a
+ * matching event's taker fills are chained, and a maker fill is its own
+ * event (cut E, the supervisor's ruling, 2026-11-26); the integrity counts
+ * the chains of every fill (D12).
  * Exact: each value is the decimal its double's shortest text gives back,
  * which has at most 15 significant digits (schema.ts, checked at parse: a
  * `startPosition` by its double's shortest text, `exactAsDouble`; a `sz` by

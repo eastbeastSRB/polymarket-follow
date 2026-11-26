@@ -4,7 +4,9 @@
  * through a junction by real path; keys dated at or after END_E, one
  * millisecond either side); FRESH-2's folders and keys at or after END_S
  * until FRESH-2's freeze, the analyzer's folders and anything at or after
- * END_F2 always; the instants a reader checks (`checkInstant`, `endOf`);
+ * END_F2 always; a step's engine folder to all but that step's engine (by
+ * name and through a junction); the instants a reader checks
+ * (`checkInstant`, `endOf`);
  * a path sealed by its name is never resolved; a path outside the run's roots is refused, by name and
  * through a junction inside a root; nothing is written in COPYH-FUNDING's
  * folder.
@@ -24,6 +26,7 @@ import { describe, expect, it, vi } from "vitest";
 import { END_E, END_F2, END_S } from "../src/copyh/design.js";
 import { RANGES } from "../src/copyh/range.js";
 import {
+  ENGINE_STEPS,
   SEALED,
   SealedError,
   checkInside,
@@ -95,6 +98,41 @@ describe("the seal's paths", { timeout: 60_000 }, () => {
     for (const p of ALWAYS)
       for (const seal of [SEALED, OPEN, F2OPEN])
         expect(() => checkPath(p, seal), p).toThrow("sealed always");
+  });
+
+  it("refuses a step's engine folder to every reader but that step's engine, by name and through a junction", () => {
+    for (const step of ENGINE_STEPS) {
+      const p = `F:\\research\\COPY-H\\${step}\\engine\\labels\\a.part`;
+      for (const seal of [SEALED, OPEN, F2OPEN])
+        expect(() => checkPath(p, seal), p).toThrow(
+          `in ${step}\\engine, sealed to all but ${step}'s engine`,
+        );
+      expect(() => checkPath(p, { ...SEALED, engine: step }), p).not.toThrow();
+      for (const other of ENGINE_STEPS.filter((s) => s !== step))
+        expect(() => checkPath(p, { ...F2OPEN, engine: other }), p).toThrow(
+          SealedError,
+        );
+    }
+    expect(() =>
+      checkPath("F:\\research\\COPY-H\\look1\\result.json"),
+    ).not.toThrow();
+    const t = tmp("copyh-seal");
+    const engine = path.join(t, "look1", "engine");
+    mkdirSync(engine, { recursive: true });
+    const j = path.join(t, "elsewhere");
+    symlinkSync(engine, j, "junction");
+    try {
+      expect(() => checkPath(path.join(j, "a.part"))).toThrow(
+        "sealed to all but look1's engine, by its real path",
+      );
+      expect(() =>
+        checkPath(path.join(j, "a.part"), { ...SEALED, engine: "look1" }),
+      ).not.toThrow();
+      expect(() => checkWrite(j)).toThrow(SealedError);
+    } finally {
+      // The junction alone, never what it points at.
+      rmdirSync(j);
+    }
   });
 
   it("passes every other path, whatever is open", () => {

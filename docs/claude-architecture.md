@@ -979,6 +979,9 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   parts) from `copyh/data.sha256`, `coins.json` and `dirs.json`; a built
   store is refused.
 - `integrity --range burnin|E`: the twin (when built) and K0–K3, below.
+- The bodies of `build` and `integrity` are `stores.ts`'s (`buildStore`,
+  `checkStores`), each in the folder and under the seal its caller gives:
+  a tool's `<COPYH_ROOT>\<range>`, step 1's `look1` and `look1\twin`.
 - `step1`, `tries`, `choice`, `step2`, `fresh2`: the gate first (exit 4,
   nothing read); their phases are the engine's parts, still to be built.
 
@@ -1059,7 +1062,9 @@ whole to `<range>\integrity\integrity.json`; a K0–K2 failure is exit 6.
 date does not parse, anything at or after END_F2, an `ANALYZER` folder, a
 path outside the run's roots (by name, then by real path). Until step 2:
 FRESH's store, `COPY-H\S`, anything at or after END_E. Until FRESH-2's
-freeze: a `FRESH-2` folder and anything at or after END_S. Nothing is
+freeze: a `FRESH-2` folder and anything at or after END_S. A step's
+engine folder (`look1\engine`, `look2\engine`, `fresh2\engine`), to every
+reader but that step's own engine, whose seal names it (Q7). Nothing is
 written in `COPY-H\funding`. A reader of rows checks each instant
 (`checkInstant`). The gate (`verifyGate`): `copyh/FROZEN.sha256` lists every
 file of what runs (the program, the closure of other programs' compiled

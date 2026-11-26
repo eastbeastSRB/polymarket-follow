@@ -37,7 +37,7 @@ import { hourKeys, monthsOf } from "../src/copyh/range.js";
 import { FLAG, SWITCH_KEYS, WINDOW, eachLine } from "../src/copyh/reread.js";
 import {
   BuildsDiffer,
-  GateFailed,
+  CheckFailed,
   NotFinished,
   sha256,
 } from "../src/copyh/run.js";
@@ -475,7 +475,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
     const p = fillsPartOf(w.first, addr(3));
     const rel = `${partitionDir("fills", p.key, p.month)}/px.f64`;
     change(w.first, rel, (b) => (b[0] = b[0]! ^ 1), false);
-    expect(() => runIntegrity(w.input({ twin: null }))).toThrow(GateFailed);
+    expect(() => runIntegrity(w.input({ twin: null }))).toThrow(CheckFailed);
     const v = await world();
     const mfile = path.join(v.first, MANIFEST);
     const m = Manifest.parse(JSON.parse(readFileSync(mfile, "utf8")));
@@ -483,7 +483,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
     m.partitions.splice(lost, 1);
     writeFileSync(mfile, `${JSON.stringify(m, null, 1)}\n`);
     const i = v.input({ twin: null });
-    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(() => runIntegrity(i)).toThrow(CheckFailed);
     const saved = JSON.parse(
       readFileSync(path.join(i.dir, "integrity.json"), "utf8"),
     ) as { k0: { problems: string[] } };
@@ -492,7 +492,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
 
   it("fails K1 on a record unpaired in a middle file, and passes it once unpaired.json lists it", async () => {
     const w = await world({ middleUnpaired: true });
-    expect(() => runIntegrity(w.input({ twin: null }))).toThrow(GateFailed);
+    expect(() => runIntegrity(w.input({ twin: null }))).toThrow(CheckFailed);
     const listed: UnpairedFile = {
       rule: "test",
       records: [[w.tasks[1]!.key, 1, H0 + HOUR_MS + 30_000, "50", false]],
@@ -511,7 +511,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
       true,
     );
     const i = w.input({ twin: null });
-    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(() => runIntegrity(i)).toThrow(CheckFailed);
     const saved = JSON.parse(
       readFileSync(path.join(i.dir, "integrity.json"), "utf8"),
     ) as {
@@ -528,7 +528,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
       true,
     );
     const j = v.input({ twin: null });
-    expect(() => runIntegrity(j)).toThrow(GateFailed);
+    expect(() => runIntegrity(j)).toThrow(CheckFailed);
     const s2 = JSON.parse(
       readFileSync(path.join(j.dir, "integrity.json"), "utf8"),
     ) as {
@@ -551,11 +551,11 @@ describe("the integrity", { timeout: 60_000 }, () => {
         twin: null,
         inputs: { ...base, [key]: "0".repeat(64) },
       });
-      expect(() => runIntegrity(i), key).toThrow(GateFailed);
+      expect(() => runIntegrity(i), key).toThrow(CheckFailed);
       expect(saved(i).k0.problems.join("\n"), key).toContain(what);
     }
     const i = w.input({ twin: null, code: "other" });
-    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(() => runIntegrity(i)).toThrow(CheckFailed);
     expect(saved(i).k0.problems.join("\n")).toContain("the code: code-a");
   });
 
@@ -565,7 +565,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
       m.counts.merge.duplicates += 1;
     });
     const i = w.input({ twin: null });
-    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(() => runIntegrity(i)).toThrow(CheckFailed);
     expect(saved(i).k0.problems).toHaveLength(1);
     expect(saved(i).k0.problems[0]).toMatch(/^the merge's in: /);
     const v = await world();
@@ -574,7 +574,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
       m.counts.merge.duplicates += 1;
     });
     const j = v.input({ twin: null });
-    expect(() => runIntegrity(j)).toThrow(GateFailed);
+    expect(() => runIntegrity(j)).toThrow(CheckFailed);
     expect(saved(j).k0.problems).toHaveLength(1);
     expect(saved(j).k0.problems[0]).toMatch(/^the merge's rows in: /);
   });
@@ -585,7 +585,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
     expect([r.k1.pass, r.k1.edges, r.k1.unexpectedCount]).toEqual([true, 2, 0]);
     const v = await world({ odd: true });
     const i = v.input({ twin: null });
-    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(() => runIntegrity(i)).toThrow(CheckFailed);
     const s = saved(i);
     expect([s.k0.pass, s.k1.pass, s.k2.pass, s.k1.odd.length]).toEqual([
       true,
@@ -601,7 +601,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
       const w = await world();
       tamperFiles(w.first, (lines) => edit(lines[0]!));
       const i = w.input({ twin: null });
-      expect(() => runIntegrity(i)).toThrow(GateFailed);
+      expect(() => runIntegrity(i)).toThrow(CheckFailed);
       return saved(i);
     };
     // The first file holds 3 kept and 1 spot: 4 seen.
@@ -685,7 +685,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
       store: openStore(w.second, w.roots),
       twin: null,
     });
-    expect(() => runIntegrity(second)).toThrow(GateFailed);
+    expect(() => runIntegrity(second)).toThrow(CheckFailed);
     expect(saved(second).k0.problems.join("\n")).toContain(
       "px.f64: differs from the manifest",
     );
@@ -697,7 +697,7 @@ describe("the integrity", { timeout: 60_000 }, () => {
     const rel = `${partitionDir("fills", p.key, p.month)}/px.f64`;
     truncateColumn(w.first, rel, 8);
     const i = w.input({ twin: null });
-    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(() => runIntegrity(i)).toThrow(CheckFailed);
     expect(saved(i).k0.problems).toContain(
       `${rel}: ${8 * (p.rows - 1)} bytes for ${p.rows} rows`,
     );
