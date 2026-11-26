@@ -1,0 +1,1421 @@
+{
+ "rule": "copyh/rules.md C3: the main-dex coins of one stored meta reply, in its universe order; a coin's iid is its index",
+ "meta": {
+  "key": "info/meta.json",
+  "bytes": 17743,
+  "sha256": "3fcc787862033a6d3ef452c3a35323eefe3588bed11577cab66b0f0ae949b8d8",
+  "read": "2026-11-25T21:12:56.522Z"
+ },
+ "coins": [
+  {
+   "iid": 0,
+   "name": "BTC",
+   "szDecimals": 5,
+   "delisted": false
+  },
+  {
+   "iid": 1,
+   "name": "ETH",
+   "szDecimals": 4,
+   "delisted": false
+  },
+  {
+   "iid": 2,
+   "name": "ATOM",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 3,
+   "name": "MATIC",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 4,
+   "name": "DYDX",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 5,
+   "name": "SOL",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 6,
+   "name": "AVAX",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 7,
+   "name": "BNB",
+   "szDecimals": 3,
+   "delisted": false
+  },
+  {
+   "iid": 8,
+   "name": "APE",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 9,
+   "name": "OP",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 10,
+   "name": "LTC",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 11,
+   "name": "ARB",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 12,
+   "name": "DOGE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 13,
+   "name": "INJ",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 14,
+   "name": "SUI",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 15,
+   "name": "kPEPE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 16,
+   "name": "CRV",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 17,
+   "name": "LDO",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 18,
+   "name": "LINK",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 19,
+   "name": "STX",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 20,
+   "name": "RNDR",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 21,
+   "name": "CFX",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 22,
+   "name": "FTM",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 23,
+   "name": "GMX",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 24,
+   "name": "SNX",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 25,
+   "name": "XRP",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 26,
+   "name": "BCH",
+   "szDecimals": 3,
+   "delisted": false
+  },
+  {
+   "iid": 27,
+   "name": "APT",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 28,
+   "name": "AAVE",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 29,
+   "name": "COMP",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 30,
+   "name": "MKR",
+   "szDecimals": 4,
+   "delisted": true
+  },
+  {
+   "iid": 31,
+   "name": "WLD",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 32,
+   "name": "FXS",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 33,
+   "name": "HPOS",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 34,
+   "name": "RLB",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 35,
+   "name": "UNIBOT",
+   "szDecimals": 3,
+   "delisted": true
+  },
+  {
+   "iid": 36,
+   "name": "YGG",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 37,
+   "name": "TRX",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 38,
+   "name": "kSHIB",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 39,
+   "name": "UNI",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 40,
+   "name": "SEI",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 41,
+   "name": "RUNE",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 42,
+   "name": "OX",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 43,
+   "name": "FRIEND",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 44,
+   "name": "SHIA",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 45,
+   "name": "CYBER",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 46,
+   "name": "ZRO",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 47,
+   "name": "BLZ",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 48,
+   "name": "DOT",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 49,
+   "name": "BANANA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 50,
+   "name": "TRB",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 51,
+   "name": "FTT",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 52,
+   "name": "LOOM",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 53,
+   "name": "OGN",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 54,
+   "name": "RDNT",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 55,
+   "name": "ARK",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 56,
+   "name": "BNT",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 57,
+   "name": "CANTO",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 58,
+   "name": "REQ",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 59,
+   "name": "BIGTIME",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 60,
+   "name": "KAS",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 61,
+   "name": "ORBS",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 62,
+   "name": "BLUR",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 63,
+   "name": "TIA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 64,
+   "name": "BSV",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 65,
+   "name": "ADA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 66,
+   "name": "TON",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 67,
+   "name": "MINA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 68,
+   "name": "POLYX",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 69,
+   "name": "GAS",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 70,
+   "name": "PENDLE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 71,
+   "name": "STG",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 72,
+   "name": "FET",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 73,
+   "name": "STRAX",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 74,
+   "name": "NEAR",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 75,
+   "name": "MEME",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 76,
+   "name": "ORDI",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 77,
+   "name": "BADGER",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 78,
+   "name": "NEO",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 79,
+   "name": "ZEN",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 80,
+   "name": "FIL",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 81,
+   "name": "PYTH",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 82,
+   "name": "SUSHI",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 83,
+   "name": "ILV",
+   "szDecimals": 2,
+   "delisted": true
+  },
+  {
+   "iid": 84,
+   "name": "IMX",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 85,
+   "name": "kBONK",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 86,
+   "name": "GMT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 87,
+   "name": "SUPER",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 88,
+   "name": "USTC",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 89,
+   "name": "NFTI",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 90,
+   "name": "JUP",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 91,
+   "name": "kLUNC",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 92,
+   "name": "RSR",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 93,
+   "name": "GALA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 94,
+   "name": "JTO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 95,
+   "name": "NTRN",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 96,
+   "name": "ACE",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 97,
+   "name": "MAV",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 98,
+   "name": "WIF",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 99,
+   "name": "CAKE",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 100,
+   "name": "PEOPLE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 101,
+   "name": "ENS",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 102,
+   "name": "ETC",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 103,
+   "name": "XAI",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 104,
+   "name": "MANTA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 105,
+   "name": "UMA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 106,
+   "name": "ONDO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 107,
+   "name": "ALT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 108,
+   "name": "ZETA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 109,
+   "name": "DYM",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 110,
+   "name": "MAVIA",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 111,
+   "name": "W",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 112,
+   "name": "PANDORA",
+   "szDecimals": 5,
+   "delisted": true
+  },
+  {
+   "iid": 113,
+   "name": "STRK",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 114,
+   "name": "PIXEL",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 115,
+   "name": "AI",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 116,
+   "name": "TAO",
+   "szDecimals": 3,
+   "delisted": false
+  },
+  {
+   "iid": 117,
+   "name": "AR",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 118,
+   "name": "MYRO",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 119,
+   "name": "kFLOKI",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 120,
+   "name": "BOME",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 121,
+   "name": "ETHFI",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 122,
+   "name": "ENA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 123,
+   "name": "MNT",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 124,
+   "name": "TNSR",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 125,
+   "name": "SAGA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 126,
+   "name": "MERL",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 127,
+   "name": "HBAR",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 128,
+   "name": "POPCAT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 129,
+   "name": "OMNI",
+   "szDecimals": 2,
+   "delisted": true
+  },
+  {
+   "iid": 130,
+   "name": "EIGEN",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 131,
+   "name": "REZ",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 132,
+   "name": "NOT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 133,
+   "name": "TURBO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 134,
+   "name": "BRETT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 135,
+   "name": "IO",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 136,
+   "name": "ZK",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 137,
+   "name": "BLAST",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 138,
+   "name": "LISTA",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 139,
+   "name": "MEW",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 140,
+   "name": "RENDER",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 141,
+   "name": "kDOGS",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 142,
+   "name": "POL",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 143,
+   "name": "CATI",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 144,
+   "name": "CELO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 145,
+   "name": "HMSTR",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 146,
+   "name": "SCR",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 147,
+   "name": "NEIROETH",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 148,
+   "name": "kNEIRO",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 149,
+   "name": "GOAT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 150,
+   "name": "MOODENG",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 151,
+   "name": "GRASS",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 152,
+   "name": "PURR",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 153,
+   "name": "PNUT",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 154,
+   "name": "XLM",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 155,
+   "name": "CHILLGUY",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 156,
+   "name": "SAND",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 157,
+   "name": "IOTA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 158,
+   "name": "ALGO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 159,
+   "name": "HYPE",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 160,
+   "name": "ME",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 161,
+   "name": "MOVE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 162,
+   "name": "VIRTUAL",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 163,
+   "name": "PENGU",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 164,
+   "name": "USUAL",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 165,
+   "name": "FARTCOIN",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 166,
+   "name": "AI16Z",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 167,
+   "name": "AIXBT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 168,
+   "name": "ZEREBRO",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 169,
+   "name": "BIO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 170,
+   "name": "GRIFFAIN",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 171,
+   "name": "SPX",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 172,
+   "name": "S",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 173,
+   "name": "MORPHO",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 174,
+   "name": "TRUMP",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 175,
+   "name": "MELANIA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 176,
+   "name": "ANIME",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 177,
+   "name": "VINE",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 178,
+   "name": "VVV",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 179,
+   "name": "JELLY",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 180,
+   "name": "BERA",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 181,
+   "name": "TST",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 182,
+   "name": "LAYER",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 183,
+   "name": "IP",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 184,
+   "name": "OM",
+   "szDecimals": 1,
+   "delisted": true
+  },
+  {
+   "iid": 185,
+   "name": "KAITO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 186,
+   "name": "NIL",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 187,
+   "name": "PAXG",
+   "szDecimals": 3,
+   "delisted": false
+  },
+  {
+   "iid": 188,
+   "name": "PROMPT",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 189,
+   "name": "BABY",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 190,
+   "name": "WCT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 191,
+   "name": "HYPER",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 192,
+   "name": "ZORA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 193,
+   "name": "INIT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 194,
+   "name": "DOOD",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 195,
+   "name": "LAUNCHCOIN",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 196,
+   "name": "NXPC",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 197,
+   "name": "SOPH",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 198,
+   "name": "RESOLV",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 199,
+   "name": "SYRUP",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 200,
+   "name": "PUMP",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 201,
+   "name": "PROVE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 202,
+   "name": "YZY",
+   "szDecimals": 0,
+   "delisted": true
+  },
+  {
+   "iid": 203,
+   "name": "XPL",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 204,
+   "name": "WLFI",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 205,
+   "name": "LINEA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 206,
+   "name": "SKY",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 207,
+   "name": "ASTER",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 208,
+   "name": "AVNT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 209,
+   "name": "STBL",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 210,
+   "name": "0G",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 211,
+   "name": "HEMI",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 212,
+   "name": "APEX",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 213,
+   "name": "2Z",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 214,
+   "name": "ZEC",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 215,
+   "name": "MON",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 216,
+   "name": "MET",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 217,
+   "name": "MEGA",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 218,
+   "name": "CC",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 219,
+   "name": "ICP",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 220,
+   "name": "AERO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 221,
+   "name": "STABLE",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 222,
+   "name": "FOGO",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 223,
+   "name": "LIT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 224,
+   "name": "XMR",
+   "szDecimals": 3,
+   "delisted": false
+  },
+  {
+   "iid": 225,
+   "name": "AXS",
+   "szDecimals": 1,
+   "delisted": false
+  },
+  {
+   "iid": 226,
+   "name": "DASH",
+   "szDecimals": 2,
+   "delisted": false
+  },
+  {
+   "iid": 227,
+   "name": "SKR",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 228,
+   "name": "AZTEC",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 229,
+   "name": "CHIP",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 230,
+   "name": "GRAM",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 231,
+   "name": "CASHCAT",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 232,
+   "name": "PONS",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 233,
+   "name": "USELESS",
+   "szDecimals": 0,
+   "delisted": false
+  },
+  {
+   "iid": 234,
+   "name": "XTEN",
+   "szDecimals": 0,
+   "delisted": false
+  }
+ ]
+}
