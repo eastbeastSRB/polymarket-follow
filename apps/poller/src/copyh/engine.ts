@@ -445,6 +445,52 @@ export function bytesAt(file: string, offset: number, length: number): Buffer {
   return buf;
 }
 
+/** The bytes a part's lines are read in. */
+const LINES_CHUNK = 1024 * 1024;
+
+/**
+ * A closed phase's part's lines, copy a's after its header line, held to
+ * the record's SHA-256 (`heldPart`), each without its newline: read a chunk
+ * at a time, the file opened for each chunk, so that many parts can be read
+ * side by side (RESULT's merge of PRICES' coins) and none is held open
+ * between reads. A part whose last line has no newline is refused.
+ */
+export function* partLines(
+  dir: string,
+  record: PhaseRecord,
+  id: string,
+): Generator<Buffer> {
+  const { file, start } = heldPart(dir, record, id);
+  const buf = Buffer.alloc(LINES_CHUNK);
+  let carry: Buffer | null = null;
+  for (let pos = start; ;) {
+    const fd = openSync(file, "r");
+    let n: number;
+    try {
+      n = readSync(fd, buf, 0, buf.length, pos);
+    } finally {
+      closeSync(fd);
+    }
+    if (n === 0) break;
+    pos += n;
+    const chunk = buf.subarray(0, n);
+    let at = 0;
+    for (let nl = chunk.indexOf(10); nl !== -1; nl = chunk.indexOf(10, at)) {
+      const piece = chunk.subarray(at, nl);
+      yield carry === null ? Buffer.from(piece) : Buffer.concat([carry, piece]);
+      carry = null;
+      at = nl + 1;
+    }
+    if (at < n)
+      carry =
+        carry === null
+          ? Buffer.from(chunk.subarray(at))
+          : Buffer.concat([carry, chunk.subarray(at)]);
+  }
+  if (carry !== null)
+    throw new StoreError(`${file}: a line without its newline`);
+}
+
 /** A part of a closed phase: copy a's bytes after its header line, held to the record's SHA-256. */
 export function partBytes(
   dir: string,

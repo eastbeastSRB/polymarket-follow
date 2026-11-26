@@ -10,7 +10,11 @@
  * STOP2 closed at the dip, STOP5 not; DAYS7 past END the copy itself; JUMP;
  * DELAY0 and LAST on the last prices, DELAY+5 and DELAY+15 on the VWAP,
  * each at its own delay with MAIN's table; the cascade's and Binance's
- * prints; a coin without an object giving every reading its reason.
+ * prints; a coin without an object giving every reading its reason. Then
+ * RANK and RESULT (phase-rank.ts, phase-result.ts) through real child
+ * processes: the copy not ranked (fewer than 5) and without a prior mean;
+ * its positions line with both, hashed as written; MAIN's voted set of one
+ * copy too few to tell at look 1, and look 2 after a KEEP after the verdict.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -30,11 +34,18 @@ import {
   positionsOf,
   priceCoin,
   pricesParts,
-  type Position,
 } from "../src/copyh/phase-prices.js";
+import { rankParts, rankTablesOf } from "../src/copyh/phase-rank.js";
 import { removalParts, removalTablesOf } from "../src/copyh/phase-removal.js";
+import {
+  judgedCopyOf,
+  positionLine,
+  resultOf,
+  resultParts,
+} from "../src/copyh/phase-result.js";
 import { sha256 } from "../src/copyh/run.js";
 import { settingsOf } from "../src/copyh/setting.js";
+import { R12_LINE, statisticOf, type Verdict } from "../src/copyh/verdict.js";
 import { HOUR_MS, MINUTE_MS } from "../src/schedule.js";
 import { COINS, addr, trade } from "./copyh-world.js";
 import {
@@ -182,7 +193,10 @@ async function pricesRun(markMinutes: 5 | 60) {
     tables: removalTablesOf(removal.dir, removalRecord, SOL),
     rows: coinReadingOf(context, { ...inputs, iid: SOL, coin: "SOL" }, SEAL)
       .rows,
-    positions: positionsOf(prices.dir, record, "c002") as Position[],
+    positions: positionsOf(prices.dir, record, "c002"),
+    engine,
+    build: build.dir,
+    prices: prices.dir,
   };
 }
 
@@ -294,3 +308,85 @@ describe("the prices' phase (C7–C11, C13)", { timeout: 60_000 }, () => {
       });
   });
 });
+
+describe(
+  "the rank and result phases after PRICES (C7, C12, C14, C15)",
+  { timeout: 60_000 },
+  () => {
+    it("gives RANK's tables and RESULT's look: the positions' lines with the prior mean net and RANK's membership, hashed as written; MAIN's voted set of one copy too few to tell; after a KEEP, look 2 after the verdict", async () => {
+      const r = run5;
+      const c = r.copies[0]!;
+      expect([c.voted, c.lines.includes("MAIN"), c.M]).toEqual([
+        true,
+        true,
+        M2,
+      ]);
+      const rank = phaseOf(
+        r.engine,
+        "RANK",
+        "phase-rank.js",
+        "rankPart",
+        rankParts({
+          code: "made-up",
+          build: [recordSha(r.build), null],
+          prices: recordSha(r.prices),
+          mondays: [M1, M2],
+        }),
+        {
+          build: r.build,
+          large: path.join(r.engine, "build-l"),
+          prices: r.prices,
+        },
+      );
+      const tables = rankTablesOf(rank.dir, await runPhase(rank));
+      // A's one MAIN copy: no ranking (fewer than 5), no prior copy before M2.
+      expect(tables.inRank(c.addr, 1)).toBe(false);
+      expect(tables.prior(c.addr, 1)).toBeNull();
+      expect(() => tables.prior(c.addr, 0)).toThrow(/RANK holds no prior mean/);
+      const resultAt = async (
+        name: string,
+        look: 1 | 2,
+        earlier: Verdict[],
+      ) => {
+        const result = phaseOf(
+          r.engine,
+          name,
+          "phase-result.js",
+          "resultPart",
+          resultParts({
+            code: "made-up",
+            prices: recordSha(r.prices),
+            rank: recordSha(rank.dir),
+            mondays: [M1, M2],
+            look,
+            earlier,
+          }),
+          { prices: r.prices, rank: rank.dir },
+        );
+        return resultOf(result.dir, await runPhase(result));
+      };
+      const line = positionLine(r.positions[0]!, null, false);
+      expect(JSON.parse(line)).toMatchObject({
+        id: c.id,
+        covariates: { priorCopies: 0, priorMeanNetBps: null },
+        rank: false,
+      });
+      const statistic = statisticOf(kit, [judgedCopyOf(r.positions[0]!)]);
+      expect(statistic).toMatchObject({ copies: 1, unpriced: 0 });
+      expect(await resultAt("RESULT", 1, [])).toEqual({
+        look: 1,
+        z: 2.81,
+        verdict: "TOO FEW TO TELL",
+        sentences: ["Too few to tell: no error could be computed.", R12_LINE],
+        after: false,
+        statistic,
+        positions: { lines: 1, sha256: sha256(`${line}\n`) },
+      });
+      expect(await resultAt("RESULT-2", 2, ["KEEP"])).toMatchObject({
+        look: 2,
+        z: 2.43,
+        after: true,
+      });
+    });
+  },
+);

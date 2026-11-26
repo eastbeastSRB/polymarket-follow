@@ -20,9 +20,10 @@
  *   marks, money, d and x′ with MAIN's removal; the cascade print's money
  *   and x′ and Binance's venue print's money (C13). SIDES, MONTHS, SLICES
  *   and RANK are MAIN's copies grouped, priced as MAIN.
- * - A part's bytes: one positions line a copy, in BUILD's order (by id, a
- *   tie in the kit's order; BUILD-L's after BUILD's): the copy as BUILD
- *   planned it and its readings.
+ * - A part's bytes: one positions line a copy, by id, BUILD's and
+ *   BUILD-L's together (a tie of ids is one account's, in the kit's order:
+ *   the sort is stable), so that RESULT merges the coins' parts into the
+ *   positions' order: the copy as BUILD planned it and its readings.
  */
 import { z } from "zod";
 import { DAYS7_MS, jumpRatio, stopInstant } from "../paper/copy.js";
@@ -30,14 +31,8 @@ import type { Market, Research, Setting } from "../paper/research.js";
 import { STOPS } from "./design.js";
 import type { FundingRow } from "./funding.js";
 import type { PartFunction, PartSpec, PhaseRecord } from "./engine.js";
-import { partBytes, recordAt } from "./engine.js";
-import {
-  dOf,
-  edgeOf,
-  removedBy,
-  type DReading,
-  type Removal,
-} from "./judge.js";
+import { partLines, recordAt } from "./engine.js";
+import { dOf, edgeOf, removedBy, type Removal } from "./judge.js";
 import { LINES, MOVED, type Line } from "./lines.js";
 import {
   coinMarkets,
@@ -46,8 +41,8 @@ import {
   type CoinMarkets,
   type MarkMinutes,
 } from "./markets.js";
-import { moneyOf, planOf, stopUntil, type Money } from "./money.js";
-import { Copy, coinCopies, linesOf } from "./phase-build.js";
+import { moneyOf, planOf, stopUntil } from "./money.js";
+import { Copy, coinCopies } from "./phase-build.js";
 import { CoinContext, CoinInputs, coinReadingOf } from "./phase-coin.js";
 import { removalTablesOf } from "./phase-removal.js";
 import { settingsOf } from "./setting.js";
@@ -68,31 +63,62 @@ export const ENTRY_UNPRICED = "entry unpriced";
 /** lib-exits' first reason, a copy of a coin without an object (COPYH-ENGINE-2's recommendation). */
 const NO_MARK = { reason: "no mark at the follow instant" } as const;
 
+/** money.ts's Money as a positions line holds it. */
+const MoneyLine = z.union([
+  z.object({
+    net: z.number(),
+    gross: z.number(),
+    fees: z.number(),
+    funding: z.number(),
+    holdMs: z.number(),
+    fullExitMs: z.number(),
+    fundingMissing: z.number(),
+    spreadFallback: z.boolean(),
+    reason: z.undefined().optional(),
+  }),
+  z.object({ reason: z.string() }),
+]);
 /** A copy's d in bps and x′, or d's reason (null x′ exactly then). */
-export type Judged = DReading & { readonly edge: number | null };
+const Judged = z.union([
+  z.object({
+    d: z.number(),
+    nullGross: z.number(),
+    reason: z.undefined().optional(),
+    edge: z.number().nullable(),
+  }),
+  z.object({ d: z.null(), reason: z.string(), edge: z.number().nullable() }),
+]);
+export type Judged = z.infer<typeof Judged>;
 /** A moved line's own money, d and x′ (C7, M7). */
-export type MovedReading = {
-  readonly money: Money;
-  readonly judged: Judged;
-};
+const MovedReading = z.object({ money: MoneyLine, judged: Judged });
 /** A MAIN copy's own lines (C7) and its venue prints (C13). */
-export type MainReadings = {
-  readonly stop: Readonly<Record<"STOP2" | "STOP5", Money>>;
-  readonly days7: Money;
-  readonly jump: number | null;
-  readonly moved: Readonly<
-    Record<(typeof MOVED)[number]["line"], MovedReading>
-  >;
-  readonly cascade: { readonly money: Money; readonly edge: number | null };
-  readonly binance: Money;
-};
+const MainReadings = z.object({
+  stop: z.object({ STOP2: MoneyLine, STOP5: MoneyLine }),
+  days7: MoneyLine,
+  jump: z.number().nullable(),
+  moved: z.object({
+    DELAY0: MovedReading,
+    "DELAY+5": MovedReading,
+    "DELAY+15": MovedReading,
+    LAST: MovedReading,
+  } satisfies Record<(typeof MOVED)[number]["line"], unknown>),
+  cascade: z.object({ money: MoneyLine, edge: z.number().nullable() }),
+  binance: MoneyLine,
+});
+export type MainReadings = z.infer<typeof MainReadings>;
 /** A positions line: the copy as BUILD planned it and its readings. */
-export type Position = Copy & {
-  readonly thin: boolean;
-  readonly money: Money;
-  readonly judged: Partial<Readonly<Record<Line, Judged>>>;
-  readonly main: MainReadings | null;
-};
+export const Position = Copy.extend({
+  thin: z.boolean(),
+  money: MoneyLine,
+  judged: z.object({
+    MAIN: Judged.optional(),
+    TEN: Judged.optional(),
+    BROAD: Judged.optional(),
+    DAY: Judged.optional(),
+  } satisfies Record<Line, unknown>),
+  main: MainReadings.nullable(),
+});
+export type Position = z.infer<typeof Position>;
 
 /** What a coin's pricing reads, besides its copies. */
 export type CoinPricing = {
@@ -240,6 +266,10 @@ export function priceCoin(
   });
 }
 
+/** Copies by id; equal ids 0, so that a stable sort keeps the kit's order (the supervisor's ruling on the engine review's Q2). */
+export const byId = (a: { id: string }, b: { id: string }): number =>
+  a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+
 /** PRICES's function (engine.ts `PartFunction`): the coin's positions lines. */
 export const pricesPart: PartFunction = (inputs, ctx) => {
   const i = PricesInputs.parse(inputs);
@@ -249,6 +279,7 @@ export const pricesPart: PartFunction = (inputs, ctx) => {
   if (i.build[1] !== null)
     for (const x of coinCopies(c.large, recordAt(c.large, i.build[1]), i.iid))
       copies.push(x);
+  copies.sort(byId);
   const positions = priceCoin(ctx.kit, copies, {
     coin,
     rows,
@@ -272,11 +303,17 @@ export const pricesParts = (
     inputs: { ...o, iid, coin } satisfies PricesInputs,
   }));
 
-/** A closed PRICES part's positions lines, held to its record (engine.ts `partBytes`), each parsed. */
+/** A positions line parsed (our own file, held to its record: anything else is refused). */
+export const positionOf = (line: Buffer): Position =>
+  Position.parse(JSON.parse(line.toString("utf8")));
+
+/** A closed PRICES part's positions, held to its record (engine.ts `partLines`), each parsed. */
 export function positionsOf(
   dir: string,
   record: PhaseRecord,
   id: string,
-): unknown[] {
-  return linesOf(partBytes(dir, record, id), id);
+): Position[] {
+  const out: Position[] = [];
+  for (const line of partLines(dir, record, id)) out.push(positionOf(line));
+  return out;
 }

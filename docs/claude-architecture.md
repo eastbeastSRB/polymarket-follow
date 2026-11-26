@@ -1178,7 +1178,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   record of other inputs is refused (exit 5); the budget's stop is exit 3,
   resumed from whole parts; each copy's run (pid, seconds, peak RSS, heap)
   beside it. A large lane's phase is the same runner, one child at the heap
-  cap.
+  cap. A closed part's lines are read a chunk at a time (`partLines`),
+  the file opened for each chunk, so that many parts are read side by side.
 - `phase-labels.ts` (C5, C2; the two lanes): LABELS, a part an account
   bucket and a block of 8 Mondays, each store's manifest and dirs.json held
   to the part's inputs: each account's capture counted first from the
@@ -1217,7 +1218,20 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   lines with that line's removal at M; a MAIN copy's own lines (STOP2 and
   STOP5, DAYS7, JUMP's J, DELAY0, DELAY+5, DELAY+15, LAST) and the
   cascade's and Binance's prints; a coin without an object, every reading
-  its reason; one positions line a copy, in BUILD's order.
+  its reason; one positions line a copy (its Zod schema `Position`), by id
+  across BUILD and BUILD-L, a tie of ids in the kit's order.
+- `phase-rank.ts` (C7, C14): RANK, one part: MAIN's accounts at each
+  Monday from BUILD's and BUILD-L's members, every priced MAIN copy of
+  PRICES' parts streamed; RANK's accounts at each Monday (`rankAt`) and each
+  trader's prior mean net at each Monday where it has a copy (its priced
+  MAIN copies wholly before M; none without one).
+- `phase-result.ts` (C12, C14, C15): RESULT, one part: PRICES' parts merged
+  by entry id (`positionsInOrder`; a part out of order refused), each
+  position's line of `positions.jsonl.gz` (`positionLine`: the copy with
+  its prior mean net and RANK's membership) hashed uncompressed as it
+  comes, never one string; MAIN's copies voted by END the look's set:
+  `statisticOf`, MAIN's reading at the look's z, "after the verdict"; its
+  bytes what `result.json` holds of the outcome.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
