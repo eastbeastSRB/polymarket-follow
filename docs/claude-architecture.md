@@ -1168,6 +1168,13 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   resumed from whole parts; each copy's run (pid, seconds, peak RSS, heap)
   beside it. A large lane's phase is the same runner, one child at the heap
   cap.
+- `phase-labels.ts` (C5, C2; the two lanes): LABELS, a part an account
+  bucket and a block of 8 Mondays, each store's manifest and dirs.json held
+  to the part's inputs: each account's capture counted first from the
+  columns (none in the 14 days, above LABEL_FILLS_MAX, past the normal
+  lane's threshold deferred), else the kit's label; the vault accounts
+  named and never labelled; LABELS-L, the deferred captures one at a time
+  at the heap cap; P1 from both, which no lane changes.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
