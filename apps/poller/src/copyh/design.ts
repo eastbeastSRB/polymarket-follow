@@ -36,6 +36,20 @@ export const MERGE_MS = 60_000;
 export const EXITS_MAX = 20_000_000;
 /** The float residue counted: 1e-9 ≤ |prev + net| < 1e-6 (C15 (c) 6; L3). */
 export const RESIDUE_BOUNDS = [1e-9, 1e-6] as const;
+/**
+ * The kit's inputs at most, beside EXITS_MAX (the supervisor's ruling on
+ * COPYH-ENGINE's Q1, 2026-11-26; their sentence queued for the rules' last
+ * touch): a label capture of more than LABEL_FILLS_MAX fills is not run
+ * through the kit's `labelAt`, so the account is not P1 at that Monday; an
+ * account whose fills to END number more than HISTORY_FILLS_MAX is not run
+ * through the kit at all, so it is in no line and no line's removal set;
+ * each named, counted and printed at every look [SET BEFORE THE FREEZE: from
+ * the burn-in's and the rehearsal's counts of the largest accounts and the
+ * kit's measured bytes a fill, with the owner's wide margin, so that an
+ * account at the cap fits well inside one worker's heap; null until then].
+ */
+export const LABEL_FILLS_MAX: number | null = null;
+export const HISTORY_FILLS_MAX: number | null = null;
 
 /** The `dir` values and the liquidation method that make a trade no market trade (C3, M1; the rules review's Q6). */
 export const ADL_DIR = "Auto-Deleveraging";
