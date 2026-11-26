@@ -1,5 +1,58 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's ENGINE, COMMITS 1–2; THE CAPS MUST
+NEVER LEAVE OUT AN ACCOUNT THE MACHINE CAN HOLD): **THE KIT'S MEMORY IS
+MEASURED: A MARKET MAKER COSTS ABOUT FOUR TIMES A WHALE A FILL. ACCOUNTS
+ABOVE THE NORMAL LANES' CAPS RUN IN ONE LARGE LANE AT 20 GB.**
+
+**COPYH-ENGINE** (Opus 5.5, max; context peak 730,146; handed over). Each
+commit had `pnpm verify` green and holds its own files only:
+- `c80d500` commit 1: `instants.ts` (C1: stage windows, M, day, week and
+  month; no Monday in the burn-in, 48 in E, 24 in S, 26 in FRESH-2) and
+  `accounts.ts` (C2 and C3's reader, `readBucket`, `vaultsOf`). 1,048 tests
+  + 6 skipped.
+- `b31e084` commit 2: `entries.ts` (C4: the kit's history, `exitRows`,
+  HISTORY_FILLS_MAX and EXITS_MAX) and `labels.ts` (C5: the 90-day
+  capture, LABEL_FILLS_MAX). 1,066 tests + 6 skipped.
+- **Measured on made-up accounts:**
+  - a market maker costs 0.62–0.77 KB a fill in one label capture and
+    1.08–1.18 KB over a whole history (20 M label fills 14.7 GB; 10 M
+    history fills 10.7 GB);
+  - a whale costs 0.25–0.26 KB (30 M fills about 7 GB);
+  - the reader's rows add about 0.25 KB.
+- **Its technical calls, accepted:**
+  - `readBucket` makes rows one account at a time from typed columns. It
+    checks a partition's start against the seal before opening it, and
+    refuses a dir outside `dirs.json` and rows out of order.
+  - `exitRows` mirrors `buildEntries`' loop with a count.
+  - HISTORY_FILLS_MAX is checked before `toEvents`, EXITS_MAX before
+    `buildEntries`.
+  - `labelOf` answers "no fills in window" first, then the cap ("too many
+    fills for the kit"), then the kit.
+  - The windows come from the kit's `LABEL_DAYS` and `HABIT_DAYS`.
+  - Straddling means t < M ≤ t1.
+
+**The caps, ruled:**
+- Caps set for a market maker at the 8 GB heap (3.5 M label fills, 2.5 M
+  history fills) would also cut whale-shaped accounts that fit easily. The
+  burn-in's largest non-vault account already passes 2.4 M records a
+  month.
+- **Two lanes:** accounts up to the 8 GB thresholds run in the normal
+  lanes. Larger ones run afterwards in one large lane, alone on the
+  machine, at the 20 GB heap cap.
+- **The caps** are set so a market maker at the cap fits within half of
+  20 GB: provisionally about 13 M label fills and 8.5 M history fills.
+- **The rehearsal** counts the accounts above the thresholds and the caps
+  by Monday on E, and runs the large lane's labels (labels are not
+  outcomes). If an account above a cap would have been directional, the
+  cap rises; it is never set to leave a directional account out.
+- The C18 rows come at the rules' last touch. No second reader path unless
+  the rehearsal's peaks need it.
+
+**COPYH-ENGINE-2** (Opus 5.5, max, fresh) started at 10:14Z on the same
+brief with an addendum. It plans the two lanes, then builds commit 3 on
+(`markets.ts`, `setting.ts`).
+
 2026-11-26 (the supervisor — COPY-H's BURN-IN PASSED): **THE STORE PROGRAM
 RAN ON REAL MONTHS FOR THE FIRST TIME (2025-05-25 → 06-29, BEFORE E), COUNTS
 AND TIMING ONLY. EVERY CHECK PASSES. COPY-H'S PARTS 1–2 ARE DONE.**
