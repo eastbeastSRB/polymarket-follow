@@ -1158,6 +1158,16 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   it lies in the object's minutes with a market trade of a size above 0,
   or is its coin's Settlement minute); the counts beside; the projected
   share and the stop above 1% unless `--past-tripwire`.
+- `engine.ts`, `engine-worker.ts` (C15, the engine's guard): a phase's
+  parts, each computed twice, copy a by a pool of forked children at the
+  heap given, then copy b by a new pool, so that a part's two copies never
+  share a process; held byte-equal, the phase closed by its record (each
+  part's header and bytes by SHA-256), else exit 7 and no record. A part's
+  file is its header line (phase, id, inputs) and its bytes; a part or a
+  record of other inputs is refused (exit 5); the budget's stop is exit 3,
+  resumed from whole parts; each copy's run (pid, seconds, peak RSS, heap)
+  beside it. A large lane's phase is the same runner, one child at the heap
+  cap.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
