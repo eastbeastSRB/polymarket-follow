@@ -673,6 +673,16 @@ read from a venue's page is as that page read on the day.
     read is within 1 s of its hour. Rounding a row's `time` to the nearest
     hour (WAVE-H's H9, COPY-H's C9) puts both in their own hour.
   - Weight: at most about 440 of the 1,200 a minute at one read every 6 s.
+  - **The whole fetch** (done 2026-11-26 12:03:38Z): 6,110 windows over
+    E ∪ S for 235 coins, 2,706,238 rows, 234,115,939 B, every reply HTTP 200
+    and valid; 270 windows `[]`, each before its coin's listing (the last
+    34 coins in `meta`'s order, PROVE to XTEN); no coin has an empty window
+    after its first rows, and **delisted coins return rows through the last
+    window** (to 2026-11-16), so a coin's end comes from its first
+    Settlement (C6), never from its funding. `manifest.jsonl`
+    `bf6dcdf2…1593`, `funding.sha256` `bb9d3b34…572d` (6,111 lines). For
+    the 38 coins WAVE-H also fetched, 646 windows and 266,958 rows over E
+    equal WAVE-H's row for row.
 - **A backstop liquidation (one example, 2026-08-22 05:13Z):** the liquidated
   account's own fill is `crossed` false, fee "0.0", `dir` "Liquidated Isolated
   Short", `side` "B"; the vault's is `crossed` true, `startPosition` "0.0",
