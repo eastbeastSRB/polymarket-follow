@@ -179,8 +179,10 @@ export function coinOf(
 }
 
 /** C6: an entry at t is in a primary market when its coin's reading holds no Settlement at or before the end of t's UTC day. */
-export const isPrimary = (t: number, settlement: Settlement | null): boolean =>
-  settlement === null || settlement.t >= dayOf(t) + DAY_MS;
+export const isPrimary = (
+  t: number,
+  settlement: Pick<Settlement, "t"> | null,
+): boolean => settlement === null || settlement.t >= dayOf(t) + DAY_MS;
 
 /** C9's settlement mark: 5 minutes (the kit's rule) or 60. */
 export type MarkMinutes = 5 | 60;

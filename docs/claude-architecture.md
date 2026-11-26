@@ -1175,6 +1175,16 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   lane's threshold deferred), else the kit's label; the vault accounts
   named and never labelled; LABELS-L, the deferred captures one at a time
   at the heap cap; P1 from both, which no lane changes.
+- `phase-build.ts` (C2, C4–C8, C10's members, C11): BUILD, a part an
+  account bucket: its P1 accounts' histories (above HISTORY_FILLS_MAX or
+  EXITS_MAX named, past the lane's threshold deferred to BUILD-L), their
+  habits and lines at their P1 Mondays, each entry in a line and a primary
+  market a copy (id, D, exits, plan, vote, gap, C14's covariates but the
+  prior mean net), and their market trades' keys in the weeks where they
+  are in a line, the lines a mask; counted beside, the ids two entries
+  share (both copies, the kit's order breaking a tie) and the entries of
+  direction 0; its bytes an index line, then the facts, each coin's copies
+  a JSON line each and its keys in chunks, read a coin at a time.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
