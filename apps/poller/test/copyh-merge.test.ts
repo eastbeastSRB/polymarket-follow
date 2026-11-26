@@ -10,12 +10,14 @@
  * files, the last price the latest, a pair across files, files out of time
  * order stopping; a coin's counts across files; names outgrowing their
  * columns, other parts, code, lists or files refused; a merge stopped between
- * units and resumed equal to an unbroken one; a group above the unit size run
- * bucket by bucket, a bucket above it refused; the store read back, a changed
- * file and a junction leading out refused.
+ * units and resumed equal to an unbroken one, a budget spent before the
+ * dictionaries building none; a group above the unit size run bucket by
+ * bucket, and a bucket above it run whole, the same store; the store read
+ * back, a changed file and a junction leading out refused.
  */
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -683,23 +685,42 @@ describe("the units", { timeout: 60_000 }, () => {
     );
     await run(b.input);
     expect(filesOf(b.dir)).toEqual(filesOf(a.dir));
+    // A budget spent before the first unit: not even the dictionaries are built.
+    const c = await built(many());
+    await expect(run({ ...c.input, budget: after(0) })).rejects.toThrow(
+      NotFinished,
+    );
+    expect(existsSync(path.join(c.dir, "merge", "dict.json"))).toBe(false);
   });
 
-  it("run a group above the unit size bucket by bucket, the same store; refuse a bucket above it", async () => {
+  it("run a group above the unit size bucket by bucket, the same store; a bucket above the unit size runs whole, the same store", async () => {
     const a = await built(many());
     await run(a.input);
     const b = await built(many(), { unitRows: 2 });
     await run(b.input);
     expect(filesOf(b.dir)).toEqual(filesOf(a.dir));
-    const big = new Map([
-      [
-        keyOf(H0, "node_fills"),
-        `${[1, 2, 3].map((i) => t(1, { time: H0 + i, tid: i })).join("\n")}\n`,
-      ],
-    ]);
-    await expect(
-      run((await built(big, { unitRows: 2 })).input),
-    ).rejects.toThrow("3 rows, more than the 2 a unit was measured at");
+    // One bucket's three rows against a unit size of 2: one unit, its rows in its log line.
+    const big = () =>
+      new Map([
+        [
+          keyOf(H0, "node_fills"),
+          `${[1, 2, 3].map((i) => t(1, { time: H0 + i, tid: i })).join("\n")}\n`,
+        ],
+      ]);
+    const whole = await built(big());
+    await run(whole.input);
+    const cut = await built(big(), { unitRows: 2 });
+    const units: object[] = [];
+    await run({
+      ...cut.input,
+      log: (event, fields) => {
+        if (event === "unit") units.push(fields);
+      },
+    });
+    expect(filesOf(cut.dir)).toEqual(filesOf(whole.dir));
+    expect(units).toContainEqual(
+      expect.objectContaining({ unit: "fills-2025-07-g0-b1", rows: 3 }),
+    );
   });
 });
 

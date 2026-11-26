@@ -55,7 +55,7 @@ export const COPYH_FILES = [
 ];
 
 /** What runs: every file under these, relative to the package root, must be listed. */
-export const SCOPE: readonly string[] = [
+const SCOPE: readonly string[] = [
   "dist/copyh.js",
   "dist/copyh",
   ...COPYH_CLOSURE,

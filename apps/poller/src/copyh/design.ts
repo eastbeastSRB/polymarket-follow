@@ -137,8 +137,10 @@ export const CLOSED_WINDOWS: readonly (readonly [number, number])[] = [
  * accounts in the file, 2,525 MB with 2.6 million; the merge of a
  * 12-million-row unit with 2,967,257 accounts in the dictionary 1,765 MB; an
  * integrity unit holding an 11.6-million-row partition 346 MB; the re-read of
- * a day of three such files 652 MB. Three times the largest, 7,575 MB,
- * rounded up to a whole GB.
+ * a day of three such files 652 MB. Measured 2026-11-26 (COPYH-STORE-FIX,
+ * synthetic): the merge of one bucket's 48-million-row unit (a bucket above
+ * merge.ts's UNIT_ROWS runs whole) with 2,595,335 accounts 2,696 MB. Three
+ * times the largest, 8,088 MB, rounded up to a whole GB.
  */
 export const WORKER_HEAP_GB = 8;
 /** Above this the parts are cut smaller instead (C15). */

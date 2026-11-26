@@ -343,12 +343,13 @@ function integrity(r: RangeName): void {
     : null;
   const lists = listsOf(false);
   const p = passOf(r);
-  const unpaired = existsSync(UNPAIRED_FILE)
-    ? UnpairedFile.parse(JSON.parse(readFileSync(UNPAIRED_FILE, "utf8")))
-    : {
-        rule: "none yet: copyh/unpaired.json is written from the rehearsal's pass",
-        records: [],
-      };
+  if (!existsSync(UNPAIRED_FILE))
+    throw new StoreError(
+      `no ${path.relative(PACKAGE_ROOT, UNPAIRED_FILE)}: the integrity needs it`,
+    );
+  const unpaired = UnpairedFile.parse(
+    JSON.parse(readFileSync(UNPAIRED_FILE, "utf8")),
+  );
   const result = runIntegrity({
     range: RANGES[r],
     files: p.files,
@@ -371,7 +372,7 @@ function integrity(r: RangeName): void {
       start: RANGES[r].start,
       end: RANGES[r].end,
       iids: new Map(lists.iids),
-      kinds: new Map(lists.kinds ?? []),
+      kinds: new Map(lists.kinds),
     },
     budget: p.budget,
     unitBytes: UNIT_BYTES,

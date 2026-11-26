@@ -1,14 +1,13 @@
 /**
  * COPY-H's coins (src/copyh/coins.ts; rules.md C3):
  * `coins.json` from a stored `meta` reply held to its manifest line, in the
- * reply's order, delisted coins kept; an appended list keeps every index; a
- * coin's form (main-dex-shaped, spot, builder dex).
+ * reply's order, delisted coins kept; a coin's form (main-dex-shaped, spot,
+ * builder dex).
  */
 import { describe, expect, it } from "vitest";
 import {
   CoinsFile,
   META_KEY,
-  checkAppendOnly,
   coinsFromMeta,
   formOfCoin,
   iidsOf,
@@ -83,41 +82,6 @@ describe("coins.json", { timeout: 60_000 }, () => {
       coins: f.coins.map((c, i) => ({ ...c, iid: i === 1 ? 7 : i })),
     };
     expect(() => CoinsFile.parse(moved)).toThrow("not its index");
-  });
-
-  it("keeps every index when a later list only appends; refuses one that drops, moves or renames a coin", () => {
-    const b = meta(UNIVERSE);
-    const earlier = coinsFromMeta(b, lineOf(b));
-    const more = meta([...UNIVERSE, { szDecimals: 2, name: "NEW" }]);
-    // A later read may flip a coin's delisted flag; only the order and names are held.
-    const flipped = meta([
-      ...UNIVERSE.slice(0, 3),
-      { ...UNIVERSE[3]!, isDelisted: false },
-    ]);
-    for (const later of [more, flipped])
-      expect(() =>
-        checkAppendOnly(earlier, coinsFromMeta(later, lineOf(later))),
-      ).not.toThrow();
-    for (const [u, why] of [
-      [UNIVERSE.slice(0, 3), "has 3 coins, the earlier 4"],
-      [
-        [UNIVERSE[1]!, UNIVERSE[0]!, ...UNIVERSE.slice(2)],
-        "iid 0 is BTC in the earlier list, ETH in the new one",
-      ],
-      [
-        [
-          ...UNIVERSE.slice(0, 2),
-          { szDecimals: 0, name: "PEPE" },
-          UNIVERSE[3]!,
-        ],
-        "iid 2 is kPEPE",
-      ],
-    ] as const) {
-      const later = meta([...u]);
-      expect(() =>
-        checkAppendOnly(earlier, coinsFromMeta(later, lineOf(later))),
-      ).toThrow(why);
-    }
   });
 });
 

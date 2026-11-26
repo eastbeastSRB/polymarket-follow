@@ -63,8 +63,8 @@ function chainsOf(fills: readonly ChainFill[]): {
   const order = fills
     .map((_, i) => i)
     .sort((a, b) => {
-      const x = start[a]! * BigInt(Math.sign(fills[a]!.side) || 1);
-      const y = start[b]! * BigInt(Math.sign(fills[b]!.side) || 1);
+      const x = start[a]! * BigInt(Math.sign(fills[a]!.side));
+      const y = start[b]! * BigInt(Math.sign(fills[b]!.side));
       return x < y ? -1 : x > y ? 1 : a - b;
     });
   const head = new Array<number>(fills.length);

@@ -27,12 +27,12 @@ import {
   WORKER_HEAP_CAP_GB,
   WORKER_HEAP_GB,
 } from "./design.js";
-import { SealedError } from "./seal.js";
+import { SealedError, isIn } from "./seal.js";
 
 /** The package's folder (the repository's `apps/poller`), from `src/copyh` or `dist/copyh` alike. */
 export const PACKAGE_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 /** COPY-H's committed files (C0): the lists a build reads. */
-export const COPYH_DIR = path.join(PACKAGE_ROOT, "copyh");
+const COPYH_DIR = path.join(PACKAGE_ROOT, "copyh");
 export const COINS_FILE = path.join(COPYH_DIR, "coins.json");
 export const DIRS_FILE = path.join(COPYH_DIR, "dirs.json");
 export const DATA_FILE = path.join(COPYH_DIR, "data.sha256");
@@ -71,10 +71,6 @@ export function exitOf(err: unknown): {
 const absolute = z
   .string()
   .refine((p) => path.isAbsolute(p), "not an absolute path");
-const inside = (a: string, b: string) => {
-  const rel = path.relative(b, a);
-  return !rel.startsWith("..") && !path.isAbsolute(rel);
-};
 /** A path's last `n` folders, as Windows compares them. */
 const tail = (p: string, n: number) =>
   path
@@ -158,7 +154,7 @@ export const Settings = z
       const allowed = (a: string, b: string) =>
         a === s.COPYH_FUNDING && b === s.COPYH_ROOT;
       return all.every((a, i) =>
-        all.every((b, j) => i === j || allowed(a, b) || !inside(a, b)),
+        all.every((b, j) => i === j || allowed(a, b) || !isIn(a, b)),
       );
     },
     {

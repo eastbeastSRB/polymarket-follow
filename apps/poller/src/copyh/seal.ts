@@ -91,7 +91,7 @@ export function checkPath(file: string, seal: Seal = SEALED): void {
 }
 
 /** Whether `a` lies in `b` (or is `b`), as Windows compares paths. */
-const isIn = (a: string, b: string) => {
+export const isIn = (a: string, b: string) => {
   const rel = path.relative(b, a);
   return !rel.startsWith("..") && !path.isAbsolute(rel);
 };

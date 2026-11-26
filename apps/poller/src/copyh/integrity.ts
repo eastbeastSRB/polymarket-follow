@@ -28,6 +28,7 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { WIDTH, type ColumnType } from "../polish/tables.js";
+import { MINUTE_MS } from "../schedule.js";
 import { chainCount } from "./chains.js";
 import { Digest, u64From } from "./digest.js";
 import { holesOf } from "./holes.js";
@@ -59,14 +60,13 @@ import {
   type StoredFile,
 } from "./store.js";
 
-const MINUTE = 60_000;
 /** A unit's files at most, in bytes, before the next partition starts a new unit: one holding an 11.6-million-row partition peaked at 346 MB of heap, measured 2026-11-25 (design.ts WORKER_HEAP_GB). */
 export const UNIT_BYTES = 2 * 2 ** 30;
 /** How many records a list shows before it only counts. */
 const SHOWN = 200;
 
 /** A fills partition's columns and a bars partition's, by file name. */
-export const FILL_FILES = [
+const FILL_FILES = [
   "user.u32",
   "time.f64",
   "iid.u16",
@@ -81,7 +81,7 @@ export const FILL_FILES = [
   "method.u8",
   "file.u16",
 ];
-export const BAR_FILES = BAR_COLUMNS.map(
+const BAR_FILES = BAR_COLUMNS.map(
   (c) =>
     `${c}.${c === "trades" || c === "pairs" || c.startsWith("left") ? "u32" : "f64"}`,
 );
@@ -196,7 +196,7 @@ function shapeProblems(p: Partition, range: Range): string[] {
   if (p.table === "bars") {
     const [a, b] = monthBounds(p.month);
     const minutes = Math.round(
-      (Math.min(b, range.end) - Math.max(a, range.start)) / MINUTE,
+      (Math.min(b, range.end) - Math.max(a, range.start)) / MINUTE_MS,
     );
     if (p.rows !== minutes)
       out.push(`${rel}: ${p.rows} rows, the month's ${minutes} minutes`);
@@ -692,7 +692,7 @@ function dayUnit(o: IntegrityInput, day: string): DayRecord {
         } catch (err) {
           throw new StoreError((err as Error).message);
         }
-      const off = p === null ? 0 : Math.round((r.from - p.start) / MINUTE);
+      const off = p === null ? 0 : Math.round((r.from - p.start) / MINUTE_MS);
       for (let k = 0; k < r.minutes; k++) {
         const a = values === null ? (c === "last" ? NaN : 0) : values[off + k]!;
         const b = re === undefined ? (c === "last" ? NaN : 0) : re[c][k]!;
@@ -701,7 +701,7 @@ function dayUnit(o: IntegrityInput, day: string): DayRecord {
           differ += 1;
           if (problems.length < SHOWN)
             problems.push(
-              `${day}: coin ${iid} ${c} at ${new Date(r.from + k * MINUTE).toISOString()}: the store ${a}, re-read ${b}`,
+              `${day}: coin ${iid} ${c} at ${new Date(r.from + k * MINUTE_MS).toISOString()}: the store ${a}, re-read ${b}`,
             );
         }
       }

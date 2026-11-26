@@ -10,7 +10,8 @@
  * - the dictionaries: every address, sorted, so that an id's order is its
  *   address's; the `dir` values and methods, sorted;
  * - the fills by (month, bucket group), or by (month, bucket) when a group
- *   holds more than UNIT_ROWS rows: each bucket's rows by (account, `time`),
+ *   holds more than UNIT_ROWS rows (a bucket above it runs whole: no output
+ *   depends on the unit's size): each bucket's rows by (account, `time`),
  *   ties in the pass's order. A record found in both of the switch hour's
  *   files (the same account, `time`, coin, `tid`, side and taker) is kept
  *   once, the first file's, and counted; one that is a market taker stops
@@ -28,7 +29,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { HOUR_MS } from "../schedule.js";
+import { HOUR_MS, MINUTE_MS } from "../schedule.js";
 import { PAIR_MS, SWITCH_HOUR } from "./design.js";
 import {
   BARS,
@@ -65,9 +66,8 @@ import {
 } from "./store.js";
 import { GROUPS, GROUP_BUCKETS, MARKET, TAKER, bucketOf } from "./writers.js";
 
-/** A merge unit's rows at most, before it runs bucket by bucket: a unit of 12 million rows held 1,765 MB of heap, measured 2026-11-25 (design.ts WORKER_HEAP_GB). */
+/** A month-group's rows at most before it runs bucket by bucket; a bucket above it runs whole as one unit, and no output depends on the size. Measured: a unit of 12 million rows held 1,765 MB of heap (2026-11-25); one bucket's unit of 48 million rows, 2,595,335 accounts in the dictionary, 2,696 MB of heap and 7,066 MB of the process (its columns outside the heap), in 458 s (2026-11-26, COPYH-STORE-FIX) (design.ts WORKER_HEAP_GB). */
 export const UNIT_ROWS = 12_000_000;
-const MINUTE_MS = 60_000;
 
 const MERGE = "merge";
 const UnitRecord = z.object({
@@ -114,7 +114,7 @@ export type MergeInput = {
   range: Range;
   list: { name: string; sha256: string };
   budget: Budget;
-  /** A unit's rows at most before it runs bucket by bucket (UNIT_ROWS; a test passes a small one). */
+  /** A month-group's rows at most before it runs bucket by bucket (UNIT_ROWS; a test passes a small one). */
   unitRows: number;
   log: (event: string, fields: object) => void;
 };
@@ -140,9 +140,7 @@ function headsOf(o: MergeInput): (Head & { file: string; index: number })[] {
 }
 
 /** The trades split across files next to each other, paired: the maker rows to set, by file; the records left unpaired; the count. */
-export function straddlesOf(
-  heads: readonly { index: number; header: PartHeader }[],
-) {
+function straddlesOf(heads: readonly { index: number; header: PartHeader }[]) {
   const patches = new Map<number, Map<string, boolean>>();
   const left = heads.map(
     (h) =>
@@ -175,9 +173,7 @@ export function straddlesOf(
 }
 
 /** The bars' pairs across files: a file's first market taker of a coin against the previous file's last; a file out of time order stops the merge. */
-export function crossPairsOf(
-  heads: readonly { index: number; header: PartHeader }[],
-) {
+function crossPairsOf(heads: readonly { index: number; header: PartHeader }[]) {
   const prev = new Map<number, [number, number, number]>();
   const pairs: { iid: number; time: number; gap: number }[] = [];
   for (const h of heads)
@@ -230,6 +226,12 @@ export function merge(
     (k) => o.files.find((f) => f.key === k)?.index ?? -1,
   ) as [number, number];
 
+  /** No unit, the dictionaries' among them, starts once the run's minutes are spent or a closed window has begun. */
+  const due = () => {
+    const why = o.budget.stop();
+    if (why !== null) throw new NotFinished(`the merge stopped: ${why}`);
+  };
+
   // The dictionaries, once: every unit names them.
   const dictFile = path.join(o.dir, MERGE, "dict.json");
   let users: string[];
@@ -252,6 +254,7 @@ export function merge(
     );
     names = JSON.parse(nb.toString("utf8")) as typeof names;
   } else {
+    due();
     const all = new Set<string>();
     const dirs = new Set<string>();
     const methods = new Set<string>();
@@ -290,10 +293,6 @@ export function merge(
     return r;
   };
   const records: UnitRecord[] = [];
-  const due = () => {
-    const why = o.budget.stop();
-    if (why !== null) throw new NotFinished(`the merge stopped: ${why}`);
-  };
 
   // The fills, by (month, group), or (month, bucket) when a group is large.
   for (const month of o.range.months) {
@@ -335,10 +334,6 @@ export function merge(
                 (s, h) => s + h.header.groups[g]!.buckets[only]!,
                 0,
               );
-        if (rows > o.unitRows)
-          throw new StoreError(
-            `${unit}: ${rows} rows, more than the ${o.unitRows} a unit was measured at: a ruling sets a larger size`,
-          );
         const r = fillsUnit({
           o,
           chosen,
@@ -677,12 +672,7 @@ function barsUnit(u: {
   const accOf = (iid: number) => {
     let a = accs.get(iid);
     if (a === undefined) {
-      a = Object.fromEntries(
-        [...BARS.map(([n]) => n), "lastTime"].map((n) => [
-          n,
-          new Float64Array(minutes),
-        ]),
-      );
+      a = Object.fromEntries(BARS.map(([n]) => [n, new Float64Array(minutes)]));
       a.last!.fill(NaN);
       a.lastTime!.fill(-Infinity);
       accs.set(iid, a);

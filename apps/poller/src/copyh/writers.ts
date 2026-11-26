@@ -21,6 +21,7 @@
  *   that the merge joins a pair across files and refuses files out of time
  *   order.
  */
+import { MINUTE_MS } from "../schedule.js";
 import { BACKSTOP_METHOD, BUCKETS, PAIR_MS, SETTLEMENT_DIR } from "./design.js";
 import {
   TradePairs,
@@ -148,8 +149,6 @@ export type CoinBars = {
   first: [number, number, number] | null;
   lastTaker: [number, number, number] | null;
 };
-
-const MINUTE_MS = 60_000;
 
 /** The build's sink: a file's fills by bucket group, its trades paired, its bars by coin. */
 export class Writers implements Sink {

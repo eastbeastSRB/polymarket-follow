@@ -5,7 +5,8 @@
  * its line in that store's `manifest.jsonl`; in the reply's `universe` order,
  * so that a coin's index is its iid (Hyperliquid's asset id), delisted coins
  * included with their flag as read. Append-only: an iid seeds an entry's
- * delay, so a later list may only add coins at its end. A record's coin is
+ * delay, so a later list may only add coins at its end (the freeze tool's
+ * check of a later list, the plan's part 5). A record's coin is
  * read by its form: a builder dex's (`dex:COIN`), spot's (`@n` or a pair with
  * `/`), else main-dex-shaped; a kept record whose coin is not in the list
  * stops the step.
@@ -99,20 +100,6 @@ export function coinsFromMeta(bytes: Buffer, line: StoredLine): CoinsFile {
       szDecimals: u.szDecimals,
       delisted: u.isDelisted === true,
     })),
-  });
-}
-
-/** Refuses a list that is not the earlier one with coins appended at its end: an index never changes. */
-export function checkAppendOnly(earlier: CoinsFile, later: CoinsFile): void {
-  if (later.coins.length < earlier.coins.length)
-    throw new StoreError(
-      `the new list has ${later.coins.length} coins, the earlier ${earlier.coins.length}`,
-    );
-  earlier.coins.forEach((c, i) => {
-    if (later.coins[i]!.name !== c.name)
-      throw new StoreError(
-        `iid ${i} is ${c.name} in the earlier list, ${later.coins[i]!.name} in the new one`,
-      );
   });
 }
 

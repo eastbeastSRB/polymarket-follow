@@ -187,6 +187,7 @@ function extractFile(task: Task): Done {
       sink: writers ?? NOTHING,
     });
   } catch (err) {
+    // Every error of the scan, a frame that fails to decode and a programming error alike, is "not ready" (exit 5), its message kept.
     if (err instanceof StoreError) throw err;
     throw new StoreError(`${task.key}: ${(err as Error).message}`);
   }
