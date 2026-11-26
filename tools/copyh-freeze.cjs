@@ -8,6 +8,9 @@
  *     apps/poller/copyh/funding.sha256
  *   node tools/copyh-freeze.cjs --final
  *     its first check: the candidate's store closure is the rehearsal's
+ *   node tools/copyh-freeze.cjs --closure [<package folder>]
+ *     prints the store closure of this build, or of a package folder's
+ *     build, as copyh/rehearsal.json records it
  *
  * --data: every fill file COPY-H's two stages read, E's from WAVE-H's frozen
  * list (`waveh/data.sha256`) and S's from FRESH's (`polish/fresh.sha256`), in
@@ -30,6 +33,12 @@
  * (`dist/copyh/closure.js`: every file the store's programs load, design.js
  * by the store's values) differs from the one `copyh/rehearsal.json`
  * records, or when there is no record; the list itself comes at part 5.
+ *
+ * --closure (C15 (c)): the record of E's store for `copyh/rehearsal.json`,
+ * `{"storeClosure": …}` on stdout, writing nothing: the closure of the
+ * build in the package folder given (a pinned snapshot's, whose build made
+ * E's store), else of this repository's, its files and its own design.js's
+ * values found by this build's `dist/copyh/closure.js`.
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -176,8 +185,26 @@ async function finalProblems(
   );
 }
 
+/** --closure: the store closure of the build at `pkg`, its design.js's values its own, by this build's closure.js. */
+async function closureRecord(pkg) {
+  const closure = await import(
+    pathToFileURL(path.join(PKG, "dist", "copyh", "closure.js")).href
+  );
+  const design = await import(
+    pathToFileURL(path.join(pkg, "dist", "copyh", "design.js")).href
+  );
+  return closure.closureOf(pkg, closure.STORE_ENTRIES, design);
+}
+
 async function main() {
   const args = process.argv.slice(2);
+  if (args[0] === "--closure" && args.length <= 2) {
+    const storeClosure = await closureRecord(
+      args.length === 2 ? path.resolve(args[1]) : PKG,
+    );
+    process.stdout.write(`${JSON.stringify({ storeClosure }, null, 2)}\n`);
+    return;
+  }
   if (args.length === 1 && args[0] === "--final") {
     const problems = await finalProblems(PKG);
     if (problems.length > 0)
@@ -192,7 +219,7 @@ async function main() {
   const funding = args.length === 3 && args[1] === "--funding" ? args[2] : null;
   if (args[0] !== "--data" || (args.length !== 1 && funding === null))
     throw new Error(
-      "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final",
+      "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final | --closure [<package folder>]",
     );
   const { RANGES } = await import(
     pathToFileURL(path.join(PKG, "dist", "copyh", "range.js")).href
@@ -232,7 +259,14 @@ async function main() {
   process.stdout.write(`wrote ${fout}: ${sha256(ftext)}\n`);
 }
 
-module.exports = { dataList, finalProblems, fundingList, listOf, manifestOf };
+module.exports = {
+  closureRecord,
+  dataList,
+  finalProblems,
+  fundingList,
+  listOf,
+  manifestOf,
+};
 
 if (require.main === module)
   main().catch((err) => {

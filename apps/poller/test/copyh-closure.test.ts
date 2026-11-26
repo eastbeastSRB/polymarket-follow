@@ -8,16 +8,25 @@
  * bytes, a value no store file reads and a run-only value leave the closure
  * as it was; each difference named, a record whose SHA-256 is not its
  * content's among them. On this build: every export of design.ts classified
- * store, run-only or engine, the closure reading exactly the store's; and
- * the freeze tool's `--final` check against a record.
+ * store, run-only or engine, the closure reading exactly the store's; the
+ * freeze tool's `--final` check against a record; and its `--closure`
+ * print, of this build and of another package folder's.
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   RUN_ONLY,
+  RehearsalRecord,
   STORE_ENTRIES,
   closureDifferences,
   closureOf,
@@ -259,5 +268,56 @@ describe("this build's store closure", { timeout: 60_000 }, () => {
       "the record's SHA-256 is not its content's",
       `changed: ${first![0]}`,
     ]);
+  });
+
+  it("is printed by the freeze tool's --closure as copyh/rehearsal.json records it: this build's, or a package folder's, its files and design.js its own", async () => {
+    const toolPath = path.join(
+      PACKAGE_ROOT,
+      "..",
+      "..",
+      "tools",
+      "copyh-freeze.cjs",
+    );
+    const tool = createRequire(import.meta.url)(toolPath) as {
+      closureRecord: (pkg: string) => Promise<StoreClosure>;
+    };
+    const c = storeClosure();
+    expect(await tool.closureRecord(PACKAGE_ROOT)).toEqual(c);
+    // Another package folder (a snapshot's build): its files, one changed, and its design.js, a store value changed.
+    const other = mkdtempSync(path.join(tmpdir(), "copyh-snapshot-"));
+    for (const f of [
+      ...c.files.map(([f]) => f),
+      "dist/copyh/design.js",
+      "package.json",
+    ]) {
+      mkdirSync(path.dirname(path.join(other, f)), { recursive: true });
+      copyFileSync(path.join(PACKAGE_ROOT, f), path.join(other, f));
+    }
+    const first = c.files[0]![0];
+    writeFileSync(
+      path.join(other, first),
+      `${readFileSync(path.join(other, first), "utf8")}\n// another build\n`,
+    );
+    const design = path.join(other, "dist", "copyh", "design.js");
+    const text = readFileSync(design, "utf8");
+    expect(text).toMatch(/HOLE_MS = 60_?000;/);
+    writeFileSync(
+      design,
+      text.replace(/HOLE_MS = 60_?000;/, "HOLE_MS = 61000;"),
+    );
+    const theirs = await tool.closureRecord(other);
+    expect(closureDifferences(c, theirs)).toEqual([
+      `changed: ${first}`,
+      "design.js's HOLE_MS: 61000, recorded 60000",
+    ]);
+    // The command prints the record, writing nothing.
+    const print = (...args: string[]) =>
+      JSON.parse(
+        execFileSync(process.execPath, [toolPath, "--closure", ...args], {
+          encoding: "utf8",
+        }),
+      ) as unknown;
+    expect(RehearsalRecord.parse(print())).toEqual({ storeClosure: c });
+    expect(print(other)).toEqual({ storeClosure: theirs });
   });
 });
