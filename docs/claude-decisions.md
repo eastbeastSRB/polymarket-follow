@@ -1,5 +1,81 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's PART 3, THE COPY ENGINE: ITS PLAN
+APPROVED; A NEW CAP FOR ACCOUNTS THE KIT CANNOT HOLD; THE BURN-IN'S
+BOUNDARY FIX): **THE OWNER SAID TO START THE ENGINE ("we can start with copy
+engine … let's proceed with that", ~08:45Z). ITS PLAN IS APPROVED WITH THE
+RULINGS BELOW. BUILDING STARTS WITH COMMITS 1–2.**
+
+**The plan** (COPYH-ENGINE, Opus 5.5, max, fresh; 08:48–09:25Z; its
+`progress.md` sections 0–16; nothing built, no data opened):
+- **Seven phases:** LABELS (the kit's `labelAt`, one part per bucket and
+  block of 8 Mondays); BUILD (events, cycles, entries, `exitRows`, habits,
+  lines, plans); REMOVAL (the kit's `removalOf` per coin); TRIPWIRE;
+  PRICES (one coin's market objects in memory at a time); RANK; RESULT.
+- Every part runs twice in separate processes, byte-equal before a record
+  is written (exit 7 otherwise). Each part is written whole and resumable.
+- From the paper: `planCopyThrough`, `stopInstant`, `DAYS7_MS`,
+  `jumpRatio`, `twoWay`, `dailyEValue`, `smallestEdge`. The kit and
+  lib-exits load through `loadResearch`, never copied.
+- 16 commits, about 7,000 lines and 8,000 of tests, 3–4 sessions; a fresh
+  worker for its breaks round.
+- Its machine-time estimate for step 1's engine: about 29 CPU-hours with
+  both copies, about 10 hours on 3 workers. To be replaced by measurement.
+
+**The rulings:**
+- **Q1, the main risk:** the kit's `labelAt` holds a 90-day capture in
+  memory, and C4 needs the whole history's events before EXITS_MAX can be
+  counted. Market makers with tens of millions of fills may not fit.
+  - (a) The burn-in reports its largest accounts' records, and the
+    rehearsal's counts on E give the 90-day figures. Counts only.
+  - (b) The kit's bytes and seconds per fill are measured on synthetic
+    accounts at full size.
+  - (c) Two new caps beside EXITS_MAX. Above **LABEL_FILLS_MAX** an
+    account is not P1 at that Monday. Above **HISTORY_FILLS_MAX** it is in
+    no line and no removal set. Each is named, counted and printed at every
+    look, and set before the freeze from (a) and (b) with a wide margin.
+    Their sentences are queued for the rules' last touch.
+- **Q2:** a try using `priorMeanNetBps`: the prior count is over all prior
+  MAIN copies. The tripwire projects its set without the mean-net
+  condition, and says so.
+- **Q3:** on a twin difference (exit 7), both copies are moved aside under
+  a decisions entry and computed again. The light phases run twice too.
+- **Q4:** `markets.ts` builds the market object with the settlement mark as
+  a parameter. It is held field for field to the kit's `marketFrom` and the
+  paper's `marketThrough` by mandatory tests.
+- **Q17:** FRESH-2's integrity sample days are the 15th of each of its
+  months. Queued for the rules' last touch.
+- Q5–Q16 and Q18–Q21: as the worker recommends (its `progress.md`). Its
+  technical calls come to the supervisor for this log.
+
+**The burn-in's boundary fix** (`d42b96a`, COPYH-GUARDS, approved by the
+supervisor; 10 breaks killed; 1,031 tests):
+- The burn-in's count found 628,022 records (0.285%) failing the
+  boundary, mostly takers.
+- COPYH-BURNIN's diagnosis, in a scratch copy over 15 files and counts
+  only: all 31,194 failures read failed one check. `startPosition` is
+  written with 16–18 significant digits (10 fraction digits, a residue
+  under 1e-6 of a lot), and its double equals the lot-grid value's (8–9
+  digits). The analyzer accepts these records.
+- The check now holds `startPosition` to its double's shortest text, the
+  re-reader the same in its own code, with the counter `startByDouble`.
+- **The recount:** failed 2 of 220,682,866, both in one file whose makers
+  equal its takers. `copyh/dirs.json` was committed (`af8076c`).
+- The store and its twin are built: 180,194,608 fill rows, 0 duplicates,
+  0 straddles. Integrity is running.
+
+**Queued for the rules' last touch at part 5:** 10 sentences now:
+1. another repeated record is a stop;
+2. the heap cap;
+3. holes at the ends;
+4. a line that does not tile;
+5. C0's funding seal by time;
+6. the burn-in's sample days;
+7. C3's `startPosition` read as its double;
+8. LABEL_FILLS_MAX and HISTORY_FILLS_MAX;
+9. FRESH-2's sample days;
+10. a finite guard on `sz` (on the code's fix list too).
+
 2026-11-26 (the supervisor — COPY-H's STORE GUARDED: EVERY KILLABLE BREAK
 KILLED; THE BURN-IN STARTS; THE FUNDING DOWNLOAD'S NIGHT STOPS): **207 OF
 209 BREAKS NOW KILLED (SL14 EQUIVALENT, D05 PROVISIONAL BY DESIGN).
