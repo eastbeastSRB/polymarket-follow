@@ -878,6 +878,49 @@ describe("the integrity", { timeout: 60_000 }, () => {
     ]);
   });
 
+  it("leaves out an outcome market's records (`#n`) by their coin's form in both readers: a Buy, a Settlement at px 0.0 and one above 0; a perp coin's Settlement kept, forced", async () => {
+    const at = (n: number, f: Partial<Omit<FillSpec, "crossed">>) =>
+      trade(addr(2 * n), addr(2 * n + 1), {
+        coin: "#450",
+        side: "B",
+        time: H0 + n * 1_000,
+        tid: n,
+        ...f,
+      });
+    // The build would stop on a "#n" coin or the dir "Buy" read against the lists.
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(H0),
+          `${byBlock(1, [
+            ...at(1, { dir: "Buy" }),
+            ...at(2, { coin: "#1", dir: "Settlement", px: "0.0" }),
+            ...at(3, { coin: "#1", dir: "Settlement", px: "1.0" }),
+            ...at(4, { coin: "SOL", dir: "Settlement", px: "151.0" }),
+          ])}
+`,
+        ],
+      ]),
+    );
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect(r.k2).toMatchObject({ days: ["2025-09-15"], files: 1 });
+    expect(r.counts.classes).toMatchObject({
+      kept: 2,
+      outcome: 6,
+      failed: 0,
+    });
+    const m = openStore(w.first, w.roots).manifest;
+    expect([m.counts.failedBy, m.counts.dirs]).toEqual([
+      [],
+      [["Settlement", 2]],
+    ]);
+    // SOL (iid 2): both records kept, its first Settlement their time.
+    expect(m.counts.coins).toEqual([
+      [2, 2, H0 + 4_000, H0 + 4_000, H0 + 4_000],
+    ]);
+  });
+
   it("re-reads a blank line as the pass reads it, one failed record: leading, between lines and two trailing", async () => {
     const H1 = H0 + HOUR_MS;
     const H2 = H0 + 2 * HOUR_MS;

@@ -1,6 +1,14 @@
 {
- "rule": "copyh/rules.md C3: every dir value of the main-dex-shaped records counted by `count --range burnin` (2026-11-26, after d42b96a), each with its kind ruled from its text alone (the supervisor, decisions 2026-11-26): trade, a trader's own order; forced, every \"Liquidated ...\" value; vault, \"Net Child Vaults\"",
+ "rule": "copyh/rules.md C3: every dir value of E's main-dex-shaped records counted by `count --range E` (2026-11-26, runner2 79250a6; counts.json SHA-256 8a94dd13df87daaa173b5a2f9a02c96d18a0dbcfaf8f4c64210c23b36cb384db), each with its kind ruled from its text alone (the supervisor, decisions 2026-11-26: the burn-in's 9 as ruled at 07:34Z; at 19:00Z, forced for Auto-Deleveraging, Settlement and every \"Liquidated ...\" value, outcome for Buy, Sell and the four outcome operations, after a count of their coin names, every one an outcome market's \"#n\"; then the \"#\" coin form left out and counted as outcome, C3's RL5 route): trade, a trader's own order; forced, exits only; vault, \"Net Child Vaults\"; outcome, an outcome-market operation, left out and counted",
  "dirs": [
+  {
+   "dir": "Auto-Deleveraging",
+   "kind": "forced"
+  },
+  {
+   "dir": "Buy",
+   "kind": "outcome"
+  },
   {
    "dir": "Close Long",
    "kind": "trade"
@@ -14,12 +22,32 @@
    "kind": "forced"
   },
   {
+   "dir": "Liquidated Cross Short",
+   "kind": "forced"
+  },
+  {
    "dir": "Liquidated Isolated Long",
+   "kind": "forced"
+  },
+  {
+   "dir": "Liquidated Isolated Short",
    "kind": "forced"
   },
   {
    "dir": "Long > Short",
    "kind": "trade"
+  },
+  {
+   "dir": "Merge Outcome",
+   "kind": "outcome"
+  },
+  {
+   "dir": "Merge Question",
+   "kind": "outcome"
+  },
+  {
+   "dir": "Negate Outcome",
+   "kind": "outcome"
   },
   {
    "dir": "Net Child Vaults",
@@ -34,8 +62,20 @@
    "kind": "trade"
   },
   {
+   "dir": "Sell",
+   "kind": "outcome"
+  },
+  {
+   "dir": "Settlement",
+   "kind": "forced"
+  },
+  {
    "dir": "Short > Long",
    "kind": "trade"
+  },
+  {
+   "dir": "Split Outcome",
+   "kind": "outcome"
   }
  ]
 }

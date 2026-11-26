@@ -86,11 +86,13 @@ describe("coins.json", { timeout: 60_000 }, () => {
 });
 
 describe("a coin's form", { timeout: 60_000 }, () => {
-  it("reads a builder dex's, spot's and the main dex's shape", () => {
+  it("reads a builder dex's, spot's, an outcome market's and the main dex's shape", () => {
     expect(formOfCoin("xyz:TSLA")).toBe("builder");
     for (const c of ["@107", "@0", "PURR/USDC"])
       expect(formOfCoin(c), c).toBe("spot");
-    for (const c of ["BTC", "kPEPE", "HYPE", "#12"])
+    for (const c of ["#12", "#0", "#1160"])
+      expect(formOfCoin(c), c).toBe("outcome");
+    for (const c of ["BTC", "kPEPE", "HYPE"])
       expect(formOfCoin(c), c).toBe("main");
   });
 });

@@ -137,6 +137,47 @@ describe("the classes", { timeout: 60_000 }, () => {
     expect(s.buckets.reduce((a, b) => a + b, 0)).toBe(s.classes.kept);
   });
 
+  it("counts an outcome market's records (`#n`) as outcome by their coin's form on either path, before any list is read: a Buy, a Settlement at px 0.0 and one above 0; a perp coin's Settlement kept", () => {
+    const at = (n: number, f: Partial<Omit<FillSpec, "crossed">>) =>
+      trade(addr(2 * n), addr(2 * n + 1), {
+        coin: "#450",
+        side: "B",
+        time: T + n,
+        tid: n,
+        ...f,
+      });
+    // The slow path: a fill that does not open with its coin.
+    const slow = `["${addr(20)}",{"px":"0.0","coin":"#1","sz":"1.0","side":"B","time":${T},"startPosition":"0.0","dir":"Settlement","closedPnl":"0.0","hash":"0x00","oid":7,"crossed":true,"fee":"0.0","tid":9,"feeToken":"USDC"}]`;
+    const text = `${byBlock(7, [
+      ...at(1, { dir: "Buy" }),
+      ...at(2, { coin: "#1", dir: "Settlement", px: "0.0" }),
+      ...at(3, { coin: "#1", dir: "Settlement", px: "1.0" }),
+      ...at(4, { coin: "SOL", dir: "Settlement", px: "151.0" }),
+      slow,
+    ])}\n`;
+    // A build's lists: a "#n" coin or the dir "Buy" read against them would stop the file.
+    const { scan: s, writers } = scan(text);
+    expect(s.classes).toEqual({
+      kept: 2,
+      spot: 0,
+      builder: 0,
+      outcome: 7,
+      early: 0,
+      late: 0,
+      failed: 0,
+      unknownDir: 0,
+      unknownCoin: 0,
+    });
+    expect([s.slowRecords, [...s.failedBy], [...s.dirs]]).toEqual([
+      1,
+      [],
+      [["Settlement", 2]],
+    ]);
+    expect(writers.groups.reduce((n, g) => n + g.time.length, 0)).toBe(2);
+    // SOL (iid 2): its two records kept, its first Settlement their time.
+    expect(s.coins.get(2)).toEqual([2, T + 4, T + 4, T + 4]);
+  });
+
   it("names why each failed record failed: its frame, its parse on either path, a line's, the schema's field path, the record itself", () => {
     const good = (n: number, more: Partial<FillSpec> = {}) =>
       record(addr(n), {

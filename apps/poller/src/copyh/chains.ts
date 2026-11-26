@@ -57,7 +57,10 @@ function chainsOf(fills: readonly ChainFill[]): {
   if (fills.length === 1) return { head: [fills[0]!.startPosition], chains: 1 };
   const s = fills.map((f) => decimalOf(f.startPosition));
   const d = fills.map((f) => decimalOf(f.sz));
-  const scale = Math.max(0, ...[...s, ...d].map((v) => -v.exp));
+  // A loop, not Math.max(...): an event of more than about 62,000 fills passes V8's argument limit (the engine's code review, 3111dcf).
+  let scale = 0;
+  for (const v of s) if (-v.exp > scale) scale = -v.exp;
+  for (const v of d) if (-v.exp > scale) scale = -v.exp;
   const at = (v: { m: bigint; exp: number }) =>
     v.m * 10n ** BigInt(v.exp + scale);
   const start = s.map(at);

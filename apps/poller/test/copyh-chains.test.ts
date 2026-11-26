@@ -104,4 +104,26 @@ describe("chain heads", { timeout: 60_000 }, () => {
     expect(Math.abs(after)).toBeGreaterThanOrEqual(1e-9);
     expect(Math.abs(after)).toBeLessThan(1e-6);
   });
+
+  it("read one matching event of 200,000 fills without passing V8's argument limit, as a small equivalent reads (the engine's code review, 3111dcf)", () => {
+    // Two chains, 0 by 0.25 and 1,000,000.5 by 0.5, the fills interleaved.
+    const event = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        i % 2 === 0
+          ? B((i / 2) * 0.25, 0.25)
+          : B(1_000_000.5 + ((i - 1) / 2) * 0.5, 0.5),
+      );
+    const heads = (n: number) =>
+      Array.from({ length: n }, (_, i) => (i % 2 === 0 ? 0 : 1_000_000.5));
+    const small = event(6);
+    expect([chainCount(small), chainHeads(small)]).toEqual([2, heads(6)]);
+    const big = event(200_000);
+    expect(chainCount(big)).toBe(2);
+    // Compared by a count, not by toEqual: a diff of 200,000 values would hang the reporter (code-rules).
+    const want = heads(200_000);
+    const got = chainHeads(big);
+    expect([got.length, got.filter((h, i) => h !== want[i]).length]).toEqual([
+      200_000, 0,
+    ]);
+  });
 });

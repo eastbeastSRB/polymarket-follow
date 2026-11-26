@@ -380,7 +380,9 @@ class Scanner {
     }
     if (formOfCoin(rec.fill.coin) !== "main") {
       this.count(rec.fill.time);
-      this.scan.classes[formOfCoin(rec.fill.coin) as "spot" | "builder"] += 1;
+      this.scan.classes[
+        formOfCoin(rec.fill.coin) as "spot" | "builder" | "outcome"
+      ] += 1;
       return;
     }
     this.take(rec);

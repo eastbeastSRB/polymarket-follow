@@ -8,7 +8,7 @@
  * delay, so a later list may only add coins at its end (the freeze tool's
  * check of a later list, the plan's part 5). A record's coin is
  * read by its form: a builder dex's (`dex:COIN`), spot's (`@n` or a pair with
- * `/`), else main-dex-shaped; a kept record whose coin is not in the list
+ * `/`), an outcome market's (`#n`), else main-dex-shaped; a kept record whose coin is not in the list
  * stops the step.
  */
 import { z } from "zod";
@@ -103,14 +103,16 @@ export function coinsFromMeta(bytes: Buffer, line: StoredLine): CoinsFile {
   });
 }
 
-/** A record's coin by its form (C3). */
-export type CoinForm = "main" | "spot" | "builder";
+/** A record's coin by its form (C3); an outcome market's (`#n`) is left out and counted with the outcome-kind records (RL5's route, the supervisor's ruling, decisions 2026-11-26: E's Settlement prints on `#n` coins). */
+export type CoinForm = "main" | "spot" | "builder" | "outcome";
 export const formOfCoin = (coin: string): CoinForm =>
   coin.includes(":")
     ? "builder"
     : coin.startsWith("@") || coin.includes("/")
       ? "spot"
-      : "main";
+      : coin.startsWith("#")
+        ? "outcome"
+        : "main";
 
 /** The coins by name: a name's iid. */
 export const iidsOf = (f: CoinsFile): ReadonlyMap<string, number> =>

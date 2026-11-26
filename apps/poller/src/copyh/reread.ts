@@ -152,12 +152,15 @@ function idOf(v: unknown): bigint | null {
   return n <= U64_MAX ? n : null;
 }
 
+/** A coin's form, by this reader's own code as C3 gives it: an outcome market's (`#n`) counted with the outcome-kind records. */
 const formOf = (coin: string) =>
   coin.includes(":")
     ? "builder"
     : coin.startsWith("@") || coin.includes("/")
       ? "spot"
-      : "main";
+      : coin.startsWith("#")
+        ? "outcome"
+        : "main";
 
 export type Classes = {
   kept: number;
