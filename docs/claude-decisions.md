@@ -1,5 +1,40 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's STORE: THE BREAKS ROUND DONE; ITS
+TESTS AND THREE CODE FIXES START): **209 BREAKS, 126 KILLED, 83 SURVIVED, 0
+INVALID; NO REAL BUG FOUND; THE 83 ARE TEST GAPS.**
+
+**The round:** COPYH-BREAKS (Sonnet 5.5, max, fresh; 00:12–00:58Z; context
+peak 716,210).
+- It ran in one scratch lane cut from `9114ae9`, whose code equals HEAD's.
+  The control passed 146 of 146 tests in 19 files.
+- Each break ran over all 19 COPY-H test files.
+- Its predictions were pinned before any run and held: 121 of 122 predicted
+  kills killed, 82 of 87 predicted survivors survived. The five surprises
+  were kills by an accident of a test.
+- **The supervisor's tally** of its `results.jsonl`
+  (`verify/COPYH-BREAKS/tally.cjs`) gives the same numbers.
+- The weightiest gaps:
+  - P04: a resumed pass could lose the 1% day rule;
+  - M04: a self-trade taken for a repeat;
+  - M06 and M07: the month filter, whose test worlds lie in one month;
+  - W04 and W05: ids above 2^31 or of 16 digits;
+  - N01: nothing proves the cut fields never reach `JSON.parse`;
+  - I01 and I02: the merge's counts;
+  - P13: the worker ceiling computed in decimal GB.
+- SL14 is shown equivalent. D05 is provisional by design.
+
+**Its findings, on the code's fix list:**
+1. The pass counts a blank line as a failed record; the re-reader skips it.
+2. The re-reader keeps the switch hour's repeats, which the store drops.
+3. The sample days need extracting from `main.ts` (`sampleDaysOf`), so a
+   test can reach S's.
+
+**Next:** COPYH-GUARDS (Opus 5.5, max, fresh) makes the three fixes, each
+with its test. It then writes the spec's 54 rows (80 of the 83 survivors)
+and re-runs each group's breaks in the lane to show them killed. The
+burn-in follows on the supervisor's word.
+
 2026-11-26 (the supervisor — COPY-H's STORE BUILT TO ITS MEASURED CEILINGS;
 A NODE BUG CHECKED AGAINST EVERY PAST READ; THE BREAKS ROUND RUNS): **PARTS
 1–2 ARE BUILT BUT FOR THE BREAKS ROUND'S TESTS. NO PAST RESULT IS TOUCHED BY
