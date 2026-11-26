@@ -3,8 +3,10 @@
  * C3): every field; an own and a counterparty liquidation leg; each kind's
  * `forced`; matching events by (oid, coin, `time`), their chain heads as
  * prevS; an event split across the rows of two files; and through the kit's
- * own `toEvents`, one order event per matching event, where Hyperliquid's
- * per-fill `startPosition` alone would give one per fill.
+ * own `toEvents`, a taker's sweep one order event, where Hyperliquid's
+ * per-fill `startPosition` alone would give one per fill, and a maker order
+ * hit three times in one millisecond three events, each maker fill its own
+ * head (the supervisor's ruling, 2026-11-26).
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { normOf, type Row } from "../src/copyh/normalize.js";
@@ -128,5 +130,27 @@ describe("the kit's fills", { timeout: 60_000 }, () => {
       prev: [0, 1, 3][i]!,
     }));
     expect(kit.entries.toEvents(perFill)).toHaveLength(3);
+  });
+
+  it("give a maker order hit three times in one millisecond three events, each fill its own head, as the paper reads them", () => {
+    const fills = normOf([
+      row({ startPosition: 0, sz: 1, tid: "1", crossed: false }),
+      row({ startPosition: 1, sz: 2, tid: "2", crossed: false }),
+      row({ startPosition: 3, sz: 0.5, tid: "3", crossed: false }),
+    ]);
+    expect(fills.map((f) => f.prevS)).toEqual(["0", "1", "3"]);
+    const events = kit.entries.toEvents(fills);
+    expect(events.map((e) => [e.kind, e.prev, e.after, e.tids])).toEqual([
+      ["OPEN", 0, 1, ["1"]],
+      ["ADD", 1, 3, ["2"]],
+      ["ADD", 3, 3.5, ["3"]],
+    ]);
+    // A taker fill of the same order and millisecond still chains with the others taken.
+    const mixed = normOf([
+      row({ startPosition: 0, sz: 1, tid: "1", crossed: false }),
+      row({ startPosition: 1, sz: 2, tid: "2" }),
+      row({ startPosition: 3, sz: 0.5, tid: "3" }),
+    ]);
+    expect(mixed.map((f) => f.prevS)).toEqual(["0", "1", "1"]);
   });
 });

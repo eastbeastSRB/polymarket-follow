@@ -1,9 +1,13 @@
 /**
  * An account's kept fills normalized into the kit's `normFill` fields
  * (copyh/rules.md C3; the kit's `fills.mjs`): t = `time`; iid = the coin's
- * index in `coins.json`; oid and tid their digits as text; **prevS = the
- * fill's chain head's `startPosition`** (chains.ts) as its shortest text,
- * prev its value; sgn +1 for "B", −1 for "A"; px and q from `px` and `sz`;
+ * index in `coins.json`; oid and tid their digits as text; **prevS = a
+ * taker fill's chain head's `startPosition`** (chains.ts: the chains of its
+ * matching event's taker fills) **and a maker fill's own**, as its shortest
+ * text, prev its value: each maker fill is its own event, as the paper's
+ * order events read them (the supervisor's ruling, 2026-11-26, from
+ * COPYH-REPRO's count on the paper's seed: 953,244 events, no entry or P1
+ * differing); sgn +1 for "B", −1 for "A"; px and q from `px` and `sz`;
  * fee and pnl 0 (C5: the label never needs pnl); taker = `crossed`; liq =
  * the account's own liquidation leg; forced = liq, or a `dir` of kind
  * `forced`. The chain heads are computed here, when an account is read,
@@ -33,16 +37,17 @@ export type Row = {
 /** The kit's normalized fill (`normFill`'s fields, as the paper types them). */
 export type NormFill = Fill;
 
-/** The rows of one account as the kit's fills, in the rows' order; each matching event's (oid, coin, `time`) chain heads its prevS. */
+/** The rows of one account as the kit's fills, in the rows' order: the taker fills of each matching event (oid, coin, `time`) take their chain heads as prevS, a maker fill its own `startPosition`. */
 export function normOf(rows: readonly Row[]): NormFill[] {
   const events = new Map<string, number[]>();
   rows.forEach((r, i) => {
+    if (!r.crossed) return;
     const k = `${r.oid}|${r.iid}|${r.time}`;
     const e = events.get(k);
     if (e === undefined) events.set(k, [i]);
     else e.push(i);
   });
-  const heads = new Array<number>(rows.length);
+  const heads = rows.map((r) => r.startPosition);
   for (const idx of events.values()) {
     const h = chainHeads(idx.map((i) => rows[i]!));
     idx.forEach((i, j) => (heads[i] = h[j]!));

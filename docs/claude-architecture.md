@@ -1027,7 +1027,8 @@ market taker of a coin is timed before the previous file's last stops
 (exit 5); the dictionaries (every address sorted, the `dir` values and
 methods); then the units, each written whole with its record, resumed: the
 fills by (month, bucket group), or bucket by bucket above `UNIT_ROWS`
-(12,000,000 rows, measured below; a bucket above it refused), rows by
+(12,000,000 rows, measured below; a bucket above it runs whole, measured
+at 48 million rows: a ceiling that decides nothing), rows by
 (account, `time`), ties in the pass's order; a record found in both of the
 switch hour's files kept once and counted, a market taker twice there or
 any other record met twice a stop; the bars by month; `files.jsonl` (each
@@ -1039,7 +1040,8 @@ liquidation, backstop, market), `dir`, `method`, `file`) and
 `ntl`, `last`, `pairGap`, `pairs`, `leftBackstop`, `leftAdl`,
 `leftSettlement`, `leftVault`, `settleSz`, `settleNtl`). Chain heads are
 computed when an account is read (`chains.ts`, `normalize.ts`: the kit's
-`normFill` fields); the holes from each file's records' first and last
+`normFill` fields; a matching event's taker fills chained, each maker fill
+its own event, as the paper's order events: cut E); the holes from each file's records' first and last
 time by minute (`holes.ts`, exact for the union of files).
 
 **The integrity** (`integrity.ts`, `twin.ts`, `reread.ts`, `digest.ts`), in
@@ -1092,8 +1094,14 @@ the meta reply and every window of every coin, each held to the funding
 store's list and manifest and read by `funding.ts`, C9's reader: the
 reply's shape, rows of the file's coin, the nominal hour the time rounded
 to the nearest hour, no coin's hour twice, no rate used). The freeze list
-itself (`--final`, `--rounds`, `--fresh2`, the marker refusal) comes at
-part 5.
+itself (`--final`, `--rounds`, `--fresh2`, the marker refusal) comes at part 5. `copyh/rehearsal.json` also records
+E's store as built before the freeze: the store closure's hashes
+(`closure.ts`: the compiled graph of its entry points, `design.js` by the
+store values it exports), the manifest without its run fields and every
+file's SHA-256. `--final` refuses a candidate whose store closure differs;
+step 1's first build is held byte for byte to that record, and when equal
+it is step 1's twin (A'). After E is built, no file of the store closure
+nor `schedule.ts` changes without the supervisor.
 
 **The engine** (part 3; no command reaches it yet). The kit and lib-exits
 run unchanged, loaded by `dist/paper/research.js`; END and the stage window
