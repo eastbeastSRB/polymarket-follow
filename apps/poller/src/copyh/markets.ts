@@ -32,14 +32,14 @@
  *   under $1,000 of market-trade notional.
  */
 import type { Market, PanelFile, Research } from "../paper/research.js";
-import type { Values } from "../polish/tables.js";
 import { DAY_MS, MINUTE_MS } from "../schedule.js";
+import { columnOf } from "./accounts.js";
 import { THIN_MINUTES, THIN_NOTIONAL } from "./design.js";
 import type { FundingRow } from "./funding.js";
 import { dayOf } from "./instants.js";
 import { StoreError } from "./run.js";
 import { checkInstant } from "./seal.js";
-import { coinKey, type Partition, type Store } from "./store.js";
+import { coinKey, type Store } from "./store.js";
 
 const iso = (t: number) => new Date(t).toISOString();
 
@@ -62,21 +62,6 @@ export type Bars = {
 };
 const F64 = ["sz", "ntl", "last", "pairGap", "settleSz", "settleNtl"] as const;
 const U32 = ["trades", "pairs"] as const;
-
-/** A partition's column of its kind and length; another is refused (our own file). */
-function columnOf<T extends Values>(
-  store: BarsSource,
-  p: Partition,
-  name: string,
-  kind: { readonly prototype: T },
-): T {
-  const v = store.column(p, name);
-  if (Object.getPrototypeOf(v) !== kind.prototype || v.length !== p.rows)
-    throw new StoreError(
-      `bars/${p.key}/${p.month}: its ${name} column is not of its kind or length`,
-    );
-  return v as T;
-}
 
 /** A coin's bars in the stores of a reading, from its first partition's start to `to` (END, a minute's start); null when they hold none. */
 export function readBars(

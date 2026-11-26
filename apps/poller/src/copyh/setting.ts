@@ -58,7 +58,12 @@ export function spreadsOf(kit: Research, bars: Bars): (t: number) => Spread {
     latest[d] = Number.isNaN(c[d]!) ? (d > 0 ? latest[d - 1]! : -1) : d;
   return (t) => {
     const before = Math.floor((dayOf(t) - day0) / DAY_MS) - 1;
-    const j = before < 0 ? -1 : latest[Math.min(before, days - 1)]!;
+    // No caller asks past the bars (the kit asks a spread only where it found a mark): a refusal, never a clamp that would hide a wrong call (the engine review's L10).
+    if (before > days - 1)
+      throw new Error(
+        `coin ${bars.iid}: a spread asked at ${new Date(t).toISOString()}, past its bars`,
+      );
+    const j = before < 0 ? -1 : latest[before]!;
     return j < 0
       ? { c: SPREAD_FALLBACK, fallback: true }
       : { c: c[j]!, fallback: j !== before };

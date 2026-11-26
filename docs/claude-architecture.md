@@ -931,7 +931,7 @@ decisions 2026-11-20, the code review's fix round).
 
 **What it is.** A sixth entry point of the same package, `dist/copyh.js`
 (`src/copyh.ts`, `src/copyh/`): COPY-H's rules, `apps/poller/copyh/rules.md`
-(C0–C18, `5a80af5`), the plan `docs/reviews/copy-h-plan-2026-11-25.md`
+(C0–C18, `f29289e`), the plan `docs/reviews/copy-h-plan-2026-11-25.md`
 section 7 parts 1–2. Run by hand from the repository's build, one command
 at a time, at idle priority, as `node dist\copyh.js <command>` with no heap
 flag; it makes no network request. `copyh.ts` is a launcher: it runs the

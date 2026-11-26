@@ -3,7 +3,8 @@
  * half the median of UTC day d − 1's minute mean gaps, from the day before
  * only (written out here as the rule says it); the 30-minute rule at 29 and
  * at 30 minutes, the latest earlier day with 30 flagged, 25 bps flagged with
- * none, a day past the bars; the pairs at 2 s and at 2 s + 1 ms and across a
+ * none, the day after the bars read from their last, an instant later
+ * refused; the pairs at 2 s and at 2 s + 1 ms and across a
  * minute's boundary, from the store's own pass and merge; the taker's
  * 4.5 bps a leg, the cascade print's minute c, Binance's 5 bps a side; a leg
  * of another coin refused; the kit's leg on the taker setting.
@@ -97,7 +98,10 @@ describe("c(coin, d)", () => {
     // Day 2 holds 29 minutes, day 3 none: day 1's c, flagged.
     expect(c(at(3))).toEqual({ c: C1, fallback: true });
     expect(c(at(4))).toEqual({ c: C1, fallback: true });
-    expect(c(at(7))).toEqual({ c: 0.005, fallback: true });
+    // Two days past the bars and later: refused, never clamped to their last day (the engine review's L10).
+    for (const day of [6, 7]) expect(() => c(at(day))).toThrow("past its bars");
+    expect(() => c(DAY0 + 6 * DAY_MS)).toThrow("past its bars");
+    expect(c(DAY0 + 6 * DAY_MS - 1)).toEqual({ c: 0.005, fallback: false });
     expect(c(at(0))).toEqual({ c: SPREAD_FALLBACK, fallback: true });
     expect(c(DAY0 - 1)).toEqual({ c: SPREAD_FALLBACK, fallback: true });
     const thin = spreadsOf(
@@ -107,7 +111,7 @@ describe("c(coin, d)", () => {
         new Map(DAY_0.slice(0, 29).map((k) => [k, [1, 0.001]] as const)),
       ),
     );
-    for (const day of [0, 1, 2, 3, 5])
+    for (const day of [0, 1, 2, 3])
       expect(thin(at(day))).toEqual({ c: SPREAD_FALLBACK, fallback: true });
   });
 });
@@ -117,10 +121,13 @@ describe("the settings", () => {
   const c = spreadsOf(kit, world);
 
   it("charge 4.5 bps a leg with c for the taker, 5 bps a side with c for Binance", () => {
+    // The fee on every leg of every month; the spread from the coin's bars, inside them.
     for (const t of [at(0), at(1), at(4), Date.parse("2026-10-01T00:00:00Z")]) {
       expect(taker.fee(SOL, t)).toBe(0.00045);
       expect(binance.fee(SOL, t)).toBe(0.0005);
       expect(cascade.fee(SOL, t)).toBe(0.00045);
+    }
+    for (const t of [at(0), at(1), at(4)]) {
       expect(taker.spread(SOL, t)).toEqual(c(t));
       expect(binance.spread(SOL, t)).toEqual(c(t));
     }

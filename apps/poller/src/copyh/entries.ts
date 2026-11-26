@@ -6,9 +6,8 @@
  * accounts are not run through the kit, each named and counted at every
  * look:
  * - one whose fills to END number more than HISTORY_FILLS_MAX: the kit holds
- *   every fill and event of a history at once (the supervisor's ruling on
- *   COPYH-ENGINE's Q1, 2026-11-26; its sentence queued for the rules' last
- *   touch);
+ *   every fill and event of a history at once (C4; the supervisor's ruling
+ *   on COPYH-ENGINE's Q1, 2026-11-26);
  * - one whose exit rows — the exits `buildEntries` would append over all its
  *   groups, counted by `exitRows` without building them — number more than
  *   EXITS_MAX (C4; RH1 (b)).
@@ -25,22 +24,18 @@ import type {
   OrderEvent,
   Research,
 } from "../paper/research.js";
-import { DAY_MS } from "../schedule.js";
 import { MERGE_MS, RESIDUE_BOUNDS } from "./design.js";
+import { WEEK_MS } from "./instants.js";
 
 /** The kit's zero (entries.mjs): a size within it is flat. */
 const EPS = 1e-9;
-const WEEK_MS = 7 * DAY_MS;
 
 /**
- * The exits `buildEntries(events, −∞, ∞, mergeMs)` would append over all
+ * The exits `buildEntries(events, −∞, ∞, 60 000)` would append over all
  * its groups: the kit's own loop, instrument by instrument, with a count of
  * the open groups on each side in place of the groups themselves.
  */
-export function exitRows(
-  events: readonly OrderEvent[],
-  mergeMs: number = MERGE_MS,
-): number {
+export function exitRows(events: readonly OrderEvent[]): number {
   const byIid = new Map<number, OrderEvent[]>();
   for (const e of events) {
     const list = byIid.get(e.iid);
@@ -70,7 +65,7 @@ export function exitRows(
         cur !== null &&
         (e.kind === "OPEN" || e.kind === "ADD") &&
         cur.dir === dir &&
-        e.t - cur.t <= mergeMs
+        e.t - cur.t <= MERGE_MS
       )
         continue;
       cur = { dir, t: e.t };

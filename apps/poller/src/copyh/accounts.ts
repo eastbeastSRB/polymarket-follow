@@ -61,23 +61,29 @@ type Columns = {
   readonly dir: Uint8Array;
 };
 
-/** A partition's columns of the kinds part.ts's FILLS writes; another kind or length is refused (our own file). */
+/** A partition's column of its kind and length, `per` values a row; another is refused (our own file). The bars' reader takes it too (markets.ts). */
+export function columnOf<T extends Values>(
+  store: Pick<Store, "column">,
+  p: Partition,
+  name: string,
+  kind: { readonly prototype: T },
+  per = 1,
+): T {
+  const v = store.column(p, name);
+  if (Object.getPrototypeOf(v) !== kind.prototype || v.length !== p.rows * per)
+    throw new StoreError(
+      `${p.table}/${p.key}/${p.month}: its ${name} column is not of its kind or length`,
+    );
+  return v as T;
+}
+
+/** A partition's columns of the kinds part.ts's FILLS writes. */
 function columnsOf(store: FillsSource, p: Partition): Columns {
   const col = <T extends Values>(
     name: string,
     kind: { readonly prototype: T },
     per = 1,
-  ): T => {
-    const v = store.column(p, name);
-    if (
-      Object.getPrototypeOf(v) !== kind.prototype ||
-      v.length !== p.rows * per
-    )
-      throw new StoreError(
-        `${p.table}/${p.key}/${p.month}: its ${name} column is not of its kind or length`,
-      );
-    return v as T;
-  };
+  ): T => columnOf(store, p, name, kind, per);
   return {
     user: col("user", Uint32Array),
     time: col("time", Float64Array),

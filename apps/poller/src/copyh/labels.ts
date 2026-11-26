@@ -8,8 +8,8 @@
  *   M gets the classifier's "no fills in window" at once (the kit's answer
  *   for such a capture). A capture of more than LABEL_FILLS_MAX fills is not
  *   run through the kit: the account is not P1 at that Monday, and is named
- *   and counted (the supervisor's ruling on COPYH-ENGINE's Q1, 2026-11-26;
- *   its sentence queued for the rules' last touch).
+ *   and counted (C5; the supervisor's ruling on COPYH-ENGINE's Q1,
+ *   2026-11-26).
  * - P1 at M: the label "directional" and the label's window covered, which
  *   C5 reads as M − 14 d at or after ARCHIVE_START (true from M₀); the
  *   reproduction passes R5's own coverage.
