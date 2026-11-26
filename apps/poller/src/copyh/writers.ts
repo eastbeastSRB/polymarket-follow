@@ -21,7 +21,7 @@
  *   that the merge joins a pair across files and refuses files out of time
  *   order.
  */
-import { BUCKETS, PAIR_MS, SETTLEMENT_DIR } from "./design.js";
+import { BACKSTOP_METHOD, BUCKETS, PAIR_MS, SETTLEMENT_DIR } from "./design.js";
 import {
   TradePairs,
   isMarket,
@@ -179,7 +179,7 @@ export class Writers implements Sink {
           : named === rec.user
             ? OWN_LIQUIDATION
             : OTHER_LIQUIDATION) |
-      (method === "backstop" ? BACKSTOP : 0) |
+      (method === BACKSTOP_METHOD ? BACKSTOP : 0) |
       (market ? MARKET : 0);
     const row = rows.time.length;
     const oid = u64Of(f.oid);
@@ -271,7 +271,7 @@ function barsOf(
   settled: readonly (readonly [number, number, number])[],
 ): CoinBars {
   const ts = [...takers].sort((a, b) => a.time - b.time || a.order - b.order);
-  // A loop, not a spread: a spread of millions of times overflows the stack.
+  // A loop, not Math.min(...times): millions of arguments overflow the stack.
   let lo = Infinity;
   let hi = -Infinity;
   for (const t of [

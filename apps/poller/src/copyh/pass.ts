@@ -171,7 +171,7 @@ function extractFile(task: Task): Done {
       `${task.key}: SHA-256 ${got}, the list's ${task.sha256}`,
     );
   const counting = task.mode === "count";
-  const writers = new Writers();
+  const writers = counting ? null : new Writers();
   let scan: ReturnType<typeof scanFile>;
   try {
     scan = scanFile(bytes, {
@@ -184,25 +184,26 @@ function extractFile(task: Task): Done {
         kinds: task.lists.kinds === null ? null : new Map(task.lists.kinds),
         counting,
       },
-      sink: counting ? NOTHING : writers,
+      sink: writers ?? NOTHING,
     });
   } catch (err) {
     if (err instanceof StoreError) throw err;
     throw new StoreError(`${task.key}: ${(err as Error).message}`);
   }
   const input = { index: task.index, key: task.key, sha256: task.sha256 };
-  const out = counting
-    ? Buffer.from(
-        `${JSON.stringify({ input, code: task.code, lists: task.lists.hashes, compressed: bytes.length, scan: scanJsonOf(scan) } satisfies CountFile)}\n`,
-      )
-    : partOf({
-        input,
-        code: task.code,
-        lists: task.lists.hashes,
-        compressed: bytes.length,
-        scan,
-        writers,
-      });
+  const out =
+    writers === null
+      ? Buffer.from(
+          `${JSON.stringify({ input, code: task.code, lists: task.lists.hashes, compressed: bytes.length, scan: scanJsonOf(scan) } satisfies CountFile)}\n`,
+        )
+      : partOf({
+          input,
+          code: task.code,
+          lists: task.lists.hashes,
+          compressed: bytes.length,
+          scan,
+          writers,
+        });
   const memory = memoryNow();
   writeUnflushed(
     (counting ? countFile : partFile)(task.parts, task.index),

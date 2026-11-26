@@ -51,7 +51,7 @@ export class TradePairs {
   private readonly open = new Map<string, Waiting>();
   /** Rows to set once their trade was paired: the reading their taker gives. */
   readonly settled: { at: readonly [number, number]; market: boolean }[] = [];
-  /** Trades met with a third record, or with two takers or two makers: listed, never paired. */
+  /** Trades met with two takers or two makers: listed, never paired (a third record of a paired trade waits again and ends in the unpaired list). */
   readonly odd: string[] = [];
 
   /** The key of a record's trade. */

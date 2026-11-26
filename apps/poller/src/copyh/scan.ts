@@ -72,7 +72,7 @@ export type Scan = {
   dirs: Map<string, number>;
   /** Their taker records, by `dir` and liquidation method (`""` for none). */
   takers: Map<string, number>;
-  /** Kept records by coin: [iid, count, first time, last time, first "Settlement" time or -1]. */
+  /** Kept records by coin, keyed by its iid: [count, first time, last time, first "Settlement" time or -1]. */
   coins: Map<number, [number, number, number, number]>;
   /** Counting runs: the values outside their lists, with their counts. */
   unknownDirs: Map<string, number>;

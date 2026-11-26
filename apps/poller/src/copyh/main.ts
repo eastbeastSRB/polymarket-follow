@@ -239,6 +239,7 @@ async function count(r: RangeName): Promise<void> {
   const dir = path.join(rangeDir!, "counts");
   const lists = listsOf(true);
   const p = passOf(r);
+  const code = fingerprintOf(PACKAGE_ROOT);
   const summary = await runPass({
     store: raw,
     parts: dir,
@@ -246,7 +247,7 @@ async function count(r: RangeName): Promise<void> {
     files: p.files,
     start: RANGES[r].start,
     end: RANGES[r].end,
-    code: fingerprintOf(PACKAGE_ROOT),
+    code,
     lists,
     workers,
     heapGb,
@@ -264,7 +265,7 @@ async function count(r: RangeName): Promise<void> {
   const out = path.join(rangeDir!, "counts.json");
   writeWhole(
     out,
-    `${JSON.stringify({ range: r, list: p.list, lists: lists.hashes, code: fingerprintOf(PACKAGE_ROOT), node: process.version, heapGb, seconds: summary.seconds, peaks: summary.peaks, ...counts }, null, 1)}\n`,
+    `${JSON.stringify({ range: r, list: p.list, lists: lists.hashes, code, node: process.version, heapGb, seconds: summary.seconds, peaks: summary.peaks, ...counts }, null, 1)}\n`,
   );
   logOf("done: counts written", {
     file: out,

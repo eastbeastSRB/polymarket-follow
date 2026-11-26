@@ -220,8 +220,26 @@ describe("a trade's reading", { timeout: 60_000 }, () => {
         crossed: true,
         tid: 6,
       }),
+      // A third record of the first trade: it waits again and ends unpaired, its own reading kept.
+      record(addr(7), {
+        coin: "HYPE",
+        side: "A",
+        time: T,
+        crossed: false,
+        tid: 5,
+      }),
     ]);
-    expect(done.unpaired).toEqual([]);
+    expect(done.unpaired).toEqual([
+      {
+        iid: 3,
+        time: T,
+        tid: "5",
+        group: Math.floor(bucketOf(addr(7)) / 16),
+        row: 6,
+        taker: false,
+        market: true,
+      },
+    ]);
     expect(done.odd).toEqual([`3|${T + 9}|6`]);
   });
 });

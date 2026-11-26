@@ -70,7 +70,7 @@ const Counts = z.object({
   unpaired: z.array(
     z.tuple([z.number(), z.number(), z.number(), z.string(), z.boolean()]),
   ),
-  /** Trades met with two takers or two makers, or a third record: [file, key]. */
+  /** Trades met with two takers or two makers: [file, key] (a third record of a trade ends in `unpaired`). */
   odd: z.array(z.tuple([z.number(), z.string()])),
 });
 
