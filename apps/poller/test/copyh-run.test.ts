@@ -22,6 +22,8 @@ import {
   GateFailed,
   NotFinished,
   PACKAGE_ROOT,
+  RENAME_PAUSE_MS,
+  RENAME_TRIES,
   Settings,
   StoreError,
   budgetOf,
@@ -204,6 +206,10 @@ describe("the writes", { timeout: 60_000 }, () => {
     for (const write of [writeWhole, writeUnflushed])
       expect(() => write(f, Buffer.from("a"), 2, 1), write.name).toThrow();
     expect(existsSync(path.join(f, "inside"))).toBe(true);
+  });
+
+  it("try a refused rename 10 times, a second apart, by default", () => {
+    expect([RENAME_TRIES, RENAME_PAUSE_MS]).toEqual([10, 1_000]);
   });
 });
 

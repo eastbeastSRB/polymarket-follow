@@ -5,8 +5,10 @@
  * opened; S's range sealed before the freeze (exit 5), nothing written there;
  * a gated command stopped by the gate (exit 4) while the freeze does not
  * verify, asked through the gate itself (code-rules, POLISH-FIX); `coins`
- * writing coins.json from a stored meta reply held to its manifest line,
- * and refusing one that differs (exit 5). Run in `pnpm verify`'s order: the
+ * writing coins.json from a stored meta reply held to its manifest line, the
+ * program's heap ceiling exactly design.ts's, and refusing a reply that
+ * differs or a manifest without exactly one line for it (exit 5); a build
+ * over a built store refused (exit 5). Run in `pnpm verify`'s order: the
  * build first.
  */
 import { spawnSync } from "node:child_process";
@@ -22,8 +24,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { META_KEY, coinsFromMeta } from "../src/copyh/coins.js";
+import { WORKER_HEAP_GB } from "../src/copyh/design.js";
 import { verifyFreeze } from "../src/copyh/gate.js";
 import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
+import { heapLimitOf } from "./copyh-world.js";
 
 const BUILT = existsSync(path.join(PACKAGE_ROOT, "dist", "copyh", "main.js"));
 
@@ -64,26 +68,53 @@ function run(
   );
   return { code: r.status, stderr: r.stderr };
 }
+type LogLine = { msg: string; why?: string; heapLimitMB?: number };
 /** The log's lines of a run (one UTC day's file). */
-function logOf(root: string): { msg: string; why?: string }[] {
+function logOf(root: string): LogLine[] {
   const dir = path.join(root, "logs");
   if (!existsSync(dir)) return [];
   return readdirSync(dir).flatMap((f) =>
     readFileSync(path.join(dir, f), "utf8")
       .split("\n")
       .filter((l) => l !== "")
-      .map((l) => JSON.parse(l) as { msg: string; why?: string }),
+      .map((l) => JSON.parse(l) as LogLine),
   );
+}
+
+/** COPYH-FUNDING's store in a run's folders: the meta reply and the manifest text given. */
+function fundingStore(
+  f: ReturnType<typeof folders>,
+  meta: Buffer,
+  manifest: (line: string) => string,
+) {
+  mkdirSync(path.join(f.COPYH_FUNDING, "info"), { recursive: true });
+  writeFileSync(path.join(f.COPYH_FUNDING, ...META_KEY.split("/")), meta);
+  const line = {
+    key: META_KEY,
+    bytes: meta.length,
+    sha256: sha256(meta),
+    fetchedAt: "2026-11-25T21:12:00.000Z",
+  };
+  writeFileSync(
+    path.join(f.COPYH_FUNDING, "manifest.jsonl"),
+    manifest(`${JSON.stringify(line)}\n`),
+  );
+  return line;
 }
 
 describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
   it("refuses a heap flag, on the command line or in NODE_OPTIONS, and a COPYH_HEAP_GB of another form, before it opens anything", () => {
     const f = folders();
-    const flag = run(["coins"], f, ["--max-old-space-size=512"]);
-    expect(flag.code).toBe(2);
-    expect(flag.stderr).toContain(
-      "a heap flag overrides every worker's ceiling",
-    );
+    for (const form of [
+      "--max-old-space-size=512",
+      "--max_old_space_size=512",
+    ]) {
+      const flag = run(["coins"], f, [form]);
+      expect(flag.code, form).toBe(2);
+      expect(flag.stderr, form).toContain(
+        "a heap flag overrides every worker's ceiling",
+      );
+    }
     const options = run(["coins"], {
       ...f,
       NODE_OPTIONS: "--max-old-space-size=512",
@@ -105,6 +136,8 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
       [["build", "--range", "X"], 'the option "--range"'],
       [["build", "--range", "E", "--minutes", "15"], 'the option "--minutes"'],
       [["build", "--range", "E", "--workers", "0"], 'the option "--workers"'],
+      [["build", "--range", "E", "--workers", "17"], 'the option "--workers"'],
+      [["build", "--range", "E", "--twin", "--twin"], 'the option "--twin"'],
       [["coins", "--twin"], 'the option "--twin"'],
     ] as const) {
       const r = run(args, f);
@@ -156,7 +189,29 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     );
   });
 
-  it("writes coins.json from the stored meta reply held to its manifest line, and refuses a reply that differs (exit 5)", () => {
+  it("refuses a funding manifest that holds the meta reply's line twice or not at all (exit 5)", () => {
+    for (const times of [2, 0]) {
+      const f = folders();
+      fundingStore(f, Buffer.from('{"universe":[]}'), (line) =>
+        line.repeat(times),
+      );
+      expect(run(["coins"], f).code, String(times)).toBe(5);
+      expect(logOf(f.COPYH_ROOT).at(-1)?.why, String(times)).toContain(
+        `${times} lines for ${META_KEY}`,
+      );
+    }
+  });
+
+  it("refuses a build over a built store (exit 5, already run) before it reads a list", () => {
+    const f = folders();
+    const store = path.join(f.COPYH_ROOT, "burnin", "store");
+    mkdirSync(store, { recursive: true });
+    writeFileSync(path.join(store, "manifest.json"), "{}");
+    expect(run(["build", "--range", "burnin"], f).code).toBe(5);
+    expect(logOf(f.COPYH_ROOT).at(-1)).toMatchObject({ msg: "already run" });
+  });
+
+  it("writes coins.json from the stored meta reply held to its manifest line, and refuses a reply that differs (exit 5)", async () => {
     const f = folders();
     const meta = Buffer.from(
       JSON.stringify({
@@ -188,6 +243,11 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     );
     const r = run(["coins"], f);
     expect([r.code, r.stderr]).toEqual([0, ""]);
+    // The program's own ceiling is design.ts's: exactly a worker's of WORKER_HEAP_GB × 1,024 MB.
+    const start = logOf(f.COPYH_ROOT).find((l) => l.msg === "start coins");
+    expect(start?.heapLimitMB).toBe(
+      Math.round((await heapLimitOf(WORKER_HEAP_GB * 1024)) / 2 ** 20),
+    );
     const written = JSON.parse(
       readFileSync(path.join(f.COPYH_ROOT, "coins.json"), "utf8"),
     ) as unknown;
