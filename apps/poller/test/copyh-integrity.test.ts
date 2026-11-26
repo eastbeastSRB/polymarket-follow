@@ -3,13 +3,20 @@
  * rules.md C15, step 1, 2–3): a made-up store and its twin through every
  * check, passing whole, then each check failed by its own planted fault — a
  * file changed on disk (K0), a partition lost from the manifest (K0's
- * conservation), a record unpaired in a middle file (K1) and the same record
- * ruled in unpaired.json, a cell and a bar changed with their manifest lines
- * made to match (only the re-read sees it: K2), the twin's manifest or a twin
- * file differing (exit 7); a run stopped between units and resumed equal to
- * an unbroken one; blank lines and the switch hour's repeats read as the
- * store reads them; the re-reader's flags equal to the store's format; the
- * digest moved by any one cell.
+ * conservation), another data list, coins.json, dirs.json or code, the
+ * merge's counts, files.jsonl's counts and a column's size each with its
+ * manifest line made to match (K0), a record unpaired in a middle file (K1)
+ * and the same record ruled in unpaired.json, one in the last file an edge,
+ * a trade of two takers (K1), a cell and a bar changed with their manifest
+ * lines made to match (only the re-read sees it: K2), the twin's manifest or
+ * a twin file differing (exit 7), the twin's run fields and partition order;
+ * a run stopped between units and resumed equal to an unbroken one, another
+ * store's unit record never reused; the matching events counted; a sample
+ * day read with its neighbour files (a backstop's trade across them, ADL,
+ * the vault, a pair across files at 2,000 ms, 15 digits); blank lines and
+ * the switch hour's repeats read as the store reads them; the re-reader's
+ * flags equal to the store's format, its windows below 2 GiB; the digest
+ * moved by any one cell.
  */
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -26,7 +33,7 @@ import {
 import { merge } from "../src/copyh/merge.js";
 import { runPass, type FileTask, type PassLists } from "../src/copyh/pass.js";
 import { hourKeys, monthsOf } from "../src/copyh/range.js";
-import { FLAG, SWITCH_KEYS, eachLine } from "../src/copyh/reread.js";
+import { FLAG, SWITCH_KEYS, WINDOW, eachLine } from "../src/copyh/reread.js";
 import {
   BuildsDiffer,
   GateFailed,
@@ -35,11 +42,13 @@ import {
 } from "../src/copyh/run.js";
 import { SEALED } from "../src/copyh/seal.js";
 import {
+  FILES_FILE,
   MANIFEST,
   Manifest,
   openStore,
   partitionDir,
 } from "../src/copyh/store.js";
+import { manifestDifferences } from "../src/copyh/twin.js";
 import * as W from "../src/copyh/writers.js";
 import { HOUR_MS } from "../src/schedule.js";
 import {
@@ -70,8 +79,17 @@ const LISTS: PassLists = {
 const never = { stop: () => null };
 const NONE: UnpairedFile = { rule: "none", records: [] };
 
+type WorldOptions = {
+  /** A maker unpaired in the middle file. */
+  middleUnpaired?: boolean;
+  /** A maker unpaired in the last file. */
+  lastUnpaired?: boolean;
+  /** A trade of two takers in the middle file. */
+  odd?: boolean;
+};
+
 /** Three files of one day: trades within files, a pair within 2 s, a Settlement, a two-chain matching event, a trade split across files, a maker left unpaired at the first file. */
-function texts(middleUnpaired = false): Map<string, string> {
+function texts(o: WorldOptions = {}): Map<string, string> {
   const H1 = H0 + HOUR_MS;
   const H2 = H0 + 2 * HOUR_MS;
   return new Map([
@@ -164,7 +182,7 @@ function texts(middleUnpaired = false): Map<string, string> {
           tid: 7,
           startPosition: "-2.0",
         }),
-        ...(middleUnpaired
+        ...(o.middleUnpaired === true
           ? [
               record(addr(11), {
                 coin: "ETH",
@@ -174,6 +192,18 @@ function texts(middleUnpaired = false): Map<string, string> {
                 tid: 50,
               }),
             ]
+          : []),
+        // One trade met with two takers.
+        ...(o.odd === true
+          ? [18, 19].map((n) =>
+              record(addr(n), {
+                coin: "ETH",
+                side: "B",
+                time: H1 + 40_000,
+                crossed: true,
+                tid: 52,
+              }),
+            )
           : []),
         // A trade's taker at the hour's end; its maker sits in the next file.
         record(addr(12), {
@@ -203,6 +233,17 @@ function texts(middleUnpaired = false): Map<string, string> {
           time: H2 + 60_000,
           tid: 9,
         }),
+        ...(o.lastUnpaired === true
+          ? [
+              record(addr(17), {
+                coin: "ETH",
+                side: "A",
+                time: H2 + 30_000,
+                crossed: false,
+                tid: 51,
+              }),
+            ]
+          : []),
       ])}\n`,
     ],
   ]);
@@ -294,8 +335,7 @@ async function worldOf(
 }
 
 /** The standard world: three files of 2025-09-15 (texts). */
-const world = (o: { middleUnpaired?: boolean } = {}) =>
-  worldOf(texts(o.middleUnpaired));
+const world = (o: WorldOptions = {}) => worldOf(texts(o));
 
 /** Each input file's records failing the boundary, by the pass (files.jsonl). */
 const failedByFile = (storeDir: string, roots: string[]) =>
@@ -305,6 +345,28 @@ const failedByFile = (storeDir: string, roots: string[]) =>
     }[]
   ).map((l) => l.scan.classes.failed);
 
+/** A store's manifest edited and written back (the store's id then changes). */
+function tamperManifest(storeDir: string, edit: (m: Manifest) => void) {
+  const mfile = path.join(storeDir, MANIFEST);
+  const m = Manifest.parse(JSON.parse(readFileSync(mfile, "utf8")));
+  edit(m);
+  writeFileSync(mfile, `${JSON.stringify(m, null, 1)}\n`);
+}
+
+/** A partition's file rewritten, and (when `match`) its manifest line made to match its bytes. */
+function rewrite(storeDir: string, rel: string, b: Buffer, match: boolean) {
+  writeFileSync(path.join(storeDir, ...rel.split("/")), b);
+  if (match)
+    tamperManifest(storeDir, (m) => {
+      for (const p of m.partitions)
+        for (const [name, f] of Object.entries(p.files))
+          if (`${partitionDir(p.table, p.key, p.month)}/${name}` === rel) {
+            f.bytes = b.length;
+            f.sha256 = sha256(b);
+          }
+    });
+}
+
 /** A store file's bytes changed in place, and (when `match`) its manifest line made to match. */
 function change(
   storeDir: string,
@@ -312,20 +374,46 @@ function change(
   edit: (b: Buffer) => void,
   match: boolean,
 ) {
-  const file = path.join(storeDir, ...rel.split("/"));
-  const b = readFileSync(file);
+  const b = readFileSync(path.join(storeDir, ...rel.split("/")));
   edit(b);
-  writeFileSync(file, b);
-  if (!match) return;
-  const mfile = path.join(storeDir, MANIFEST);
-  const m = Manifest.parse(JSON.parse(readFileSync(mfile, "utf8")));
-  for (const p of m.partitions) {
-    const dir = partitionDir(p.table, p.key, p.month);
-    for (const [name, f] of Object.entries(p.files))
-      if (`${dir}/${name}` === rel) f.sha256 = sha256(b);
-  }
-  writeFileSync(mfile, `${JSON.stringify(m, null, 1)}\n`);
+  rewrite(storeDir, rel, b, match);
 }
+
+/** A column cut short by `by` bytes, its manifest line made to match. */
+const truncateColumn = (storeDir: string, rel: string, by: number) =>
+  rewrite(
+    storeDir,
+    rel,
+    readFileSync(path.join(storeDir, ...rel.split("/"))).subarray(0, -by),
+    true,
+  );
+
+type FileLineJson = {
+  key: string;
+  scan: { seen: number; classes: Record<string, number> };
+};
+/** files.jsonl's lines edited, its manifest line made to match. */
+function tamperFiles(storeDir: string, edit: (lines: FileLineJson[]) => void) {
+  const file = path.join(storeDir, FILES_FILE);
+  const lines = readFileSync(file, "utf8")
+    .split("\n")
+    .filter((l) => l !== "")
+    .map((l) => JSON.parse(l) as FileLineJson);
+  edit(lines);
+  const b = Buffer.from(`${lines.map((l) => JSON.stringify(l)).join("\n")}\n`);
+  writeFileSync(file, b);
+  tamperManifest(storeDir, (m) => {
+    m.files = { bytes: b.length, sha256: sha256(b) };
+  });
+}
+
+/** A run's integrity.json, as written. */
+const saved = (i: IntegrityInput) =>
+  JSON.parse(readFileSync(path.join(i.dir, "integrity.json"), "utf8")) as {
+    k0: { pass: boolean; problems: string[] };
+    k1: { pass: boolean; odd: unknown[] };
+    k2: { pass: boolean; problems: string[] };
+  };
 
 const fillsPartOf = (storeDir: string, user: string) => {
   const m = Manifest.parse(
@@ -443,6 +531,269 @@ describe("the integrity", { timeout: 60_000 }, () => {
     };
     expect(s2.k0.pass).toBe(true);
     expect(s2.k2.problems.join("\n")).toContain("bar cells differ");
+  });
+
+  it("fails K0 on a store built from another data list, coins.json, dirs.json or code", async () => {
+    const w = await world();
+    const base = w.input().inputs;
+    for (const [key, what] of [
+      ["listSha256", "data.sha256's SHA-256"],
+      ["coinsSha256", "coins.json's SHA-256"],
+      ["dirsSha256", "dirs.json's SHA-256"],
+    ] as const) {
+      const i = w.input({
+        twin: null,
+        inputs: { ...base, [key]: "0".repeat(64) },
+      });
+      expect(() => runIntegrity(i), key).toThrow(GateFailed);
+      expect(saved(i).k0.problems.join("\n"), key).toContain(what);
+    }
+    const i = w.input({ twin: null, code: "other" });
+    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(saved(i).k0.problems.join("\n")).toContain("the code: code-a");
+  });
+
+  it("fails K0 when the merge's counts do not add up: in, out and duplicates; in and the files' kept records", async () => {
+    const w = await world();
+    tamperManifest(w.first, (m) => {
+      m.counts.merge.duplicates += 1;
+    });
+    const i = w.input({ twin: null });
+    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(saved(i).k0.problems).toHaveLength(1);
+    expect(saved(i).k0.problems[0]).toMatch(/^the merge's in: /);
+    const v = await world();
+    tamperManifest(v.first, (m) => {
+      m.counts.merge.in += 1;
+      m.counts.merge.duplicates += 1;
+    });
+    const j = v.input({ twin: null });
+    expect(() => runIntegrity(j)).toThrow(GateFailed);
+    expect(saved(j).k0.problems).toHaveLength(1);
+    expect(saved(j).k0.problems[0]).toMatch(/^the merge's rows in: /);
+  });
+
+  it("passes a record unpaired in the last file as an edge, and fails K1 on a trade of two takers alone", async () => {
+    const w = await world({ lastUnpaired: true });
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k1.pass, r.k1.edges, r.k1.unexpectedCount]).toEqual([true, 2, 0]);
+    const v = await world({ odd: true });
+    const i = v.input({ twin: null });
+    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    const s = saved(i);
+    expect([s.k0.pass, s.k1.pass, s.k2.pass, s.k1.odd.length]).toEqual([
+      true,
+      false,
+      true,
+      1,
+    ]);
+  });
+
+  it("fails on files.jsonl's counts changed with its manifest line made to match: the classes' sum, a value outside the lists, a class the re-read sees", async () => {
+    const key = (await world()).tasks[0]!.key;
+    const run = async (edit: (l: FileLineJson) => void) => {
+      const w = await world();
+      tamperFiles(w.first, (lines) => edit(lines[0]!));
+      const i = w.input({ twin: null });
+      expect(() => runIntegrity(i)).toThrow(GateFailed);
+      return saved(i);
+    };
+    // The first file holds 3 kept and 1 spot: 4 seen.
+    const seen = await run((l) => {
+      l.scan.seen += 1;
+    });
+    expect(seen.k0.problems).toContain(
+      `${key}: its classes hold 4 records of 5`,
+    );
+    const unknown = await run((l) => {
+      l.scan.classes.unknownDir! += 1;
+      l.scan.seen += 1;
+    });
+    expect(unknown.k0.problems).toContain(
+      `${key}: 1 dirs and 0 coins outside the lists, 0 misread`,
+    );
+    const moved = await run((l) => {
+      l.scan.classes.spot! -= 1;
+      l.scan.classes.builder! += 1;
+    });
+    expect(moved.k0.pass).toBe(true);
+    expect(moved.k2.problems).toContain(
+      `${key}: spot 0 in the pass, 1 re-read`,
+    );
+  });
+
+  it("counts the matching events: one account's fills of one oid and coin at one time", async () => {
+    // addr(1) at one time: oid 7 on BTC, oid 8 on BTC, oid 7 on ETH (3 events); its three makers one each: 6.
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(H0),
+          `${byBlock(1, [
+            ...trade(addr(1), addr(2), {
+              coin: "BTC",
+              side: "B",
+              time: H0 + 1_000,
+              tid: 1,
+            }),
+            ...trade(addr(1), addr(3), {
+              coin: "BTC",
+              side: "B",
+              time: H0 + 1_000,
+              tid: 2,
+              oid: 8,
+            }),
+            ...trade(addr(1), addr(4), {
+              coin: "ETH",
+              side: "B",
+              time: H0 + 1_000,
+              tid: 3,
+            }),
+          ])}\n`,
+        ],
+      ]),
+    );
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect([r.k3.events, r.k3.multiChain]).toEqual([6, 0]);
+  });
+
+  it("does not reuse a unit's record of another store", async () => {
+    const w = await world();
+    const dir = mkdtempSync(path.join(w.out, "integrity-"));
+    expect(runIntegrity(w.input({ dir, twin: null })).k0.pass).toBe(true);
+    const p = fillsPartOf(w.second, addr(3));
+    change(
+      w.second,
+      `${partitionDir("fills", p.key, p.month)}/px.f64`,
+      (b) => (b[0] = b[0]! ^ 1),
+      false,
+    );
+    const second = w.input({
+      dir,
+      store: openStore(w.second, w.roots),
+      twin: null,
+    });
+    expect(() => runIntegrity(second)).toThrow(GateFailed);
+    expect(saved(second).k0.problems.join("\n")).toContain(
+      "px.f64: differs from the manifest",
+    );
+  });
+
+  it("fails K0 on a column whose size does not fit its rows, though its manifest line matches", async () => {
+    const w = await world();
+    const p = fillsPartOf(w.first, addr(3));
+    const rel = `${partitionDir("fills", p.key, p.month)}/px.f64`;
+    truncateColumn(w.first, rel, 8);
+    const i = w.input({ twin: null });
+    expect(() => runIntegrity(i)).toThrow(GateFailed);
+    expect(saved(i).k0.problems).toContain(
+      `${rel}: ${8 * (p.rows - 1)} bytes for ${p.rows} rows`,
+    );
+  });
+
+  it("holds two builds equal but for the run's fields, and sees another partition order or other inputs", async () => {
+    const w = await world();
+    const a = openStore(w.first, w.roots).manifest;
+    const b = structuredClone(a);
+    b.written = "x";
+    b.seconds = { merge: 99 };
+    b.peaks = { x: 1 };
+    b.code = { fingerprint: "other", node: "v0" };
+    expect(manifestDifferences(a, b)).toEqual([]);
+    b.partitions.reverse();
+    expect(manifestDifferences(a, b)).toEqual([
+      "the partitions are listed in another order",
+    ]);
+    b.inputs.files += 1;
+    expect(manifestDifferences(a, b)).toContain("the manifests' inputs differ");
+  });
+
+  it("passes a sample day with its neighbour files, a backstop's trade across them, ADL, the vault, a pair across files at 2,000 ms and 15 significant digits", async () => {
+    const day = Date.parse("2025-09-15T00:00:00Z");
+    const before = day - 100;
+    const w = await worldOf(
+      new Map([
+        [
+          keyOf(day - HOUR_MS),
+          `${byBlock(1, [
+            record(addr(21), {
+              coin: "SOL",
+              side: "A",
+              time: before,
+              crossed: true,
+              tid: 70,
+              liquidation: {
+                liquidatedUser: addr(22),
+                markPx: "1",
+                method: "backstop",
+              },
+            }),
+          ])}\n`,
+        ],
+        [
+          keyOf(day),
+          `${byBlock(2, [
+            // The backstop's maker, in the day's first file: it takes the taker's reading from the file before.
+            record(addr(23), {
+              coin: "SOL",
+              side: "B",
+              time: before,
+              crossed: false,
+              tid: 70,
+            }),
+            ...trade(addr(24), addr(25), {
+              coin: "ETH",
+              side: "B",
+              time: day + 10 * 60_000,
+              tid: 73,
+              dir: "Auto-Deleveraging",
+            }),
+            ...trade(addr(26), addr(27), {
+              coin: "ETH",
+              side: "A",
+              time: day + 20 * 60_000,
+              tid: 74,
+              dir: "Net Child Vaults",
+            }),
+            ...trade(addr(28), addr(29), {
+              coin: "SOL",
+              side: "B",
+              time: day + 30 * 60_000,
+              tid: 75,
+              sz: "123456789012345",
+            }),
+            ...trade(addr(30), addr(31), {
+              coin: "BTC",
+              side: "B",
+              time: day + HOUR_MS - 2_000,
+              tid: 71,
+              px: "10",
+            }),
+          ])}\n`,
+        ],
+        [
+          keyOf(day + HOUR_MS),
+          `${byBlock(3, [
+            ...trade(addr(32), addr(33), {
+              coin: "BTC",
+              side: "A",
+              time: day + HOUR_MS,
+              tid: 72,
+              px: "10",
+            }),
+          ])}\n`,
+        ],
+      ]),
+      { start: day - HOUR_MS, end: day + 3 * HOUR_MS },
+    );
+    const r = runIntegrity(w.input({ twin: null }));
+    expect([r.k0.pass, r.k1.pass, r.k2.pass]).toEqual([true, true, true]);
+    expect(r.k2).toMatchObject({ days: ["2025-09-15"], files: 2, count: 0 });
+    expect(r.counts.straddles).toBe(1);
+    // The pair across the hour, 2,000 ms apart, in the store's bars at 01:00 (the range starts at 23:00).
+    const store = openStore(w.first, w.roots);
+    const bars = store.partition("bars", "000", "2025-09")!;
+    expect(store.column(bars, "pairs")[120]).toBe(1);
   });
 
   it("re-reads a blank line as the pass reads it, one failed record: leading, between lines and two trailing", async () => {
@@ -657,5 +1008,19 @@ describe("the re-reader and the digest", { timeout: 60_000 }, () => {
     b.add(base);
     expect([a.hex(), a.count]).toEqual([b.hex(), 2]);
     expect(rowBytes(base).length).toBeGreaterThan(80);
+    // The dir and the method are kept apart: "ab" and "c" are not "a" and "bc".
+    expect(one({ ...base, dir: "ab", method: "c" })).not.toBe(
+      one({ ...base, dir: "a", method: "bc" }),
+    );
+  });
+
+  it("searches its decoded bytes in windows below 2 GiB, by the name WINDOW", () => {
+    expect(WINDOW).toBe(256 * 2 ** 20);
+    expect(WINDOW).toBeLessThan(2 ** 31);
+    const source = readFileSync(
+      new URL("../src/copyh/reread.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain("eachLine(text, WINDOW, ");
   });
 });
