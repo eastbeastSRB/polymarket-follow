@@ -7,6 +7,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { Worker } from "node:worker_threads";
 import { sha256 } from "../src/copyh/run.js";
 import type { Lists } from "../src/copyh/scan.js";
 import { frameOf } from "./polish-world.js";
@@ -66,3 +67,17 @@ export function makeStore(
 
 /** A synthetic text's file bytes: its LZ4 frame. */
 export const lz4Of = (text: string) => frameOf(Buffer.from(text, "utf8"));
+
+/** The heap limit (bytes) V8 gives a worker of this old-generation ceiling on this machine: what a COPY-H worker of that ceiling reports. */
+export const heapLimitOf = (maxOldGenerationSizeMb: number) =>
+  new Promise<number>((resolve, reject) => {
+    const w = new Worker(
+      "require('node:worker_threads').parentPort.postMessage(require('node:v8').getHeapStatistics().heap_size_limit);",
+      { eval: true, resourceLimits: { maxOldGenerationSizeMb } },
+    );
+    w.once("message", (limit: number) => {
+      void w.terminate();
+      resolve(limit);
+    });
+    w.once("error", reject);
+  });

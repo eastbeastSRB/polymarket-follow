@@ -4,12 +4,15 @@
  * them, into parts, in this thread and through the worker pool (the build's
  * worker, byte for byte the same); a pass stopped by its minutes and resumed
  * equal to an unbroken one, byte for byte; a part redone for other code or
- * other lists; a bit flipped in any stretch of a part caught; the refusals:
- * a file that differs from its list, a sealed path or key, a path outside the
- * run's roots, the 1% day rule.
+ * other lists; a bit flipped in any stretch of a part caught, and a part
+ * without its magic or every group refused; a crash's .tmp files removed; the
+ * refusals: a file that differs from its list, or missing (a store error), a
+ * sealed path or key, a path outside the run's roots, the 1% day rule (at
+ * exactly 1% none; a resumed pass judged again), the pool's as the thread's.
  */
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -41,6 +44,7 @@ import {
   LIST_HASHES,
   addr,
   byBlock,
+  heapLimitOf,
   keyOf,
   makeStore,
   record,
@@ -138,6 +142,39 @@ const bytesOfParts = (dir: string) =>
     .sort()
     .map((f) => [f, sha256(readFileSync(path.join(dir, f)))]);
 
+/** The day rule's world: the hour before the switch hour holds `keep` and `n` lines that fail. The day's other three files add 40 + 13 + 20 records: `keep` + 73 + n in all, judged on the day's whole total. */
+const dayStart = SWITCH_HOUR - HOUR_MS;
+const good = Array.from({ length: 1990 }, (_, i) =>
+  record(addr(9), {
+    coin: "SOL",
+    side: "B",
+    time: dayStart + i,
+    crossed: false,
+    tid: i,
+  }),
+);
+const failing = (n: number, keep = good) =>
+  world(
+    new Map([
+      [
+        keyOf(dayStart, "node_fills"),
+        `${[...keep, ...Array.from({ length: n }, () => "not a record")].join("\n")}\n`,
+      ],
+    ]),
+  );
+/** A listed file the store lacks. */
+const absent: FileTask = {
+  index: 0,
+  key: keyOf(SWITCH_HOUR - 3 * HOUR_MS, "node_fills"),
+  sha256: "0".repeat(64),
+};
+/** A key of S's months. */
+const late: FileTask = {
+  index: 0,
+  key: "node_fills_by_block/hourly/20260529/2.lz4",
+  sha256: "a".repeat(64),
+};
+
 describe("the pass", { timeout: 60_000 }, () => {
   it("writes each file's part with its rows, counts and lists, and resumes without redoing one of the same code and lists", async () => {
     const w = world();
@@ -176,6 +213,16 @@ describe("the pass", { timeout: 60_000 }, () => {
       await pass(w, dir, {
         code: "code-b",
         lists: { ...LISTS, hashes: { ...LIST_HASHES, dirs: sha256("other") } },
+      }),
+    ).toMatchObject({ skipped: 0, extracted: 4 });
+    // Another coins.json alone: every part redone.
+    expect(
+      await pass(w, dir, {
+        code: "code-b",
+        lists: {
+          ...LISTS,
+          hashes: { coins: sha256("other-coins"), dirs: sha256("other") },
+        },
       }),
     ).toMatchObject({ skipped: 0, extracted: 4 });
   });
@@ -252,14 +299,7 @@ describe("the pass", { timeout: 60_000 }, () => {
       root: w.root,
     };
     await expect(pass(sealedStore, parts())).rejects.toThrow(SealedError);
-    const late = [
-      {
-        index: 0,
-        key: "node_fills_by_block/hourly/20260529/2.lz4",
-        sha256: "a".repeat(64),
-      },
-    ];
-    await expect(pass(w, parts(), { tasks: late })).rejects.toThrow(
+    await expect(pass(w, parts(), { tasks: [late] })).rejects.toThrow(
       "dated at or after END_E, S's months, sealed until step 2",
     );
     const outside = { ...w, root: path.join(w.root, "elsewhere") };
@@ -269,36 +309,100 @@ describe("the pass", { timeout: 60_000 }, () => {
   });
 
   it("stops on the day rule: more than 1%, and at least 10, of a day's records failing", async () => {
-    const t = SWITCH_HOUR - HOUR_MS;
-    const good = Array.from({ length: 1990 }, (_, i) =>
-      record(addr(9), {
-        coin: "SOL",
-        side: "B",
-        time: t + i,
-        crossed: false,
-        tid: i,
-      }),
-    );
-    const bad = (n: number) => Array.from({ length: n }, () => "not a record");
-    const at = (n: number, keep = good) =>
-      world(
-        new Map([
-          [keyOf(t, "node_fills"), `${[...keep, ...bad(n)].join("\n")}\n`],
-        ]),
-      );
-    // The day's other three files add 40 + 13 + 20 records: 2,063 + n in all, judged on the day's whole total.
-    const ok = at(20);
+    const ok = failing(20);
     await expect(pass(ok, parts())).resolves.toMatchObject({ failed: 20 });
-    const stop = at(21);
+    const stop = failing(21);
     await expect(pass(stop, parts())).rejects.toThrow(
       "21 of 2084 records fail the boundary",
     );
-    const few = at(9, good.slice(0, 100));
+    const few = failing(9, good.slice(0, 100));
     await expect(pass(few, parts())).resolves.toMatchObject({ failed: 9 });
-    const ten = at(10, good.slice(0, 100));
+    const ten = failing(10, good.slice(0, 100));
     await expect(pass(ten, parts())).rejects.toThrow(
       "10 of 183 records fail the boundary",
     );
+    // Exactly 1%, 10 of 1,000 (917 + 73 + 10), is not more than 1%.
+    const exact = failing(10, good.slice(0, 917));
+    await expect(pass(exact, parts())).resolves.toMatchObject({ failed: 10 });
+  });
+
+  it("stops a resumed pass on the day rule again: the skipped files' records stay in the day's total", async () => {
+    const stop = failing(21);
+    const dir = parts();
+    for (const run of ["first", "resumed"])
+      await expect(pass(stop, dir), run).rejects.toThrow(
+        "21 of 2084 records fail the boundary",
+      );
+    expect(readdirSync(dir).sort()).toEqual([
+      "0.part",
+      "1.part",
+      "2.part",
+      "3.part",
+    ]);
+  });
+
+  it("does not reuse a part whose input's SHA-256 differs from the list's", async () => {
+    const w = world();
+    const dir = parts();
+    await pass(w, dir);
+    const other = w.tasks.map((t, i) =>
+      i === 1 ? { ...t, sha256: "0".repeat(64) } : t,
+    );
+    await expect(pass(w, dir, { tasks: other })).rejects.toThrow(
+      `${w.tasks[1]!.key}: SHA-256 ${w.tasks[1]!.sha256}, the list's ${"0".repeat(64)}`,
+    );
+  });
+
+  it("stops at a listed file that is missing: a store error (exit 5), not a crash", async () => {
+    const w = world();
+    const err = await pass(w, parts(), { tasks: [absent] }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(StoreError);
+    expect((err as Error).message).toContain(`${absent.key}: ENOENT`);
+  });
+
+  it("removes a crash's .tmp files from the parts' folder and keeps every other file", async () => {
+    const w = world();
+    const dir = parts();
+    mkdirSync(path.join(dir, "sub"));
+    for (const f of ["99.part.tmp", "sub/x.tmp", "keep.txt"])
+      writeFileSync(path.join(dir, ...f.split("/")), "x");
+    await pass(w, dir);
+    expect(existsSync(path.join(dir, "99.part.tmp"))).toBe(false);
+    expect(existsSync(path.join(dir, "sub", "x.tmp"))).toBe(false);
+    expect(existsSync(path.join(dir, "keep.txt"))).toBe(true);
+  });
+
+  it("refuses a part that is not whole: its magic bytes, or a header without every bucket group", async () => {
+    const w = world();
+    const dir = parts();
+    await pass(w, dir);
+    const file = partFile(dir, 0);
+    const whole = readFileSync(file);
+    expect(readPartHeader(file)).not.toBeNull();
+    const magic = Buffer.from(whole);
+    magic[0] = magic[0]! ^ 1;
+    writeFileSync(file, magic);
+    expect(readPartHeader(file), "magic").toBeNull();
+    // The header with one group fewer, padded to 8 as the writer pads it, the payload after it unchanged.
+    const n = whole.readUInt32LE(8);
+    const header = JSON.parse(whole.toString("utf8", 12, 12 + n)) as {
+      groups: unknown[];
+    };
+    header.groups.pop();
+    const text = Buffer.from(JSON.stringify(header), "utf8");
+    const head = Buffer.concat([
+      text,
+      Buffer.alloc((8 - ((12 + text.length) % 8)) % 8, 0x20),
+    ]);
+    const len = Buffer.alloc(4);
+    len.writeUInt32LE(head.length);
+    writeFileSync(
+      file,
+      Buffer.concat([whole.subarray(0, 8), len, head, whole.subarray(12 + n)]),
+    );
+    expect(readPartHeader(file), "groups").toBeNull();
   });
 
   it.runIf(existsSync(WORKER_FILE))(
@@ -311,8 +415,10 @@ describe("the pass", { timeout: 60_000 }, () => {
       const got = await pass(w, there, { workers: 2 });
       expect(got).toMatchObject({ extracted: 4, skipped: 0 });
       expect(bytesOfParts(there)).toEqual(bytesOfParts(here));
-      // Each worker's ceiling is design.ts's, not the process's.
+      // Each worker's ceiling is design.ts's, not the process's: exactly a worker's of WORKER_HEAP_GB × 1,024 MB.
+      const want = await heapLimitOf(WORKER_HEAP_GB * 1024);
       for (const m of got.peaks.workers) {
+        expect(m.heapLimit).toBe(want);
         expect(m.heapLimit / 2 ** 20).toBeGreaterThanOrEqual(
           WORKER_HEAP_GB * 1024,
         );
@@ -327,6 +433,42 @@ describe("the pass", { timeout: 60_000 }, () => {
         extracted: 2,
       });
       expect(bytesOfParts(stopped)).toEqual(bytesOfParts(here));
+    },
+    60_000,
+  );
+
+  it.runIf(existsSync(WORKER_FILE))(
+    "through the worker pool stops on the day rule",
+    async () => {
+      await expect(pass(failing(21), parts(), { workers: 2 })).rejects.toThrow(
+        "21 of 2084 records fail the boundary",
+      );
+    },
+    60_000,
+  );
+
+  it.runIf(existsSync(WORKER_FILE))(
+    "through the worker pool refuses a sealed key as sealed (exit 5), not as a crash",
+    async () => {
+      const err = await pass(world(), parts(), {
+        workers: 2,
+        tasks: [late],
+      }).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(SealedError);
+      expect((err as Error).message).toContain("dated at or after END_E");
+    },
+    60_000,
+  );
+
+  it.runIf(existsSync(WORKER_FILE))(
+    "through the worker pool stops at a listed file that is missing as a store error",
+    async () => {
+      const err = await pass(world(), parts(), {
+        workers: 2,
+        tasks: [absent],
+      }).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(StoreError);
+      expect((err as Error).message).toContain(`${absent.key}: ENOENT`);
     },
     60_000,
   );
