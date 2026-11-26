@@ -927,7 +927,7 @@ design and ranges are patched to it and whose synthetic list a tag holds,
 passed (2026-11-20, POLISH-FIX; its scripts outside the repository,
 decisions 2026-11-20, the code review's fix round).
 
-## COPY-H (parts 1–2 built 2026-11-25 by COPYH-STORE and COPYH-STORE-2: the store, its readers, seals and gate; the engine, the steps' phases and the freeze to come; not frozen; nothing run on real data)
+## COPY-H (parts 1–2 built 2026-11-25 by COPYH-STORE and COPYH-STORE-2: the store, its readers, seals and gate; part 3, the engine, being built since 2026-11-26 by COPYH-ENGINE and COPYH-ENGINE-2; the steps' phases and the freeze to come; not frozen; nothing run on real data)
 
 **What it is.** A sixth entry point of the same package, `dist/copyh.js`
 (`src/copyh.ts`, `src/copyh/`): COPY-H's rules, `apps/poller/copyh/rules.md`
@@ -1084,6 +1084,38 @@ reply's shape, rows of the file's coin, the nominal hour the time rounded
 to the nearest hour, no coin's hour twice, no rate used). The freeze list
 itself (`--final`, `--rounds`, `--fresh2`, the marker refusal) comes at
 part 5.
+
+**The engine** (part 3; no command reaches it yet). The kit and lib-exits
+run unchanged, loaded by `dist/paper/research.js`; END and the stage window
+are parameters, so one code serves step 1, step 2, FRESH-2's stage, the
+rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
+- `instants.ts` (C1): an instant's stage, its Monday M, its UTC day, week
+  and month; each stage's Mondays (48 in E, 24 in S, 26 in FRESH-2).
+- `accounts.ts` (C2, C3's reader): a bucket's accounts across the step's
+  stores, in address order, joined by address; the window's partitions held
+  as columns, an account's rows made on demand as `normalize.ts`'s `Row`
+  with its trade's market reading; the vault accounts of a reading.
+- `entries.ts` (C4): an account's history as the kit builds it (events,
+  cycles, entries over 60 s, liquidation keys, chain breaks); `exitRows`
+  counts the exits `buildEntries` would append; an account above
+  `HISTORY_FILLS_MAX` or `EXITS_MAX` is not run through the kit and named.
+- `labels.ts` (C5): the 90-day capture and the kit's `labelAt`, a capture
+  above `LABEL_FILLS_MAX` never P1; P1; the habits at M.
+- `markets.ts` (C6, C9): a coin's bars joined minute by minute across the
+  stores to END; its end (its first Settlement's minute end, else END) and
+  the Settlement price; the primary rule; the VWAP and last-price objects,
+  the kit's `marketFrom` step for step with the reading's END as its cut and
+  C9's settlement mark (5 or 60 minutes) a parameter, the Settlement minute
+  at the Settlement price, every funding row by its nominal hour; thin legs.
+- `setting.ts` (C9, C13): c(coin, d) from day d − 1's pairs, with its two
+  fallbacks; the taker's setting, the cascade print's and Binance's.
+
+The caps are `design.ts`'s, provisional until the rehearsal: a label
+capture of more than 13,000,000 fills and a history of more than 8,500,000
+are not run through the kit, so that an account at a cap fits within half
+of the 20 GB large lane (the kit's measured 0.77 and 1.18 KB a fill). The
+large lane, where the accounts above the normal lane's thresholds run
+alone after the normal parts, comes with the phases.
 
 **Measured** (2026-11-25, COPYH-STORE-2, synthetic hours only: 5.8–6 million
 records, 2.5 GB decoded, a 14 MB line; each thread's heap polled every 100

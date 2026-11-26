@@ -37,19 +37,22 @@ export const EXITS_MAX = 20_000_000;
 /** The float residue counted: 1e-9 ≤ |prev + net| < 1e-6 (C15 (c) 6; L3). */
 export const RESIDUE_BOUNDS = [1e-9, 1e-6] as const;
 /**
- * The kit's inputs at most, beside EXITS_MAX (the supervisor's ruling on
- * COPYH-ENGINE's Q1, 2026-11-26; their sentence queued for the rules' last
- * touch): a label capture of more than LABEL_FILLS_MAX fills is not run
- * through the kit's `labelAt`, so the account is not P1 at that Monday; an
- * account whose fills to END number more than HISTORY_FILLS_MAX is not run
- * through the kit at all, so it is in no line and no line's removal set;
- * each named, counted and printed at every look [SET BEFORE THE FREEZE: from
- * the burn-in's and the rehearsal's counts of the largest accounts and the
- * kit's measured bytes a fill, with the owner's wide margin, so that an
- * account at the cap fits well inside one worker's heap; null until then].
+ * The kit's inputs at most, beside EXITS_MAX (the supervisor's rulings on
+ * COPYH-ENGINE's Q1 and on the two lanes, 2026-11-26): a label capture of
+ * more than LABEL_FILLS_MAX fills is not run through the kit's `labelAt`, so
+ * the account is not P1 at that Monday; an account whose fills to END number
+ * more than HISTORY_FILLS_MAX is not run through the kit at all, so it is in
+ * no line and no line's removal set; each named, counted and printed at
+ * every look. An account above the normal lane's thresholds runs in the
+ * large lane, alone at WORKER_HEAP_CAP_GB, its rows freed before the kit
+ * runs [SET BEFORE THE FREEZE by the rehearsal's counts, by Monday on E, of
+ * the accounts above the thresholds and the caps, never so as to leave out a
+ * directional account; provisional until then: half of the 20 GB lane ÷ the
+ * kit's measured market-maker peak a fill, 0.77 KB a capture fill and
+ * 1.18 KB a history fill (COPYH-ENGINE, 2026-11-26)].
  */
-export const LABEL_FILLS_MAX: number | null = null;
-export const HISTORY_FILLS_MAX: number | null = null;
+export const LABEL_FILLS_MAX: number | null = 13_000_000;
+export const HISTORY_FILLS_MAX: number | null = 8_500_000;
 
 /** The `dir` values and the liquidation method that make a trade no market trade (C3, M1; the rules review's Q6). */
 export const ADL_DIR = "Auto-Deleveraging";
