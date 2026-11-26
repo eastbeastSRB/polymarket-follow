@@ -1306,6 +1306,20 @@ nothing:
     - **P1 at every Monday of the 26 for every account** equal to the
       paper's; labels differing only between "churner" and "unclassified —
       mixed" (pnl 0; L4), every difference listed;
+    - **one more allowed difference** (the supervisor's ruling on
+      COPYH-REPRO's run, 2026-11-26): an order event holding a fill whose
+      quantity text has more than 15 significant digits (C3's exact rule,
+      D5) may have its matching event's chain heads split, since no double
+      gives its chain back; its events and exits may then differ in that
+      event only, each difference listed; P1, the labels (but between
+      "churner" and "unclassified — mixed"), the habits, the entries' ids
+      and D never. It is C3's boundary at work on Polymarket's text,
+      decided from the seed's known data, never from a count of E [the
+      whole seed under cut E: 1,602 accounts, 1,136,327 rows; P1's 3,885
+      rows at the 26 Mondays and the 114,806 entries equal, 25
+      churner/mixed pairs as allowed; one such event, one account's
+      (`0x38df…`) taker order of 2026-07-02 whose first quantity has 27
+      digits];
     - FR1's counts, the main line's 1,137 / 157 and 525 / 61.
 
     A failure is exit 6. The frozen program runs it again before step 1
