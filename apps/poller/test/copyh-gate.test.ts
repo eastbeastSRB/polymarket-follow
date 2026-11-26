@@ -189,6 +189,18 @@ describe("COPY-H's freeze (a temporary git repository)", () => {
     expect(verifyFreeze(root).ok).toBe(true);
   }, 60_000);
 
+  it("leaves a draft list beside the list out of what runs", () => {
+    const draft = path.join(root, "copyh", "FROZEN.draft");
+    withChange(
+      () => writeFileSync(draft, "x\n"),
+      () => {
+        expect(frozenFiles(root)).not.toContain("copyh/FROZEN.draft");
+        expect(verifyFreeze(root).ok).toBe(true);
+      },
+      () => rmSync(draft),
+    );
+  }, 60_000);
+
   it("refuses a list without a file COPY-H reads by name, one of the closure, or one of lz4js's", () => {
     for (const named of [
       "copyh/data.sha256",
@@ -481,9 +493,43 @@ describe("the lists' kinds (RM2; temporary git repositories)", () => {
     ).toEqual([]);
   }, 60_000);
 
-  it("names every command's kind", () => {
+  it("names every command's kind and the files COPY-H reads, as C0 and RM2 give them", () => {
     expect(Object.keys(KINDS).sort()).toEqual([...COMMANDS].sort());
     const c: Command = "step1";
     expect(KINDS[c].lacks).toEqual(["copyh/look1.sha256"]);
+    expect(COPYH_FILES).toEqual([
+      "copyh/rules.md",
+      "copyh/coins.json",
+      "copyh/dirs.json",
+      "copyh/data.sha256",
+      "copyh/funding.sha256",
+      "copyh/unpaired.json",
+      "copyh/calibration.json",
+      "copyh/rehearsal.json",
+    ]);
+    const rounds = {
+      holds: [],
+      lacks: ["copyh/look1.sha256"],
+      besides: ["copyh/tries.json"],
+    };
+    expect(KINDS).toEqual({
+      step1: { holds: [], lacks: ["copyh/look1.sha256"], besides: [] },
+      tries: rounds,
+      choice: rounds,
+      step2: {
+        holds: ["copyh/look1.sha256", "copyh/choice.json"],
+        lacks: ["copyh/fresh2.sha256"],
+        besides: [],
+      },
+      fresh2: {
+        holds: [
+          "copyh/fresh2.sha256",
+          "copyh/funding2.sha256",
+          "copyh/look2.sha256",
+        ],
+        lacks: [],
+        besides: [],
+      },
+    });
   });
 });

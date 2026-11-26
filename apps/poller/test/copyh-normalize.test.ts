@@ -61,16 +61,19 @@ describe("the kit's fills", { timeout: 60_000 }, () => {
   });
 
   it("read an own liquidation leg as liq and forced, a counterparty's as neither, and a forced dir as forced", () => {
-    const [own, other, settled, vault] = normOf([
+    const [own, other, settled, vault, ownTrade] = normOf([
       row({ oid: "1", ownLiquidation: true, dirKind: "forced" }),
       row({ oid: "2", ownLiquidation: false }),
       row({ oid: "3", dirKind: "forced" }),
       row({ oid: "4", dirKind: "vault" }),
+      row({ oid: "6", ownLiquidation: true, dirKind: "trade" }),
     ]);
     expect([own!.liq, own!.forced]).toEqual([true, true]);
     expect([other!.liq, other!.forced]).toEqual([false, false]);
     expect([settled!.liq, settled!.forced]).toEqual([false, true]);
     expect([vault!.liq, vault!.forced]).toEqual([false, false]);
+    // An own liquidation leg is forced whatever its dir's kind (C3: forced = liq, or a forced dir).
+    expect([ownTrade!.liq, ownTrade!.forced]).toEqual([true, true]);
   });
 
   it("take each matching event's chain head: one oid, coin and time; another of any is another event", () => {
