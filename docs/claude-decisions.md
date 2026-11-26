@@ -1,5 +1,74 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's STORE GUARDED: EVERY KILLABLE BREAK
+KILLED; THE BURN-IN STARTS; THE FUNDING DOWNLOAD'S NIGHT STOPS): **207 OF
+209 BREAKS NOW KILLED (SL14 EQUIVALENT, D05 PROVISIONAL BY DESIGN).
+`dist/copyh.js` RUNS ON REAL DATA FOR THE FIRST TIME, ON THE BURN-IN, COUNTS
+AND TIMING ONLY.**
+
+**COPYH-GUARDS** (Opus 5.5, max, fresh; 00:59–06:56Z, pausing heavy runs
+02:30–06:00Z; context peak 655,571). Nine commits, each `pnpm verify`
+green; files only in `src/copyh/` and `test/copyh-*`:
+- `caef6b4`, the three fixes, each with its test:
+  - the re-reader reads a blank line as one failed record, C3's own
+    reading; the pass is unchanged;
+  - the re-reader leaves the switch hour's repeats out of its rows by its
+    own code;
+  - `sampleDaysOf(range)` in `range.ts`: S's days for S, E's for E and the
+    burn-in, which holds 3 of them.
+- `c784c44` … `99010f1`, the spec's tests by group. Ends at 1,028 tests + 6
+  skipped in 108 files (+1 skipped).
+- One verify was rerun after a vitest fork crash in a non-COPY-H file, as
+  code-rules says.
+- In a new lane from `caef6b4` (control 193 of 193), 88 breaks were re-run
+  and 88 killed, 0 invalid: the spec's 80 survivors, X13, and seven breaks
+  of the fixes. The supervisor's tally of its `results.jsonl` agrees.
+- Its departures from the spec are each forced by the code: R23 (a month
+  boundary inside one bucket group), R28 (a part holds at most 256 `dir`
+  names), R38 (six events at one account and time), R54 and R16 (the exact
+  heap limit).
+
+**Rulings on its questions:**
+1. A repeat in the switch hour's bars needs no change: the two files'
+   records lie 4 min 22 s apart. The rehearsal's duplicate count confirms 0
+   on E.
+2. The burn-in re-reads E's 3 days it holds. A sentence on it is the
+   sixth one queued for the rules' last touch.
+3. `main.ts`'s one-line call is accepted.
+4. The docs (architecture's integrity paragraph; two code-rules gotchas)
+   are done by the supervisor (`4ed84f2`). COPYH-BREAKS' lane junctions are
+   removed (15, link by link; the repository's `node_modules` intact).
+
+**COPYH-BURNIN** (Opus 5.5, xhigh, fresh) started at 06:59Z:
+- `coins` runs, and `copyh/coins.json` is committed with `meta.json`'s
+  SHA-256;
+- `count --range burnin` runs, and its `dir` values and unpaired records
+  come to the supervisor, who rules `dirs.json` and `unpaired.json`;
+- then `build`, `build --twin` and `integrity` on the burn-in.
+
+**The funding download's night** (COPYH-FUNDING):
+- Session 2 was clean: 2,000 reads from 21:46Z to 01:06Z.
+- Its chain stopped the fetch four times on the collector's price audit,
+  each judged no harm from the collector's own logs:
+  1. 01:07Z: 28 timing misses, 0 other.
+  2. 01:28Z: one other miss.
+  3. ~04:38Z: one or two other misses in three audits running, with no read
+     of ours since 02:29:55Z.
+  4. 04:48Z: one no-book in an audit of 91 rows, a market just listed. Its
+     book came the next audit, and a new instruments key,
+     `post_only_since`, appeared at 04:52Z.
+- Audits with an other miss, no download involved: 11-20 65 of 135, 11-21
+  0 of 136, 11-22 1 of 136, 11-23 12 of 136, 11-24 71 of 132, 11-25 2 of
+  135.
+- **The chain's stop rule now** (the supervisor's technical call):
+  - 10 or more other misses in one audit;
+  - a no-book in two audits running, or 3 or more in one;
+  - a stale heartbeat or a closed connection;
+  - a collector error;
+  - the tool's own day stop.
+  The tool's own pause below 81 of 90 is unchanged.
+- At 06:58Z: 3,568 files stored, the fetch running again since 06:00Z.
+
 2026-11-26 (the supervisor — COPY-H's STORE: THE BREAKS ROUND DONE; ITS
 TESTS AND THREE CODE FIXES START): **209 BREAKS, 126 KILLED, 83 SURVIVED, 0
 INVALID; NO REAL BUG FOUND; THE 83 ARE TEST GAPS.**
