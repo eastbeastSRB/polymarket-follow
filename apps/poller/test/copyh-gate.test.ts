@@ -321,8 +321,8 @@ const under = (rel: string): string[] =>
           .flatMap((n) => under(`${rel}/${n}`))
       : [rel];
 
-/** Named in the closure (D14) for the engine (part 3), which is to import them. */
-const PENDING = ["dist/paper/copy.js", "dist/paper/stats.js"];
+/** Named in the closure (D14) for the engine (part 3), which is to import it. */
+const PENDING = ["dist/paper/stats.js"];
 
 describe("COPY-H's closure", () => {
   it.runIf(existsSync(path.join(PACKAGE_ROOT, "dist", "copyh")))(

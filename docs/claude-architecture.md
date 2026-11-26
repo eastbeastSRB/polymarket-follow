@@ -1127,6 +1127,13 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   at the Settlement price, every funding row by its nominal hour; thin legs.
 - `setting.ts` (C9, C13): c(coin, d) from day d − 1's pairs, with its two
   fallbacks; the taker's setting, the cascade print's and Binance's.
+- `money.ts` (C8): a copy's plan, `dist/paper/copy.js`'s
+  `planCopyThrough` to END or to its coin's end (a part still open there
+  `settled`, at the Settlement price), its price in bps by lib-exits'
+  `priceCopy`, and STOP's search end.
+- `unpriced.ts` (C11): a reading's holes from every file's minutes across
+  its stores (a gap that straddles two stores is one); the gap copy, a
+  chain break inside its exits or a hole meeting [t, its last exit].
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
