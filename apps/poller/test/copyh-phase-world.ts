@@ -4,10 +4,11 @@
  * accounts in bucket 01 — A a directional taker, MAIN's at M2 with an entry
  * in M2's week; B a maker; C silent from 17 days before M2; V netting in the
  * protocol's vault — and X (bucket 02) everyone's other side; dirs.json;
- * and the phases LABELS and LABELS-L run on it through real child processes
- * of the build, in a step's engine folder.
+ * a made-up funding store with its list; and the phases LABELS and LABELS-L
+ * run on it through real child processes of the build, in a step's engine
+ * folder.
  */
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { runPhase, type Phase, type PhaseRecord } from "../src/copyh/engine.js";
@@ -181,6 +182,42 @@ export async function phaseWorld(
       dirsFile,
     },
   };
+}
+
+/** A made-up funding store of these windows (coin, start, rows: [time, rate]), its files at their keys under `…\COPY-H\funding`, and its list in copyh/funding.sha256's form; `absent` windows listed but not written (a reader must not open them). */
+export function fundingWorld(
+  windows: readonly {
+    coin: string;
+    start: number;
+    rows: readonly (readonly [time: number, rate: string])[];
+    absent?: boolean;
+  }[],
+): { root: string; store: string; list: string; sha256: string } {
+  const root = mkdtempSync(path.join(tmpdir(), "copyh-funding-"));
+  const store = path.join(root, "COPY-H", "funding");
+  const lines = ["# made-up funding list"];
+  for (const w of windows) {
+    const key = `info/fundingHistory/${w.coin}/${w.start}.json`;
+    const bytes = Buffer.from(
+      JSON.stringify(
+        w.rows.map(([time, rate]) => ({
+          coin: w.coin,
+          fundingRate: rate,
+          premium: "0.0001",
+          time,
+        })),
+      ),
+    );
+    if (w.absent !== true) {
+      const file = path.join(store, ...key.split("/"));
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, bytes);
+    }
+    lines.push(`${sha256(bytes)} *${key}`);
+  }
+  const list = path.join(root, "funding.sha256");
+  writeFileSync(list, `${lines.join("\n")}\n`);
+  return { root, store, list, sha256: sha256(readFileSync(list)) };
 }
 
 /** A new step's engine folder: `…\COPY-H\look1\engine`. */

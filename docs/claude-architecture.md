@@ -1198,6 +1198,16 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   `heldPart`, then its coin's lines read by the index), a Monday at a time
   and by line by the mask, each group through the kit's `removalOf`
   (judge.ts), read back: the coin's removal tables for PRICES.
+- `phase-coin.ts` (C9, C16): a coin's reading for TRIPWIRE and PRICES:
+  its bars across the reading's stores (`coinOf`) and its funding rows from
+  the windows `copyh/funding.sha256` lists for it that start before END,
+  each file held to its line and read through the seal, rows at or after
+  END dropped.
+- `phase-tripwire.ts` (C16): TRIPWIRE, before any price, a part a coin:
+  MAIN's copies voted by END from BUILD and BUILD-L, projected on the
+  coin's marks and funding hours under both settlement rules (a coin
+  without bars: no mark); the parts summed (`tripwireOf`) into the set's
+  projection, whose share stops the step above 1%.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
