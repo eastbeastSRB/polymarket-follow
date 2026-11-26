@@ -5,8 +5,9 @@
  * strings and negatives; a name inside another string value; escapes; a
  * nested object — and any text the cut cannot settle goes to the slow path,
  * whose reviver drops them at any depth; cut-then-parse equals the reviver's
- * parse on synthetic records; ids above 2^53 kept as digits; each field's
- * refusal; the exactness of a double.
+ * parse on synthetic records; each key searched in its record's own bytes
+ * only (the bytes `Buffer#indexOf` reads, counted); ids above 2^53 kept as
+ * digits; each field's refusal; the exactness of a double.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -18,6 +19,7 @@ import {
   parseSlow,
   recordOf,
 } from "../src/copyh/schema.js";
+import { searchedBytes } from "./copyh-world.js";
 
 const U = `0x${"aB".repeat(20)}`;
 /** cutText over a whole record's text. */
@@ -104,6 +106,35 @@ describe("the cut", { timeout: 60_000 }, () => {
     const one = rec(`{${BASE},"fee":"0.1"}`);
     const b = Buffer.from(`xx${one},${one}yy`, "utf8");
     expect(cutText(b, 2, 2 + Buffer.byteLength(one))).toBe(rec(`{${BASE}}`));
+  });
+
+  it("searches each key in the record's own bytes only: a block line of 2,000 records, builderFee in one of 500, each cut as the reviver reads it", () => {
+    const texts = Array.from({ length: 2_000 }, (_, i) =>
+      rec(
+        `{${BASE},"closedPnl":"0.${i}","hash":"0x${i.toString(16)}","oid":${i},"crossed":true,"fee":"0.0${i}","tid":${i}${i % 500 === 499 ? `,"builderFee":"0.${i}"` : ""}}`,
+      ),
+    );
+    const head = '{"block_number":1,"events":[';
+    const line = Buffer.from(`${head}${texts.join(",")}]}`, "latin1");
+    let at = head.length;
+    const spans = texts.map((t) => {
+      const span = [at, at + t.length] as const;
+      at += t.length + 1;
+      return span;
+    });
+    const [searched, cuts] = searchedBytes(
+      ["closedPnl", "fee", "builderFee"].map((k) => Buffer.from(`"${k}":`)),
+      () => spans.map(([s, e]) => cutText(line, s, e)),
+    );
+    // Each key's searches cover at most its record once; an unbounded search reads on to the next builderFee.
+    const recordBytes = texts.reduce((n, t) => n + t.length, 0);
+    expect(searched).toBeGreaterThan(recordBytes);
+    expect(searched).toBeLessThanOrEqual(3 * recordBytes);
+    cuts.forEach((c, i) => {
+      const want = recordOf(parseSlow(texts[i]!));
+      expect(want, texts[i]).not.toBeNull();
+      expect(recordOf(parseFast(c!)), texts[i]).toEqual(want);
+    });
   });
 });
 

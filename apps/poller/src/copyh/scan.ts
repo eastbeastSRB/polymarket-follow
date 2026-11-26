@@ -103,12 +103,14 @@ const BLOCK = /"block_number":(\d{1,15})[,}]/;
 const HEX = new Uint8Array(256);
 for (const c of "0123456789abcdefABCDEF") HEX[c.charCodeAt(0)] = 1;
 
+/** Each match of a needle inside [s, e), searched in those bytes only (as `cutText` searches). */
 function positions(line: Buffer, needle: Buffer, s = 0, e = line.length) {
+  const upToEnd = line.subarray(0, e);
   const out: number[] = [];
   for (
-    let i = line.indexOf(needle, s);
-    i !== -1 && i < e;
-    i = line.indexOf(needle, i + needle.length)
+    let i = upToEnd.indexOf(needle, s);
+    i !== -1;
+    i = upToEnd.indexOf(needle, i + needle.length)
   )
     out.push(i);
   return out;

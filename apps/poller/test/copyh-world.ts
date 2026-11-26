@@ -2,12 +2,14 @@
  * Synthetic raw stores for COPY-H's tests: fill files of either format by
  * key, each an LZ4 frame of independent blocks (polish-world.ts's encoder),
  * with their data list; records in Hyperliquid's key order with `closedPnl`,
- * `fee` and, when given, `builderFee`; the lists COPY-H reads (coins, dirs).
+ * `fee` and, when given, `builderFee`; the lists COPY-H reads (coins, dirs);
+ * the bytes a search reads.
  */
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { Worker } from "node:worker_threads";
+import { vi } from "vitest";
 import { sha256 } from "../src/copyh/run.js";
 import type { Lists } from "../src/copyh/scan.js";
 import { frameOf } from "./polish-world.js";
@@ -81,3 +83,33 @@ export const heapLimitOf = (maxOldGenerationSizeMb: number) =>
     });
     w.once("error", reject);
   });
+
+/** What `run` gives, and the bytes `Buffer#indexOf` searched for these needles while it ran: from each call's offset to its match's end, or to the end of the buffer searched when none. */
+export function searchedBytes<T>(
+  needles: readonly Buffer[],
+  run: () => T,
+): [bytes: number, value: T] {
+  const spy = vi.spyOn(Buffer.prototype as Buffer, "indexOf");
+  try {
+    const value = run();
+    const { calls, contexts, results } = spy.mock;
+    let bytes = 0;
+    calls.forEach((args, i) => {
+      const [needle, from] = args as unknown[];
+      const r = results[i]!;
+      if (
+        !Buffer.isBuffer(needle) ||
+        !needles.some((n) => n.equals(needle)) ||
+        r.type !== "return"
+      )
+        return;
+      const searched = contexts[i] as Buffer;
+      bytes +=
+        (r.value === -1 ? searched.length : r.value + needle.length) -
+        (typeof from === "number" ? from : 0);
+    });
+    return [bytes, value];
+  } finally {
+    spy.mockRestore();
+  }
+}

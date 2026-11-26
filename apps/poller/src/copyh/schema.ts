@@ -65,14 +65,17 @@ function valueEnd(b: Buffer, v: number, e: number): number {
  * it (a run of cut pairs at an object's start); null when its text does not
  * settle that (a value that is not a plain string or number, a key not
  * preceded by `,` or `{` or not followed by `,` or `}`, an escaped quote
- * before a key, or a name left after the cut).
+ * before a key, or a name left after the cut). Each key is searched in the
+ * record's own bytes only: an unbounded search runs on past a record that
+ * lacks the key (most lack `builderFee`), quadratic in a block line's
+ * records.
  */
 export function cutText(b: Buffer, s: number, e: number): string | null {
+  const upToEnd = b.subarray(0, e);
   /** Each pair found: its key's first byte and its value's end. */
   const pairs: [number, number][] = [];
   for (const key of KEYS)
-    for (let k = b.indexOf(key, s); k !== -1 && k < e;) {
-      if (k + key.length > e) break;
+    for (let k = upToEnd.indexOf(key, s); k !== -1;) {
       let slashes = 0;
       for (let j = k - 1; j >= s && b[j] === BACKSLASH; j--) slashes++;
       if (slashes % 2 === 1) return null;
@@ -80,7 +83,7 @@ export function cutText(b: Buffer, s: number, e: number): string | null {
       if (q < 0 || (b[q] !== COMMA && b[q] !== CLOSE)) return null;
       if (b[k - 1] !== COMMA && b[k - 1] !== OPEN) return null;
       pairs.push([k, q]);
-      k = b.indexOf(key, q);
+      k = upToEnd.indexOf(key, q);
     }
   pairs.sort((x, y) => x[0] - y[0]);
   let text = "";

@@ -5,7 +5,8 @@
  * significant digits among them), each record in exactly one; the 2025-07-27 switch hour's two files; ADL,
  * Settlement and "Liquidated …" kept; the vault accounts; the coins' first,
  * last and Settlement times; a last line without its newline; the slow path
- * and `misread`; a blank line one failed record; `JSON.parse` never handed a
+ * and `misread`; a blank line one failed record; a record's time searched
+ * in its own bytes only; `JSON.parse` never handed a
  * cut field on the fast path; a `dir` or coin
  * outside its list stopping a build and counted by a counting run; the
  * records by hour and minute, the holes of the union of files' records
@@ -23,6 +24,7 @@ import {
   keyOf,
   lz4Of,
   record,
+  searchedBytes,
   trade,
   type FillSpec,
 } from "./copyh-world.js";
@@ -374,6 +376,31 @@ describe("the slow path", { timeout: 60_000 }, () => {
     expect([one.seen, one.classes.kept, one.classes.failed]).toEqual([3, 2, 1]);
     const two = scan(`${line(1, 1)}\n\n\n${line(2, 2)}\n`).scan;
     expect([two.seen, two.classes.kept, two.classes.failed]).toEqual([4, 2, 2]);
+  });
+
+  it("searches each record's time in its own bytes only: 2,000 records, a time in one of 500, the rest failing on the slow path", () => {
+    const records = Array.from({ length: 2_000 }, (_, i) => {
+      const r = record(addr(i + 1), {
+        coin: "BTC",
+        side: "B",
+        time: T + i,
+        crossed: true,
+        tid: i + 1,
+      });
+      return i % 500 === 499 ? r : r.replace(`"time":${T + i},`, "");
+    });
+    const text = `${byBlock(1, records)}\n`;
+    const [searched, s] = searchedBytes(
+      [Buffer.from('"time":')],
+      () => scan(text).scan,
+    );
+    expect([s.classes.kept, s.classes.failed, s.slowRecords]).toEqual([
+      4, 1_996, 1_996,
+    ]);
+    // An unbounded search reads on from a record without a time to the next record with one.
+    const recordBytes = records.reduce((n, r) => n + r.length, 0);
+    expect(searched).toBeGreaterThan(recordBytes / 2);
+    expect(searched).toBeLessThanOrEqual(recordBytes);
   });
 
   it("hands JSON.parse no text holding closedPnl, fee or builderFee on the fast path, and the slow path's text with its reviver", () => {
