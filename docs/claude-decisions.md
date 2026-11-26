@@ -1,5 +1,58 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H's BURN-IN PASSED): **THE STORE PROGRAM
+RAN ON REAL MONTHS FOR THE FIRST TIME (2025-05-25 → 06-29, BEFORE E), COUNTS
+AND TIMING ONLY. EVERY CHECK PASSES. COPY-H'S PARTS 1–2 ARE DONE.**
+
+**COPYH-BURNIN** (Opus 5.5, xhigh, fresh; 06:59–09:44Z; context peak
+402,356). Commits, each `pnpm verify` green:
+- `f48a483` `copyh/coins.json`: 235 coins, 56 delisted, from `meta.json`
+  `3fcc7878…b8d8`.
+- `af8076c` `copyh/dirs.json`, the nine values seen: six order values
+  `trade`; "Liquidated Cross Long" and "Liquidated Isolated Long" `forced`;
+  "Net Child Vaults" `vault`. No Auto-Deleveraging, Settlement or short
+  liquidation occurs in the burn-in.
+- `3280969` `copyh/unpaired.json`: four records, each the last record
+  before an archive hole, whose trade's other record falls inside the
+  hole.
+
+**The counts** (after the boundary fix `d42b96a`):
+- 850 files; 220,682,866 records; kept 180,194,608; spot 40,488,256.
+- **Failed 2**, both in one file whose makers equal its takers; they are to
+  be looked at in E's rehearsal count.
+- `startByDouble` 628,020.
+- **Takers = makers = 90,097,304**; four files differ by one, the four
+  hole-edge records.
+- 12 holes.
+
+**The store and its checks:**
+- 92,077 accounts; 854 partitions, 10,912 MB; 180,194,608 fill rows, 0
+  duplicates, 0 straddles; 8,753,520 bar rows; 2 vault accounts.
+- **The twin is byte-equal:** 10,763 files.
+- **K0 pass.**
+- **K1 pass** with the four listed.
+- **K2 pass:** the three sample days the burn-in holds, 72 files re-read by
+  the independent reader; 0 of about 8.9 million bar cells differ.
+- **K3:** 12 holes; 127,443,917 matching events, 6,348 with more than one
+  chain.
+
+**Runs and memory:**
+- count 762 s; build 843 + 712 s; twin 846 + 817 s; integrity 658 s.
+- About one file a second. Every thread's heap at most 267 MB against
+  8,384 MB.
+
+**The largest accounts** (for the engine's caps; counts only):
+- 21 above 1 million records; 2 above 5 million, both vaults (7,624,922
+  and 6,981,866); none above 10 million.
+- The largest non-vault: 2,953,167 records, at most 1,433,530 in 14 days.
+- E's busier months set the caps at the rehearsal.
+
+**Next:**
+- COPYH-ENGINE builds part 3 (runs allowed from 09:44Z).
+- The burn-in's folder stays on F: until the owner rules on deleting it.
+- Queued for the code review: K1 could accept a record at a hole's start
+  by rule, rather than listing each.
+
 2026-11-26 (the supervisor — COPY-H's PART 3, THE COPY ENGINE: ITS PLAN
 APPROVED; A NEW CAP FOR ACCOUNTS THE KIT CANNOT HOLD; THE BURN-IN'S
 BOUNDARY FIX): **THE OWNER SAID TO START THE ENGINE ("we can start with copy
