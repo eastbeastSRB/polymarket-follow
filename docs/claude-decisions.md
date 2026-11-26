@@ -1,5 +1,84 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-26 (the supervisor — COPY-H IN PARALLEL: THE STORE REVIEWED EARLY,
+THE RULES' LAST TOUCH BEFORE E, THE REPRODUCTION BESIDE THE ENGINE; E's
+STORE BUILT ONCE AND RECORDED; THE FUNDING DOWNLOAD DONE): **THE OWNER ASKED
+FOR MORE PARALLEL WORK ("it should be faster", ~10:30Z) AND APPROVED TWO
+HEAVY JOBS AT ONCE ("we can run it both", ~10:50Z).**
+
+**Tracks started** (all fresh):
+- **COPYH-STORE-REVIEW** (Fable 5.2, max): part 5's store review pulled
+  forward, so its fixes land before E's store.
+- **COPYH-RULES-2** (Opus 5.5, max): the queued sentences before anything
+  runs on E. C15 (c) closes the rules file once the rehearsal first runs
+  on real months.
+- **COPYH-REPRO** (Opus 5.5, max): part 4 (a) beside the engine.
+  - `copyh/known.json` is written by a committed script that applies the
+    paper's own definitions (PAPER-BUILD, 2026-11-12: FIND-6-EXITS's
+    non-holdout copies 1,700; FIND-3's `primary && !holdout` 1,366; 1,104
+    per entry; X3's printed figures), each source held to its SHA-256.
+  - The supervisor recounts it before it is used.
+- **COPYH-STORE-FIX** (Opus 5.5, xhigh): the store's fixes before E.
+- **One writer in the tree at a time:** drafts stay outside the tree and
+  are copied in only under the VERIFY.lock.
+
+**E's count is held for the store review's findings.** None is a defect in
+any count made so far:
+- `cutText`'s key search had no end: quadratic on `node_fills_by_block`
+  lines. The burn-in held none of those.
+- Finite guards on `px` and `sz`, in both readers.
+- `failedBy`: why a record fails, by field path and never a value; K0
+  holds its sum.
+- Dead `Scan.runs` removed.
+- A1: a build names every unknown dir and coin of a file.
+- A2: a `\u`-escaped record goes to the slow path.
+- A3: `dirs.json`'s kinds held to C3's text, before E's dirs are ruled by
+  hand.
+- A4: the count's code read once.
+- B1–B4: tidying.
+- **The merge's unit (HIGH by its consequence):**
+  - The merge refused a bucket-month above UNIT_ROWS (12,000,000), and one
+    large account can reach it in E's busy months or S. After the freeze
+    that would be a stop with no outcome.
+  - The refusal is deleted: a bucket above the unit runs whole, measured
+    at 48 M rows. UNIT_ROWS becomes a ceiling like the heap.
+  - The count prints the ten largest bucket-months.
+
+**E's store, (a-lite) + A' (COPYH-RULES-2's analysis):**
+- The whole-program fingerprint stays, so nothing changes at run time.
+- E's store is built once now, off the critical path, from a pinned
+  snapshot (`git archive` with its own dist).
+- `copyh/rehearsal.json` records three things: the store closure's hashes
+  (the compiled import graph, `design.js` by the store values it exports,
+  the run-only names left out), the manifest without its run fields, and
+  every file's SHA-256.
+- `--final` refuses a candidate whose store closure differs. E is then
+  rebuilt and its counts rerun before the freeze.
+- **A':** step 1's first build by the frozen program is held byte for byte
+  to that record. If equal, it is step 1's twin; if not, step 1 builds its
+  second as now. The rehearsal's store stays sealed; only its record
+  crosses the freeze.
+- No guard is weakened. The rule that the rehearsal's counts must be the
+  frozen store code's becomes mechanical. It saves about 16 hours of
+  machine time, 11 of them off the critical path.
+- So that the closure is stable, COPYH-ENGINE-2 lands its changes to the
+  store's shared files first (Q6, Q7, run, range, design's store values).
+  COPYH-STORE-FIX builds the closure hash and the freeze check.
+
+**The engine's Q9 is withdrawn** in favour of C9's text: a settled coin's
+funding rows stay, each charged by its nominal hour inside the hold. So a
+late-stamped row of an hour before the coin's end is charged as it was
+paid.
+
+**The funding download is done** (COPYH-FUNDING, 12:03:38Z):
+- 6,111 files, 234,115,939 B, 270 empty windows; 0 missing, 0 bad, 0
+  changed.
+- Its chain's stop rule was set overnight from the collector's own audit
+  logs (decisions above).
+
+**A usage limit** stopped every worker from about 11:13Z to 12:10Z. Each
+was resumed with its context; no lock or file was left in the tree.
+
 2026-11-26 (the supervisor — COPY-H's ENGINE, COMMITS 1–2; THE CAPS MUST
 NEVER LEAVE OUT AN ACCOUNT THE MACHINE CAN HOLD): **THE KIT'S MEMORY IS
 MEASURED: A MARKET MAKER COSTS ABOUT FOUR TIMES A WHALE A FILL. ACCOUNTS
