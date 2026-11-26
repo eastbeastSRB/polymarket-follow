@@ -291,10 +291,11 @@ and 2):
   spot and builder-dex ones among them, which the boundary never reads)
   failing the boundary below (COPYH-STORE-REVIEW's Q3, the code's reading).
   **The failing records are counted by cause,** counts only, never a value:
-  "frame", "parse", "line", else the field path of the schema's first
-  refusal, in the pass's counts and the store's manifest, each file's causes
-  summing to its failed records, which the integrity holds (C15;
-  COPYH-STORE-REVIEW, approved by the supervisor, 2026-11-26).
+  "frame" (not `["0x…",{…}]`), "parse" (its text is no JSON), "line" (each
+  record of a line that fails its own shape), else the field path of the
+  schema's first refusal, in the pass's counts and the store's manifest,
+  each file's causes summing to its failed records, which the integrity
+  holds (C15; COPYH-STORE-REVIEW, approved by the supervisor, 2026-11-26).
   At step 2 or at FRESH-2's stage a day over the limit is ruled by C0's
   route as a defect of the boundary: the entry lists the failing records'
   shapes, from the frozen program's own counts by cause, the boundary is
@@ -305,11 +306,13 @@ and 2):
   its fill object, from a line of either format.
   - `user` is 0x and 40 hex digits, lower-cased when read; `coin` is
     non-empty text; `px` is decimal text above 0; `sz` is unsigned decimal
-    text of at most 15 significant digits (a record with more fails the
-    boundary), so a double holds it exactly (D5); `startPosition` is signed
-    decimal text read as its double, whose shortest text must have at most
-    15 significant digits (a record with more fails), and that text is the
-    value every later rule reads (D5) [the burn-in: the archive writes some
+    text of at most 15 significant digits whose double, read back, gives its
+    value (a record with more digits, or whose double overflows or
+    underflows, fails the boundary), so a double holds it exactly (D5);
+    `startPosition` is signed decimal text read as its double, whose
+    shortest text must have at most 15 significant digits (a record with
+    more fails), and that text is the value every later rule reads (D5)
+    [the burn-in: the archive writes some
     with 16–18 digits, a residue under 1e-6 of a lot, whose double is the
     lot value's; 628,020 of its 220,682,866 records pass by the double and
     would fail by the text, its `startByDouble`: decisions 2026-11-26]; a
@@ -321,11 +324,12 @@ and 2):
     Other keys are tolerated (`z.object`, never `.strict()`).
   - **`closedPnl`, `fee` and `builderFee` never reach an object:** each is
     cut, key and value, from a record's bytes before `JSON.parse`; a record
-    whose text the cut cannot settle is parsed with a reviver that drops the
-    three at any depth. So no line of COPY-H can read them. On either path an
-    `oid` or `tid` of 16 digits or more is read from its digits
-    (`context.source`; code-rules, PAPER-BUILD). A record that then does not
-    parse fails the boundary (D1).
+    whose text the cut cannot settle, or that holds a `\u` escape anywhere
+    (an escaped key is the key itself to `JSON.parse`), is parsed with a
+    reviver that drops the three at any depth. So no line of COPY-H can read
+    them. On either path an `oid` or `tid` of 16 digits or more is read from
+    its digits (`context.source`; code-rules, PAPER-BUILD). A record that
+    then does not parse fails the boundary (D1).
   - A record that fails is dropped and counted, never guessed. **A line is
     read record by record** when its records tile it as its format says
     (`["0x…",{…}]` one after another), or when, parsed whole, it is its
@@ -420,9 +424,10 @@ and 2):
   a chain head given also to a maker order hit several times in one
   millisecond (44,555 such events) made 854,289 events where the paper has
   953,244, P1 differed at 21 of 41,652 account-Mondays, and FR1 read
-  1,145 / 160 and 528 / 62; cut E gives 953,244 events, no entry and no P1
-  differing, and FR1's 1,137 / 157 and 525 / 61 (C15 (a)). It was chosen
-  before any count of E.] So a market maker has more events than a join
+  1,145 / 160 and 528 / 62; cut E gives the paper's 953,244 events but for
+  three more at one order (C15 (a)), no entry and no P1 differing, and
+  FR1's 1,137 / 157 and 525 / 61 (C15 (a)). It was chosen before any count
+  of E.] So a market maker has more events than a join
   would give it, and the rehearsal's measures of EXITS_MAX's exit rows and
   of the caps count them (C4, C5; C15 (c) 5). [s6: 10,539 of 10,541
   multi-fill events chained
@@ -496,8 +501,10 @@ and 2):
   and `holes.ts`; pinned by `test/copyh-schema.test.ts` (each field's
   refusal; both paths drop the three fields before any object holds them; a
   `sz` of 16 significant digits refused, and a `startPosition` of 18 digits
-  read by its double; a `px` and a `sz` whose double is not finite refused;
-  an id above 2^53; the 1% day stop at both sides), `test/copyh-coins.test.ts`
+  read by its double; a `px` and a `sz` whose double is not finite refused,
+  and a `sz` whose double underflows; a record with a `\u` escape read by
+  the slow path; an id above 2^53; the 1% day stop at both sides),
+  `test/copyh-coins.test.ts`
   (the kept and left-out kinds; a coin outside the list stops; an appended
   list keeps every index), `test/copyh-dirs.test.ts` (each kind; a value
   outside the list stops), `test/copyh-chains.test.ts` (one chain; a chain
@@ -1066,7 +1073,8 @@ nothing:
     median hold, the trader's usual hold at M, never the copy's own; long
     share; entries); the coin; the entry's size (its first event's
     notional); the trader's own MAIN copies whose follow instant and every
-    leg lie before M: their count and their mean net (RL6). Every covariate
+    leg lie before M: their count, of all of them, priced or not, and their
+    mean net, over the priced ones (RL6; the engine's plan, Q2). Every covariate
     is known at the entry's instant (M5). A condition on a covariate the
     copy lacks is false. **Never a new price, never a month of S, and never
     a liquidation, a cascade or a price move before the entry: that family
@@ -1373,7 +1381,10 @@ nothing:
        2026-04-06 and 2026-05-25 — the label and MAIN's account-level
        conditions (C7: P1, the habit window covered, median hold ≥ 6 h, at
        least 3 closed cycles) from C5's 90-day capture against the whole
-       capture from ARCHIVE_START, every difference listed. **Its pass mark,
+       capture from ARCHIVE_START, every difference listed; an account whose
+       whole capture is above LABEL_FILLS_MAX is counted apart, never as a
+       difference of the bound, and is read in the large lane (C4, C5).
+       **Its pass mark,
        fixed now: at each of the four Mondays, the accounts that meet the
        conditions under one capture and not under the other number under 1%
        of those that meet them under the whole capture** (RL4). If it fails,
@@ -1403,8 +1414,11 @@ nothing:
     memory, whose one output is its hash. **E's store** is built once for
     the rehearsal, with its twin and its integrity, as any store, and its
     record goes to `copyh/rehearsal.json`: the hashes of its store closure
-    (every compiled file that the pass, the merge, the store, the twin and
-    the integrity load, found from the compiled import graph; `design.js`
+    (every compiled file that the pass and its worker, the merge, the store,
+    the twin, and the integrity and its re-reader load, found from the
+    compiled files' relative imports, `dist/schedule.js` among them, as
+    `closure.ts` takes them; lz4js's three files are C0's closure's, not
+    this record's; `design.js`
     by the values of the names those files import from it, not by its
     bytes, less the names that change no output: C18's worker heap, worker
     heap cap GB, closed windows, part minutes and run minutes), its manifest
@@ -1437,7 +1451,8 @@ nothing:
   3. **the integrity, before any position** (`integrity.ts`, written whole
      to `look1\integrity.json`): every listed file read whole; every
      partition present; records conserved (read = kept + left out by kind +
-     failed + not used); **one taker and one maker a trade**, paired by
+     failed (the sum of its causes, C3) + not used); **one taker and one
+     maker a trade**, paired by
      (coin, `tid`, `time`) in its own file or the next file in order; a
      record left unpaired only in the stage's first or last file, each
      listed, or when `copyh/unpaired.json` lists it (written from the
