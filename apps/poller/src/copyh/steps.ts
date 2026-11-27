@@ -193,12 +193,13 @@ export const StoreRecord = Manifest.omit({
   code: true,
 });
 export type StoreRecord = z.infer<typeof StoreRecord>;
-/** What the rehearsal's priced fortnight gives (C15 (c) 10, `fortnightOf`): the SHA-256 of its copies' lines as `positions.jsonl.gz` writes them, by entry id, their count, the copies by line and the legs by kind (a settled copy's last leg "settled"). */
+/** What the rehearsal's priced fortnight gives (C15 (c) 10, `fortnightOf`): the SHA-256 of its copies' lines as `positions.jsonl.gz` writes them, by entry id, their count, the copies by line and the legs by kind (a settled copy's last leg "settled"); and the seconds its pricing in memory took, by which FORTNIGHT_MINUTES is set. */
 export const Fortnight = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
   lines: z.number().int().nonnegative(),
   byLine: z.record(z.string(), z.number()),
   legs: z.record(z.string(), z.number()),
+  seconds: z.number().nonnegative(),
 });
 export type Fortnight = z.infer<typeof Fortnight>;
 /** `copyh/rehearsal.json` as step 1 reads it: the store's closure (closure.ts), E's store and the fortnight; its other fields are the rehearsal's counts. */
@@ -649,21 +650,25 @@ const coinContextOf = (o: EngineRun, u: Unpriced) => ({
   fundingList: o.funding.list,
 });
 
-/** The engine's phases through RANK: the unpriced ones, C16's tripwire and its stop (exit 6 when any set projected is above 1%, unless `--past-tripwire`), then the prices and RANK. */
-export async function pricedPhases(o: EngineRun): Promise<PricedRecords> {
-  const u = await unpricedPhases(o);
-  const coin = coinInputsOf(o, u);
-  const coinContext = coinContextOf(o, u);
-  const tripwire = await closedOf(
+/** C16's TRIPWIRE after the unpriced phases, before any price: a part a coin, MAIN's set and each try's set projected under both settlement marks. */
+export const tripwirePhase = (o: EngineRun, u: Unpriced): Promise<Closed> =>
+  closedOf(
     phaseOf(
       o,
       "TRIPWIRE",
       "phase-tripwire.js",
       "tripwirePart",
-      tripwireParts({ ...coin, tries: [...o.tries] }, u.named),
-      coinContext,
+      tripwireParts({ ...coinInputsOf(o, u), tries: [...o.tries] }, u.named),
+      coinContextOf(o, u),
     ),
   );
+
+/** The engine's phases through RANK: the unpriced ones, C16's tripwire and its stop (exit 6 when any set projected is above 1%, unless `--past-tripwire`), then the prices and RANK. */
+export async function pricedPhases(o: EngineRun): Promise<PricedRecords> {
+  const u = await unpricedPhases(o);
+  const coin = coinInputsOf(o, u);
+  const coinContext = coinContextOf(o, u);
+  const tripwire = await tripwirePhase(o, u);
   const projection =
     o.look === null
       ? null
@@ -764,20 +769,24 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
  * position is held as its JSON line and parsed back as a part's reader
  * parses it, and RANK reads them in PRICES' parts' order (the coins', then
  * each coin's by id), so that each line is the one `positions.jsonl.gz`
- * would hold.
+ * would hold. The pricing in memory is no part, so it starts only while
+ * `pricing` (the run's budget less FORTNIGHT_MINUTES) allows: a run ends
+ * inside 15 minutes (C15).
  */
 export async function fortnightOf(
   o: EngineRun,
   kit: Research,
   window: readonly [number, number],
+  pricing: Budget,
 ): Promise<Fortnight> {
   const [from, to] = window;
   const mondays = o.mondays.filter((M) => M >= from && M < to);
   const f: EngineRun = { ...o, end: to, stage: [from, to], mondays };
   const u = await unpricedPhases(f);
-  const why = f.budget.stop();
+  const why = pricing.stop();
   if (why !== null)
     throw new NotFinished(`the fortnight's prices wait: ${why}`);
+  const t0 = performance.now();
   const c = { ...coinContextOf(f, u), removal: u.removal.dir };
   const inputs = {
     ...coinInputsOf(f, u),
@@ -822,16 +831,27 @@ export async function fortnightOf(
       legs[kind] = (legs[kind] ?? 0) + 1;
     });
   }
-  return { sha256: hash.digest("hex"), lines, byLine, legs };
+  return {
+    sha256: hash.digest("hex"),
+    lines,
+    byLine,
+    legs,
+    seconds: Math.round(performance.now() - t0) / 1000,
+  };
 }
+
+/** The fortnight's pricing in memory starts only while this many of the run's minutes remain (`pricing` is the run's budget less these; it decides nothing): measured in milliseconds on the made-up world, and by the first rehearsal on E (its `fortnight.seconds`), from which it is set. */
+export const FORTNIGHT_MINUTES = 5;
 
 const RunFile = z.object({ seconds: z.number(), maxRssMb: z.number() });
 
-/** A closed phase's runs, both copies: its parts, their seconds summed and the largest peak (the `.run.json` beside each part). */
+/** A closed phase's runs, both copies: its parts, their seconds summed, the slowest part's copy and the largest peak with the part's copy it was measured after (a child's peak RSS so far: the `.run.json` beside each part). */
 function runsOf(c: Closed | null) {
   if (c === null) return null;
   let seconds = 0;
   let maxRssMb = 0;
+  let peakAt: string | null = null;
+  let slowest: { part: string; seconds: number } | null = null;
   for (const copy of ["a", "b"])
     for (const [id] of c.record.parts) {
       const r = RunFile.parse(
@@ -840,12 +860,22 @@ function runsOf(c: Closed | null) {
         ),
       );
       seconds += r.seconds;
-      if (r.maxRssMb > maxRssMb) maxRssMb = r.maxRssMb;
+      if (peakAt === null || r.maxRssMb > maxRssMb) {
+        maxRssMb = r.maxRssMb;
+        peakAt = `${copy}/${id}`;
+      }
+      if (slowest === null || r.seconds > slowest.seconds)
+        slowest = { part: `${copy}/${id}`, seconds: r.seconds };
     }
   return {
     parts: c.record.parts.length,
     seconds: Math.round(seconds),
     maxRssMb,
+    peakAt,
+    slowest:
+      slowest === null
+        ? null
+        : { ...slowest, seconds: Math.round(slowest.seconds) },
   };
 }
 
@@ -879,9 +909,16 @@ function leftOutTakers(stores: readonly Store[]) {
   return [...out].sort(([a], [b]) => (a < b ? -1 : 1));
 }
 
+/** The records the counts read: through TRIPWIRE, then PRICES and RANK (none at the rehearsal, which prices nothing on file) and RESULT (none but at a look). */
+export type CountedRecords = Omit<PricedRecords, "prices" | "rank"> & {
+  readonly prices: Closed | null;
+  readonly rank: Closed | null;
+  readonly result: Closed | null;
+};
+
 /** The step's counts for `report.json` beside RESULT's prints (C13; C15 step 1's 4.), from the closed phases and the stores alone, no price: the labels at each Monday, the vault accounts, the accounts the kit is not run on, BUILD's facts, the tripwire's projection, C3's counts, the holes, the left-out takers, each phase's runs. */
 export function stepCounts(o: {
-  engine: PricedRecords & { readonly result: Closed | null };
+  engine: CountedRecords;
   stores: readonly Store[];
   end: number;
 }) {
@@ -935,7 +972,7 @@ export function stepCounts(o: {
       | "sizeZero"
       | "keys",
   ) => all.reduce((s, f) => s + f[k], 0);
-  const byLine = (k: "otherMarkets" | "copies") => {
+  const byKey = (k: "otherMarkets" | "mainAfterSettlement" | "copies") => {
     const out: Record<string, number> = {};
     for (const f of all)
       for (const [line, n] of Object.entries(f[k]))
@@ -959,8 +996,9 @@ export function stepCounts(o: {
       idsTwice: sum("idsTwice"),
       sizeZero: sum("sizeZero"),
       largestMerged: all.reduce((m, f) => Math.max(m, f.largestMerged), 0),
-      otherMarkets: byLine("otherMarkets"),
-      copies: byLine("copies"),
+      otherMarkets: byKey("otherMarkets"),
+      mainAfterSettlement: byKey("mainAfterSettlement"),
+      copies: byKey("copies"),
       keys: sum("keys"),
     },
     tripwire: { look: e.projection, tries: e.tries },
@@ -1138,12 +1176,17 @@ export type StepRun = {
   readonly heapGb: number;
   readonly pastTripwire: boolean;
   readonly budget: Budget;
+  /** The run's budget less FORTNIGHT_MINUTES, made with it: the fortnight's pricing in memory (`fortnightOf`). */
+  readonly pricing: Budget;
   readonly log: Log;
 };
 
-/** A step's engine run on its stores, at its END, stage, Mondays and look, in its engine folder. */
-function engineRunOf(
-  o: StepRun,
+/** A step's engine run on its stores, at its END, stage, Mondays and look, in its engine folder (the rehearsal's too, which names no step's engine). */
+export function engineRunOf(
+  o: Pick<
+    StepRun,
+    "roots" | "funding" | "seal" | "workers" | "heapGb" | "budget" | "log"
+  >,
   s: {
     readonly program: string;
     readonly values: SetValues;
@@ -1156,7 +1199,8 @@ function engineRunOf(
     readonly earlier: readonly Verdict[];
     readonly tries: readonly TrySet[];
     readonly pastTripwire: boolean;
-    readonly engine: EngineStep;
+    /** The step whose engine folder the seal names; null: none (the rehearsal's, `E\rehearsal\engine`). */
+    readonly engine: EngineStep | null;
     /** The funding list: `copyh/funding.sha256`, or FRESH-2's composed one. */
     readonly fundingList: string;
   },
@@ -1204,7 +1248,7 @@ function engineRunOf(
     pastTripwire: s.pastTripwire,
     workers: o.workers,
     heapGb: o.heapGb,
-    seal: { ...o.seal, engine: s.engine },
+    seal: s.engine === null ? o.seal : { ...o.seal, engine: s.engine },
     budget: o.budget,
     log: o.log,
   };
@@ -1282,6 +1326,7 @@ export async function step1(o: StepRun): Promise<void> {
     { ...run, dir: path.join(look, "engine", "fortnight") },
     kit,
     REHEARSAL_WINDOW,
+    o.pricing,
   );
   // The counts and the writes are no part: they start only while the run has minutes left (C15: a run ends inside 15).
   const why = o.budget.stop();

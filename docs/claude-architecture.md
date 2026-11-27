@@ -973,6 +973,32 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   (the program's fingerprint, the kit's, lib-exits', the seed manifest's
   and `copyh/known.json`'s SHA-256); exit 6 unless it passed. A cap still
   unset reads none there (the seed's accounts lie far below either).
+- `rehearse [--workers n] [--minutes m]` (C15 (c)): `rehearse.ts`, the
+  rehearsal on real months, counts only, by the program to be frozen, on
+  E's store (`<COPYH_ROOT>\E\store`, built, twinned and checked by the
+  tools) in `<COPYH_ROOT>\E\rehearsal\`; it needs COPYH_FUNDING. Its
+  refusals, each exit 5: a second rehearsal, a cap unset, E's store or its
+  twin not built, its integrity not passed for both. The engine's phases
+  before any price in `E\rehearsal\engine` (LABELS to REMOVAL, then
+  TRIPWIRE: MAIN's set under both settlement marks, no stop); the values
+  its counts set before the freeze (C9's mark: 60 minutes when the 5-minute
+  projection is above 0.5%, the freeze waiting while the mark set's is above
+  1%; C15's worker heap: twice the largest peak measured, an engine part's,
+  a store build's thread's or its own, rounded up to a whole GB); in memory,
+  while the run's budget less `FORTNIGHT_MINUTES` allows, the fortnight
+  priced at the mark set, then the counts; then `rehearsal.json`
+  (`rehearsalJson`), its identity first, for the supervisor to commit as
+  `copyh/rehearsal.json`: E's store's record (this build's store closure,
+  the manifest without its run fields, the builder's code beside them), the
+  fortnight, the caps' base (0.77 and 1.18 KB a fill, half the 20 GB lane),
+  the values, the prints (the ids met twice, the entries of size 0, the
+  largest merged order event, ruled before the freeze above 100,000) and the
+  counts (C15 (c) 1–4, 6, 8, 9: the step's counts, the tripwire's two
+  projections, the lines' memberships by Monday, the copies a week by line
+  with MAIN's legs by kind, the survival curve of MAIN's voted copies by
+  whole hour with its open share, MAIN's long share by day, each coin's
+  first Settlement with its market trades and MAIN's entries after it, E's
+  integrity's K1 and K3). No file of priced copies is written.
 - `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
   reply (`info/meta.json`), held to its one line in the funding store's
   `manifest.jsonl`, in the reply's `universe` order (iid = index, delisted
@@ -1212,8 +1238,9 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   share (both copies, the kit's order breaking a tie), the entries of
   direction 0 and the most fills of one order event the kit merged into an
   entry group (its `buildEntries` spreads them into a call: the
-  rehearsal's print, above 100,000 ruled before the freeze); its bytes an
-  index line, then the facts, each coin's copies
+  rehearsal's print, above 100,000 ruled before the freeze), and by coin
+  the entries of MAIN's accounts after the coin's first Settlement (RL11);
+  its bytes an index line, then the facts, each coin's copies
   a JSON line each and its keys in chunks, read a coin at a time.
 - `phase-removal.ts` (C10): REMOVAL, a part a coin: its keys from every
   BUILD and BUILD-L part (each part held to its record once a process,
@@ -1281,7 +1308,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   thresholds its parameters; a large lane one child at the heap cap), the
   step's counts (`stepCounts`: the labels by Monday, the vault accounts,
   BUILD's facts, the tripwire's projection, C3's counts, the holes, the
-  left-out takers by cause and month, each phase's runs), and the writes
+  left-out takers by cause and month, each phase's runs: its parts and
+  seconds, its slowest part and its peak's), and the writes
   (`writeLook`): the positions file gzipped to a temp in the engine
   folder, its lines held to RESULT's hash (exit 6), `result.json` (its
   identity first, naming both hashes), the file renamed into place, then
@@ -1295,7 +1323,9 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   `runEngine`), then each coin's positions and RANK in the parent, in
   memory, no file of priced copies written; its output the SHA-256 of the
   lines `positions.jsonl.gz` would hold, by entry id, their count, the
-  copies by line and the legs by kind. Step 1 runs it on its own store in
+  copies by line, the legs by kind and its pricing's seconds; the pricing,
+  no part, starts only while the run's budget less `FORTNIGHT_MINUTES` (5)
+  allows (C15: a run ends inside 15). Step 1 runs it on its own store in
   `look1\engine\fortnight` and prints it beside `copyh/rehearsal.json`'s
   (its `fortnight`), and whether they are equal, deciding nothing.
 - `tries.ts` (C14): a try's form, `copyh/tries.json` (each try its line,

@@ -29,7 +29,8 @@
  *   the most fills of one order event the kit merged into an entry group
  *   (its `buildEntries` spreads a merged event's tids into a call: the
  *   rehearsal prints it, and above 100,000 it is ruled before the freeze;
- *   decisions 2026-11-26).
+ *   decisions 2026-11-26), and by coin the entries of MAIN's accounts after
+ *   the coin's first Settlement (RL11, the rehearsal's count).
  * - A part's bytes: an index line, then the facts (the counts and the
  *   accounts named), then each coin's copies, a JSON line each, and its
  *   keys, KEYS_A_LINE a line, the index giving each run of lines, so that a
@@ -174,6 +175,8 @@ export const BuildFacts = z.object({
   /** The most fills of one order event merged into an entry group, over the built accounts' whole histories. */
   largestMerged: z.number(),
   otherMarkets: z.record(z.string(), z.number()),
+  /** By coin's iid: the entries of accounts in MAIN at their Monday whose instant lies after their coin's first Settlement (RL11, the rehearsal's count). */
+  mainAfterSettlement: z.record(z.string(), z.number()),
   copies: z.record(z.string(), z.number()),
   keys: z.number(),
   /** Each built account's lines at the Mondays where it is in one: [account, [[the Monday's index, the lines' mask]]] (RANK's MAIN accounts, the memberships' counts). */
@@ -373,8 +376,16 @@ function buildAccount(
     const coin = reading.ends(g.iid);
     const lines = entryLines(facts_M.lines, isPrimary(g.t, coin.settlement));
     if (lines.length === 0) {
-      for (const l of entryLines(facts_M.lines, true))
+      const would = entryLines(facts_M.lines, true);
+      for (const l of would)
         facts.otherMarkets[l] = (facts.otherMarkets[l] ?? 0) + 1;
+      if (
+        coin.settlement !== null &&
+        g.t > coin.settlement.t &&
+        would.includes("MAIN")
+      )
+        facts.mainAfterSettlement[g.iid] =
+          (facts.mainAfterSettlement[g.iid] ?? 0) + 1;
       continue;
     }
     const { id, D } = delayOf(kit, view.addr, g);
@@ -454,6 +465,7 @@ export const buildPart: PartFunction = (inputs, ctx) => {
     sizeZero: 0,
     largestMerged: 0,
     otherMarkets: {},
+    mainAfterSettlement: {},
     copies: {},
     keys: 0,
     members: [],

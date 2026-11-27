@@ -9,7 +9,8 @@
  * EXITS_MAX with its exit rows and its OPEN and FLIP events, neither built;
  * the lanes changing nothing (the threshold at 0, the account through
  * BUILD-L); an entry whose coin settles later on its day in no line,
- * counted by line; a labels record other than the part's refused; two
+ * counted by line; one after its coin's first Settlement counted by coin,
+ * and none at its very instant (RL11); a labels record other than the part's refused; two
  * entries of one id both copies, in the kit's order, and an OPEN of size 0
  * a copy, each counted (the engine review's Q2 and Q3); the prior count on
  * a copy of 200,000 legs (no legs spread into a call).
@@ -147,6 +148,7 @@ describe("the build phase (C4–C8, C10, C11)", { timeout: 60_000 }, () => {
       sizeZero: 0,
       largestMerged: 0,
       otherMarkets: {},
+      mainAfterSettlement: {},
       copies: { MAIN: 1, BROAD: 1, DAY: 1 },
       keys: 2,
       members: [[A, [[1, 13]]]],
@@ -259,9 +261,39 @@ describe("the build phase (C4–C8, C10, C11)", { timeout: 60_000 }, () => {
     expect(built.facts).toMatchObject({
       built: 1,
       otherMarkets: { MAIN: 1, BROAD: 1, DAY: 1 },
+      // The entry lies before its coin's Settlement: none after it (RL11).
+      mainAfterSettlement: {},
       copies: {},
     });
     expect(built.coins.get(SOL)!.copies).toEqual([]);
+  });
+
+  it("counts by coin the entries of MAIN's accounts after their coin's first Settlement (RL11), and none at its very instant", async () => {
+    const settlement = (t: number) =>
+      [
+        t,
+        record(X, {
+          coin: "SOL",
+          side: "A",
+          time: t,
+          dir: "Settlement",
+          tid: 9_001,
+          crossed: true,
+        }),
+      ] as [number, string];
+    const before = await buildRun(
+      await phaseWorld([settlement(at(1, 10) - 1)]),
+    );
+    expect(before.built.facts).toMatchObject({
+      otherMarkets: { MAIN: 1, BROAD: 1, DAY: 1 },
+      mainAfterSettlement: { [SOL]: 1 },
+      copies: {},
+    });
+    const atIt = await buildRun(await phaseWorld([settlement(at(1, 10))]));
+    expect(atIt.built.facts).toMatchObject({
+      otherMarkets: { MAIN: 1, BROAD: 1, DAY: 1 },
+      mainAfterSettlement: {},
+    });
   });
 
   it("refuses a labels record other than its part's", async () => {

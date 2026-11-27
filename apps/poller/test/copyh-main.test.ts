@@ -9,7 +9,9 @@
  * program's heap ceiling exactly design.ts's, and refusing a reply that
  * differs or a manifest without exactly one line for it (exit 5); a build
  * over a built store refused (exit 5); `reproduce` refused without
- * PAPER_SEED (exit 2) and its seed folder sealed by name (exit 5). Run in
+ * PAPER_SEED (exit 2) and its seed folder sealed by name (exit 5);
+ * `rehearse` refused without COPYH_FUNDING or with another option (exit 2),
+ * and before E's store is built (exit 5). Run in
  * `pnpm verify`'s order: the
  * build first.
  */
@@ -320,6 +322,32 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
       expect(r.code, key).toBe(2);
       expect(r.stderr).toContain(`fresh2 needs ${key}`);
     }
+  });
+
+  it("takes the rehearsal's workers and minutes and needs the funding store; another option, or no funding store, exit 2; E's store not built, exit 5, nothing made in E's folder", () => {
+    const f = folders();
+    for (const args of [
+      ["rehearse", "--past-tripwire"],
+      ["rehearse", "--range", "E"],
+      ["rehearse", "--twin"],
+      ["rehearse", "--round", "1"],
+      ["rehearse", "--minutes", "15"],
+    ])
+      expect(run(args, f).code, args.join(" ")).toBe(2);
+    const without = Object.fromEntries(
+      Object.entries(f).filter(([k]) => k !== "COPYH_FUNDING"),
+    );
+    const r = run(["rehearse"], without);
+    expect(r.code).toBe(2);
+    expect(r.stderr).toContain("rehearse needs COPYH_FUNDING");
+    expect(run(["rehearse", "--workers", "2", "--minutes", "5"], f).code).toBe(
+      5,
+    );
+    expect(logOf(f.COPYH_ROOT).at(-1)).toMatchObject({
+      msg: "not ready",
+      why: "E's store is not built: build --range E first",
+    });
+    expect(existsSync(path.join(f.COPYH_ROOT, "E"))).toBe(false);
   });
 
   it("takes a round's number and the rounds' minutes, the gate first (exit 4 while the freeze does not verify); no round, a fourth, one twice or another option, exit 2", () => {

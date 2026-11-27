@@ -89,6 +89,7 @@ import {
 import { END_S } from "../src/copyh/design.js";
 import { SEALED } from "../src/copyh/seal.js";
 import {
+  FORTNIGHT_MINUTES,
   StoreRecord,
   LOOK_FILES,
   copyLogs,
@@ -802,7 +803,7 @@ describe(
         pastTripwire: true,
         lanes: NO_LANES,
       });
-      const f = await fortnightOf(run, kit, [M1, END]);
+      const f = await fortnightOf(run, kit, [M1, END], never);
       const [p] = [
         ...positionLines({
           prices: first.e.prices,
@@ -815,7 +816,10 @@ describe(
         lines: 1,
         byLine: { MAIN: 1, BROAD: 1, DAY: 1 },
         legs: { [p!.plan.legs[0]!.kind]: 1 },
+        seconds: expect.any(Number) as number,
       });
+      // The pricing in memory measured: well under its margin of minutes on the made-up world.
+      expect(f.seconds).toBeLessThan(FORTNIGHT_MINUTES * 60);
       expect(p!.plan.legs).toHaveLength(1);
       expect(readdirSync(dir).sort()).toEqual(["build", "labels", "removal"]);
       const none = await fortnightOf(
@@ -826,13 +830,36 @@ describe(
         }),
         kit,
         [M1, M2],
+        never,
       );
       expect(none).toEqual({
         sha256: sha256(""),
         lines: 0,
         byLine: {},
         legs: {},
+        seconds: expect.any(Number) as number,
       });
+    });
+
+    it("starts the fortnight's pricing in memory only while its budget (the run's less FORTNIGHT_MINUTES) allows: spent, its unpriced phases close as parts and it stops before any price (exit 3); the next run prices from the closed parts", async () => {
+      expect(FORTNIGHT_MINUTES).toBe(5);
+      const kit = await loadResearch();
+      const dir = path.join(engineDir(), "fortnight");
+      const run = runOf(dir, {
+        markMinutes: 5,
+        pastTripwire: true,
+        lanes: NO_LANES,
+      });
+      const spent = { stop: () => "its 0 minutes are spent" };
+      const stopped = fortnightOf(run, kit, [M1, END], spent);
+      await expect(stopped).rejects.toThrow(
+        "the fortnight's prices wait: its 0 minutes are spent",
+      );
+      await stopped.catch((err: unknown) => expect(exitOf(err).code).toBe(3));
+      for (const p of ["labels", "build", "removal"])
+        expect(existsSync(path.join(dir, p, "record.json")), p).toBe(true);
+      const f = await fortnightOf(run, kit, [M1, END], never);
+      expect(f.lines).toBe(1);
     });
 
     it("gives the step's counts and writes the look in C15's order: the positions' lines held to RESULT's hash, result.json first, the file renamed into place, then report.json, each with its identity first", async () => {
@@ -855,6 +882,7 @@ describe(
         largestMerged: 0,
       });
       expect(counts.build.copies).toEqual({ MAIN: 1, BROAD: 1, DAY: 1 });
+      expect(counts.build.mainAfterSettlement).toEqual({});
       expect(counts.tripwire).toEqual({ look: e.projection, tries: [] });
       expect(counts.stores).toEqual([
         expect.objectContaining({
@@ -875,6 +903,37 @@ describe(
       expect(counts.runs.labels).toMatchObject({ parts: 256 });
       expect(counts.runs.labelsL).toBeNull();
       expect(counts.runs.result).toMatchObject({ parts: 1 });
+      // Each phase's slowest part's copy and where its largest peak was measured, among its parts' runs.
+      const ids = (dir: string) =>
+        ["a", "b"].flatMap((copy) =>
+          readdirSync(path.join(dir, copy))
+            .filter((f) => f.endsWith(".run.json"))
+            .map((f) => `${copy}/${f.slice(0, -".run.json".length)}`),
+        );
+      const runOfPart = (dir: string, at: string) =>
+        JSON.parse(readFileSync(path.join(dir, `${at}.run.json`), "utf8")) as {
+          seconds: number;
+          maxRssMb: number;
+        };
+      for (const [name, c] of [
+        ["labels", e.labels],
+        ["build", e.build],
+        ["result", e.result],
+      ] as const) {
+        const runs = counts.runs[name]!;
+        const all = ids(c.dir).map((at) => runOfPart(c.dir, at));
+        expect(ids(c.dir), name).toContain(runs.peakAt);
+        expect(runs.maxRssMb, name).toBe(
+          Math.max(...all.map((r) => r.maxRssMb)),
+        );
+        expect(runOfPart(c.dir, runs.peakAt!).maxRssMb, name).toBe(
+          runs.maxRssMb,
+        );
+        expect(ids(c.dir), name).toContain(runs.slowest!.part);
+        expect(runs.slowest!.seconds, name).toBe(
+          Math.round(Math.max(...all.map((r) => r.seconds))),
+        );
+      }
 
       const result = resultOf(e.result.dir, e.result.record);
       const identity = { program: "made-up", node: process.version };

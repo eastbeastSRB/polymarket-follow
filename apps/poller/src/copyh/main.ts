@@ -8,6 +8,7 @@
  *   node dist/copyh.js build --range burnin|E [--twin] [--workers n] [--minutes m]
  *   node dist/copyh.js integrity --range burnin|E [--minutes m]
  *   node dist/copyh.js reproduce
+ *   node dist/copyh.js rehearse [--workers n] [--minutes m]
  *   node dist/copyh.js step1 [--workers n] [--minutes m] [--past-tripwire]
  *   node dist/copyh.js tries --round n [--minutes m]
  *   node dist/copyh.js choice [--minutes m]
@@ -31,7 +32,10 @@
  * a minute, with no parts. A cap still unset (null, design.ts) reads no cap
  * there: the seed's largest account lies far below either, and the kit's
  * own reading of the seed, which the reproduction holds COPY-H to, has none;
- * a step refuses an unset cap.
+ * a step refuses an unset cap. `rehearse` (C15 (c)): rehearse.ts's
+ * rehearsal on E's store, built, twinned and checked by the tools (it needs
+ * COPYH_FUNDING), into `<COPYH_ROOT>\E\rehearsal\`, its `rehearsal.json` for
+ * the supervisor to commit as `copyh/rehearsal.json`.
  * Before the freeze every command runs under the closed seal, so S's range
  * is refused. The gate's commands verify the freeze of their kind first
  * (gate.ts) and stop with exit 4, having read nothing, when it does not
@@ -46,8 +50,9 @@
  * (14, or `--minutes`) are spent or a closed window began, and exits 3. Exit
  * codes: 0 done, 1 a crash, 2 bad settings or options (an option given
  * twice among them), 3 not finished, 4 the freeze does not verify, 5 not
- * ready, 6 a check failed, 7 two builds differ. Every line goes to `<COPYH_ROOT>\logs\copyh-<day>.log`; stderr
- * says only why the program stopped before its log was open.
+ * ready, 6 a check failed, 7 two builds differ. Every line goes to
+ * `<COPYH_ROOT>\logs\copyh-<day>.log`; stderr says only why the program
+ * stopped before its log was open.
  */
 import { readFileSync } from "node:fs";
 import os from "node:os";
@@ -82,6 +87,7 @@ import {
   reproduce,
   seedSource,
 } from "./reproduce.js";
+import { rehearse } from "./rehearse.js";
 import { runRound } from "./rounds.js";
 import {
   FreezeDiffers,
@@ -97,7 +103,7 @@ import {
   writeWhole,
 } from "./run.js";
 import { SEALED, checkInside, checkPath, checkWrite } from "./seal.js";
-import { fresh2, step1, step2 } from "./steps.js";
+import { FORTNIGHT_MINUTES, fresh2, step1, step2 } from "./steps.js";
 import { buildStore, checkStores, listsOf, passOf } from "./stores.js";
 
 function refuse(why: string): never {
@@ -107,7 +113,14 @@ function refuse(why: string): never {
 const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) =>
   e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 
-const TOOLS = ["coins", "count", "build", "integrity", "reproduce"] as const;
+const TOOLS = [
+  "coins",
+  "count",
+  "build",
+  "integrity",
+  "reproduce",
+  "rehearse",
+] as const;
 const [command, ...options] = process.argv.slice(2);
 const tool = TOOLS.find((t) => t === command) ?? null;
 const gated = COMMANDS.find((c) => c === command) ?? null;
@@ -130,18 +143,19 @@ for (let i = 0; i < options.length; i++) {
   const ranged = passes || tool === "integrity";
   const stepped = gated === "step1" || gated === "step2" || gated === "fresh2";
   const rounding = gated === "tries" || gated === "choice";
+  const rehearsing = tool === "rehearse";
   if (ranged && flag === "--range" && RANGE_NAMES.some((r) => r === value)) {
     range = value as RangeName;
     i += 1;
   } else if (
-    (passes || stepped) &&
+    (passes || stepped || rehearsing) &&
     flag === "--workers" &&
     /^([1-9]|1[0-6])$/.test(value ?? "")
   ) {
     workers = Number(value);
     i += 1;
   } else if (
-    (ranged || stepped || rounding) &&
+    (ranged || stepped || rounding || rehearsing) &&
     flag === "--minutes" &&
     /^[1-9][0-9]?$/.test(value ?? "") &&
     Number(value) <= RUN_MINUTES
@@ -174,11 +188,13 @@ if (tool === "coins" && settings.COPYH_FUNDING === undefined)
   refuse("coins needs COPYH_FUNDING, COPYH-FUNDING's store");
 if (tool === "reproduce" && settings.PAPER_SEED === undefined)
   refuse("reproduce needs PAPER_SEED, the paper's seed folder");
-if (
-  (gated === "step1" || gated === "step2" || gated === "fresh2") &&
-  settings.COPYH_FUNDING === undefined
-)
-  refuse(`${gated} needs COPYH_FUNDING, COPYH-FUNDING's store`);
+const funded =
+  gated === "step1" ||
+  gated === "step2" ||
+  gated === "fresh2" ||
+  tool === "rehearse";
+if (funded && settings.COPYH_FUNDING === undefined)
+  refuse(`${command ?? ""} needs COPYH_FUNDING, COPYH-FUNDING's store`);
 const heap = heapOf(process.env.COPYH_HEAP_GB);
 const heapGb: number = typeof heap === "string" ? refuse(heap) : heap;
 /** The range's raw store: FRESH's for S (step 2's), FRESH-2's for FRESH-2 (its stage's), else WAVE-H's. */
@@ -203,7 +219,7 @@ const roots =
     ? [settings.COPYH_ROOT, settings.COPYH_FUNDING!]
     : tool === "reproduce"
       ? [settings.COPYH_ROOT, settings.PAPER_SEED!]
-      : gated === "step1" || gated === "step2" || gated === "fresh2"
+      : funded
         ? [settings.COPYH_ROOT, raw, settings.COPYH_FUNDING!]
         : [settings.COPYH_ROOT, raw];
 
@@ -352,6 +368,12 @@ async function reproduction(): Promise<void> {
     throw new ReproError(`the reproduction did not pass: ${out} says where`);
 }
 
+/** The run's budget, and the same less FORTNIGHT_MINUTES for the work in memory that is no part (steps.ts `fortnightOf`). */
+const budgets = () => ({
+  budget: budgetOf(minutes),
+  pricing: budgetOf(Math.max(0, minutes - FORTNIGHT_MINUTES)),
+});
+
 /** A tool's store run: the range's folder (`--twin`: its `twin\`), under the closed seal. */
 const storeRun = (r: RangeName, base: string) => ({
   range: RANGES[r],
@@ -399,7 +421,7 @@ async function gate(c: Command): Promise<void> {
     workers,
     heapGb,
     pastTripwire,
-    budget: budgetOf(minutes),
+    ...budgets(),
     log: logOf,
   });
 }
@@ -425,6 +447,16 @@ try {
   if (gated !== null) await gate(gated);
   else if (tool === "coins") coins();
   else if (tool === "reproduce") await reproduction();
+  else if (tool === "rehearse")
+    await rehearse({
+      root: settings.COPYH_ROOT,
+      funding: settings.COPYH_FUNDING!,
+      roots,
+      workers,
+      heapGb,
+      ...budgets(),
+      log: logOf,
+    });
   else if (tool === "count") await count(range!);
   else if (tool === "integrity") checkStores(storeRun(range!, rangeDir!));
   else
