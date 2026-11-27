@@ -32,7 +32,13 @@
  *   with no record (the twin always built); step 1's positions recomputed
  *   held to its result.json's (exit 6); through real child processes,
  *   CONFIRM: each chosen try's set on S with every condition, the prior
- *   mean net's among them, its statistic and reading, and MAIN on S alone.
+ *   mean net's among them, its statistic and reading, and MAIN on S alone;
+ * - FRESH-2's stage's engine through RANK with no look: MAIN's whole set
+ *   stops nothing, the judged sets alone do, no RESULT, and runEngine refuses
+ *   a run with no look; SEALED through real child processes: every line
+ *   hashed as RESULT hashes it, each judged set's copies on FRESH-2, its
+ *   statistic and sealed reading, MAIN's prints in FRESH-2's form, none
+ *   without MAIN.
  */
 import {
   existsSync,
@@ -48,8 +54,15 @@ import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { confirmationOf } from "../src/copyh/confirm.js";
+import { fresh2Report, sealedOf } from "../src/copyh/fresh2.js";
 import { runPhase } from "../src/copyh/engine.js";
 import { confirmOf, confirmParts } from "../src/copyh/phase-confirm.js";
+import {
+  sealedParts,
+  sealedReportOf,
+  sealedResultOf,
+  type SealedSet,
+} from "../src/copyh/phase-sealed.js";
 import { printCopyOf, reportOf } from "../src/copyh/prints.js";
 import { TryLine, inTry, judgedOf, type Try } from "../src/copyh/tries.js";
 import { statisticOf } from "../src/copyh/verdict.js";
@@ -82,6 +95,7 @@ import {
   heldStores,
   readyForStep2,
   identityOf,
+  pricedPhases,
   readyForStep1,
   runEngine,
   stepCounts,
@@ -386,11 +400,16 @@ describe("C16's stop over every set projected (RH1 (a))", () => {
         false,
       ),
     ).toBe(
-      `the tripwire: 2.00% of the try "a"'s 100 copies; 2.00% of the try "c"'s 50 copies (projected without its conditions on the prior mean net) ${tail}`,
+      `the tripwire: 2.00% of the set "a"'s 100 copies; 2.00% of the set "c"'s 50 copies (projected without its conditions on the prior mean net) ${tail}`,
     );
     expect(tripwireStop(p(10, 1), [tryOf("a", p(10, 1))], false)).toBe(
-      `the tripwire: 10.00% of MAIN's 10 copies; 10.00% of the try "a"'s 10 copies ${tail}`,
+      `the tripwire: 10.00% of MAIN's 10 copies; 10.00% of the set "a"'s 10 copies ${tail}`,
     );
+    // FRESH-2's stage: no look set, its judged sets alone.
+    expect(tripwireStop(null, [tryOf("MAIN", p(10, 1))], false)).toBe(
+      `the tripwire: 10.00% of the set "MAIN"'s 10 copies ${tail}`,
+    );
+    expect(tripwireStop(null, [tryOf("MAIN", p(1000, 10))], false)).toBeNull();
     expect(tripwireStop(p(10, 1), [tryOf("a", p(10, 1))], true)).toBeNull();
     expect(tripwireStop(p(0, 0), [tryOf("a", p(0, 0))], false)).toBeNull();
   });
@@ -527,6 +546,7 @@ const runOf = (
     pastTripwire: boolean;
     lanes: { labelFills: number | null; historyFills: number | null };
     tries?: TrySet[];
+    look?: 1 | 2 | null;
   },
 ): EngineRun => ({
   dir,
@@ -544,7 +564,7 @@ const runOf = (
   tries: o.tries ?? [],
   funding: { store: F.store, list: F.list, sha256: F.sha256 },
   coins: new Map(COINS.map((c, i) => [i, c])),
-  look: 1,
+  look: o.look === undefined ? 1 : o.look,
   earlier: [],
   pastTripwire: o.pastTripwire,
   workers: 3,
@@ -1023,6 +1043,161 @@ describe(
       expect((await confirmIn(p.t, p.t + 1)).tries[0]!.statistic.copies).toBe(
         1,
       );
+    });
+
+    it("runs FRESH-2's stage's engine through RANK with no look: MAIN's whole set, unpriced under the 5-minute mark, stops nothing, its judged sets alone are projected, no RESULT; runEngine refuses a run with no look", async () => {
+      const dir = engineDir();
+      const judged: TrySet = {
+        name: "MAIN",
+        line: "MAIN",
+        from: END - 1,
+        to: END,
+        conditions: [],
+      };
+      const run = runOf(dir, {
+        markMinutes: 5,
+        pastTripwire: false,
+        lanes: NO_LANES,
+        tries: [judged],
+        look: null,
+      });
+      await expect(runEngine(run)).rejects.toThrow(/RESULT reads a look/);
+      expect(existsSync(path.join(dir, "labels"))).toBe(false);
+      const p = await pricedPhases(run);
+      expect(p.projection).toBeNull();
+      expect(p.tries).toEqual([
+        {
+          name: "MAIN",
+          line: "MAIN",
+          leftOut: [],
+          projection: expect.objectContaining({
+            copies: 0,
+            share: 0,
+          }) as unknown,
+        },
+      ]);
+      for (const phase of ["tripwire", "prices", "rank"])
+        expect(existsSync(path.join(dir, phase, "record.json")), phase).toBe(
+          true,
+        );
+      expect(existsSync(path.join(dir, "result"))).toBe(false);
+      expect(
+        stepCounts({
+          engine: { ...p, result: null },
+          stores: [world.store],
+          end: END,
+        }),
+      ).toMatchObject({
+        tripwire: { look: null, tries: p.tries },
+        runs: { result: null },
+      });
+    });
+
+    it("judges FRESH-2's sets in SEALED (through real child processes): every line hashed as RESULT hashes it; each judged set its line's copies voted by END with t in the window, every condition met, its statistic and sealed reading at its z; MAIN's prints in FRESH-2's form, none without MAIN", async () => {
+      const { e } = first;
+      const kit = await loadResearch();
+      const lines = [
+        ...positionLines({ prices: e.prices, rank: e.rank, mondays: [M1, M2] }),
+      ];
+      expect(lines).toHaveLength(1);
+      const [{ p, line, rank }] = lines as [(typeof lines)[number]];
+      const coin = (name: string, iid: number): SealedSet => ({
+        kind: "try",
+        name,
+        line: "BROAD",
+        conditions: [{ covariate: "coin", op: "=", value: iid }],
+        z: 1.96,
+      });
+      const sets: SealedSet[] = [
+        { kind: "MAIN", name: "MAIN", line: "MAIN", conditions: [], z: 1.645 },
+        coin("its coin", p.iid),
+        coin("another coin", p.iid + 1),
+      ];
+      const sealedIn = async (
+        s: readonly SealedSet[],
+        from: number,
+        to: number,
+      ) => {
+        const dir = path.join(engine, `sealed-${s.length}-${from}-${to}`);
+        const record = await runPhase({
+          name: "SEALED",
+          dir,
+          module: path.join(PACKAGE_ROOT, "dist", "copyh", "phase-sealed.js"),
+          fn: "sealedPart",
+          parts: sealedParts({
+            code: "made-up",
+            prices: recordSha(e.prices.dir),
+            rank: recordSha(e.rank.dir),
+            mondays: [M1, M2],
+            sets: [...s],
+            from,
+            to,
+          }),
+          context: { prices: e.prices.dir, rank: e.rank.dir },
+          workers: 1,
+          heapGb: 1,
+          seal: SEAL,
+          budget: never,
+          log: () => {},
+        });
+        return {
+          result: sealedResultOf(dir, record),
+          report: sealedReportOf(dir, record),
+        };
+      };
+      const tl = TryLine.parse(JSON.parse(line));
+      const judged = (s: SealedSet, copies: ReturnType<typeof judgedOf>[]) => {
+        const statistic = statisticOf(kit, copies);
+        return {
+          kind: s.kind,
+          name: s.name,
+          line: s.line,
+          statistic,
+          ...sealedOf(statistic, s.z),
+        };
+      };
+      const r = await sealedIn(sets, M1, END);
+      expect(r.result.positions).toEqual(
+        resultOf(e.result.dir, e.result.record).positions,
+      );
+      expect(r.result.sets).toEqual([
+        judged(sets[0]!, [judgedOf(tl, "MAIN")]),
+        judged(sets[1]!, [judgedOf(tl, "BROAD")]),
+        judged(sets[2]!, []),
+      ]);
+      expect(r.result.sets.map((s) => [s.reading, s.z])).toEqual([
+        ["WITHHELD", 1.645],
+        ["WITHHELD", 1.96],
+        ["NOT CONFIRMED", 1.96],
+      ]);
+      expect(r.report).toEqual({
+        main: JSON.parse(
+          JSON.stringify(
+            fresh2Report(
+              reportOf(kit, [printCopyOf(p, rank)], {
+                z: 1.645,
+                look: 2,
+                start: M1,
+                end: END,
+                endS: END_S,
+              }),
+            ),
+          ),
+        ) as unknown,
+      });
+      expect(r.report.main).not.toHaveProperty("cascade");
+      expect(r.report.main).toHaveProperty(["h1", "d"]);
+      expect(r.report.main).not.toHaveProperty(["h1", "nullMeanGross"]);
+      // No MAIN set: no MAIN prints. A window one millisecond after the copy's t holds none; one of its millisecond holds it.
+      const none = await sealedIn(sets.slice(1), p.t + 1, END);
+      expect(none.result.sets.map((s) => s.statistic.copies)).toEqual([0, 0]);
+      expect(none.result.positions).toEqual(r.result.positions);
+      expect(none.report).toEqual({ main: null });
+      expect(
+        (await sealedIn(sets.slice(1), p.t, p.t + 1)).result.sets.map(
+          (s) => s.statistic.copies,
+        ),
+      ).toEqual([1, 0]);
     });
   },
 );

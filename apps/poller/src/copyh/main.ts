@@ -12,7 +12,7 @@
  *   node dist/copyh.js tries --round n [--minutes m]
  *   node dist/copyh.js choice [--minutes m]
  *   node dist/copyh.js step2 [--workers n] [--minutes m] [--past-tripwire]
- *   node dist/copyh.js fresh2
+ *   node dist/copyh.js fresh2 [--workers n] [--minutes m] [--past-tripwire]
  *
  * `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
  * reply, held to its manifest line (C3), for the supervisor to commit as
@@ -39,7 +39,9 @@
  * stop unless `--past-tripwire`), `tries --round n` a round of the owner's
  * tries (rounds.ts), `choice` the choice (choice.ts) and `step2` steps.ts's
  * step 2 (it needs FRESH_STORE and COPYH_FUNDING; its raw store, FRESH's, is
- * read only after the gate opens it); FRESH-2's stage is still to be built. Settings, no
+ * read only after the gate opens it) and `fresh2` FRESH-2's stage (C14 (4):
+ * it needs FRESH2_STORE and COPYH_FUNDING, and reads FRESH-2's raw store only
+ * after the gate opens it). Settings, no
  * defaults (run.ts `Settings`); a run starts no new part once its minutes
  * (14, or `--minutes`) are spent or a closed window began, and exits 3. Exit
  * codes: 0 done, 1 a crash, 2 bad settings or options, 3 not finished, 4 the
@@ -95,7 +97,7 @@ import {
   writeWhole,
 } from "./run.js";
 import { SEALED, checkInside, checkPath, checkWrite } from "./seal.js";
-import { step1, step2 } from "./steps.js";
+import { fresh2, step1, step2 } from "./steps.js";
 import { buildStore, checkStores, listsOf, passOf } from "./stores.js";
 
 function refuse(why: string): never {
@@ -123,7 +125,7 @@ for (let i = 0; i < options.length; i++) {
   const [flag, value] = [options[i], options[i + 1]];
   const passes = tool === "count" || tool === "build";
   const ranged = passes || tool === "integrity";
-  const stepped = gated === "step1" || gated === "step2";
+  const stepped = gated === "step1" || gated === "step2" || gated === "fresh2";
   const rounding = gated === "tries" || gated === "choice";
   if (ranged && flag === "--range" && RANGE_NAMES.some((r) => r === value)) {
     range = value as RangeName;
@@ -172,7 +174,7 @@ if (tool === "coins" && settings.COPYH_FUNDING === undefined)
 if (tool === "reproduce" && settings.PAPER_SEED === undefined)
   refuse("reproduce needs PAPER_SEED, the paper's seed folder");
 if (
-  (gated === "step1" || gated === "step2") &&
+  (gated === "step1" || gated === "step2" || gated === "fresh2") &&
   settings.COPYH_FUNDING === undefined
 )
   refuse(`${gated} needs COPYH_FUNDING, COPYH-FUNDING's store`);
@@ -182,7 +184,7 @@ const heapGb: number = typeof heap === "string" ? refuse(heap) : heap;
 const rawName =
   range === "S" || gated === "step2"
     ? "FRESH_STORE"
-    : range === "FRESH-2"
+    : range === "FRESH-2" || gated === "fresh2"
       ? "FRESH2_STORE"
       : "WAVEH_STORE";
 const raw: string =
@@ -200,7 +202,7 @@ const roots =
     ? [settings.COPYH_ROOT, settings.COPYH_FUNDING!]
     : tool === "reproduce"
       ? [settings.COPYH_ROOT, settings.PAPER_SEED!]
-      : gated === "step1" || gated === "step2"
+      : gated === "step1" || gated === "step2" || gated === "fresh2"
         ? [settings.COPYH_ROOT, raw, settings.COPYH_FUNDING!]
         : [settings.COPYH_ROOT, raw];
 
@@ -208,9 +210,10 @@ const roots =
 try {
   checkWrite(settings.COPYH_ROOT, SEALED);
   if (rangeDir !== null) checkWrite(rangeDir, SEALED);
-  // Step 2's raw store, FRESH's, is sealed until the gate opens it: its roots are checked again after the gate, under the gate's seal.
+  // Step 2's raw store, FRESH's, and FRESH-2's stage's, FRESH-2's, are sealed until the gate opens them: the roots are checked again after the gate, under the gate's seal.
   for (const r of roots)
-    if (!(gated === "step2" && r === raw)) checkPath(r, SEALED);
+    if (!((gated === "step2" || gated === "fresh2") && r === raw))
+      checkPath(r, SEALED);
 } catch (err) {
   process.stderr.write(`copyh: not ready: ${(err as Error).message}\n`);
   process.exit(5);
@@ -359,7 +362,7 @@ const storeRun = (r: RangeName, base: string) => ({
   log: logOf,
 });
 
-/** A gated command: the gate first (exit 4, nothing read), then step 1 (steps.ts), a round (rounds.ts) or the choice (choice.ts) under the gate's seal; step 2's and FRESH-2's phases are still to be built. */
+/** A gated command: the gate first (exit 4, nothing read), then a round (rounds.ts), the choice (choice.ts), step 1, step 2 or FRESH-2's stage (steps.ts) under the gate's seal. */
 async function gate(c: Command): Promise<void> {
   const freeze = await verifyGate(PACKAGE_ROOT, c);
   if (!freeze.ok)
@@ -384,12 +387,8 @@ async function gate(c: Command): Promise<void> {
     await runChoice(rounds);
     return;
   }
-  if (c !== "step1" && c !== "step2")
-    throw new StoreError(
-      `${c}: its phases are built with the engine (parts 3 to 5)`,
-    );
   for (const r of roots) checkPath(r, seal);
-  await (c === "step1" ? step1 : step2)({
+  await (c === "step1" ? step1 : c === "step2" ? step2 : fresh2)({
     root: settings.COPYH_ROOT,
     raw,
     funding: settings.COPYH_FUNDING!,

@@ -266,6 +266,31 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     }
   });
 
+  it("takes FRESH-2's stage's options and needs FRESH-2's store and the funding store, the gate first (exit 4 while the freeze does not verify), FRESH-2's store not read before it (C14: nothing of FRESH-2 read before FRESH-2's freeze); another option, or either store unset, exit 2", () => {
+    if (verifyFreeze(PACKAGE_ROOT, "fresh2").ok) return;
+    const f = folders();
+    // FRESH-2's store lies in a FRESH-2 folder, which the closed seal refuses (exit 5): the gate's exit 4 shows it is not touched before the gate.
+    expect(
+      run(["fresh2", "--workers", "2", "--minutes", "5", "--past-tripwire"], f)
+        .code,
+    ).toBe(4);
+    for (const args of [
+      ["fresh2", "--range", "FRESH-2"],
+      ["fresh2", "--twin"],
+      ["fresh2", "--round", "1"],
+      ["fresh2", "--past-tripwire", "--past-tripwire"],
+    ])
+      expect(run(args, f).code, args.join(" ")).toBe(2);
+    for (const key of ["COPYH_FUNDING", "FRESH2_STORE"]) {
+      const without = Object.fromEntries(
+        Object.entries(f).filter(([k]) => k !== key),
+      );
+      const r = run(["fresh2"], without);
+      expect(r.code, key).toBe(2);
+      expect(r.stderr).toContain(`fresh2 needs ${key}`);
+    }
+  });
+
   it("takes a round's number and the rounds' minutes, the gate first (exit 4 while the freeze does not verify); no round, a fourth, one twice or another option, exit 2", () => {
     if (verifyFreeze(PACKAGE_ROOT, "tries").ok) return;
     const f = folders();

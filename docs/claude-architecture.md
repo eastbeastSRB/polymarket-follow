@@ -1000,8 +1000,10 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   (`rounds.ts`, `choice.ts`, below). `step2 [--workers n] [--minutes m]
   [--past-tripwire]`: the gate first, then `steps.ts`'s step 2 (below); it
   needs FRESH_STORE and COPYH_FUNDING, FRESH's store read only after the
-  gate opens it. `fresh2`: the gate first; its phases are still to be
-  built.
+  gate opens it. `fresh2 [--workers n] [--minutes m] [--past-tripwire]`:
+  the gate first, then `steps.ts`'s FRESH-2 stage (below); it needs
+  FRESH2_STORE and COPYH_FUNDING, FRESH-2's store read only after the gate
+  opens it.
 
 The ranges (`range.ts`): `burnin` WAVE-H's 850 files before M₀ (counts and
 timing only), `E` WAVE-H's 8,845 files [ARCHIVE_START, END_E), `S` FRESH's
@@ -1009,8 +1011,13 @@ timing only), `E` WAVE-H's 8,845 files [ARCHIVE_START, END_E), `S` FRESH's
 FRESH's store refused by name and real path), `FRESH-2` FRESH-2's 4,368
 files [END_S, END_F2), held to `copyh/fresh2.sha256` (the others to
 `copyh/data.sha256`), its raw store `FRESH2_STORE`, sealed until FRESH-2's
-freeze (`<COPYH_ROOT>\FRESH-2` and its keys). The integrity re-reads
-design.ts's sample days of its range: E's for E and the burn-in (which
+freeze (`<COPYH_ROOT>\FRESH-2` and its keys). A range's files are
+`stores.ts`'s `rangeFiles`: E's and S's every key of the range (one the
+list lacks stops, exit 5), FRESH-2's the keys its list holds, in order,
+their indices consecutive, so that an hour the archive still lacks is a
+hole (C14 (1), RH1 (g); the engine review's M2, fixed outside
+`range.ts`). The integrity re-reads design.ts's sample days of its range:
+E's for E and the burn-in (which
 holds three of them), S's for S, the 15th of each of FRESH-2's months for
 FRESH-2. Each store keeps the records of its own files timed in its own
 window; one outside is counted, never kept (D7).
@@ -1335,7 +1342,34 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   conditions, NOT CONFIRMED), its sentences written in advance.
 - `fresh2.ts` (C14's sealed judgment): a set's reading on FRESH-2 at z (a
   try's 1.96, MAIN's KEEP 1.645): WITHHELD, no error, CONFIRMED (both
-  lower bounds above 0 and the three sign conditions), NOT CONFIRMED.
+  lower bounds above 0 and the three sign conditions), NOT CONFIRMED;
+  `fresh2Report`, MAIN's prints in FRESH-2's form (no cascade print, no
+  null mean gross, the day and month prints named "COPY-H's copies by UTC
+  day" and "... by UTC month", every other print taken by name).
+- `steps.ts`, FRESH-2's stage (C14 (4)) in `<COPYH_ROOT>\fresh2\`: its
+  refusals, each exit 5: its `result.json`, `repro.json` not this
+  program's, an unset value, step 2's three files not those
+  `copyh/look2.sha256` lists, step 1's `result.json` not the one step 2's
+  names, E's or S's store not those steps 1 and 2 name, the chosen tries
+  not step 2's confirmations, and no yes to confirm (MAIN's verdict, the
+  first KEEP or DROP of its looks, no KEEP and no try confirmed on S:
+  FRESH-2 is then never read). FRESH-2's store built twice
+  (`fresh2\store`, `fresh2\twin\store`), its integrity; one funding list
+  composed of `copyh/funding.sha256` and `copyh/funding2.sha256` in
+  `fresh2\engine` (both lists' windows in the one funding store); the
+  engine on E ∪ S ∪ FRESH-2 at END_F2 on the 98 Mondays with no look
+  (`pricedPhases`, the engine through RANK: C16 on the judged sets alone,
+  no RESULT); SEALED; the writes (`result.json` with each judged set's
+  reading, `report.json` with MAIN's prints when MAIN is judged); the
+  logs.
+- `phase-sealed.ts` (C14's sealed judgment): SEALED, FRESH-2's stage's one
+  part after RANK, in RESULT's place, computed twice: every position's
+  line hashed as RESULT hashes it; of those with t in FRESH-2, each judged
+  set (MAIN's at a KEEP at 1.645, each try confirmed on S at 1.96: its
+  line's copies voted by END, every condition met), its statistic and
+  sealed reading; MAIN's prints in FRESH-2's form when MAIN is judged; a
+  try's set its statistic and reading only (the supervisor's ruling,
+  2026-11-27).
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

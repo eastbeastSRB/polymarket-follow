@@ -5,9 +5,12 @@
  * `<COPYH_ROOT>\<range>`, step 1's `look1`) and under its own seal.
  * - The lists a pass reads (`listsOf`): `copyh/coins.json` and `dirs.json`;
  *   a count takes those that exist, a build needs both.
- * - A range's files (`passOf`): its keys in its order, each held to its
- *   SHA-256 in its data list (`copyh/data.sha256`, FRESH-2's
- *   `copyh/fresh2.sha256`).
+ * - A range's files (`passOf`, `rangeFiles`): its keys in its order, each
+ *   held to its SHA-256 in its data list (`copyh/data.sha256`, FRESH-2's
+ *   `copyh/fresh2.sha256`); E's and S's every key (one the list lacks
+ *   stops, exit 5), FRESH-2's the keys its list holds (C14 (1), RH1 (g): an
+ *   hour the archive still lacks is a hole; the engine review's M2, fixed
+ *   here and never in range.ts, a store-closure file).
  * - `buildStore`: the pass and the merge into `<base>\parts\` and
  *   `<base>\store\`; a built store is refused before any list is read.
  * - `checkStores`: the twin (`<base>\twin\store\`, when built) held to the
@@ -71,6 +74,18 @@ export function listsOf(counting: boolean): PassLists {
   };
 }
 
+/** A range's files from its data list, in its order, their indices consecutive (the merge and the integrity read `lines[f.index]`): FRESH-2's the keys the list holds, the others' every key. */
+export function rangeFiles(
+  range: Range,
+  list: ReadonlyMap<string, string>,
+): FileTask[] {
+  const fill =
+    range.name === "FRESH-2"
+      ? range.fill.filter((key) => list.has(key))
+      : range.fill;
+  return filesOf({ ...range, fill }, list);
+}
+
 /** A range's files from the data list, and the list's own name and SHA-256. */
 export function passOf(range: Range): {
   files: FileTask[];
@@ -78,7 +93,7 @@ export function passOf(range: Range): {
 } {
   const data = readFileSync(range.name === "FRESH-2" ? FRESH2_FILE : DATA_FILE);
   return {
-    files: filesOf(range, readDataList(data.toString("utf8"))),
+    files: rangeFiles(range, readDataList(data.toString("utf8"))),
     list: { name: listNameOf(range.name), sha256: sha256(data) },
   };
 }

@@ -30,8 +30,10 @@
  *   both hashes), the file renamed into place, then `report.json` (RESULT's
  *   prints and the step's counts); then the logs copied beside them (the
  *   store review's L15: the program's logs are kept 30 days).
- * Each heavy piece resumes from whole parts: a run whose minutes are spent
- * exits 3, and the next run goes on.
+ * Step 2 (`look2\`, `step2`) and FRESH-2's stage (`fresh2\`, `fresh2`) the
+ * same way, each with its own refusals, stores and last phases (CONFIRM;
+ * SEALED in RESULT's place). Each heavy piece resumes from whole parts: a
+ * run whose minutes are spent exits 3, and the next run goes on.
  */
 import { createHash } from "node:crypto";
 import {
@@ -58,6 +60,7 @@ import { RehearsalRecord } from "./closure.js";
 import { CoinsFile } from "./coins.js";
 import {
   END_E,
+  END_F2,
   END_S,
   EXITS_MAX,
   HISTORY_FILLS_MAX,
@@ -67,6 +70,7 @@ import {
   SETTLEMENT_MARK_MINUTES,
   WORKER_HEAP_CAP_GB,
   Z_LOOKS,
+  Z_SEAL,
 } from "./design.js";
 import {
   fileSha256,
@@ -84,7 +88,7 @@ import {
   factsOf,
   laneHistoryFills,
 } from "./phase-build.js";
-import { confirmOf, confirmParts } from "./phase-confirm.js";
+import { TryConfirmation, confirmOf, confirmParts } from "./phase-confirm.js";
 import {
   labelsOf,
   labelsParts,
@@ -111,6 +115,12 @@ import {
   type RankInput,
 } from "./phase-rank.js";
 import { removalParts } from "./phase-removal.js";
+import {
+  sealedParts,
+  sealedReportOf,
+  sealedResultOf,
+  type SealedSet,
+} from "./phase-sealed.js";
 import {
   Result,
   linesOf,
@@ -408,7 +418,8 @@ export type EngineRun = {
   };
   /** Each coin's name by its iid (coins.json). */
   readonly coins: ReadonlyMap<number, string>;
-  readonly look: 1 | 2;
+  /** The look of MAIN's set (C12); null at FRESH-2's stage, which has none: C16 projects its judged sets alone (`tries`, MAIN's among them at a KEEP), and SEALED stands in RESULT's place. */
+  readonly look: 1 | 2 | null;
   readonly earlier: readonly Verdict[];
   readonly pastTripwire: boolean;
   readonly workers: number;
@@ -426,21 +437,21 @@ export type TryProjection = {
   readonly projection: Projection;
 };
 
-/** C16's stop: every set projected above 1% named, MAIN's look set first, a try's set saying whether it was projected without its conditions on the prior mean net; null when none is above, or the step runs past the tripwire. */
+/** C16's stop: every set projected above 1% named, MAIN's look set first (none at FRESH-2's stage), a set saying whether it was projected without its conditions on the prior mean net; null when none is above, or the step runs past the tripwire. */
 export function tripwireStop(
-  main: Projection,
+  main: Projection | null,
   tries: readonly TryProjection[],
   pastTripwire: boolean,
 ): string | null {
   const pct = (p: Projection) => (p.share * 100).toFixed(2);
   const above = [
-    ...(tripwireStops(main.share, pastTripwire)
+    ...(main !== null && tripwireStops(main.share, pastTripwire)
       ? [`${pct(main)}% of MAIN's ${main.copies} copies`]
       : []),
     ...tries.flatMap((t) =>
       tripwireStops(t.projection.share, pastTripwire)
         ? [
-            `${pct(t.projection)}% of the try ${JSON.stringify(t.name)}'s ${t.projection.copies} copies${t.leftOut.length > 0 ? " (projected without its conditions on the prior mean net)" : ""}`,
+            `${pct(t.projection)}% of the set ${JSON.stringify(t.name)}'s ${t.projection.copies} copies${t.leftOut.length > 0 ? " (projected without its conditions on the prior mean net)" : ""}`,
           ]
         : [],
     ),
@@ -450,7 +461,8 @@ export function tripwireStop(
     : `the tripwire: ${above.join("; ")} projected unpriced, above 1% (C16): a decisions entry runs on with --past-tripwire, or ends there`;
 }
 
-export type EngineRecords = {
+/** The engine's records through RANK; MAIN's look set's projection null at FRESH-2's stage. */
+export type PricedRecords = {
   readonly dir: string;
   readonly labels: Closed;
   readonly labelsL: Closed | null;
@@ -458,12 +470,13 @@ export type EngineRecords = {
   readonly buildL: Closed | null;
   readonly removal: Closed;
   readonly tripwire: Closed;
-  readonly projection: Projection;
+  readonly projection: Projection | null;
   readonly tries: readonly TryProjection[];
   readonly prices: Closed;
   readonly rank: Closed;
-  readonly result: Closed;
 };
+/** A look's engine records: through RESULT. */
+export type EngineRecords = PricedRecords & { readonly result: Closed };
 
 /** A phase of the engine's run, in its folder (`<dir>\<name>`): a large lane's one child at the heap cap, alone. */
 function phaseOf(
@@ -636,8 +649,8 @@ const coinContextOf = (o: EngineRun, u: Unpriced) => ({
   fundingList: o.funding.list,
 });
 
-/** The engine's phases in order: the unpriced ones, C16's tripwire and its stop (exit 6 when any set projected is above 1%, unless `--past-tripwire`), then the prices, RANK and RESULT. */
-export async function runEngine(o: EngineRun): Promise<EngineRecords> {
+/** The engine's phases through RANK: the unpriced ones, C16's tripwire and its stop (exit 6 when any set projected is above 1%, unless `--past-tripwire`), then the prices and RANK. */
+export async function pricedPhases(o: EngineRun): Promise<PricedRecords> {
   const u = await unpricedPhases(o);
   const coin = coinInputsOf(o, u);
   const coinContext = coinContextOf(o, u);
@@ -651,7 +664,10 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
       coinContext,
     ),
   );
-  const projection = tripwireOf(tripwire.dir, tripwire.record, o.markMinutes);
+  const projection =
+    o.look === null
+      ? null
+      : tripwireOf(tripwire.dir, tripwire.record, o.markMinutes);
   const tries = o.tries.map((s, k): TryProjection => ({
     name: s.name,
     line: s.line,
@@ -695,25 +711,6 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
       { build: u.build.dir, large: u.largeDir, prices: prices.dir },
     ),
   );
-  const result = await closedOf(
-    phaseOf(
-      o,
-      "RESULT",
-      "phase-result.js",
-      "resultPart",
-      resultParts({
-        code: o.code,
-        prices: shaOf(prices)!,
-        rank: shaOf(rank)!,
-        mondays: [...o.mondays],
-        start: o.stage[0],
-        end: o.end,
-        look: o.look,
-        earlier: [...o.earlier],
-      }),
-      { prices: prices.dir, rank: rank.dir },
-    ),
-  );
   return {
     dir: o.dir,
     labels: u.labels,
@@ -726,8 +723,35 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     tries,
     prices,
     rank,
-    result,
   };
+}
+
+/** A look's engine: the phases through RANK, then RESULT (C12, MAIN's set at the look's z). */
+export async function runEngine(o: EngineRun): Promise<EngineRecords> {
+  const look = o.look;
+  if (look === null)
+    throw new Error("RESULT reads a look: FRESH-2's stage judges in SEALED");
+  const p = await pricedPhases(o);
+  const result = await closedOf(
+    phaseOf(
+      o,
+      "RESULT",
+      "phase-result.js",
+      "resultPart",
+      resultParts({
+        code: o.code,
+        prices: shaOf(p.prices)!,
+        rank: shaOf(p.rank)!,
+        mondays: [...o.mondays],
+        start: o.stage[0],
+        end: o.end,
+        look,
+        earlier: [...o.earlier],
+      }),
+      { prices: p.prices.dir, rank: p.rank.dir },
+    ),
+  );
+  return { ...p, result };
 }
 
 /**
@@ -857,7 +881,7 @@ function leftOutTakers(stores: readonly Store[]) {
 
 /** The step's counts for `report.json` beside RESULT's prints (C13; C15 step 1's 4.), from the closed phases and the stores alone, no price: the labels at each Monday, the vault accounts, the accounts the kit is not run on, BUILD's facts, the tripwire's projection, C3's counts, the holes, the left-out takers, each phase's runs. */
 export function stepCounts(o: {
-  engine: EngineRecords;
+  engine: PricedRecords & { readonly result: Closed | null };
   stores: readonly Store[];
   end: number;
 }) {
@@ -1127,11 +1151,13 @@ function engineRunOf(
     readonly end: number;
     readonly stage: readonly [number, number];
     readonly mondays: readonly number[];
-    readonly look: 1 | 2;
+    readonly look: 1 | 2 | null;
     readonly earlier: readonly Verdict[];
     readonly tries: readonly TrySet[];
     readonly pastTripwire: boolean;
     readonly engine: EngineStep;
+    /** The funding list: `copyh/funding.sha256`, or FRESH-2's composed one. */
+    readonly fundingList: string;
   },
 ): EngineRun {
   return {
@@ -1164,8 +1190,8 @@ function engineRunOf(
     tries: s.tries,
     funding: {
       store: o.funding,
-      list: FUNDING_FILE,
-      sha256: sha256(readFileSync(FUNDING_FILE)),
+      list: s.fundingList,
+      sha256: sha256(readFileSync(s.fundingList)),
     },
     coins: new Map(
       CoinsFile.parse(JSON.parse(readFileSync(COINS_FILE, "utf8"))).coins.map(
@@ -1247,6 +1273,7 @@ export async function step1(o: StepRun): Promise<void> {
     tries: [],
     pastTripwire: o.pastTripwire,
     engine: "look1",
+    fundingList: FUNDING_FILE,
   });
   const engine = await runEngine(run);
   // The rehearsal's fortnight again, by this program on this store: printed beside the rehearsal's, deciding nothing (C15 (c) 10, RL7).
@@ -1435,6 +1462,7 @@ export async function step2(o: StepRun): Promise<void> {
       tries: [],
       pastTripwire: true,
       engine: "look2",
+      fundingList: FUNDING_FILE,
     }),
   );
   heldRecomputed(
@@ -1461,6 +1489,7 @@ export async function step2(o: StepRun): Promise<void> {
     })),
     pastTripwire: o.pastTripwire,
     engine: "look2",
+    fundingList: FUNDING_FILE,
   });
   const engine = await runEngine(run);
   const confirm = await closedOf(
@@ -1517,4 +1546,259 @@ export async function step2(o: StepRun): Promise<void> {
     log: o.log,
   });
   o.log("done: step 2", { look, logs: copyLogs(o.root, look) });
+}
+
+export const LOOK2_LIST = "copyh/look2.sha256";
+/** FRESH-2's lists (C14 (4) 2.), which FRESH-2's freeze adds. */
+const FRESH2_LISTS = [
+  "copyh/fresh2.sha256",
+  "copyh/funding2.sha256",
+  LOOK2_LIST,
+] as const;
+const FUNDING2_FILE = path.join(PACKAGE_ROOT, "copyh", "funding2.sha256");
+
+/** Step 2's result.json as FRESH-2's stage reads it: look 2's reading and the chosen tries' confirmations on S (writeLook's form). */
+export const Look2File = LookFile.extend({
+  confirmations: z.array(TryConfirmation),
+});
+export type Look2File = z.infer<typeof Look2File>;
+
+/** FRESH-2's judged sets (C14): MAIN's when MAIN's verdict, the first KEEP or DROP of its looks (C12), is KEEP, at 1.645, then each try confirmed on S at 1.96, in the choice's order; step 2's confirmations held to the chosen tries by place and name (else exit 5). */
+export function judgedSetsOf(
+  verdicts: readonly Verdict[],
+  chosen: readonly Try[],
+  confirmations: readonly { readonly name: string; readonly reading: string }[],
+): SealedSet[] {
+  if (
+    confirmations.length !== chosen.length ||
+    confirmations.some((c, k) => c.name !== chosen[k]!.name)
+  )
+    throw new StoreError(
+      `step 2's confirmations (${confirmations.map((c) => c.name).join(", ")}) are not the chosen tries of ${CHOICE_LIST}`,
+    );
+  const verdict = verdicts.find((v) => v === "KEEP" || v === "DROP");
+  return [
+    ...(verdict === "KEEP"
+      ? [
+          {
+            kind: "MAIN" as const,
+            name: "MAIN",
+            line: "MAIN" as const,
+            conditions: [],
+            z: Z_SEAL[1],
+          },
+        ]
+      : []),
+    ...chosen.flatMap((t, k) =>
+      confirmations[k]!.reading === "CONFIRMED"
+        ? [
+            {
+              kind: "try" as const,
+              name: t.name,
+              line: t.line,
+              conditions: t.conditions,
+              z: Z_SEAL[0],
+            },
+          ]
+        : [],
+    ),
+  ];
+}
+
+/** FRESH-2's refusals (C14 (4), as step 2's), before anything is read, each exit 5: a second run (its result.json); repro.json passed by this program; the values set before the freeze; step 2's three files held to `copyh/look2.sha256`; step 1's result.json the one step 2's names; E's and S's stores held to steps 1's and 2's result.json; the chosen tries; no yes to confirm (FRESH-2 is then never read). */
+export function readyForFresh2(o: {
+  root: string;
+  packageRoot: string;
+  program: string;
+  values: FrozenValues;
+}): { values: SetValues; sets: SealedSet[] } {
+  const result = path.join(o.root, "fresh2", RESULT_FILE);
+  if (existsSync(result))
+    throw new AlreadyRun(`${result} exists: FRESH-2's stage runs once (C14)`);
+  reproPassed(o.root, o.program);
+  const values = setValues(o.values);
+  const look1 = path.join(o.root, "look1");
+  const look2 = path.join(o.root, "look2");
+  heldLookFiles(look2, path.join(o.packageRoot, LOOK2_LIST));
+  const r2 = parsedOf(
+    path.join(look2, RESULT_FILE),
+    Look2File,
+    "step 2's result",
+  );
+  const r1File = path.join(look1, RESULT_FILE);
+  if (
+    !existsSync(r1File) ||
+    fileSha256(r1File) !== r2.identity.files[`look1/${RESULT_FILE}`]
+  )
+    throw new StoreError(
+      `${r1File} is not the file ${look2}'s ${RESULT_FILE} names`,
+    );
+  const r1 = parsedOf(r1File, LookFile, "step 1's result");
+  heldStepStore(look1, r1);
+  heldStepStore(look2, r2);
+  const choice = parsedOf(
+    path.join(o.packageRoot, CHOICE_LIST),
+    ChosenFile,
+    "the rounds' choice",
+  );
+  const sets = judgedSetsOf(
+    [r1.verdict, r2.verdict],
+    choice.chosen.map((c) => c.try),
+    r2.confirmations,
+  );
+  if (sets.length === 0)
+    throw new StoreError(
+      "no yes to confirm: MAIN's verdict is no KEEP and no try was confirmed on S, so COPY-H ends at step 2's report and FRESH-2 is never read (C14)",
+    );
+  return { values, sets };
+}
+
+/** FRESH-2's one funding list (C14 (4) 2.; the supervisor's ruling, 2026-11-27): `copyh/funding.sha256`'s windows and `copyh/funding2.sha256`'s, each once, the rows of both in the one funding store, written whole to the stage's engine folder; its path. */
+export function composedFunding(dir: string, lists: readonly string[]): string {
+  const text = lists
+    .map((f) => {
+      let t: string;
+      try {
+        t = readFileSync(f, "utf8");
+      } catch {
+        throw new StoreError(`no ${f}: FRESH-2's funding reads it`);
+      }
+      return t === "" || t.endsWith("\n") ? t : `${t}\n`;
+    })
+    .join("");
+  try {
+    readDataList(text);
+  } catch (err) {
+    throw new StoreError(`FRESH-2's funding lists: ${(err as Error).message}`);
+  }
+  mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, "funding.sha256");
+  writeWhole(file, text);
+  return file;
+}
+
+/** FRESH-2's stage (C14 (4)): the refusals; FRESH-2's store built twice, held equal, and its integrity; the engine on E ∪ S ∪ FRESH-2 at END_F2 on their 98 Mondays, C16 on each judged set alone; SEALED, each judged set's sealed reading on FRESH-2 alone and MAIN's prints in FRESH-2's form when MAIN is judged; `fresh2\result.json` first, then the positions, then `report.json`; the logs. */
+export async function fresh2(o: StepRun): Promise<void> {
+  const program = fingerprintOf(PACKAGE_ROOT);
+  const ready = readyForFresh2({
+    root: o.root,
+    packageRoot: PACKAGE_ROOT,
+    program,
+    values: FROZEN_VALUES,
+  });
+  const kit = await loadResearch();
+  const look1 = path.join(o.root, "look1");
+  const look2 = path.join(o.root, "look2");
+  const look = path.join(o.root, "fresh2");
+  const open = (dir: string) => openStore(dir, o.roots, o.seal);
+  const storeRun = (base: string): StoreRun => ({
+    range: RANGES["FRESH-2"],
+    raw: o.raw,
+    base,
+    roots: o.roots,
+    seal: o.seal,
+    budget: o.budget,
+    log: o.log,
+  });
+  const F = await heldStores({
+    look,
+    record: null,
+    build: (base) =>
+      buildStore({ ...storeRun(base), workers: o.workers, heapGb: o.heapGb }),
+    check: (base) => checkStores(storeRun(base)),
+    open,
+    log: o.log,
+  });
+  const stores = [
+    open(path.join(look1, "store")),
+    open(path.join(look2, "store")),
+    F,
+  ];
+  const dir = path.join(look, "engine");
+  const funding = composedFunding(dir, [FUNDING_FILE, FUNDING2_FILE]);
+  const mondays = [
+    ...mondaysOf("E"),
+    ...mondaysOf("S"),
+    ...mondaysOf("FRESH-2"),
+  ];
+  const [from, to] = STAGE_WINDOWS["FRESH-2"];
+  const run = engineRunOf(o, {
+    program,
+    values: ready.values,
+    stores,
+    dir,
+    end: END_F2,
+    stage: [M0, END_F2],
+    mondays,
+    look: null,
+    earlier: [],
+    tries: ready.sets.map((s) => ({
+      name: s.name,
+      line: s.line,
+      from,
+      to,
+      conditions: s.conditions,
+    })),
+    pastTripwire: o.pastTripwire,
+    engine: "fresh2",
+    fundingList: funding,
+  });
+  const engine = await pricedPhases(run);
+  const sealed = await closedOf(
+    phaseOf(
+      run,
+      "SEALED",
+      "phase-sealed.js",
+      "sealedPart",
+      sealedParts({
+        code: program,
+        prices: shaOf(engine.prices)!,
+        rank: shaOf(engine.rank)!,
+        mondays,
+        sets: ready.sets,
+        from,
+        to,
+      }),
+      { prices: engine.prices.dir, rank: engine.rank.dir },
+    ),
+  );
+  const why = o.budget.stop();
+  if (why !== null) throw new NotFinished(`FRESH-2's writes wait: ${why}`);
+  const counts = stepCounts({
+    engine: { ...engine, result: null },
+    stores,
+    end: END_F2,
+  });
+  const identity = identityOf({
+    packageRoot: PACKAGE_ROOT,
+    freeze: o.freeze,
+    kit: kit.fingerprint,
+    files: {
+      "repro.json": path.join(o.root, "repro.json"),
+      ...Object.fromEntries(
+        FRESH2_LISTS.map((f) => [f, path.join(PACKAGE_ROOT, ...f.split("/"))]),
+      ),
+      ...Object.fromEntries(
+        LOOK_FILES.map((f) => [`look2/${f}`, path.join(look2, f)]),
+      ),
+      ...storeFiles(look1, "look1/"),
+      ...storeFiles(look2, "look2/"),
+      ...storeFiles(look, ""),
+      "engine/funding.sha256": funding,
+    },
+    heapGb: o.heapGb,
+  });
+  await writeLook({
+    look,
+    engine,
+    mondays,
+    identity,
+    result: sealedResultOf(sealed.dir, sealed.record),
+    report: {
+      ...sealedReportOf(sealed.dir, sealed.record),
+      step: { ...counts, runs: { ...counts.runs, sealed: runsOf(sealed) } },
+    },
+    log: o.log,
+  });
+  o.log("done: FRESH-2's stage", { look, logs: copyLogs(o.root, look) });
 }

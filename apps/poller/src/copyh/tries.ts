@@ -105,8 +105,11 @@ export const TryLine = Position.pick({
 });
 export type TryLine = z.infer<typeof TryLine>;
 
-/** Whether a copy is in a try's set: its line's, voted by the look's END, every condition met. */
-export const inTry = (p: TryLine, t: Try): boolean =>
+/** Whether a copy is in a try's set (or FRESH-2's MAIN set, a line with no condition): its line's, voted by the look's END, every condition met. */
+export const inTry = (
+  p: TryLine,
+  t: Pick<Try, "line" | "conditions">,
+): boolean =>
   p.voted &&
   p.lines.includes(t.line) &&
   t.conditions.every((c) => holds(c, p.covariates));
