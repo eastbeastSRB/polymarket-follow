@@ -1168,8 +1168,18 @@ from the rehearsal); `funding.sha256` (`--data --funding <COPYH_FUNDING>`:
 the meta reply and every window of every coin, each held to the funding
 store's list and manifest and read by `funding.ts`, C9's reader: the
 reply's shape, rows of the file's coin, the nominal hour the time rounded
-to the nearest hour, no coin's hour twice, no rate used). The freeze list
-itself (`--final`, `--rounds`, `--fresh2`, the marker refusal) comes at part 5. `copyh/rehearsal.json` also records
+to the nearest hour, no coin's hour twice, no rate used). **The freeze lists** (`copyh/FROZEN.sha256`, the same
+tool, one core): every file of what runs (the gate's `frozenFiles`) with
+its SHA-256 by path, after a head naming the list, its written time and
+commit, the toolchain, the lockfile and `# tag copyh-freeze-<n>`, n the
+next free number; each refuses a tree that is not clean and writes nothing
+when it refuses. `--final`, the first list: rules.md without a marker
+(C17), the program built anew, every `COPYH_FILES` file present and no
+later list's file, the closure and lz4js files held to the four freezes
+(RL12), the store closure equal to the record. The later lists'
+`--rounds` and `--fresh2` come next. Pinned by `test/copyh-freeze.test.ts`
+on made-up git repositories, the gate opening on the list once tagged.
+`copyh/rehearsal.json` also records
 E's store as built before the freeze: the store closure's hashes
 (`closure.ts`: the compiled graph of its entry points, `design.js` by the
 store values it exports), the manifest without its run fields and every

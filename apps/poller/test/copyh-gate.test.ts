@@ -10,7 +10,6 @@
  * come), each file equal to its own program's freeze. Run in `pnpm verify`'s
  * order: the build first.
  */
-import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -39,39 +38,9 @@ import {
   type Command,
 } from "../src/copyh/gate.js";
 import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
+import { git } from "./copyh-world.js";
 
 const tmp = (name: string) => mkdtempSync(path.join(tmpdir(), `${name}-`));
-
-/** A git command in a test repository: no user setting, hook, signing or line-ending conversion reaches it. */
-function git(cwd: string, ...args: string[]): string {
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")),
-  );
-  const r = spawnSync(
-    "git",
-    [
-      "-c",
-      "user.name=test",
-      "-c",
-      "user.email=test@example.invalid",
-      "-c",
-      "commit.gpgsign=false",
-      "-c",
-      "tag.gpgsign=false",
-      "-c",
-      "core.autocrlf=false",
-      "-c",
-      "core.hooksPath=no-hooks",
-      "-c",
-      "init.defaultBranch=main",
-      ...args,
-    ],
-    { cwd, env, encoding: "utf8", timeout: 30_000 },
-  );
-  if (r.status !== 0)
-    throw new Error(`git ${args.join(" ")}: ${r.stderr || r.error?.message}`);
-  return r.stdout;
-}
 
 describe("COPY-H's freeze (a temporary git repository)", () => {
   let repo = "";

@@ -5,6 +5,7 @@
  * `fee` and, when given, `builderFee`; the lists COPY-H reads (coins, dirs);
  * the bytes a search reads.
  */
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -112,4 +113,35 @@ export function searchedBytes<T>(
   } finally {
     spy.mockRestore();
   }
+}
+
+/** A git command in a test repository: no user setting, hook, signing or line-ending conversion reaches it. */
+export function git(cwd: string, ...args: string[]): string {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")),
+  );
+  const r = spawnSync(
+    "git",
+    [
+      "-c",
+      "user.name=test",
+      "-c",
+      "user.email=test@example.invalid",
+      "-c",
+      "commit.gpgsign=false",
+      "-c",
+      "tag.gpgsign=false",
+      "-c",
+      "core.autocrlf=false",
+      "-c",
+      "core.hooksPath=no-hooks",
+      "-c",
+      "init.defaultBranch=main",
+      ...args,
+    ],
+    { cwd, env, encoding: "utf8", timeout: 30_000 },
+  );
+  if (r.status !== 0)
+    throw new Error(`git ${args.join(" ")}: ${r.stderr || r.error?.message}`);
+  return r.stdout;
 }
