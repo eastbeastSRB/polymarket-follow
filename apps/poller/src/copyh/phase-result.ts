@@ -168,7 +168,7 @@ export function* positionLines(o: {
   rank: { dir: string; record: PhaseRecord };
   mondays: readonly number[];
 }): Generator<{ p: Position; line: string; rank: boolean }> {
-  yield* linesOf(
+  yield* rankedLinesOf(
     positionsInOrder(o.prices.dir, o.prices.record),
     rankTablesOf(o.rank.dir, o.rank.record),
     o.mondays,
@@ -176,7 +176,7 @@ export function* positionLines(o: {
 }
 
 /** Positions' lines, in the positions' order, with RANK's tables: a closed PRICES phase's, or the fortnight's in memory (steps.ts `fortnightOf`). */
-export function* linesOf(
+export function* rankedLinesOf(
   positions: Iterable<Position>,
   t: RankTables,
   mondays: readonly number[],

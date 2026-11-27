@@ -33,8 +33,8 @@ import { DAYS7_MS, jumpRatio, stopInstant } from "../paper/copy.js";
 import type { Market, Research, Setting } from "../paper/research.js";
 import { STOPS } from "./design.js";
 import type { FundingRow } from "./funding.js";
-import type { PartFunction, PartSpec, PhaseRecord } from "./engine.js";
-import { partLines, recordAt } from "./engine.js";
+import type { PartFunction, PartSpec } from "./engine.js";
+import { recordAt } from "./engine.js";
 import { dOf, edgeOf, removedBy, type Removal } from "./judge.js";
 import { LINES, MOVED, type Line } from "./lines.js";
 import {
@@ -336,14 +336,3 @@ export const pricesParts = (
 /** A positions line parsed (our own file, held to its record: anything else is refused). */
 export const positionOf = (line: Buffer): Position =>
   Position.parse(JSON.parse(line.toString("utf8")));
-
-/** A closed PRICES part's positions, held to its record (engine.ts `partLines`), each parsed. */
-export function positionsOf(
-  dir: string,
-  record: PhaseRecord,
-  id: string,
-): Position[] {
-  const out: Position[] = [];
-  for (const line of partLines(dir, record, id)) out.push(positionOf(line));
-  return out;
-}

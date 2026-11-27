@@ -3,7 +3,7 @@
  * (copyh/rules.md C9, C16), one coin a part:
  * - its bars across the reading's stores to END and its end and first
  *   Settlement (markets.ts `coinOf`), each store's manifest and dirs.json
- *   held to the part's inputs (phase-labels.ts `readingOf`); none when the
+ *   held to the part's inputs (phase-labels.ts `heldReading`); none when the
  *   reading holds no bars of it;
  * - its funding rows: the windows of the coin that `copyh/funding.sha256`
  *   lists (the list held to the part's inputs, each window file sealed by
@@ -18,7 +18,7 @@ import path from "node:path";
 import { z } from "zod";
 import { sealedRows, type FundingRow } from "./funding.js";
 import { coinOf, type Coin } from "./markets.js";
-import { ReadingContext, ReadingInputs, readingOf } from "./phase-labels.js";
+import { ReadingContext, ReadingInputs, heldReading } from "./phase-labels.js";
 import { readDataList } from "./range.js";
 import { StoreError, sha256 } from "./run.js";
 import { checkInside, checkPath, type Seal } from "./seal.js";
@@ -45,7 +45,8 @@ export const CoinContext = ReadingContext.extend({
 });
 export type CoinContext = z.infer<typeof CoinContext>;
 
-const WINDOW = /^info\/fundingHistory\/([^/]+)\/(\d+)\.json$/;
+/** A funding window's key in a funding list, its coin and start: the only lines of the list a reading reads. */
+export const FUNDING_WINDOW = /^info\/fundingHistory\/([^/]+)\/(\d+)\.json$/;
 
 /** A coin's bars, end and Settlement (null: no bars in the reading) and its funding rows before END. */
 export function coinReadingOf(
@@ -53,14 +54,14 @@ export function coinReadingOf(
   inputs: CoinInputs,
   seal: Seal,
 ): { coin: (Coin & { readonly name: string }) | null; rows: FundingRow[] } {
-  const { stores } = readingOf(context, inputs, seal);
+  const { stores } = heldReading(context, inputs, seal);
   const coin = coinOf(stores, inputs.iid, inputs.end);
   const list = readFileSync(context.fundingList);
   if (sha256(list) !== inputs.funding)
     throw new StoreError(`${context.fundingList} is not its part's`);
   const windows: { key: string; bytes: Buffer }[] = [];
   for (const [key, want] of readDataList(list.toString("utf8"))) {
-    const m = WINDOW.exec(key);
+    const m = FUNDING_WINDOW.exec(key);
     if (m === null || m[1] !== inputs.coin || Number(m[2]) >= inputs.end)
       continue;
     const file = path.join(context.fundingStore, ...key.split("/"));

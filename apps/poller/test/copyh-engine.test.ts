@@ -3,7 +3,8 @@
  * the engine's guard; the engine's plan, Q3), through real child processes
  * of the build: each part twice, copy a then copy b in new processes, the
  * two copies byte-equal and the record holding their SHA-256s; a resumed
- * phase equal to an unbroken one; a closed phase read back, its parts held
+ * phase equal to an unbroken one, a part without its run file computed
+ * again; a closed phase read back, its parts held
  * to their hashes; a record or a part of other inputs refused (exit 5), a
  * difference between the copies stopping the phase (exit 7) with no record;
  * a child's refusal passed on (exit 5) and its crash (exit 1), one ending
@@ -188,19 +189,45 @@ describe("a phase (C15, the engine's guard)", { timeout: 60_000 }, () => {
     await expect(runPhase({ ...phase, parts: other })).rejects.toThrow(
       StoreError,
     );
-    // Without its record, a part of other inputs is refused too, never overwritten.
+    // Without its record, a part of other inputs is refused too, never overwritten, its run file gone or not.
     const { phase: fresh } = phaseOf();
     const freshRecord = await runPhase(fresh);
     const file = path.join(fresh.dir, "a", "p3.part");
     const bytes = readFileSync(file);
+    const p0 = readFileSync(path.join(fresh.dir, "a", "p0.part"));
     rmSync(path.join(fresh.dir, "record.json"));
+    rmSync(path.join(fresh.dir, "a", "p0.run.json"));
     await expect(runPhase({ ...fresh, parts: other })).rejects.toThrow(
       /p0\.part: a part of other inputs/,
     );
     expect(readFileSync(file).equals(bytes)).toBe(true);
+    expect(readFileSync(path.join(fresh.dir, "a", "p0.part")).equals(p0)).toBe(
+      true,
+    );
     // A part changed after its record: refused when read.
     writeFileSync(file, Buffer.concat([bytes, Buffer.from("x")]));
     expect(() => partBytes(fresh.dir, freshRecord, "p3")).toThrow(StoreError);
+  });
+
+  it("computes a part again whose run file is missing (its parent stopped between the part and its run): byte-equal, its run back (COPYH-ENGINE-REVIEW-2 L1)", async () => {
+    const { phase } = phaseOf();
+    const record = await runPhase(phase);
+    const part = path.join(phase.dir, "a", "p2.part");
+    const bytes = readFileSync(part);
+    rmSync(path.join(phase.dir, "record.json"));
+    rmSync(path.join(phase.dir, "a", "p2.run.json"));
+    const again = phaseOf({ dir: phase.dir });
+    expect(await runPhase(again.phase)).toEqual(record);
+    expect(
+      again.events
+        .filter(([e]) => e === "engine part")
+        .map(([, f]) => [
+          (f as { copy: string }).copy,
+          (f as { id: string }).id,
+        ]),
+    ).toEqual([["a", "p2"]]);
+    expect(runOf(phase.dir, "a", "p2").heapGb).toBe(1);
+    expect(readFileSync(part).equals(bytes)).toBe(true);
   });
 
   it("stops when the two copies differ (exit 7), naming the parts, and records nothing", async () => {

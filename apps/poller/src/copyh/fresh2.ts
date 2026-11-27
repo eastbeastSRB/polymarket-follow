@@ -55,10 +55,15 @@ export function sealedOf(
 
 /** MAIN's prints in FRESH-2's form (C14 (4) 5.; L9, decisions 2026-11-25, "the crash side only", ruling 6: FRESH-2 is also that frozen page's months): no move of a crash hour, so no cascade print and no null mean gross (a market's own move beside the copies' figures); the day and month prints named as what they are. Every other print is taken by name, so that none is added by accident. */
 export function fresh2Report(r: Report) {
-  const { worstDay, ...r14 } = r.r14;
+  const { worstDay, withoutItAndTheMostInfluentialDay, ...r14 } = r.r14;
   const { months, ...parts } = r.parts;
   return {
-    r14: { ...r14, "COPY-H's copies by UTC day: the worst": worstDay },
+    r14: {
+      ...r14,
+      "COPY-H's copies by UTC day: the worst": worstDay,
+      "COPY-H's copies by UTC day: the mean without the most influential account, then also without the most influential day":
+        withoutItAndTheMostInfluentialDay,
+    },
     lines: r.lines,
     parts: { ...parts, "COPY-H's copies by UTC month": months },
     venues: r.venues,

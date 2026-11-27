@@ -521,7 +521,7 @@ export const READINGS = ["exits", "zero", "held"] as const;
 export type Readings = Readonly<Record<(typeof READINGS)[number], Reading>>;
 
 /** A coin as money.ts's `planOf` reads it: where its copies end, and its Settlement (C8). */
-export type Coin = { readonly end: number; readonly settlement: unknown };
+export type PlanCoin = { readonly end: number; readonly settlement: unknown };
 
 /** Held 24 h from the follow instant in bps, the kit's `leg` on the path's own t, D and direction, or lib-exits' reason. */
 function heldOf(
@@ -554,7 +554,7 @@ export function copyhReadings(
   mk: Market,
   setting: Setting,
   e: Entry,
-  coin: Coin,
+  coin: PlanCoin,
 ): Readings {
   const { t, dir } = e.group;
   const at = (D: number): Reading => {
@@ -865,7 +865,7 @@ export function compareJudgement(mine: Judgement, ref: Judgement): Compared {
 }
 
 /** An entry judged in a line (C10): its account, instant, delay, direction and coin, its Monday's index, and the long share there. */
-export type JudgedCopy = {
+export type JudgedEntry = {
   readonly addr: string;
   readonly t: number;
   readonly D: number;
@@ -884,7 +884,7 @@ export type JudgedCopy = {
 export function referenceJudgement(
   kit: Research,
   mk: Market,
-  c: JudgedCopy,
+  c: JudgedEntry,
   removed: (minute: number) => number,
   setting: Setting,
 ): { readonly d: Judgement; readonly edge: Judgement } {
@@ -1004,7 +1004,7 @@ export function reproduceAccounts(o: {
   setting: Setting;
 }): AccountsReport {
   const CUT = o.kit.constants.CUT;
-  const seedCoin: Coin = { end: CUT, settlement: null };
+  const seedCoin: PlanCoin = { end: CUT, settlement: null };
   const wanted = new Map<string, Set<string>>();
   for (const ids of Object.values(o.sets))
     for (const id of ids) {
@@ -1028,8 +1028,8 @@ export function reproduceAccounts(o: {
   };
   /** Each path's judged copies, by `<line>|<entry key>`. */
   const judged = {
-    copyh: new Map<string, JudgedCopy>(),
-    kit: new Map<string, JudgedCopy>(),
+    copyh: new Map<string, JudgedEntry>(),
+    kit: new Map<string, JudgedEntry>(),
   };
   const inLines = {
     MAIN: { kit: 0, copyh: 0 },
@@ -1078,7 +1078,7 @@ export function reproduceAccounts(o: {
       if (r === undefined || m === undefined) continue;
       const mk = marketOf(r.group.iid);
       /** Its plans at D and at D = 0 under a coin: its readings of exits copied are their prices, so they move only when a plan does. */
-      const plans = (coin: Coin) =>
+      const plans = (coin: PlanCoin) =>
         [m.D, 0].map((D) => planOf({ t: m.group.t, D }, m.exits, coin));
       priced.set(id, {
         addr,

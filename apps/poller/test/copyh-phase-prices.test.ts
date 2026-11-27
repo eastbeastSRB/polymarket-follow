@@ -31,7 +31,6 @@ import { buildParts, coinCopies, coinsOf } from "../src/copyh/phase-build.js";
 import { coinReadingOf } from "../src/copyh/phase-coin.js";
 import {
   ENTRY_UNPRICED,
-  positionsOf,
   priceCoin,
   pricesParts,
 } from "../src/copyh/phase-prices.js";
@@ -62,6 +61,7 @@ import {
   labelsRun,
   phaseOf,
   phaseWorld,
+  positionsOf,
 } from "./copyh-phase-world.js";
 
 const kit = await loadResearch();

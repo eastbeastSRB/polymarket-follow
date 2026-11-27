@@ -28,7 +28,7 @@ import { fresh2Report, sealedOf } from "./fresh2.js";
 import { StatisticLine, positionLines } from "./phase-result.js";
 import { printCopyOf, reportOf, type PrintCopy } from "./prints.js";
 import { StoreError } from "./run.js";
-import { Condition, TryLine, inTry, judgedOf } from "./tries.js";
+import { Condition, TryLine, inTry, tryCopyOf } from "./tries.js";
 import { statisticOf, type JudgedCopy } from "./verdict.js";
 
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -79,6 +79,8 @@ export const sealedPart: PartFunction = (inputs, ctx) => {
   const hash = createHash("sha256");
   let lines = 0;
   const sets = i.sets.map((): JudgedCopy[] => []);
+  const main = i.sets.find((s) => s.kind === "MAIN");
+  // FRESH-2's voted copies, kept for MAIN's prints only when MAIN is judged.
   const onFresh2: PrintCopy[] = [];
   for (const { p, line, rank } of positionLines({
     prices: { dir: c.prices, record: recordAt(c.prices, i.prices) },
@@ -88,10 +90,10 @@ export const sealedPart: PartFunction = (inputs, ctx) => {
     hash.update(`${line}\n`);
     lines += 1;
     if (p.t < i.from || p.t >= i.to) continue;
-    if (p.voted) onFresh2.push(printCopyOf(p, rank));
+    if (main !== undefined && p.voted) onFresh2.push(printCopyOf(p, rank));
     const tl = TryLine.parse(JSON.parse(line));
     i.sets.forEach((s, k) => {
-      if (inTry(tl, s)) sets[k]!.push(judgedOf(tl, s.line));
+      if (inTry(tl, s)) sets[k]!.push(tryCopyOf(tl, s.line));
     });
   }
   const result: SealedResult = {
@@ -110,7 +112,6 @@ export const sealedPart: PartFunction = (inputs, ctx) => {
     }),
     positions: { lines, sha256: hash.digest("hex") },
   };
-  const main = i.sets.find((s) => s.kind === "MAIN");
   const report = {
     main:
       main === undefined

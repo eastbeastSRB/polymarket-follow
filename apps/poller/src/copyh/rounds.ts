@@ -62,7 +62,7 @@ import {
   TriesFile,
   TryLine,
   inTry,
-  judgedOf,
+  tryCopyOf,
   Try,
 } from "./tries.js";
 import {
@@ -204,7 +204,7 @@ export const roundPart: PartFunction = async (inputs, ctx) => {
     lines += 1;
     const p = TryLine.parse(JSON.parse(line));
     i.tries.forEach((t, k) => {
-      if (inTry(p, t)) sets[k]!.push(judgedOf(p, t.line));
+      if (inTry(p, t)) sets[k]!.push(tryCopyOf(p, t.line));
     });
   });
   if (lines !== i.positions.lines || hash.digest("hex") !== i.positions.sha256)

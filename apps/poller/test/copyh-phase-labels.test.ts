@@ -19,11 +19,7 @@ import {
   labelOf,
 } from "../src/copyh/labels.js";
 import { normOf } from "../src/copyh/normalize.js";
-import {
-  labelsParts,
-  p1Of,
-  type LabelsPart,
-} from "../src/copyh/phase-labels.js";
+import { labelsParts, type LabelsPart } from "../src/copyh/phase-labels.js";
 import { StoreError } from "../src/copyh/run.js";
 import { loadResearch } from "../src/paper/research.js";
 import { DAY_MS } from "../src/schedule.js";
@@ -37,6 +33,7 @@ import {
   V,
   engineDir,
   labelsRun,
+  p1Of,
   phaseOf,
   phaseWorld,
 } from "./copyh-phase-world.js";

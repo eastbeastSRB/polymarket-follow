@@ -927,7 +927,7 @@ design and ranges are patched to it and whose synthetic list a tag holds,
 passed (2026-11-20, POLISH-FIX; its scripts outside the repository,
 decisions 2026-11-20, the code review's fix round).
 
-## COPY-H (parts 1–2 built 2026-11-25 by COPYH-STORE and COPYH-STORE-2: the store, its readers, seals and gate; part 3, the engine, being built since 2026-11-26 by COPYH-ENGINE and COPYH-ENGINE-2; the steps' phases and the freeze to come; not frozen; nothing run on real data)
+## COPY-H (parts 1–2 built 2026-11-25 by COPYH-STORE and COPYH-STORE-2: the store, its readers, seals and gate; part 3, the engine, built 2026-11-26/27 by COPYH-ENGINE to COPYH-ENGINE-10 and reviewed twice; E counted, its store built for the rehearsal from 2026-11-26; the rehearsal and the freeze to come; not frozen; no copy of a real month priced)
 
 **What it is.** A sixth entry point of the same package, `dist/copyh.js`
 (`src/copyh.ts`, `src/copyh/`): COPY-H's rules, `apps/poller/copyh/rules.md`
@@ -1158,7 +1158,7 @@ nor `schedule.ts` changes without the supervisor.
 **The engine** (part 3; `step1` reaches it after the gate). The kit and lib-exits
 run unchanged, loaded by `dist/paper/research.js`; END and the stage window
 are parameters, so one code serves step 1, step 2, FRESH-2's stage, the
-rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
+rehearsal's fortnight and the tests' worlds. A module a rule:
 - `instants.ts` (C1): an instant's stage, its Monday M, its UTC day, week
   and month; each stage's Mondays (48 in E, 24 in S, 26 in FRESH-2).
 - `accounts.ts` (C2, C3's reader): a bucket's accounts across the step's
@@ -1420,8 +1420,9 @@ The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
 are not run through the kit, so that an account at a cap fits within half
 of the 20 GB large lane (the kit's measured 0.77 and 1.18 KB a fill). The
-large lane, where the accounts above the normal lane's thresholds run
-alone after the normal parts, comes with the phases.
+large lanes, LABELS-L and BUILD-L (above), are where the accounts above
+the normal lanes' thresholds run, after the normal parts, one child at the
+heap cap.
 
 **Measured** (2026-11-25, COPYH-STORE-2, synthetic hours only: 5.8–6 million
 records, 2.5 GB decoded, a 14 MB line; each thread's heap polled every 100

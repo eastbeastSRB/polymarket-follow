@@ -34,7 +34,6 @@ import { normOf } from "../src/copyh/normalize.js";
 import {
   MASK,
   buildLargeParts,
-  buildOf,
   buildParts,
   lastInstantOf,
   priorCopies,
@@ -52,6 +51,7 @@ import {
   START,
   X,
   at,
+  buildOf,
   engineDir,
   labelsRun,
   phaseOf,

@@ -115,7 +115,7 @@ export const inTry = (
   t.conditions.every((c) => holds(c, p.covariates));
 
 /** A copy of a try's set as the statistic reads it: x its net, x′ its line's edge. */
-export const judgedOf = (p: TryLine, line: Try["line"]): JudgedCopy => ({
+export const tryCopyOf = (p: TryLine, line: Try["line"]): JudgedCopy => ({
   addr: p.addr,
   tIn: p.t + p.D,
   x: p.money.reason === undefined ? p.money.net : null,

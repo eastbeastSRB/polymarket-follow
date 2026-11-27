@@ -373,7 +373,12 @@ export async function runPhase(p: Phase): Promise<PhaseRecord> {
     const todo: Job[] = [];
     p.parts.forEach((s, i) => {
       const file = partFile(p.dir, copy, s.id);
-      if (!existsSync(file)) {
+      if (existsSync(file) && headerLine(file) !== headers[i])
+        throw new StoreError(
+          `${file}: a part of other inputs, to be moved aside by hand`,
+        );
+      // A part whose run file is missing (its parent stopped between the part's rename and the run file) is computed again: byte-equal, its run back (COPYH-ENGINE-REVIEW-2 L1).
+      if (!existsSync(file) || !existsSync(path.join(dir, `${s.id}.run.json`)))
         todo.push({
           module: p.module,
           fn: p.fn,
@@ -385,12 +390,6 @@ export async function runPhase(p: Phase): Promise<PhaseRecord> {
           file,
           seal: p.seal,
         });
-        return;
-      }
-      if (headerLine(file) !== headers[i])
-        throw new StoreError(
-          `${file}: a part of other inputs, to be moved aside by hand`,
-        );
     });
     p.log("engine phase", {
       phase: p.name,
@@ -422,7 +421,7 @@ export async function runPhase(p: Phase): Promise<PhaseRecord> {
     });
     if (done < todo.length)
       throw new NotFinished(
-        `${p.name}: ${todo.length - done} parts of copy ${copy} to go: ${why ?? "?"}`,
+        `${p.name}: ${todo.length - done} parts of copy ${copy} to go: ${why}`,
       );
   }
   const parts = p.parts.map((s, i): [string, string, string] => [

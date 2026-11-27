@@ -18,7 +18,7 @@ import type { Position } from "../src/copyh/phase-prices.js";
 import {
   concentrationOf,
   drawdownUsd,
-  linesOf,
+  lineFiguresOf,
   normalUpper,
   partsOf,
   printCopyOf,
@@ -276,7 +276,7 @@ describe("every line's figures (C7, C13)", () => {
     { ...copy(30), lines: ["BROAD" as const], main: null },
   ];
   const main = voted.filter((c) => c.lines.includes("MAIN"));
-  const l = linesOf(kit, voted);
+  const l = lineFiguresOf(kit, voted);
   const mainEdge = (c: PrintCopy) => c.judged.MAIN?.edge ?? null;
   const mainOf = (c: PrintCopy) => c.main!;
 
@@ -345,7 +345,7 @@ describe("every line's figures (C7, C13)", () => {
     );
     expect(l.RANK!.copies).toBe(8);
     // A J of exactly 3 is at most 3; above it, above.
-    const jumped = linesOf(kit, [
+    const jumped = lineFiguresOf(kit, [
       { ...copy(1), main: { ...copy(1).main!, jump: 3 } },
       { ...copy(2), main: { ...copy(2).main!, jump: 3.0001 } },
     ]);

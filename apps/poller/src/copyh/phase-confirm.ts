@@ -23,7 +23,7 @@ import { partBytes, recordAt } from "./engine.js";
 import { StatisticLine, positionLines } from "./phase-result.js";
 import { printCopyOf, reportOf, type PrintCopy } from "./prints.js";
 import { StoreError } from "./run.js";
-import { Try, TryLine, inTry, judgedOf } from "./tries.js";
+import { Try, TryLine, inTry, tryCopyOf } from "./tries.js";
 import { statisticOf, type JudgedCopy } from "./verdict.js";
 
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -79,7 +79,7 @@ export const confirmPart: PartFunction = (inputs, ctx) => {
     if (p.voted) onS.push(printCopyOf(p, rank));
     const tl = TryLine.parse(JSON.parse(line));
     i.tries.forEach((t, k) => {
-      if (inTry(tl, t)) sets[k]!.push(judgedOf(tl, t.line));
+      if (inTry(tl, t)) sets[k]!.push(tryCopyOf(tl, t.line));
     });
   }
   const statistics = sets.map((s) => statisticOf(ctx.kit, s));

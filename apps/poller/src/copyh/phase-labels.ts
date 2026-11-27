@@ -62,7 +62,7 @@ export const ReadingInputs = z.object({
 export type ReadingInputs = z.infer<typeof ReadingInputs>;
 
 /** The reading's stores and dirs.json's kinds, each held to the part's inputs. */
-export function readingOf(
+export function heldReading(
   context: unknown,
   inputs: ReadingInputs,
   seal: Seal,
@@ -137,7 +137,7 @@ function labelAt(
 /** LABELS's function (engine.ts `PartFunction`). */
 export const labelsPart: PartFunction = (inputs, ctx) => {
   const i = LabelsInputs.parse(inputs);
-  const { stores, kinds } = readingOf(ctx.context, i, ctx.seal);
+  const { stores, kinds } = heldReading(ctx.context, i, ctx.seal);
   const vaults = vaultsOf(stores);
   const views = readBucket(
     stores,
@@ -180,7 +180,7 @@ export type LargeInputs = z.infer<typeof LargeInputs>;
 /** LABELS-L's function: each deferred (account, M) alone, by C5 (the lane at none). */
 export const labelsLargePart: PartFunction = (inputs, ctx) => {
   const i = LargeInputs.parse(inputs);
-  const { stores, kinds } = readingOf(ctx.context, i, ctx.seal);
+  const { stores, kinds } = heldReading(ctx.context, i, ctx.seal);
   const byM = new Map<number, MondayLabels>(
     i.mondays.map((M) => [
       M,
@@ -272,19 +272,4 @@ export function largeParts(
           },
         ];
   });
-}
-
-/** Every P1 account at each Monday, from LABELS' and LABELS-L's parts together. */
-export function p1Of(
-  ...parts: readonly ReadonlyMap<string, LabelsPart>[]
-): Map<number, Set<string>> {
-  const out = new Map<number, Set<string>>();
-  for (const labels of parts)
-    for (const part of labels.values())
-      for (const d of part.mondays) {
-        const set = out.get(d.M) ?? new Set<string>();
-        for (const a of d.p1) set.add(a);
-        out.set(d.M, set);
-      }
-  return out;
 }

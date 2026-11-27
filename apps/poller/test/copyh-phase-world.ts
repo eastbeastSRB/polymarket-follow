@@ -6,12 +6,24 @@
  * protocol's vault — and X (bucket 02) everyone's other side; dirs.json;
  * a made-up funding store with its list; and the phases LABELS and LABELS-L
  * run on it through real child processes of the build, in a step's engine
- * folder.
+ * folder; the tests' readers of a closed phase (the P1 accounts, a BUILD
+ * part, a PRICES part), which no step reads whole.
  */
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { runPhase, type Phase, type PhaseRecord } from "../src/copyh/engine.js";
+import {
+  partLines,
+  runPhase,
+  type Phase,
+  type PhaseRecord,
+} from "../src/copyh/engine.js";
+import {
+  coinCopies,
+  coinKeys,
+  coinsOf,
+  factsOf,
+} from "../src/copyh/phase-build.js";
 import {
   labelsOf,
   labelsParts,
@@ -19,6 +31,7 @@ import {
   type LabelsPart,
   type ReadingInputs,
 } from "../src/copyh/phase-labels.js";
+import { positionOf, type Position } from "../src/copyh/phase-prices.js";
 import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
 import { SEALED } from "../src/copyh/seal.js";
 import { MANIFEST, type Store } from "../src/copyh/store.js";
@@ -296,4 +309,50 @@ export async function labelsRun(
     dirs: { labels: main.dir, large: l.dir },
     records: { labels: record, large: largeRecord },
   };
+}
+
+/** Every P1 account at each Monday, from LABELS' and LABELS-L's parts together. */
+export function p1Of(
+  ...parts: readonly ReadonlyMap<string, LabelsPart>[]
+): Map<number, Set<string>> {
+  const out = new Map<number, Set<string>>();
+  for (const labels of parts)
+    for (const part of labels.values())
+      for (const d of part.mondays) {
+        const set = out.get(d.M) ?? new Set<string>();
+        for (const a of d.p1) set.add(a);
+        out.set(d.M, set);
+      }
+  return out;
+}
+
+/** A closed BUILD part read by its index: its facts, and each coin's copies and keys. */
+export function buildOf(dir: string, record: PhaseRecord, id: string) {
+  const one: PhaseRecord = {
+    phase: record.phase,
+    parts: record.parts.filter(([p]) => p === id),
+  };
+  return {
+    facts: factsOf(dir, record, id),
+    coins: new Map(
+      coinsOf(dir, one).map((iid) => [
+        iid,
+        {
+          copies: coinCopies(dir, one, iid),
+          keys: coinKeys(dir, one, iid),
+        },
+      ]),
+    ),
+  };
+}
+
+/** A closed PRICES part's positions, held to its record (engine.ts `partLines`), each parsed. */
+export function positionsOf(
+  dir: string,
+  record: PhaseRecord,
+  id: string,
+): Position[] {
+  const out: Position[] = [];
+  for (const line of partLines(dir, record, id)) out.push(positionOf(line));
+  return out;
 }

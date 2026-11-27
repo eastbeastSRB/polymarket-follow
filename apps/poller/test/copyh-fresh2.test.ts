@@ -162,7 +162,11 @@ describe("the sealed judgment on FRESH-2 (C14, RM1)", () => {
 describe("MAIN's prints in FRESH-2's form (C14 (4) 5.: no move of a crash hour)", () => {
   it("drops the cascade print and the null mean gross, names the day and month prints as what they are, and takes every other print as it is", () => {
     const report = {
-      r14: { copies: 3, worstDay: "the worst day" },
+      r14: {
+        copies: 3,
+        worstDay: "the worst day",
+        withoutItAndTheMostInfluentialDay: "without the account and its day",
+      },
       lines: "the lines",
       parts: { sides: "the sides", months: "the months", slices: "slices" },
       venues: "the venues",
@@ -183,6 +187,8 @@ describe("MAIN's prints in FRESH-2's form (C14 (4) 5.: no move of a crash hour)"
       r14: {
         copies: 3,
         "COPY-H's copies by UTC day: the worst": "the worst day",
+        "COPY-H's copies by UTC day: the mean without the most influential account, then also without the most influential day":
+          "without the account and its day",
       },
       lines: "the lines",
       parts: {
@@ -313,6 +319,28 @@ describe("FRESH-2's one funding list (the supervisor's ruling, 2026-11-27)", () 
     expect(file).toBe(path.join(l.dir, "engine", "funding.sha256"));
     expect(readFileSync(file, "utf8")).toBe(
       `${readFileSync(l.one, "utf8")}${readFileSync(l.two, "utf8")}\n`,
+    );
+  });
+
+  it("composes the window lines alone: each list's comments and its meta reply's line, in both lists, are left out (COPYH-ENGINE-REVIEW-2 L2)", () => {
+    const l = lists();
+    const meta = (n: number) => `${H(n)} *info/meta.json\n`;
+    writeFileSync(
+      l.one,
+      `# COPY-H's funding\n${readFileSync(l.one, "utf8")}${meta(5)}`,
+    );
+    writeFileSync(
+      l.two,
+      `# FRESH-2's funding\n${meta(6)}${H(3)} *info/fundingHistory/BTC/9.json\n`,
+    );
+    const file = composedFunding(path.join(l.dir, "engine"), [l.one, l.two]);
+    expect(readFileSync(file, "utf8")).toBe(
+      [
+        `${H(1)} *info/fundingHistory/BTC/1.json`,
+        `${H(2)} *info/fundingHistory/ETH/1.json`,
+        `${H(3)} *info/fundingHistory/BTC/9.json`,
+        "",
+      ].join("\n"),
     );
   });
 

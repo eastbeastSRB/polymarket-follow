@@ -62,7 +62,7 @@ import {
   LabelsPart,
   ReadingContext,
   ReadingInputs,
-  readingOf,
+  heldReading,
 } from "./phase-labels.js";
 import { StoreError } from "./run.js";
 import type { Store } from "./store.js";
@@ -442,7 +442,7 @@ const encode = (s: string) => Buffer.from(s, "utf8");
 export const buildPart: PartFunction = (inputs, ctx) => {
   const i = BuildInputs.parse(inputs);
   const context = BuildContext.parse(ctx.context);
-  const { stores, kinds } = readingOf(context, i, ctx.seal);
+  const { stores, kinds } = heldReading(context, i, ctx.seal);
   const p1 = p1Mondays(context, i);
   const start = stores[0]!.manifest.start;
   const reading = {
@@ -617,27 +617,6 @@ export function coinsOf(dir: string, record: PhaseRecord): number[] {
   for (const [id] of record.parts)
     for (const [c] of indexOf(dir, record, id).index.coins) out.add(c);
   return [...out].sort((a, b) => a - b);
-}
-
-/** A closed BUILD part read by its index: its facts, and each coin's copies and keys. */
-export function buildOf(dir: string, record: PhaseRecord, id: string) {
-  const part = indexOf(dir, record, id);
-  const one: PhaseRecord = {
-    phase: record.phase,
-    parts: record.parts.filter(([p]) => p === id),
-  };
-  return {
-    facts: factsOf(dir, record, id),
-    coins: new Map(
-      part.index.coins.map(([iid]) => [
-        iid,
-        {
-          copies: coinCopies(dir, one, iid),
-          keys: coinKeys(dir, one, iid),
-        },
-      ]),
-    ),
-  };
 }
 
 /** BUILD's parts: every bucket. */

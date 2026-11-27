@@ -310,7 +310,7 @@ export function r14Of(
 }
 
 /** Every line's C12 figures beside MAIN (C7, C13), deciding nothing. */
-export function linesOf(
+export function lineFiguresOf(
   kit: Research,
   voted: readonly PrintCopy[],
 ): Record<string, Statistic> {
@@ -479,7 +479,7 @@ export function reportOf(
   const thin = main.filter((c) => c.thin);
   return {
     r14: r14Of(kit, main, o),
-    lines: linesOf(kit, voted),
+    lines: lineFiguresOf(kit, voted),
     parts: partsOf(kit, main),
     venues: {
       hyperliquidBase: stat(main),

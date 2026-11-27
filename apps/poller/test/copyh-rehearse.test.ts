@@ -30,7 +30,7 @@ import { describe, expect, it } from "vitest";
 import { storeClosure } from "../src/copyh/closure.js";
 import { fileSha256 } from "../src/copyh/engine.js";
 import { dayOf, mondayOf } from "../src/copyh/instants.js";
-import { buildOf, type Copy } from "../src/copyh/phase-build.js";
+import type { Copy } from "../src/copyh/phase-build.js";
 import {
   CAPS_BASE,
   REHEARSAL_FILE,
@@ -62,6 +62,7 @@ import {
   START,
   X,
   at,
+  buildOf,
   fundingWorld,
   phaseWorld,
 } from "./copyh-phase-world.js";

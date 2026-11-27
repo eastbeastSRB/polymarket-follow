@@ -71,7 +71,7 @@ import {
   type SealedSet,
 } from "../src/copyh/phase-sealed.js";
 import { printCopyOf, reportOf } from "../src/copyh/prints.js";
-import { TryLine, inTry, judgedOf, type Try } from "../src/copyh/tries.js";
+import { TryLine, inTry, tryCopyOf, type Try } from "../src/copyh/tries.js";
 import { statisticOf } from "../src/copyh/verdict.js";
 import { loadResearch } from "../src/paper/research.js";
 import {
@@ -1134,7 +1134,7 @@ describe(
         ["a prior mean net", 0, "NOT CONFIRMED", null, null],
       ]);
       expect(c.tries[0]!.statistic).toEqual(
-        statisticOf(kit, [judgedOf(TryLine.parse(JSON.parse(line)), "MAIN")]),
+        statisticOf(kit, [tryCopyOf(TryLine.parse(JSON.parse(line)), "MAIN")]),
       );
       expect(c.tries[0]!.sentences).toEqual(
         confirmationOf([c.tries[0]!.statistic])[0]!.sentences,
@@ -1263,7 +1263,7 @@ describe(
         };
       };
       const tl = TryLine.parse(JSON.parse(line));
-      const judged = (s: SealedSet, copies: ReturnType<typeof judgedOf>[]) => {
+      const judged = (s: SealedSet, copies: ReturnType<typeof tryCopyOf>[]) => {
         const statistic = statisticOf(kit, copies);
         return {
           kind: s.kind,
@@ -1278,8 +1278,8 @@ describe(
         resultOf(e.result.dir, e.result.record).positions,
       );
       expect(r.result.sets).toEqual([
-        judged(sets[0]!, [judgedOf(tl, "MAIN")]),
-        judged(sets[1]!, [judgedOf(tl, "BROAD")]),
+        judged(sets[0]!, [tryCopyOf(tl, "MAIN")]),
+        judged(sets[1]!, [tryCopyOf(tl, "BROAD")]),
         judged(sets[2]!, []),
       ]);
       expect(r.result.sets.map((s) => [s.reading, s.z])).toEqual([
@@ -1502,7 +1502,7 @@ describe("step 2's refusals (C15, in its order)", () => {
     expect(r.chosen).toEqual([w.chosen]);
   });
 
-  it("refuses a second step 2, repro.json not this program's, an unset value, a step 1 file changed or a list of another form, E's store changed, no choice, each exit 5, in that order", () => {
+  it("refuses a second step 2, repro.json not this program's, an unset value, a step 1 file changed or a list of another form, E's store changed, a choice of more than two tries or none, each exit 5, in that order", () => {
     const w = stepWorld();
     const code = (f: () => unknown) => codeOf(f);
     w.put(path.join(w.root, "look2", "result.json"), "{}");
@@ -1553,7 +1553,15 @@ describe("step 2's refusals (C15, in its order)", () => {
       expect(code(w.ready())).toBe(5);
       writeFileSync(file, bytes);
     }
-    rmSync(path.join(w.pkg, "copyh", "choice.json"));
+    // More than CHOSEN_AT_MOST tries chosen: refused before anything is read (COPYH-ENGINE-REVIEW-2 L3).
+    const choice = path.join(w.pkg, "copyh", "choice.json");
+    const one = { round: 1, index: 0, name: "a", try: w.chosen, figures: {} };
+    w.put(choice, JSON.stringify({ chosen: [one, one] }));
+    expect(w.ready()().chosen).toEqual([w.chosen, w.chosen]);
+    w.put(choice, JSON.stringify({ chosen: [one, one, one] }));
+    expect(w.ready()).toThrow(/is not the rounds' choice: chosen: /);
+    expect(code(w.ready())).toBe(5);
+    rmSync(choice);
     expect(w.ready()).toThrow(/no the rounds' choice that parses/);
     expect(code(w.ready())).toBe(5);
   });

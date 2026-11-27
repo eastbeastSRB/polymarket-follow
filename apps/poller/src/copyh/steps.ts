@@ -59,6 +59,7 @@ import { columnOf } from "./accounts.js";
 import { RehearsalRecord } from "./closure.js";
 import { CoinsFile } from "./coins.js";
 import {
+  CHOSEN_AT_MOST,
   END_E,
   END_F2,
   END_S,
@@ -88,6 +89,7 @@ import {
   coinsOf,
   factsOf,
 } from "./phase-build.js";
+import { FUNDING_WINDOW } from "./phase-coin.js";
 import { TryConfirmation, confirmOf, confirmParts } from "./phase-confirm.js";
 import {
   LANE_LABEL_FILLS,
@@ -123,7 +125,7 @@ import {
 } from "./phase-sealed.js";
 import {
   Result,
-  linesOf,
+  rankedLinesOf,
   positionLines,
   reportFrom,
   resultOf,
@@ -823,7 +825,11 @@ export async function fortnightOf(
   let lines = 0;
   const byLine: Record<string, number> = {};
   const legs: Record<string, number> = {};
-  for (const { p, line } of linesOf(positions(), tablesOf(rank), mondays)) {
+  for (const { p, line } of rankedLinesOf(
+    positions(),
+    tablesOf(rank),
+    mondays,
+  )) {
     hash.update(`${line}\n`);
     lines += 1;
     for (const l of p.lines) byLine[l] = (byLine[l] ?? 0) + 1;
@@ -1440,8 +1446,10 @@ export function heldStepStore(look: string, r: LookFile): void {
   }
 }
 
-/** `copyh/choice.json` as step 2 reads it: the chosen tries whole, in the choice's order (choice.ts writes it; the rounds' freeze lists it). */
-const ChosenFile = z.object({ chosen: z.array(z.object({ try: Try })) });
+/** `copyh/choice.json` as step 2 reads it: the chosen tries whole, in the choice's order, at most CHOSEN_AT_MOST (choice.ts writes it; the rounds' freeze lists it). */
+const ChosenFile = z.object({
+  chosen: z.array(z.object({ try: Try })).max(CHOSEN_AT_MOST),
+});
 
 /** Step 2's refusals in C15's order, before anything is read: a second step 2 (its result.json); repro.json passed by this program (C15 (a)); the values set before the freeze; step 1's three files held to `copyh/look1.sha256`; E's store held to step 1's result.json; the chosen tries. Each exit 5. */
 export function readyForStep2(o: {
@@ -1721,27 +1729,36 @@ export function readyForFresh2(o: {
   return { values, sets };
 }
 
-/** FRESH-2's one funding list (C14 (4) 2.; the supervisor's ruling, 2026-11-27): `copyh/funding.sha256`'s windows and `copyh/funding2.sha256`'s, each once, the rows of both in the one funding store, written whole to the stage's engine folder; its path. */
+/** FRESH-2's one funding list (C14 (4) 2.; the supervisor's ruling, 2026-11-27): `copyh/funding.sha256`'s windows and `copyh/funding2.sha256`'s, each once (a window in both refused), the rows of both in the one funding store, written whole to the stage's engine folder; its path. Only the window lines are composed (the keys phase-coin.ts reads, `FUNDING_WINDOW`): a list's other lines, the meta reply both list among them, are read by nothing (COPYH-ENGINE-REVIEW-2 L2). */
 export function composedFunding(dir: string, lists: readonly string[]): string {
-  const text = lists
-    .map((f) => {
-      let t: string;
-      try {
-        t = readFileSync(f, "utf8");
-      } catch {
-        throw new StoreError(`no ${f}: FRESH-2's funding reads it`);
-      }
-      return t === "" || t.endsWith("\n") ? t : `${t}\n`;
-    })
-    .join("");
-  try {
-    readDataList(text);
-  } catch (err) {
-    throw new StoreError(`FRESH-2's funding lists: ${(err as Error).message}`);
+  const windows = new Set<string>();
+  const lines: string[] = [];
+  for (const f of lists) {
+    let text: string;
+    try {
+      text = readFileSync(f, "utf8");
+    } catch {
+      throw new StoreError(`no ${f}: FRESH-2's funding reads it`);
+    }
+    let list: Map<string, string>;
+    try {
+      list = readDataList(text);
+    } catch (err) {
+      throw new StoreError(
+        `FRESH-2's funding lists: ${(err as Error).message}`,
+      );
+    }
+    for (const [key, hash] of list) {
+      if (!FUNDING_WINDOW.test(key)) continue;
+      if (windows.has(key))
+        throw new StoreError(`FRESH-2's funding lists: ${key} twice`);
+      windows.add(key);
+      lines.push(`${hash} *${key}\n`);
+    }
   }
   mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "funding.sha256");
-  writeWhole(file, text);
+  writeWhole(file, lines.join(""));
   return file;
 }
 
