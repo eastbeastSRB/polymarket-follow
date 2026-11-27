@@ -44,9 +44,9 @@
  * after the gate opens it). Settings, no
  * defaults (run.ts `Settings`); a run starts no new part once its minutes
  * (14, or `--minutes`) are spent or a closed window began, and exits 3. Exit
- * codes: 0 done, 1 a crash, 2 bad settings or options, 3 not finished, 4 the
- * freeze does not verify, 5 not ready, 6 a check failed, 7 two builds
- * differ. Every line goes to `<COPYH_ROOT>\logs\copyh-<day>.log`; stderr
+ * codes: 0 done, 1 a crash, 2 bad settings or options (an option given
+ * twice among them), 3 not finished, 4 the freeze does not verify, 5 not
+ * ready, 6 a check failed, 7 two builds differ. Every line goes to `<COPYH_ROOT>\logs\copyh-<day>.log`; stderr
  * says only why the program stopped before its log was open.
  */
 import { readFileSync } from "node:fs";
@@ -121,8 +121,11 @@ let minutes = RUN_MINUTES;
 let twin = false;
 let pastTripwire = false;
 let round: number | null = null;
+const given = new Set<string | undefined>();
 for (let i = 0; i < options.length; i++) {
   const [flag, value] = [options[i], options[i + 1]];
+  if (given.has(flag)) refuse(`the option "${flag ?? ""}" given twice`);
+  given.add(flag);
   const passes = tool === "count" || tool === "build";
   const ranged = passes || tool === "integrity";
   const stepped = gated === "step1" || gated === "step2" || gated === "fresh2";
@@ -145,13 +148,11 @@ for (let i = 0; i < options.length; i++) {
   ) {
     minutes = Number(value);
     i += 1;
-  } else if (tool === "build" && flag === "--twin" && !twin) twin = true;
-  else if (stepped && flag === "--past-tripwire" && !pastTripwire)
-    pastTripwire = true;
+  } else if (tool === "build" && flag === "--twin") twin = true;
+  else if (stepped && flag === "--past-tripwire") pastTripwire = true;
   else if (
     gated === "tries" &&
     flag === "--round" &&
-    round === null &&
     /^[1-9]$/.test(value ?? "") &&
     Number(value) <= ROUNDS
   ) {

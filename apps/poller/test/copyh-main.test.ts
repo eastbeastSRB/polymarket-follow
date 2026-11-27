@@ -1,8 +1,8 @@
 /**
  * COPY-H's built program (dist/copyh.js and dist/copyh/main.js; rules.md
  * C15), spawned: a heap flag, a COPYH_HEAP_GB of another form, an unknown
- * command or option and bad settings refused (exit 2) before anything is
- * opened; S's range sealed before the freeze (exit 5), nothing written there;
+ * command or option, an option given twice and bad settings refused (exit 2)
+ * before anything is opened; S's range sealed before the freeze (exit 5), nothing written there;
  * a gated command stopped by the gate (exit 4) while the freeze does not
  * verify, asked through the gate itself (code-rules, POLISH-FIX); `coins`
  * writing coins.json from a stored meta reply held to its manifest line, the
@@ -165,6 +165,37 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     expect(run(["reproduce", "--twin"], f).stderr).toContain(
       'the option "--twin"',
     );
+  });
+
+  it("refuses every option given twice, with the same value or another (exit 2), before it opens anything", () => {
+    const f = folders();
+    for (const [args, flag] of [
+      [["count", "--range", "E", "--range", "burnin"], "--range"],
+      [["build", "--range", "E", "--range", "E"], "--range"],
+      [
+        ["build", "--range", "E", "--workers", "2", "--workers", "3"],
+        "--workers",
+      ],
+      [["step1", "--workers", "2", "--workers", "2"], "--workers"],
+      [
+        ["integrity", "--range", "E", "--minutes", "5", "--minutes", "6"],
+        "--minutes",
+      ],
+      [["choice", "--minutes", "5", "--minutes", "5"], "--minutes"],
+      [["build", "--range", "E", "--twin", "--twin"], "--twin"],
+      [
+        ["step2", "--past-tripwire", "--minutes", "5", "--past-tripwire"],
+        "--past-tripwire",
+      ],
+      [["tries", "--round", "1", "--round", "1"], "--round"],
+    ] as const) {
+      const r = run(args, f);
+      expect(r.code, args.join(" ")).toBe(2);
+      expect(r.stderr, args.join(" ")).toContain(
+        `the option "${flag}" given twice`,
+      );
+    }
+    expect(existsSync(path.join(f.COPYH_ROOT, "logs"))).toBe(false);
   });
 
   it("seals the reproduction's seed folder by its name (exit 5), having written nothing", () => {

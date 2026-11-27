@@ -950,7 +950,8 @@ paper's `…\seed`, the reproduction). Every line goes to the pino log
 `<COPYH_ROOT>\logs\copyh-<day>.log` (its start line: node, the code's
 fingerprint, the shared files' hashes, the heap); stderr says only why the
 program stopped before its log was open. Exit codes (`run.ts` `exitOf`): 0
-done, 1 a crash, 2 bad settings, options or heap, 3 not finished (the
+done, 1 a crash, 2 bad settings, options (one given twice among them) or
+heap, 3 not finished (the
 run's minutes, 14 or `--minutes`, are spent or a closed window began: run
 it again; every heavy command resumes from whole parts), 4 the freeze does
 not verify, 5 not ready (sealed; a file missing, differing or failing; a
