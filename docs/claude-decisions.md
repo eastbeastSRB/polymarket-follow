@@ -1,5 +1,100 @@
 # Decisions log (append-only; newest on top)
 
+2026-11-27 (the supervisor — A BLUE SCREEN DURING E'S BUILD, RECOVERED;
+THE ENGINE BUILT TO COMMIT 16 AND REVIEWED TWICE; THE REHEARSAL'S COMMAND):
+**NOTHING WAS LOST TO THE CRASH. THE ENGINE MAY FREEZE AFTER THE SECOND
+REVIEW'S FIXES. NO OUTCOME OF E HAS BEEN SEEN.**
+
+**The crash.** At 2026-11-26 23:23:13Z Windows stopped with bugcheck 0x1A
+(MEMORY_MANAGEMENT) and rebooted. It was the second blue screen in about 35
+hours, after 11-25 12:17Z's 0xA. Both came under the heaviest loads so far.
+At that minute E's build and a builder's 40-mutant breaks round ran
+together. What the crash touched:
+- No hardware-error (WHEA) events, and no errors on the project's disks
+  (the Samsung NVMe for C: and E:, the WD HDD for F:). The pagefile is on
+  C:.
+- The owner's D: (a Patriot SATA SSD, no project data) logs bad blocks at
+  every boot since 11-14; the owner was told to back it up.
+- git fsck clean. MongoDB back at 23:25Z. The poller back at 23:26:36Z: it
+  dropped book-23's cut last line, as designed, and the gap was 3.5 min.
+  The paper run (04:00–04:37Z, exit 0) and the backup (05:20Z) ran
+  normally.
+
+**The torn parts.** COPYH-BURNIN read back the 997 parts written since
+22:53Z with the program's own reader. 986 were whole; 11 were torn, all in
+the last 18 s.
+- Ten have a header the resume refuses.
+- **One (6991.part) has a whole header over a torn payload**, which a
+  header-only resume (`doneOf`, store-closure code) would have taken; the
+  merge would then have stopped hours later.
+- All 11 were moved, never deleted, to
+  `F:\polymarket-follow-research\COPY-H-torn-20261126\E-parts\` with a
+  manifest, and the build resumed at 06:00:04Z and rewrote them first.
+- **The procedure for any later crash during a build** (the code is
+  frozen): read back every part of the last 15 minutes with the program's
+  reader, and move the torn ones aside before resuming (code-rules).
+- **One heavy load at a time** from now on: no breaks rounds while a store
+  builds.
+
+**The second review** (COPYH-ENGINE-REVIEW-2, Fable 5.2, max; `3b4ee09`)
+read commits 9–16 at `8c0310c`: "may freeze after these fixes, no
+rework". It found no path to a wrong number and no look-ahead. Its
+findings show only at full size or after a crash:
+- H1: a PRICES part of 2 GiB or more cannot be written in one call.
+- M1: the lanes scaled by the heap make a resume at a raised heap refuse
+  its closed phases.
+- M2: RESULT may pass the 8 GB heap.
+- M3: a torn part surfaces late.
+- M4: two prints missing (C13's calibration; MAIN without its gap copies).
+- L1–L7.
+
+All are approved and go to COPYH-ENGINE-10. None touches a store-closure
+file. Its questions, ruled:
+- parts are written in chunks through one descriptor, fsynced, then
+  renamed;
+- the rehearsal prints BUILD's copies by line and coin, each part's bytes,
+  and REMOVAL's and TRIPWIRE's peaks; PRICES, RANK and RESULT are measured
+  on made-up data;
+- RESULT runs at the heap cap;
+- no calibration in FRESH-2's report;
+- the funding is composed from window lines only;
+- `reproduce` is run again by hand before step 2, recorded here;
+- FRESH-2's day print is renamed.
+
+**The engine, commits 13–16 and the rehearsal's command:**
+- COPYH-ENGINE-7: `bc66cb3` (13, step 1), `240abdc` (14, rounds and
+  choice).
+- COPYH-ENGINE-8: `8eb45e4` (15a), `80d27c2` (15b), `b077c44` (13b, the
+  fortnight), `c554d8d` (15c, step 2), `2036d07` (15d, FRESH-2 and M2),
+  `01a4087` (16a, end to end), `8c0310c` (16b).
+- COPYH-ENGINE-9: `643450e` (an option given twice is refused),
+  `4470903` (the rehearsal's command (a)).
+
+The builders' calls, approved:
+- Holm's step-down on s alone (rules C14). A first try withheld, or failing
+  a sign, still opens the second try's test.
+- `copyh/look1.sha256` in sha256sum form, the three names.
+- FRESH-2: one composed funding store. Its report for a confirmed try is
+  its C12 statistic and sealed reading. An engine run with no look is
+  FRESH-2's.
+- rehearsal.json records E's store as its manifest without the run's
+  fields. When step 1's first build equals that record, no twin is built;
+  otherwise the twin is built and compared (exit 7).
+- Step 1's integrity file stays at checkStores' path.
+- The rehearsal's engine folder is `<COPYH_ROOT>\E\rehearsal\engine`.
+- The fortnight's pricing starts only when enough minutes remain:
+  FORTNIGHT_MINUTES = 5 until the first rehearsal measures it.
+- The worker heap is twice the largest RSS measured, rounded up.
+- RL11's "after" is strict.
+- Prints keep one decimal; decisions read unrounded values, in words.
+
+The breaks rounds of 13–16 are pending until E's build is done.
+
+**The timeline.** C15 (c) builds the rehearsal's E store "with its twin
+and its integrity". The first build ends about 11-27 afternoon UTC, the
+twin (as long as the build) overnight, then the integrity, the rehearsal
+and the freeze on 11-28. Look 1's answer is about 11-30 to 12-01.
+
 2026-11-26 (the supervisor — E COUNTED; THE "#" COIN FORM; THE REPRODUCTION
 PASSES; THE ENGINE TO COMMIT 9): **E'S COUNT IS CLEAN; ONE NEW COIN FORM IS
 LEFT OUT BEFORE THE BUILD; THE ENGINE REPRODUCES EVERY KNOWN ANSWER EXACTLY.
