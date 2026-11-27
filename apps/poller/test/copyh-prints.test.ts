@@ -6,8 +6,8 @@
  * look 1 only); every line's figures on its own money and x′ (TEN, BROAD,
  * DAY; STOP2, STOP5, DAYS7 with MAIN's x′; JUMP's three groups; the moved
  * lines; RANK); SIDES, MONTHS and SLICES; concentration; the venues, H1's
- * prints, the settled and thin copies and the cascade print; no verdict
- * word anywhere; and the paper's look's helpers as it computes them.
+ * prints, the settled, thin and gap copies and the cascade print; no
+ * verdict word anywhere; and the paper's look's helpers as it computes them.
  */
 import { describe, expect, it } from "vitest";
 import { loadResearch } from "../src/paper/research.js";
@@ -420,12 +420,13 @@ describe("concentration and the report's other prints (C13)", () => {
     expect(c.mostCopiesOfOneTrader).toEqual({ addr: addr(7), copies: 2 });
   });
 
-  it("reads the venues, H1's prints, the settled and thin copies and the cascade print from their own fields, with no verdict word", () => {
+  it("reads the venues, H1's prints, the settled, thin and gap copies and the cascade print from their own fields, with no verdict word", () => {
     const voted = SET.map((c, k) => ({
       ...c,
       settled: k % 6 === 0,
       flag: k % 6 === 0 ? ("open" as const) : null,
       thin: k % 5 === 0,
+      gap: k % 7 === 0,
       judged: k === 6 ? { ...c.judged, MAIN: judged(null, null) } : c.judged,
     }));
     const o = {
@@ -484,6 +485,15 @@ describe("concentration and the report's other prints (C13)", () => {
         mainEdge,
       ),
     });
+    // MAIN without its gap copies (C11, R11): their nets leave the figure.
+    const withoutGap = statOf(
+      voted.filter((c) => !c.gap),
+      own,
+      mainEdge,
+    );
+    expect(r.gap).toEqual({ copies: 4, withoutGap });
+    expect(withoutGap.copies).toBe(20);
+    expect(withoutGap.money!.mean).not.toBe(r.settled.main.money!.mean);
     expect(r.cascade).toEqual(
       statOf(
         voted,

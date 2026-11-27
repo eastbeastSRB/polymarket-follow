@@ -1291,7 +1291,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   figures (TEN, BROAD, DAY on their own x′; STOP2, STOP5, DAYS7 on their own
   net with MAIN's x′; JUMP above and at most 3 and without J; the moved
   lines; RANK), SIDES, MONTHS and SLICES, the venues, H1's prints,
-  concentration, the settled and thin copies and the cascade print. The
+  concentration, the settled and thin copies, MAIN without its gap copies
+  (C11) and the cascade print. The
   step's counts (the tripwire's, the accounts left out, the stores') are set
   beside them by the step.
 - `steps.ts` (C15, C0's identity, C13's counts, C16's stop): step 1 in
@@ -1321,7 +1322,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   (`writeLook`): the positions file gzipped to a temp in the engine
   folder, its lines held to RESULT's hash (exit 6), `result.json` (its
   identity first, naming both hashes), the file renamed into place, then
-  `report.json` (RESULT's prints and the counts); then the logs copied to
+  `report.json` (RESULT's prints, `copyh/calibration.json` held to the
+  SHA-256 the identity names, and the counts); then the logs copied to
   `look1\logs\` (`copyLogs`). Every output's identity (`identityOf`): the
   program, the freeze, the kit, lib-exits, `copyh/`'s seven lists and the
   step's files by SHA-256, the shared files, the heap, Node. The
@@ -1370,7 +1372,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   to step 1's (exit 6); the engine on E ∪ S at END_S in `look2\engine`
   (E's and S's 72 Mondays, look 2, after look 1's verdict; C16 on look 2's
   set and each chosen try's set on S); CONFIRM; the writes (`result.json`
-  with the confirmations, `report.json` with MAIN on S alone); the logs.
+  with the confirmations, `report.json` with MAIN on S alone and the
+  calibration); the logs.
 - `phase-confirm.ts` (C14's confirmation, C13's MAIN on S alone):
   CONFIRM, one part after RANK at step 2, computed twice: of the positions
   with t in S, each chosen try's set (its line's copies voted by END,

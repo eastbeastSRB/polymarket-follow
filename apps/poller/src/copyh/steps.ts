@@ -176,6 +176,7 @@ export const IDENTITY_LISTS = [
 ] as const;
 const FUNDING_FILE = path.join(PACKAGE_ROOT, "copyh", "funding.sha256");
 const REHEARSAL_FILE = path.join(PACKAGE_ROOT, "copyh", "rehearsal.json");
+const CALIBRATION_FILE = path.join(PACKAGE_ROOT, "copyh", "calibration.json");
 
 type Log = (event: string, fields: object) => void;
 
@@ -1065,6 +1066,27 @@ export function identityOf(o: {
   };
 }
 
+/** The calibration prints (C13: computed before the freeze into `copyh/calibration.json`, RL7), held to the SHA-256 the step's identity names and copied into the report of looks 1 and 2 (FRESH-2's stage is no look: the supervisor's ruling, 2026-11-27); else exit 5. */
+export function calibrationOf(
+  file: string,
+  identity: { readonly lists: Readonly<Record<string, string>> },
+): Record<string, unknown> {
+  const bytes = readFileSync(file);
+  if (sha256(bytes) !== identity.lists["calibration.json"])
+    throw new StoreError(
+      `${file} is not the calibration the step's identity names`,
+    );
+  let json: unknown;
+  try {
+    json = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    throw new StoreError(`${file}: no calibration that parses`);
+  }
+  const r = z.record(z.string(), z.unknown()).safeParse(json);
+  if (!r.success) throw new StoreError(`${file} is not the calibration`);
+  return r.data;
+}
+
 /** A chunk of the positions file at least, in characters: a stream of one chunk a line is slow. */
 const CHUNK_CHARS = 1 << 20;
 
@@ -1355,6 +1377,7 @@ export async function step1(o: StepRun): Promise<void> {
     result: resultOf(engine.result.dir, engine.result.record),
     report: {
       ...reportFrom(engine.result.dir, engine.result.record),
+      calibration: calibrationOf(CALIBRATION_FILE, identity),
       step: counts,
     },
     log: o.log,
@@ -1585,6 +1608,7 @@ export async function step2(o: StepRun): Promise<void> {
     report: {
       ...reportFrom(engine.result.dir, engine.result.record),
       mainOnS: c.mainOnS,
+      calibration: calibrationOf(CALIBRATION_FILE, identity),
       step: counts,
     },
     log: o.log,

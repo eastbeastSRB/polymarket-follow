@@ -176,6 +176,7 @@ describe("MAIN's prints in FRESH-2's form (C14 (4) 5.: no move of a crash hour)"
       concentration: "concentration",
       settled: "settled",
       thin: "thin",
+      gap: "gap",
       cascade: "the cascade",
     } as unknown as Report;
     expect(fresh2Report(report)).toEqual({
@@ -199,6 +200,7 @@ describe("MAIN's prints in FRESH-2's form (C14 (4) 5.: no move of a crash hour)"
       concentration: "concentration",
       settled: "settled",
       thin: "thin",
+      gap: "gap",
     });
   });
 });

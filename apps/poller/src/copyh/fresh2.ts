@@ -71,5 +71,6 @@ export function fresh2Report(r: Report) {
     concentration: r.concentration,
     settled: r.settled,
     thin: r.thin,
+    gap: r.gap,
   };
 }

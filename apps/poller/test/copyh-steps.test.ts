@@ -24,7 +24,8 @@
  *   its lines are RESULT's positions' lines, and its folder holds only the
  *   unpriced phases; a window before the copy holds none;
  * - the identity's lists and files by SHA-256, a missing one refused; the
- *   logs copied beside the outputs;
+ *   calibration copied into a look's report, held to its identity's hash;
+ *   the logs copied beside the outputs;
  * - step 2's refusals in C15's order, each exit 5: a second step 2,
  *   repro.json, an unset value, step 1's three files not those
  *   `copyh/look1.sha256` lists (a file changed, a list of another form),
@@ -99,8 +100,10 @@ import { LANE_LABEL_FILLS } from "../src/copyh/phase-labels.js";
 import { SEALED } from "../src/copyh/seal.js";
 import {
   FORTNIGHT_MINUTES,
+  IDENTITY_LISTS,
   StoreRecord,
   LOOK_FILES,
+  calibrationOf,
   copyLogs,
   engineRunOf,
   fortnightOf,
@@ -483,6 +486,42 @@ describe("the identity and the logs (C0; the store review's L15)", () => {
       });
     expect(missing).toThrow(/calibration\.json: an output names it/);
     expect(codeOf(missing)).toBe(5);
+  });
+
+  it("copies copyh/calibration.json into a look's report, held to the SHA-256 its identity names; one changed after the identity was taken, or not JSON, refused (exit 5)", () => {
+    const pkg = temp("pkg-calibration");
+    for (const f of ["dist/schedule.js", "dist/log.js"]) {
+      mkdirSync(path.dirname(path.join(pkg, f)), { recursive: true });
+      writeFileSync(path.join(pkg, f), f);
+    }
+    mkdirSync(path.join(pkg, "copyh"));
+    for (const f of IDENTITY_LISTS)
+      writeFileSync(path.join(pkg, "copyh", f), `the ${f}`);
+    const file = path.join(pkg, "copyh", "calibration.json");
+    const calibration = {
+      marks: [{ coin: "BTC", cells: 3, medianBps: 0.4 }],
+      books: null,
+    };
+    writeFileSync(file, `${JSON.stringify(calibration, null, 1)}\n`);
+    const identity = identityOf({
+      packageRoot: pkg,
+      freeze: { sha256: H, tag: "copyh-freeze-1" },
+      kit: "the kit",
+      files: {},
+      heapGb: 8,
+    });
+    expect(calibrationOf(file, identity)).toEqual(calibration);
+    writeFileSync(file, `${JSON.stringify({ ...calibration, books: [] })}\n`);
+    expect(() => calibrationOf(file, identity)).toThrow(
+      /is not the calibration the step's identity names/,
+    );
+    expect(codeOf(() => calibrationOf(file, identity))).toBe(5);
+    writeFileSync(file, "not JSON");
+    const named = { lists: { "calibration.json": sha256("not JSON") } };
+    expect(() => calibrationOf(file, named)).toThrow(
+      /no calibration that parses/,
+    );
+    expect(codeOf(() => calibrationOf(file, named))).toBe(5);
   });
 
   it("copies the program's day logs beside a look's outputs, and nothing else", () => {

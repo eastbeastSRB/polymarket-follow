@@ -21,8 +21,9 @@
  * - The venues (Hyperliquid's base tier is the taker setting; Binance's
  *   regular taker); H1's prints (the null's mean gross, d, x′ by day and by
  *   week, the money's error with the UTC week and month as its time
- *   cluster); concentration; the settled copies; the thin tape; the cascade
- *   print.
+ *   cluster); concentration; the settled copies; the thin tape; MAIN
+ *   without its gap copies (C11, R11: flagged, printed with and without);
+ *   the cascade print.
  * The step's counts (the tripwire's, the accounts left out, the stores')
  * are set beside these by the step.
  */
@@ -463,7 +464,7 @@ export function concentrationOf(main: readonly PrintCopy[]) {
   };
 }
 
-/** The look's report of its positions (C13): R14's list, every line, MAIN's parts, the venues, H1's prints, concentration, settled, thin and cascade. */
+/** The look's report of its positions (C13): R14's list, every line, MAIN's parts, the venues, H1's prints, concentration, settled, thin, gap and cascade. */
 export function reportOf(
   kit: Research,
   voted: readonly PrintCopy[],
@@ -522,6 +523,10 @@ export function reportOf(
       copies: thin.length,
       share: main.length === 0 ? 0 : thin.length / main.length,
       withoutThin: stat(main.filter((c) => !c.thin)),
+    },
+    gap: {
+      copies: main.filter((c) => c.gap).length,
+      withoutGap: stat(main.filter((c) => !c.gap)),
     },
     cascade: stat(
       main,
