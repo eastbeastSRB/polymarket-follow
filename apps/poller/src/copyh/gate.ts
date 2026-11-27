@@ -25,8 +25,9 @@ import type { Seal } from "./seal.js";
 
 export const FROZEN_FILE = "copyh/FROZEN.sha256";
 
-/** The compiled files of other programs that COPY-H's imports reach (C0; D14): the engine's `dist/paper/copy.js` and `stats.js` among them, and the reproduction's `seed.js` with its `routes.js` (C15 (a)). */
+/** The compiled files of other programs that COPY-H's imports reach (C0; D14): the engine's `dist/paper/copy.js` and `stats.js` among them, the reproduction's `seed.js` with its `routes.js` (C15 (a)), and the calibration's book half's WAVE-H reader, `books.js`, with what it reaches (C13; the supervisor's ruling, 2026-11-27 10:25Z: imported unchanged, each equal to its own freeze's line). */
 export const COPYH_CLOSURE = [
+  "dist/market1/book.js",
   "dist/paper/copy.js",
   "dist/paper/research.js",
   "dist/paper/routes.js",
@@ -34,9 +35,13 @@ export const COPYH_CLOSURE = [
   "dist/paper/stats.js",
   "dist/polish/lz4.js",
   "dist/polish/tables.js",
+  "dist/waveh/books.js",
+  "dist/waveh/fills.js",
+  "dist/waveh/gate.js",
   "dist/waveh/instants.js",
   "dist/waveh/keys.js",
   "dist/waveh/lz4.js",
+  "dist/waveh/store.js",
 ];
 
 /** lz4js 0.2.0's files (WAVE-H's decoder, behind its pinned hashes). */

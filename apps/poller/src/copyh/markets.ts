@@ -63,11 +63,12 @@ export type Bars = {
 const F64 = ["sz", "ntl", "last", "pairGap", "settleSz", "settleNtl"] as const;
 const U32 = ["trades", "pairs"] as const;
 
-/** A coin's bars in the stores of a reading, from its first partition's start to `to` (END, a minute's start); null when they hold none. */
+/** A coin's bars in the stores of a reading, from its first partition's start to `to` (END, a minute's start), or from the first partition holding a minute at or after `from` (the calibration's day: C13); null when they hold none. */
 export function readBars(
   stores: readonly BarsSource[],
   iid: number,
   to: number,
+  from = -Infinity,
 ): Bars | null {
   if (to % MINUTE_MS !== 0)
     throw new Error(`the bars' end ${iso(to)} is not a minute's start`);
@@ -75,7 +76,11 @@ export function readBars(
     .flatMap((store) =>
       store.manifest.partitions
         .filter(
-          (p) => p.table === "bars" && p.key === coinKey(iid) && p.start < to,
+          (p) =>
+            p.table === "bars" &&
+            p.key === coinKey(iid) &&
+            p.start < to &&
+            p.start + p.rows * MINUTE_MS > from,
         )
         .map((p) => ({ store, p })),
     )

@@ -17,6 +17,13 @@
  *   5: the freeze waits when a run of it passes one part's minutes or half
  *   its child's heap, RH1 (b)), and the label bound's check on the 1/32
  *   slice at its four Mondays (C15 (c) 7, its pass mark RL4's);
+ * - the calibration (C13, C15 (c) 11; phase-calibration.ts), parts as the
+ *   engine's: CALIBRATION-MARKS, a part an E sample day, its asset_ctxs day
+ *   file held to its line in `waveh/data.sha256`; CALIBRATION-BOOKS, a part
+ *   a day WAVE-H's store holds books for (its `books.jsonl`), read by
+ *   WAVE-H's frozen reader; their prints into `calibration.json`, written
+ *   whole before `rehearsal.json`, for the supervisor to commit as
+ *   `copyh/calibration.json`;
  * - the values its counts set before the freeze (C17): C9's settlement mark
  *   (C16: 60 minutes when the 5-minute projection is above 0.5%; the freeze
  *   waits while the set mark's is above 1%) and C15's worker heap (twice the
@@ -60,11 +67,20 @@ import {
   LABEL_FILLS_MAX,
   PART_MINUTES,
   REHEARSAL_WINDOW,
+  SAMPLE_DAYS,
   SETTLEMENT_MARK_SWITCH,
   TRIPWIRE_STOP,
   WORKER_HEAP_CAP_GB,
 } from "./design.js";
 import { fileSha256, partBytes } from "./engine.js";
+import {
+  booksOf,
+  booksParts,
+  booksSummary,
+  marksOf,
+  marksParts,
+  marksSummary,
+} from "./phase-calibration.js";
 import { STAGE_WINDOWS, dayOf, mondaysOf } from "./instants.js";
 import { readBars, type MarkMinutes } from "./markets.js";
 import {
@@ -97,7 +113,7 @@ import {
   writeWhole,
   type Budget,
 } from "./run.js";
-import { SEALED } from "./seal.js";
+import { SEALED, checkInside, checkPath } from "./seal.js";
 import {
   IDENTITY_LISTS,
   StoreRecord,
@@ -115,13 +131,17 @@ import {
   type Unpriced,
 } from "./steps.js";
 import { MANIFEST, openStore, type Store } from "./store.js";
+import { readBookList } from "../waveh/store.js";
 
 type Log = (event: string, fields: object) => void;
 
 export const REHEARSAL_FILE = "rehearsal.json";
+export const CALIBRATION_FILE = "calibration.json";
+/** WAVE-H's frozen list, which names each asset_ctxs day file's SHA-256. */
+const WAVEH_LIST = path.join(PACKAGE_ROOT, "waveh", "data.sha256");
 /** The lists the rehearsal's identity names (C0): every one but those it writes. */
 const LISTS = IDENTITY_LISTS.filter(
-  (f) => f !== "calibration.json" && f !== REHEARSAL_FILE,
+  (f) => f !== CALIBRATION_FILE && f !== REHEARSAL_FILE,
 );
 /** The caps' base (decisions 2026-11-26, COPYH-ENGINE's measure on made-up market makers): the kit's peak a fill, a label capture's and a history's, and the share of the large lane's heap cap an account at a cap may fill. */
 export const CAPS_BASE = {
@@ -644,6 +664,13 @@ export function capsOf(
   };
 }
 
+/** The book files WAVE-H's store holds, by its `books.jsonl` (WAVE-H's reader, unchanged), the list read through the seal and inside the run's roots. */
+function booksIn(file: string, roots: readonly string[]): Iterable<string> {
+  checkPath(file, SEALED);
+  checkInside(file, roots);
+  return readBookList(readFileSync(file, "utf8")).files.keys();
+}
+
 /** C9's settlement mark from C16's projection on all of E (C17): 60 minutes when the 5-minute rule projects above 0.5% unpriced; the freeze waits while the mark set still projects above 1%. */
 export function settlementMarkOf(shares: { 5: number; 60: number }) {
   const minutes: MarkMinutes = shares[5] > SETTLEMENT_MARK_SWITCH ? 60 : 5;
@@ -660,11 +687,64 @@ export async function rehearsalOf(o: {
     readonly buckets: readonly number[];
     readonly mondays: readonly number[];
   };
+  /** The calibration: WAVE-H's raw store, its frozen list and the sample days (the mark half), its book list (the book half). */
+  calibration: {
+    readonly store: string;
+    readonly list: string;
+    readonly days: readonly number[];
+    readonly books: string;
+  };
   pricing: Budget;
 }) {
   const u = await unpricedPhases(o.run);
   const tripwire = await tripwirePhase(o.run, u);
   const checks = await checksOn(o.run, u, o.check);
+  const marks = await closedOf(
+    phaseOf(
+      o.run,
+      "CALIBRATION-MARKS",
+      "phase-calibration.js",
+      "marksPart",
+      marksParts(
+        {
+          ...o.run.reading.inputs,
+          code: o.run.code,
+          end: o.run.end,
+          coins: [...o.run.coins],
+          list: fileSha256(o.calibration.list),
+        },
+        o.calibration.days,
+      ),
+      {
+        ...o.run.reading.context,
+        wavehStore: o.calibration.store,
+        wavehList: o.calibration.list,
+      },
+    ),
+  );
+  const books = await closedOf(
+    phaseOf(
+      o.run,
+      "CALIBRATION-BOOKS",
+      "phase-calibration.js",
+      "booksPart",
+      booksParts(
+        {
+          ...o.run.reading.inputs,
+          code: o.run.code,
+          end: o.run.end,
+          list: fileSha256(o.calibration.books),
+        },
+        booksIn(o.calibration.books, o.run.reading.context.roots),
+        new Map([...o.run.coins].map(([iid, name]) => [name, iid])),
+      ),
+      {
+        ...o.run.reading.context,
+        wavehStore: o.calibration.store,
+        booksList: o.calibration.books,
+      },
+    ),
+  );
   const projected = {
     5: tripwireOf(tripwire.dir, tripwire.record, 5),
     60: tripwireOf(tripwire.dir, tripwire.record, 60),
@@ -744,6 +824,11 @@ export async function rehearsalOf(o: {
           : null,
     },
     counts: { ...counts, ...more },
+    calibration: {
+      marks: marksSummary(o.kit, marksOf(marks.dir, marks.record)),
+      books: booksSummary(o.kit, booksOf(books.dir, books.record)),
+      runs: { marks: runsOf(marks), books: runsOf(books) },
+    },
   };
 }
 
@@ -752,6 +837,8 @@ export type RehearseRun = {
   readonly root: string;
   /** COPYH-FUNDING's store. */
   readonly funding: string;
+  /** WAVE-H's raw store: the calibration's asset_ctxs days. */
+  readonly waveh: string;
   readonly roots: readonly string[];
   readonly workers: number;
   readonly heapGb: number;
@@ -791,14 +878,25 @@ export async function rehearse(o: RehearseRun): Promise<void> {
       fundingList: path.join(PACKAGE_ROOT, "copyh", "funding.sha256"),
     },
   );
+  const calibration = {
+    store: o.waveh,
+    list: WAVEH_LIST,
+    days: SAMPLE_DAYS.E.map((d) => Date.parse(`${d}T00:00:00Z`)),
+    books: path.join(o.waveh, "books.jsonl"),
+  };
   const r = await rehearsalOf({
     run,
     stores: [ready.store],
     kit,
     window: REHEARSAL_WINDOW,
     check: { buckets: CHECK_BUCKETS, mondays: CHECK_MONDAYS },
+    calibration,
     pricing: o.pricing,
   });
+  writeWhole(
+    path.join(dir, CALIBRATION_FILE),
+    `${JSON.stringify(calibrationJson({ r, program, kit: kit.fingerprint, heapGb: o.heapGb, list: calibration.list, books: calibration.books }), null, 1)}\n`,
+  );
   const out = path.join(dir, REHEARSAL_FILE);
   writeWhole(
     out,
@@ -806,6 +904,35 @@ export async function rehearse(o: RehearseRun): Promise<void> {
   );
   o.log("the rehearsal's prints", r.prints);
   o.log("done: rehearsal.json written", { file: out, values: r.values });
+}
+
+/** `calibration.json`'s content (C13's calibration prints, C15 (c) 11), its identity first, for the supervisor to commit as `copyh/calibration.json`, which looks 1 and 2 copy into their reports held to its SHA-256: the program, the kit, lib-exits, WAVE-H's list that holds each day file, the shared files, the heap, Node; then the cells' rule, the mark half by coin and in all, the book half, and the parts' runs. */
+export function calibrationJson(o: {
+  r: Awaited<ReturnType<typeof rehearsalOf>>;
+  program: string;
+  kit: string;
+  heapGb: number;
+  /** WAVE-H's frozen list and its store's book list, as the parts read them. */
+  list: string;
+  books: string;
+}) {
+  return {
+    identity: {
+      program: o.program,
+      kit: o.kit,
+      libExits: LIB_EXITS_SHA256,
+      lists: { "waveh/data.sha256": fileSha256(o.list) },
+      files: { "WAVE-H/store/books.jsonl": fileSha256(o.books) },
+      shared: sharedHashes(PACKAGE_ROOT),
+      heapGb: o.heapGb,
+      node: process.version,
+    },
+    cells:
+      "two prices of one moment on outcome-free cells, never a price change across time, deciding nothing (C13), each value in bps: the mark half every coin at every whole minute of E's sample days (C18) where the tape's minute (its market trades' VWAP) and asset_ctxs' row of that minute both give a value, against its mark_px and its impact prices' mid, with their half-width; the book half each hour start of the days WAVE-H's store holds books for, coin by coin, the last snapshot at or before it (WAVE-H's lastAtOrBefore, unchanged) where usable, its half-spread and its $1,000 walk from each side, against C9's c of that day",
+    marks: o.r.calibration.marks,
+    books: o.r.calibration.books,
+    runs: o.r.calibration.runs,
+  };
 }
 
 /** `rehearsal.json`'s content (steps.ts `RehearsalFile` reads it at step 1), its identity first (C0): the program, the kit, lib-exits, the lists it does not write and E's store files (`e`: `<COPYH_ROOT>\E`) by SHA-256, the shared files, the heap, Node; then E's store's record (its store closure, this build's: its form `tools/copyh-freeze.cjs --closure`'s; its manifest without the run's fields; the builder's code beside it), the fortnight, the caps' base, the values, the prints and the counts with E's integrity's K1 and K3. */

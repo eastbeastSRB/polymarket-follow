@@ -35,8 +35,17 @@ import { positionOf, type Position } from "../src/copyh/phase-prices.js";
 import { PACKAGE_ROOT, sha256 } from "../src/copyh/run.js";
 import { SEALED } from "../src/copyh/seal.js";
 import { MANIFEST, type Store } from "../src/copyh/store.js";
-import { DAY_MS, HOUR_MS } from "../src/schedule.js";
-import { DIRS, addr, byBlock, keyOf, record, trade } from "./copyh-world.js";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
+import { bookKey, ctxsKey } from "../src/waveh/keys.js";
+import {
+  DIRS,
+  addr,
+  byBlock,
+  keyOf,
+  makeStore,
+  record,
+  trade,
+} from "./copyh-world.js";
 import { storeOf } from "./copyh-engine-world.js";
 
 export const M1 = Date.parse("2025-09-08T00:00:00Z");
@@ -356,4 +365,74 @@ export function positionsOf(
   const out: Position[] = [];
   for (const line of partLines(dir, record, id)) out.push(positionOf(line));
   return out;
+}
+
+/** The day of A's entry in M2's week: the calibration's made-up day. */
+export const CALIBRATION_DAY = M2 + DAY_MS;
+/** A minute of CALIBRATION_DAY, by its index. */
+export const minuteOf = (k: number) => CALIBRATION_DAY + k * MINUTE_MS;
+const stamp = (t: number) => new Date(t).toISOString().replace(".000Z", "Z");
+
+/** A book snapshot: its time, and its bids and asks as [px, sz]. */
+export type Snapshot = readonly [
+  number,
+  readonly (readonly [string, string])[],
+  readonly (readonly [string, string])[],
+];
+
+/**
+ * A made-up WAVE-H raw store for the calibration (C13), its folder
+ * `…\WAVE-H\store`: the asset_ctxs day file of CALIBRATION_DAY, SOL's rows
+ * as given ([the row's stamp, mark_px, impact_bid_px, impact_ask_px], an
+ * impact price "" for none), and its list in waveh/data.sha256's form; SOL's
+ * book files of the given hours, a snapshot a line, in its books.jsonl.
+ */
+export function wavehWorld(o: {
+  rows: readonly (readonly [number, string, string, string])[];
+  books: ReadonlyMap<number, readonly Snapshot[]>;
+}) {
+  const header =
+    "time,coin,funding,open_interest,prev_day_px,day_ntl_vlm,premium,oracle_px,mark_px,mid_px,impact_bid_px,impact_ask_px";
+  const ctxs = ctxsKey(CALIBRATION_DAY);
+  const lines = [
+    header,
+    ...o.rows.map(
+      ([t, mark, bid, ask]) =>
+        `${stamp(t)},SOL,0.0000125,10,100,1000,0,${mark},${mark},${mark},${bid},${ask}`,
+    ),
+  ];
+  const files = new Map<string, string>([[ctxs, `${lines.join("\n")}\n`]]);
+  for (const [hour, snaps] of o.books) {
+    const book = snaps.map(([time, bids, asks]) =>
+      JSON.stringify({
+        raw: {
+          channel: "l2Book",
+          data: {
+            coin: "SOL",
+            time,
+            levels: [
+              bids.map(([px, sz]) => ({ px, sz, n: 1 })),
+              asks.map(([px, sz]) => ({ px, sz, n: 1 })),
+            ],
+          },
+        },
+      }),
+    );
+    files.set(bookKey("SOL", hour), `${book.join("\n")}\n`);
+  }
+  const s = makeStore(files);
+  const list = path.join(s.root, "data.sha256");
+  writeFileSync(list, `${s.list.get(ctxs)!} *${ctxs}\n`);
+  const books = path.join(s.store, "books.jsonl");
+  const manifest = [...s.list]
+    .filter(([key]) => key !== ctxs)
+    .map(([key, sha]) =>
+      JSON.stringify({
+        key,
+        bytes: readFileSync(path.join(s.store, ...key.split("/"))).length,
+        sha256: sha,
+      }),
+    );
+  writeFileSync(books, manifest.map((l) => `${l}\n`).join(""));
+  return { root: s.root, store: s.store, list, books };
 }

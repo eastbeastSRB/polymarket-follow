@@ -989,7 +989,12 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   check Mondays (each account's label and MAIN's conditions from C5's
   90-day capture and from the whole capture from ARCHIVE_START, every
   difference listed; it passes at a Monday when MAIN's differences number
-  under 1% of the accounts meeting MAIN under the whole capture); the values
+  under 1% of the accounts meeting MAIN under the whole capture); the
+  calibration (C13, C15 (c) 11; `phase-calibration.ts`), as parts:
+  CALIBRATION-MARKS, a part an E sample day (C18), and CALIBRATION-BOOKS, a
+  part a day WAVE-H's store holds books for (its `books.jsonl`), into
+  `E\rehearsal\calibration.json` (`calibrationJson`, its identity first),
+  for the supervisor to commit as `copyh/calibration.json`; the values
   its counts set before the freeze (C9's mark: 60 minutes when the 5-minute
   projection is above 0.5%, the freeze waiting while the mark set's is above
   1%; C15's worker heap: twice the largest peak measured, an engine part's,
@@ -1143,7 +1148,10 @@ written in `COPY-H\funding`. A reader of rows checks each instant
 (`checkInstant`). The gate (`verifyGate`): `copyh/FROZEN.sha256` lists every
 file of what runs (the program, the closure of other programs' compiled
 files its imports reach — D14's list, the engine's `dist/paper/copy.js` and
-`stats.js` among them — the kit, lz4js's three files and `copyh/`), its one
+`stats.js` among them, and the calibration's WAVE-H book reader
+(`dist/waveh/books.js`) with what it reaches, `dist/market1/book.js`,
+`dist/waveh/fills.js`, `store.js` and `gate.js` — the kit, lz4js's three
+files and `copyh/`), its one
 tag holds this very list, the kit's `checkKit()` and lib-exits' hash pass,
 and the list is of the command's kind by what it holds (RM2: step 1 a list
 without `look1.sha256`; the rounds the same with `tries.json` beside it;
@@ -1272,6 +1280,27 @@ rehearsal's fortnight and the tests' worlds. A module a rule:
   the windows `copyh/funding.sha256` lists for it that start before END,
   each file held to its line and read through the seal, rows at or after
   END dropped.
+- `ctxs.ts` (C13's mark half): COPY-H's reader of an `asset_ctxs` day
+  file (its own, as WAVE-H's reads no impact price: the supervisor's
+  ruling, 2026-11-27): a minute's `mark_px`, `impact_bid_px` and
+  `impact_ask_px` from the row of the latest stamp in (m, m + 1 min], the
+  first line on a tie, as WAVE-H reads its marks; a failed row counted, a
+  row at or after the bound unused.
+- `phase-calibration.ts` (C13, C15 (c) 11): the calibration on
+  outcome-free cells, two prices of one moment only. CALIBRATION-MARKS, a
+  part an E sample day: the day file held to its line in
+  `waveh/data.sha256` and decoded by `dist/waveh/lz4.js`; at every whole
+  minute where the tape (the minute's market trades' VWAP, `readBars` from
+  the day's partition) and the day's row both give a value, the tape
+  against `mark_px`, against the impact mid, and the impact half-width, in
+  bps. CALIBRATION-BOOKS, a part a day with book files: at each hour start
+  each coin's last snapshot at or before it in the hour files WAVE-H reads
+  (`lastAtOrBefore` on `bookHours`, each file held to its `books.jsonl`
+  line), its half-spread and its $1,000 walk from each side (MARKET-1's
+  `walkOpen`) against C9's c of that day. The prints by coin and in all:
+  each value's cells, median, quartiles and mean with its SE. Pinned by
+  `test/copyh-calibration.test.ts` (a cell pairs a minute's tape with that
+  minute's row alone, never two instants).
 - `phase-check.ts` (C15 (c) 5 and 7): the rehearsal's checks. KIT, one
   part: an account's fills to END through the kit's history, as BUILD's,
   its bytes the history's counts. LABELCHECK, a part a bucket and a

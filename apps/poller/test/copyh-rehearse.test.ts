@@ -52,6 +52,7 @@ import {
   CHECK_BUCKETS,
   CHECK_MONDAYS,
   REHEARSAL_FILE,
+  calibrationJson,
   capsOf,
   checksOn,
   copyCounts,
@@ -87,8 +88,11 @@ import {
   X,
   at,
   buildOf,
+  CALIBRATION_DAY,
   fundingWorld,
+  minuteOf,
   phaseWorld,
+  wavehWorld,
 } from "./copyh-phase-world.js";
 
 const temp = (name: string) =>
@@ -128,7 +132,10 @@ const runAt = (dir: string, markMinutes: 5 | 60 = 5): EngineRun => ({
   code: "made-up",
   reading: {
     inputs: world.reading,
-    context: { ...world.context, roots: [...world.context.roots, F.root] },
+    context: {
+      ...world.context,
+      roots: [...world.context.roots, F.root, CW.root],
+    },
   },
   end: END,
   stage: [M1, END],
@@ -151,6 +158,28 @@ const runAt = (dir: string, markMinutes: 5 | 60 = 5): EngineRun => ({
 
 /** The label bound's check on the world: A's bucket at M2, where A is MAIN's. */
 const CHECK = { buckets: [1], mondays: [M2] };
+/** The calibration on the world: SOL's row of A's trade minute (minute 600 of CALIBRATION_DAY), and its book of 10:59:58 in the 10:00 file. */
+const CW = wavehWorld({
+  rows: [[minuteOf(601), "100.05", "99.95", "100.15"]],
+  books: new Map([
+    [
+      CALIBRATION_DAY + 10 * HOUR_MS,
+      [
+        [
+          CALIBRATION_DAY + 11 * HOUR_MS - 2_000,
+          [["99.9", "100"]],
+          [["100.1", "100"]],
+        ],
+      ],
+    ],
+  ]),
+});
+const CALIBRATION = {
+  store: CW.store,
+  list: CW.list,
+  days: [CALIBRATION_DAY],
+  books: CW.books,
+};
 
 /** A COPY-H folder whose E holds the world's store as its first build and as its twin (`twin`: a twin's manifest of other bytes), its integrity as given (none: not written). */
 function eFolder(o: {
@@ -308,10 +337,13 @@ describe(
         kit,
         window: [M1, END],
         check: CHECK,
+        calibration: CALIBRATION,
         pricing: never,
       });
       expect(readdirSync(engine).sort()).toEqual([
         "build",
+        "calibration-books",
+        "calibration-marks",
         "fortnight",
         "kit",
         "labelcheck",
@@ -544,6 +576,51 @@ describe(
         checksOf(dir, record)[0]!.mondays[0]!.deferred.map(([a]) => a),
       ).toEqual([A, B]);
     }, 300_000);
+
+    it("gives the calibration's prints (C13, C15 (c) 11), two prices of one moment: the mark half's one cell at A's trade minute, the book half's one at 11:00, by coin and in all; calibration.json's content, its identity first", () => {
+      const m = r.calibration.marks;
+      expect(m.days).toEqual([
+        {
+          day: iso(CALIBRATION_DAY).slice(0, 10),
+          rows: 1,
+          failed: 0,
+          late: 0,
+          twice: 0,
+        },
+      ]);
+      expect(m.byCoin.SOL!.markBps).toMatchObject({ cells: 1, se: null });
+      expect(m.all.markBps).toEqual(m.byCoin.SOL!.markBps);
+      expect(m.all.impactHalfBps).toMatchObject({ cells: 1 });
+      const b = r.calibration.books;
+      expect(b.days).toBe(1);
+      expect(b.byCoin.SOL!.halfBps).toMatchObject({ cells: 1 });
+      expect(b.byCoin.SOL!.fallback).toBe(1);
+      expect(b.all).toEqual(b.byCoin.SOL);
+      expect(r.calibration.runs).toMatchObject({
+        marks: { parts: 1 },
+        books: { parts: 1 },
+      });
+      const j = calibrationJson({
+        r,
+        program: "the program",
+        kit: "the kit",
+        heapGb: 8,
+        list: CW.list,
+        books: CW.books,
+      });
+      expect(Object.keys(j)[0]).toBe("identity");
+      expect(j.identity).toMatchObject({
+        program: "the program",
+        kit: "the kit",
+        lists: { "waveh/data.sha256": fileSha256(CW.list) },
+        files: { "WAVE-H/store/books.jsonl": fileSha256(CW.books) },
+        heapGb: 8,
+      });
+      expect({ marks: j.marks, books: j.books }).toEqual({
+        marks: m,
+        books: b,
+      });
+    });
 
     it("writes rehearsal.json's content as step 1 reads it: its identity first, E's store record, this build's store closure, the fortnight, the caps' base", () => {
       const f = eFolder({ integrity: passed });

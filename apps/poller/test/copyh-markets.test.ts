@@ -451,7 +451,7 @@ function stub(
 }
 
 describe("a coin's bars", { timeout: 60_000 }, () => {
-  it("join the store's minutes across a month and across two stores, as the pass and merge wrote them", async () => {
+  it("join the store's minutes across a month and across two stores, as the pass and merge wrote them; read from a later minute, the partitions before it left out", async () => {
     const one = await solStore();
     const first = await storeOf(
       new Map([
@@ -473,6 +473,16 @@ describe("a coin's bars", { timeout: 60_000 }, () => {
     expect(cut.n).toBe(6);
     expect([...cut.trades]).toEqual([2, 0, 0, 0, 0, 3]);
     expect(readBars([one], HYPE, H2 + HOUR_MS)).toBeNull();
+    // From a minute of September's partition (the calibration's day, C13): August's left out, the minutes the same; from August's last minute, both.
+    const all = solBars();
+    const k = (H2 - all.start) / MIN;
+    const sep = readBars([one], SOL, H2 + HOUR_MS, H2)!;
+    expect([sep.start, sep.n]).toEqual([H2, all.n - k]);
+    expect([[...sep.trades], [...sep.ntl]]).toEqual([
+      [...all.trades].slice(k),
+      [...all.ntl].slice(k),
+    ]);
+    expect(readBars([one], SOL, H2 + HOUR_MS, H2 - MIN)).toEqual(all);
   });
 
   it("never open a partition at or after the seal's end: S's minutes under step 1's seal", async () => {

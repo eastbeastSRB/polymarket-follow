@@ -451,6 +451,7 @@ try {
     await rehearse({
       root: settings.COPYH_ROOT,
       funding: settings.COPYH_FUNDING!,
+      waveh: raw,
       roots,
       workers,
       heapGb,
