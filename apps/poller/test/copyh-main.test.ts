@@ -218,6 +218,30 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     );
   });
 
+  it("takes step 1's options and needs the funding store, the gate first (exit 4 while the freeze does not verify); another option, or none of the store, exit 2", () => {
+    if (verifyFreeze(PACKAGE_ROOT, "step1").ok) return;
+    const f = folders();
+    expect(
+      run(["step1", "--workers", "2", "--minutes", "5", "--past-tripwire"], f)
+        .code,
+    ).toBe(4);
+    for (const args of [
+      ["step1", "--range", "E"],
+      ["step1", "--twin"],
+      ["step1", "--past-tripwire", "--past-tripwire"],
+      ["step1", "--minutes", "15"],
+      ["tries", "--past-tripwire"],
+      ["choice", "--workers", "2"],
+    ])
+      expect(run(args, f).code, args.join(" ")).toBe(2);
+    const without = Object.fromEntries(
+      Object.entries(f).filter(([k]) => k !== "COPYH_FUNDING"),
+    );
+    const r = run(["step1"], without);
+    expect(r.code).toBe(2);
+    expect(r.stderr).toContain("step1 needs COPYH_FUNDING");
+  });
+
   it("refuses a funding manifest that holds the meta reply's line twice or not at all (exit 5)", () => {
     for (const times of [2, 0]) {
       const f = folders();

@@ -993,8 +993,10 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
 - The bodies of `build` and `integrity` are `stores.ts`'s (`buildStore`,
   `checkStores`), each in the folder and under the seal its caller gives:
   a tool's `<COPYH_ROOT>\<range>`, step 1's `look1` and `look1\twin`.
-- `step1`, `tries`, `choice`, `step2`, `fresh2`: the gate first (exit 4,
-  nothing read); their phases are the engine's parts, still to be built.
+- `step1 [--workers n] [--minutes m] [--past-tripwire]`: the gate first
+  (exit 4, nothing read), then `steps.ts`'s step 1 (below); it needs
+  COPYH_FUNDING. `tries`, `choice`, `step2`, `fresh2`: the gate first;
+  their phases are still to be built.
 
 The ranges (`range.ts`): `burnin` WAVE-H's 850 files before M₀ (counts and
 timing only), `E` WAVE-H's 8,845 files [ARCHIVE_START, END_E), `S` FRESH's
@@ -1114,7 +1116,7 @@ step 1's first build is held byte for byte to that record, and when equal
 it is step 1's twin (A'). After E is built, no file of the store closure
 nor `schedule.ts` changes without the supervisor.
 
-**The engine** (part 3; no command reaches it yet). The kit and lib-exits
+**The engine** (part 3; `step1` reaches it after the gate). The kit and lib-exits
 run unchanged, loaded by `dist/paper/research.js`; END and the stage window
 are parameters, so one code serves step 1, step 2, FRESH-2's stage, the
 rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
@@ -1242,6 +1244,31 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   concentration, the settled and thin copies and the cascade print. The
   step's counts (the tripwire's, the accounts left out, the stores') are set
   beside them by the step.
+- `steps.ts` (C15, C0's identity, C13's counts, C16's stop): step 1 in
+  `<COPYH_ROOT>\look1\`. Its refusals in C15's order, each exit 5: its
+  `result.json` (a second step 1), the rehearsal's store
+  (`<COPYH_ROOT>\E\store\manifest.json`, sealed), `repro.json` not of
+  this program or not passed, a value set before the freeze unset (the
+  two caps, the settlement mark). E's store held to a second build (A'):
+  `look1\store`, its manifest but for the run's fields held to E's record
+  in `copyh/rehearsal.json` (its `store`, that manifest); equal, the
+  rehearsal's build is its twin; else `look1\twin\store` is built and the
+  two compared (exit 7); both comparisons in `look1\builds.json`. Then
+  the integrity (`look1\integrity\`), the engine's phases in
+  `look1\engine` (`runEngine`: LABELS, LABELS-L, BUILD, BUILD-L, REMOVAL,
+  TRIPWIRE and C16's stop above 1% (exit 6) unless `--past-tripwire`,
+  PRICES, RANK, RESULT; END, the stage, the Mondays and the lanes'
+  thresholds its parameters; a large lane one child at the heap cap), the
+  step's counts (`stepCounts`: the labels by Monday, the vault accounts,
+  BUILD's facts, the tripwire's projection, C3's counts, the holes, the
+  left-out takers by cause and month, each phase's runs), and the writes
+  (`writeLook`): the positions file gzipped to a temp in the engine
+  folder, its lines held to RESULT's hash (exit 6), `result.json` (its
+  identity first, naming both hashes), the file renamed into place, then
+  `report.json` (RESULT's prints and the counts); then the logs copied to
+  `look1\logs\` (`copyLogs`). Every output's identity (`identityOf`): the
+  program, the freeze, the kit, lib-exits, `copyh/`'s seven lists and the
+  step's files by SHA-256, the shared files, the heap, Node.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

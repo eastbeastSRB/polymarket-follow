@@ -179,7 +179,7 @@ const partFile = (dir: string, copy: string, id: string) =>
   path.join(dir, copy, `${id}.part`);
 
 /** A file's SHA-256, read 16 MB at a time. */
-function fileSha256(file: string): string {
+export function fileSha256(file: string): string {
   const h = createHash("sha256");
   const buf = Buffer.alloc(16 * 1024 * 1024);
   const fd = openSync(file, "r");

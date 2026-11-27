@@ -8,7 +8,8 @@
  *   node dist/copyh.js build --range burnin|E [--twin] [--workers n] [--minutes m]
  *   node dist/copyh.js integrity --range burnin|E [--minutes m]
  *   node dist/copyh.js reproduce
- *   node dist/copyh.js step1 | tries | choice | step2 | fresh2
+ *   node dist/copyh.js step1 [--workers n] [--minutes m] [--past-tripwire]
+ *   node dist/copyh.js tries | choice | step2 | fresh2
  *
  * `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
  * reply, held to its manifest line (C3), for the supervisor to commit as
@@ -31,7 +32,9 @@
  * Before the freeze every command runs under the closed seal, so S's range
  * is refused. The gate's commands verify the freeze of their kind first
  * (gate.ts) and stop with exit 4, having read nothing, when it does not
- * verify; their phases after the gate are the engine's parts. Settings, no
+ * verify; `step1` then runs steps.ts's step 1 (it needs COPYH_FUNDING; C16's
+ * stop unless `--past-tripwire`); the others' phases are still to be
+ * built. Settings, no
  * defaults (run.ts `Settings`); a run starts no new part once its minutes
  * (14, or `--minutes`) are spent or a closed window began, and exits 3. Exit
  * codes: 0 done, 1 a crash, 2 bad settings or options, 3 not finished, 4 the
@@ -84,6 +87,7 @@ import {
   writeWhole,
 } from "./run.js";
 import { SEALED, checkInside, checkPath, checkWrite } from "./seal.js";
+import { step1 } from "./steps.js";
 import { buildStore, checkStores, listsOf, passOf } from "./stores.js";
 
 function refuse(why: string): never {
@@ -105,22 +109,24 @@ let range: RangeName | null = null;
 let workers = 3;
 let minutes = RUN_MINUTES;
 let twin = false;
+let pastTripwire = false;
 for (let i = 0; i < options.length; i++) {
   const [flag, value] = [options[i], options[i + 1]];
   const passes = tool === "count" || tool === "build";
   const ranged = passes || tool === "integrity";
+  const stepped = gated === "step1";
   if (ranged && flag === "--range" && RANGE_NAMES.some((r) => r === value)) {
     range = value as RangeName;
     i += 1;
   } else if (
-    passes &&
+    (passes || stepped) &&
     flag === "--workers" &&
     /^([1-9]|1[0-6])$/.test(value ?? "")
   ) {
     workers = Number(value);
     i += 1;
   } else if (
-    ranged &&
+    (ranged || stepped) &&
     flag === "--minutes" &&
     /^[1-9][0-9]?$/.test(value ?? "") &&
     Number(value) <= RUN_MINUTES
@@ -128,6 +134,8 @@ for (let i = 0; i < options.length; i++) {
     minutes = Number(value);
     i += 1;
   } else if (tool === "build" && flag === "--twin" && !twin) twin = true;
+  else if (stepped && flag === "--past-tripwire" && !pastTripwire)
+    pastTripwire = true;
   else refuse(`the option "${flag ?? ""}"`);
 }
 if (
@@ -142,6 +150,8 @@ if (tool === "coins" && settings.COPYH_FUNDING === undefined)
   refuse("coins needs COPYH_FUNDING, COPYH-FUNDING's store");
 if (tool === "reproduce" && settings.PAPER_SEED === undefined)
   refuse("reproduce needs PAPER_SEED, the paper's seed folder");
+if (gated === "step1" && settings.COPYH_FUNDING === undefined)
+  refuse("step1 needs COPYH_FUNDING, COPYH-FUNDING's store");
 const heap = heapOf(process.env.COPYH_HEAP_GB);
 const heapGb: number = typeof heap === "string" ? refuse(heap) : heap;
 /** The range's raw store: FRESH's for S (step 2's), FRESH-2's for FRESH-2 (its stage's), else WAVE-H's. */
@@ -161,7 +171,9 @@ const roots =
     ? [settings.COPYH_ROOT, settings.COPYH_FUNDING!]
     : tool === "reproduce"
       ? [settings.COPYH_ROOT, settings.PAPER_SEED!]
-      : [settings.COPYH_ROOT, raw];
+      : gated === "step1"
+        ? [settings.COPYH_ROOT, raw, settings.COPYH_FUNDING!]
+        : [settings.COPYH_ROOT, raw];
 
 // The seal before anything is opened or made, the log's folder included: before the freeze, closed.
 try {
@@ -316,17 +328,32 @@ const storeRun = (r: RangeName, base: string) => ({
   log: logOf,
 });
 
-/** A gated command: the gate first (exit 4, nothing read); its phases are the engine's parts, still to be built. */
+/** A gated command: the gate first (exit 4, nothing read), then step 1 (steps.ts) under the gate's seal; the other commands' phases are still to be built. */
 async function gate(c: Command): Promise<void> {
   const freeze = await verifyGate(PACKAGE_ROOT, c);
   if (!freeze.ok)
     throw new FreezeDiffers(
       `${freeze.problems.length}: ${freeze.problems.slice(0, 10).join("; ")}`,
     );
-  logOf("gate", { command: c, freeze, seal: sealOf(freeze, c) });
-  throw new StoreError(
-    `${c}: its phases are built with the engine (parts 3 to 5)`,
-  );
+  const seal = sealOf(freeze, c);
+  logOf("gate", { command: c, freeze, seal });
+  if (c !== "step1")
+    throw new StoreError(
+      `${c}: its phases are built with the engine (parts 3 to 5)`,
+    );
+  await step1({
+    root: settings.COPYH_ROOT,
+    raw,
+    funding: settings.COPYH_FUNDING!,
+    roots,
+    freeze,
+    seal,
+    workers,
+    heapGb,
+    pastTripwire,
+    budget: budgetOf(minutes),
+    log: logOf,
+  });
 }
 
 let code = 0;
@@ -342,6 +369,7 @@ try {
       workers,
       minutes,
       twin,
+      pastTripwire,
     },
     `start ${command}`,
   );
