@@ -20,21 +20,23 @@
  *   sells at p1 at H0 + 8 h + 30 s. One-off accounts, one fill each and so
  *   never P1, make every other fill: each maker, and the tape that gives
  *   the marks the copy, its moved lines and d's null need (H0 + 4 min at
- *   p0; H0 + 15, 30 and 45 min, H0 + 8 h + 4 and 14 min, and the next day's
- *   H0 + 1, 4, 15, 30 and 45 min at p1). One funding row an episode, at
- *   H0 + 1 h. E has 120 traders, a copy every 2 days from 2025-07-14 (none
- *   in the rehearsal's fortnight); S and FRESH-2 30 each, every 4 days.
- *   E's and S's every hour is a file, most of them an empty frame;
- *   FRESH-2's only those that hold a record (its holes allowed, C14 (4) 1.).
+ *   p0; H0 + 15, 30, 45 and 58 min, H0 + 8 h + 4 and 14 min, and the next
+ *   day's H0 + 1, 4, 15, 30, 45 and 58 min at p1). One funding row an
+ *   episode, at H0 + 1 h. E has 120 traders, a copy every 2 days from
+ *   2025-07-14 (none in the rehearsal's fortnight); S and FRESH-2 30 each,
+ *   every 4 days. E's and S's every hour is a file, most of them an empty
+ *   frame; FRESH-2's only those that hold a record (its holes allowed, C14
+ *   (4) 1.).
  * - A copy's numbers follow from its two prices (`expectedOf`): no spread
  *   pair on any coin, so C9's 25 bps on each leg; the fee on both; the row
- *   charged at p1 under the world's 60-minute settlement mark (the 5-minute
- *   rule finds no mark, which only C16's projection prints); d = 0.75 j
- *   (d's null: four minutes, one at p0 and three at p1, held 24 h at p1);
- *   x′ = x − 0.25 j, its 24 hours costing what its 8 do.
+ *   charged at p1 under either settlement mark (the trade at H0 + 58 min is
+ *   within both rules' minutes); d = 0.8 j (d's null: five minutes, one at
+ *   p0 and four at p1, held 24 h at p1); x′ = x − 0.2 j, its 24 hours
+ *   costing what its 8 do.
  * - The values set before the freeze and the lists are the world's, in the
  *   scratch alone (`setWorldValues`, `writeWorldLists`, `writeRehearsal`):
- *   SETTLEMENT_MARK_MINUTES 60, rules.md's markers replaced,
+ *   SETTLEMENT_MARK_MINUTES 60 unless HEAD has set it, rules.md's markers
+ *   replaced,
  *   `copyh/data.sha256`, `funding.sha256`, `unpaired.json` (no record),
  *   `calibration.json` and `rehearsal.json` (the scratch's store closure, E's
  *   store as the scratch's own `build --range E` made it, then moved aside,
@@ -205,10 +207,12 @@ function tradesOf(t: Trader, oneOff: () => string): Trade[] {
   out.push(
     own(h + 30_000, true, t.q, t.p0),
     tape(h + 4 * MINUTE_MS, t.p0),
-    ...[15, 30, 45].map((m) => tape(h + m * MINUTE_MS, t.p1)),
+    ...[15, 30, 45, 58].map((m) => tape(h + m * MINUTE_MS, t.p1)),
     own(close + 30_000, false, t.q, t.p1),
     ...[4, 14].map((m) => tape(close + m * MINUTE_MS, t.p1)),
-    ...[1, 4, 15, 30, 45].map((m) => tape(h + DAY_MS + m * MINUTE_MS, t.p1)),
+    ...[1, 4, 15, 30, 45, 58].map((m) =>
+      tape(h + DAY_MS + m * MINUTE_MS, t.p1),
+    ),
   );
   return out;
 }
@@ -340,8 +344,8 @@ export function expectedOf(t: Trader) {
   return {
     net: 1e4 * net,
     gross: 1e4 * j,
-    d: 0.75e4 * j,
-    edge: 1e4 * (net - 0.25 * j),
+    d: 0.8e4 * j,
+    edge: 1e4 * (net - 0.2 * j),
   };
 }
 
@@ -532,14 +536,16 @@ export function commitAll(repo: string, message: string): string {
   return git(repo, "rev-parse", "HEAD").trim();
 }
 
-/** The values set before the freeze, as the world sets them in the scratch alone (C17): the settlement mark 60 minutes, and rules.md's markers replaced. */
+/** The values set before the freeze, as the world sets them in the scratch alone (C17): the settlement mark 60 minutes while HEAD leaves it unset (the world's copies are priced alike under either mark), and rules.md's markers replaced. */
 export function setWorldValues(pkg: string): void {
   const design = path.join(pkg, "src", "copyh", "design.ts");
   const unset = "export const SETTLEMENT_MARK_MINUTES: 5 | 60 | null = null;";
   const text = readFileSync(design, "utf8");
-  if (text.split(unset).length !== 2)
-    throw new Error(`${design}: no unset settlement mark`);
-  writeFileSync(design, text.replace(unset, unset.replace("= null;", "= 60;")));
+  if (text.includes(unset))
+    writeFileSync(
+      design,
+      text.replace(unset, unset.replace("= null;", "= 60;")),
+    );
   const rules = path.join(pkg, "copyh", "rules.md");
   writeFileSync(
     rules,

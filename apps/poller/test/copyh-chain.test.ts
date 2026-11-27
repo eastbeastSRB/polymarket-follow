@@ -126,17 +126,17 @@ describe("COPYH-WORLD's world and its scratch's refusals", () => {
     expect(COINS).not.toContain(NEW_COIN);
   });
 
-  it("writes E's and S's every hour and FRESH-2's hours that hold a record, 38 records a trader, and a funding row an episode the program's reader passes", () => {
+  it("writes E's and S's every hour and FRESH-2's hours that hold a record, 42 records a trader, and a funding row an episode the program's reader passes", () => {
     expect([...world.files.E.keys()]).toEqual(RANGES.E.fill);
     expect([...world.files.S.keys()]).toEqual(RANGES.S.fill);
     const fresh2 = [...world.files["FRESH-2"].keys()];
     const held = new Set(fresh2);
     expect(fresh2).toEqual(RANGES["FRESH-2"].fill.filter((k) => held.has(k)));
-    // Each trader's 4 round trips and its copy's 11 tape trades, a taker and a maker each.
+    // Each trader's 4 round trips and its copy's 13 tape trades, a taker and a maker each.
     expect(world.records).toEqual({
-      E: 120 * 38,
-      S: 30 * 38,
-      "FRESH-2": 30 * 38,
+      E: 120 * 42,
+      S: 30 * 42,
+      "FRESH-2": 30 * 42,
     });
     const empty = world.files.E.get(RANGES.E.fill[0]!)!;
     expect(
@@ -162,7 +162,7 @@ describe("COPYH-WORLD's world and its scratch's refusals", () => {
       const e = expectedOf(t);
       expect(e.net, t.addr).toBeGreaterThan(80);
       expect(e.edge, t.addr).toBeGreaterThan(40);
-      expect(e.d, t.addr).toBeCloseTo(0.75 * e.gross, 9);
+      expect(e.d, t.addr).toBeCloseTo(0.8 * e.gross, 9);
       expect(Number(t.q) * Number(t.p0), t.addr).toBeGreaterThan(1000);
     }
   });
@@ -436,7 +436,7 @@ describe.runIf(MODE === "pieces" || MODE === "chain")(
           6,
         );
         expect(report.h1.nullMeanGross).toBeCloseTo(
-          mean(E.map((t) => 0.25 * expectedOf(t).gross)),
+          mean(E.map((t) => 0.2 * expectedOf(t).gross)),
           6,
         );
         expect(report.step.fortnight).toMatchObject({ equal: true, lines: 0 });
