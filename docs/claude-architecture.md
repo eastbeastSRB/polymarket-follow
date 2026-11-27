@@ -995,7 +995,9 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   a tool's `<COPYH_ROOT>\<range>`, step 1's `look1` and `look1\twin`.
 - `step1 [--workers n] [--minutes m] [--past-tripwire]`: the gate first
   (exit 4, nothing read), then `steps.ts`'s step 1 (below); it needs
-  COPYH_FUNDING. `tries`, `choice`, `step2`, `fresh2`: the gate first;
+  COPYH_FUNDING. `tries --round n [--minutes m]` and `choice [--minutes
+  m]`: the gate first, then a round of the owner's tries or the choice
+  (`rounds.ts`, `choice.ts`, below). `step2`, `fresh2`: the gate first;
   their phases are still to be built.
 
 The ranges (`range.ts`): `burnin` WAVE-H's 850 files before M₀ (counts and
@@ -1269,6 +1271,28 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   `look1\logs\` (`copyLogs`). Every output's identity (`identityOf`): the
   program, the freeze, the kit, lib-exits, `copyh/`'s seven lists and the
   step's files by SHA-256, the shared files, the heap, Node.
+- `tries.ts` (C14): a try's form, `copyh/tries.json` (each try its line,
+  MAIN or BROAD, its conditions on C14's covariates by name, one of `>=`,
+  `>`, `<=`, `<`, `=` and `one of`, and why; at most 3 rounds of 8, 6 and 4
+  tries), and the set it reads of a positions line.
+- `rounds.ts` (C14's explore): `tries --round n` on step 1's positions
+  file, held to its `result.json`, and `copyh/tries.json`'s round n;
+  refused (exit 5) unless committed as it is (git: the file equal to
+  HEAD's), a round written or before its predecessor's output, an earlier
+  round changed, or step 1 unfinished; the round one part computed twice
+  in `<COPYH_ROOT>\rounds\engine\round-<n>\`: each try's set its line's
+  copies voted by END_E meeting every condition (a condition on a
+  covariate the copy lacks is false), its figures C12's forms, the weeks,
+  m − 2.99·SE and m′ − 2.99·SE′ and the mean without the two best days;
+  `rounds\round-<n>.json`, its identity first.
+- `choice.ts` (C14's choice): `choice` from the round files alone, each
+  held to its SHA-256: a try qualifies when m − 2.99·SE and m′ − 2.99·SE′
+  are above 0, the mean of its traders' own means and its mean without its
+  two best days are above 0, and its priced copies hold 100 traders and
+  100 UTC days; at most two go on, by the highest m − 2.99·SE (ties: the
+  earlier round, then the earlier try); one part computed twice;
+  `rounds\choice.json`, its identity first, the chosen tries whole for
+  step 2; a second choice refused (exit 5).
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000

@@ -64,8 +64,8 @@ const TwoWayLine = z.object({
   traders: z.number(),
   days: z.number(),
 });
-/** verdict.ts's Statistic as RESULT's part holds it. */
-const StatisticLine = z.object({
+/** verdict.ts's Statistic as RESULT's part and a round's file hold it. */
+export const StatisticLine = z.object({
   copies: z.number(),
   unpriced: z.number(),
   unpricedShare: z.number(),

@@ -207,7 +207,7 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     const f = folders();
     for (const c of ["step1", "tries", "choice", "step2", "fresh2"] as const) {
       if (verifyFreeze(PACKAGE_ROOT, c).ok) continue;
-      const r = run([c], f);
+      const r = run(c === "tries" ? [c, "--round", "1"] : [c], f);
       expect(r.code, c).toBe(4);
     }
     const lines = logOf(f.COPYH_ROOT);
@@ -240,6 +240,27 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     const r = run(["step1"], without);
     expect(r.code).toBe(2);
     expect(r.stderr).toContain("step1 needs COPYH_FUNDING");
+  });
+
+  it("takes a round's number and the rounds' minutes, the gate first (exit 4 while the freeze does not verify); no round, a fourth, one twice or another option, exit 2", () => {
+    if (verifyFreeze(PACKAGE_ROOT, "tries").ok) return;
+    const f = folders();
+    for (const args of [
+      ["tries", "--round", "3", "--minutes", "5"],
+      ["choice", "--minutes", "5"],
+    ])
+      expect(run(args, f).code, args.join(" ")).toBe(4);
+    for (const args of [
+      ["tries"],
+      ["tries", "--round", "4"],
+      ["tries", "--round", "0"],
+      ["tries", "--round", "1", "--round", "2"],
+      ["tries", "--round", "1", "--workers", "2"],
+      ["choice", "--round", "1"],
+      ["step1", "--round", "1"],
+    ])
+      expect(run(args, f).code, args.join(" ")).toBe(2);
+    expect(run(["tries"], f).stderr).toContain("tries needs --round 1 to 3");
   });
 
   it("refuses a funding manifest that holds the meta reply's line twice or not at all (exit 5)", () => {
