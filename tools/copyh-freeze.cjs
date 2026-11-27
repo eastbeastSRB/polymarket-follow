@@ -1,6 +1,6 @@
 "use strict";
 /**
- * COPY-H's lists (copyh/rules.md C0, C3, C17). Run from the repository
+ * COPY-H's lists (copyh/rules.md C0, C3, C14, C17). Run from the repository
  * after `pnpm verify`, on its build:
  *
  *   node tools/copyh-freeze.cjs --data [--funding <COPYH_FUNDING>]
@@ -8,6 +8,10 @@
  *     apps/poller/copyh/funding.sha256
  *   node tools/copyh-freeze.cjs --final
  *     the first freeze list, copyh/FROZEN.sha256, its tag copyh-freeze-1
+ *   node tools/copyh-freeze.cjs --rounds --root <COPYH_ROOT> --tag <n>
+ *     the rounds' list, with copyh/look1.sha256
+ *   node tools/copyh-freeze.cjs --fresh2 --root <COPYH_ROOT> --tag <n>
+ *     FRESH-2's list, with copyh/look2.sha256
  *   node tools/copyh-freeze.cjs --closure [<package folder>]
  *     prints the store closure of this build, or of a package folder's
  *     build, as copyh/rehearsal.json records it
@@ -46,6 +50,21 @@
  * none of the four freezes or unequal to one naming it (RL12), and a store
  * closure other than the one `copyh/rehearsal.json` records (decisions
  * 2026-11-26, E's store built once and recorded).
+ *
+ * --rounds (C14, the rounds' freeze) and --fresh2 (C14 (3), FRESH-2's
+ * freeze): a later list, from the build as it is (no build of their own).
+ * The list before it, the tag n − 1's, must be the tree's; the new list may
+ * differ from it only by the files the gate's kinds name: --rounds by
+ * adding `copyh/choice.json` (equal, byte for byte, to the program's
+ * `<COPYH_ROOT>\rounds\choice.json`), `copyh/look1.sha256` (step 1's three
+ * files in `<COPYH_ROOT>\look1\`, written with the list) and, when a round
+ * ran, `copyh/tries.json`; --fresh2 by adding `copyh/fresh2.sha256`,
+ * `copyh/funding2.sha256` and `copyh/look2.sha256` (step 2's three files
+ * in `<COPYH_ROOT>\look2\`), and by coins appended to `copyh/coins.json`
+ * (every coin of the list before unchanged at its iid, the rule unchanged).
+ * Any other file added, changed or gone is refused. A look's list is
+ * sha256sum's form, `<hash> *<name>`, its three names relative to the
+ * look's folder (steps.ts `heldLookFiles` reads it).
  *
  * --closure (C15 (c)): the record of E's store for `copyh/rehearsal.json`,
  * `{"storeClosure": …}` on stdout, writing nothing: the closure of the
@@ -251,6 +270,43 @@ function closureProblems(files, lists, hashOf) {
 const markerLines = (text) =>
   text.split("\n").flatMap((line, i) => (MARKER.test(line) ? [i + 1] : []));
 
+/** How `after`'s files differ from `before`'s (path to SHA-256), each named: a file added but `added`'s, changed but `changed`'s, or gone. */
+function differencesOf(before, after, added, changed) {
+  const out = [];
+  for (const [f, hash] of after)
+    if (!before.has(f)) {
+      if (!added.includes(f)) out.push(`added: ${f}`);
+    } else if (before.get(f) !== hash && !changed.includes(f))
+      out.push(`changed: ${f}`);
+  for (const f of before.keys()) if (!after.has(f)) out.push(`gone: ${f}`);
+  return out;
+}
+
+/** coins.json changed only by coins appended (C14 (3)): every coin of the list before unchanged at its iid, the rule unchanged, the new file a CoinsFile; every problem. */
+function appendProblems(before, after, CoinsFile) {
+  const a = CoinsFile.parse(JSON.parse(before));
+  const b = CoinsFile.parse(JSON.parse(after));
+  const problems =
+    a.rule === b.rule ? [] : ["copyh/coins.json: its rule changed"];
+  const k = a.coins.findIndex(
+    (c, i) => JSON.stringify(c) !== JSON.stringify(b.coins[i]),
+  );
+  if (k !== -1)
+    problems.push(`copyh/coins.json: the coin of iid ${k} changed or gone`);
+  return problems;
+}
+
+/** A look's list (sha256sum's form): each of its three files in `dir` by name, in steps.ts LOOK_FILES' order. */
+function lookList(dir, names) {
+  return names
+    .map((name) => {
+      const f = path.join(dir, name);
+      if (!fs.existsSync(f)) throw new Error(`no ${f}: nothing written`);
+      return `${sha256(fs.readFileSync(f))} *${name}\n`;
+    })
+    .join("");
+}
+
 /** The list's head (C0): what it is, when and from which commit it was written, the toolchain, the lockfile, its tag. */
 function headOf(o) {
   const v = o.versions;
@@ -263,15 +319,22 @@ function headOf(o) {
   ];
 }
 
+const WHAT = {
+  final: "the first list (copyh-freeze.cjs --final)",
+  rounds: "the rounds' list (copyh-freeze.cjs --rounds)",
+  fresh2: "FRESH-2's list (copyh-freeze.cjs --fresh2)",
+};
+
 /**
- * The first freeze list (C0) at the package folder `o.pkg`, written whole,
- * or a refusal that writes no list: `o.tag` is n, `o.build` builds the
- * program anew, `o.storeProblems` gives how the build's store closure
- * differs from the rehearsal's record. The gate's names come from the build
- * the tool runs on.
+ * A freeze list (C0) of `o.kind` at the package folder `o.pkg`, with its
+ * look's list for --rounds and --fresh2 (from `o.root`, COPY-H's folder),
+ * each written whole; or a refusal that writes no list. `o.tag` is n;
+ * `o.build` builds the program anew (--final's); `o.storeProblems` gives
+ * how the build's store closure differs from the rehearsal's record. The
+ * gate's and the steps' names come from the build the tool runs on.
  */
 async function freezeList(o) {
-  const { pkg, tag } = o;
+  const { pkg, kind, tag } = o;
   const git = (...args) =>
     execFileSync("git", args, {
       cwd: pkg,
@@ -297,41 +360,99 @@ async function freezeList(o) {
     refuse("the tree is not clean: commit first, then freeze");
   const read = (rel) => fs.readFileSync(path.join(pkg, rel));
   const has = (rel) => fs.existsSync(path.join(pkg, rel));
-  if (has("copyh/rules.md")) {
-    const lines = markerLines(read("copyh/rules.md").toString("utf8"));
-    if (lines.length > 0)
-      refuse(
-        `copyh/rules.md holds a marker to set before the freeze, at line ${lines.join(", ")}`,
-      );
+  if (kind === "final") {
+    if (has("copyh/rules.md")) {
+      const at = markerLines(read("copyh/rules.md").toString("utf8"));
+      if (at.length > 0)
+        refuse(
+          `copyh/rules.md holds a marker to set before the freeze, at line ${at.join(", ")}`,
+        );
+    }
+    o.build();
   }
-  o.build();
   const gate = await load("copyh/gate.js");
+  const steps = await load("copyh/steps.js");
   const missing = gate.COPYH_FILES.filter((f) => !has(f));
   if (missing.length > 0) refuse(`missing: ${missing.join(", ")}`);
   const K = gate.KINDS;
-  const early = [
-    ...K.step2.holds,
-    ...K.tries.besides,
-    ...K.fresh2.holds,
-  ].filter(has);
-  if (early.length > 0)
-    refuse(`a later list's file in the first: ${early.join(", ")}`);
-  const problems = closureProblems(
-    [...gate.COPYH_CLOSURE, ...gate.LZ4JS_FILES],
-    FREEZES.map((f) => [f, hashLines(read(f).toString("utf8"))]),
-    (f) => sha256(read(f)),
-  );
-  const store = await o.storeProblems(pkg);
-  if (store.length > 0)
-    problems.push(
-      `the store closure is not the rehearsal's: ${store.join("; ")}`,
+  /** The files each later list adds (the gate's kinds), those a round alone writes apart. */
+  const adds = {
+    rounds: { needed: [...K.step2.holds], optional: [...K.tries.besides] },
+    fresh2: { needed: [...K.fresh2.holds], optional: [] },
+  };
+  const extra = new Map();
+  let problems = [];
+  if (kind === "final") {
+    const early = [
+      ...adds.rounds.needed,
+      ...adds.rounds.optional,
+      ...adds.fresh2.needed,
+    ].filter(has);
+    if (early.length > 0)
+      refuse(`a later list's file in the first: ${early.join(", ")}`);
+    problems = closureProblems(
+      [...gate.COPYH_CLOSURE, ...gate.LZ4JS_FILES],
+      FREEZES.map((f) => [f, hashLines(read(f).toString("utf8"))]),
+      (f) => sha256(read(f)),
     );
+    const store = await o.storeProblems(pkg);
+    if (store.length > 0)
+      problems.push(
+        `the store closure is not the rehearsal's: ${store.join("; ")}`,
+      );
+  } else {
+    const prior = `copyh-freeze-${tag - 1}`;
+    /** A file as the list before's tag holds it, its bytes. */
+    const shown = (rel) =>
+      execFileSync("git", ["show", `${prior}:./${rel}`], {
+        cwd: pkg,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    const before = shown(FROZEN);
+    if (!has(FROZEN) || !read(FROZEN).equals(before))
+      refuse(`the tree's ${FROZEN} is not the one ${prior} holds`);
+    const look = kind === "rounds" ? "look1" : "look2";
+    extra.set(
+      kind === "rounds" ? steps.LOOK1_LIST : steps.LOOK2_LIST,
+      lookList(path.join(o.root, look), steps.LOOK_FILES),
+    );
+    if (kind === "rounds") {
+      const program = path.join(o.root, "rounds", "choice.json");
+      if (!fs.existsSync(program)) refuse(`no ${program}`);
+      if (
+        has(steps.CHOICE_LIST) &&
+        !read(steps.CHOICE_LIST).equals(fs.readFileSync(program))
+      )
+        refuse(`${steps.CHOICE_LIST} is not ${program}, byte for byte`);
+    }
+    const after = filesOf(pkg, gate, extra);
+    const add = adds[kind];
+    const absent = add.needed.filter((f) => !after.has(f));
+    if (absent.length > 0)
+      refuse(`${WHAT[kind]} holds ${absent.join(", ")}; this tree does not`);
+    const coins = "copyh/coins.json";
+    const was = hashLines(before.toString("utf8"));
+    problems = differencesOf(
+      was,
+      after,
+      [...add.needed, ...add.optional],
+      kind === "fresh2" ? [coins] : [],
+    );
+    if (kind === "fresh2" && was.get(coins) !== after.get(coins))
+      problems.push(
+        ...appendProblems(
+          shown(coins).toString("utf8"),
+          read(coins).toString("utf8"),
+          (await load("copyh/coins.js")).CoinsFile,
+        ),
+      );
+  }
   if (problems.length > 0) refuse(problems.join("; "));
-  const files = filesOf(pkg, gate);
+  const files = filesOf(pkg, gate, extra);
   const version = (p) =>
     JSON.parse(read(`node_modules/${p}/package.json`).toString("utf8")).version;
   const head = headOf({
-    what: "the first list (copyh-freeze.cjs --final)",
+    what: WHAT[kind],
     written: new Date().toISOString(),
     commit: git("rev-parse", "HEAD"),
     versions: {
@@ -345,18 +466,24 @@ async function freezeList(o) {
     tag,
   });
   const list = `${[...head, ...[...files].map(([f, h]) => `${h} *${f}`)].join("\n")}\n`;
+  for (const [rel, t] of extra) fs.writeFileSync(path.join(pkg, rel), t);
   fs.writeFileSync(path.join(pkg, FROZEN), list);
-  return { files: files.size, sha256: sha256(list), written: [FROZEN] };
+  return {
+    files: files.size,
+    sha256: sha256(list),
+    written: [...extra.keys(), FROZEN],
+  };
 }
 
-/** Every file of what runs at `pkg` by the gate's walk, each with its SHA-256, by path. */
-function filesOf(pkg, gate) {
-  return new Map(
+/** Every file of what runs at `pkg` by the gate's walk, and `extra`'s files (written with the list) by their text, each with its SHA-256, by path. */
+function filesOf(pkg, gate, extra) {
+  const files = new Map(
     gate
       .frozenFiles(pkg)
-      .map((f) => [f, sha256(fs.readFileSync(path.join(pkg, f)))])
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+      .map((f) => [f, sha256(fs.readFileSync(path.join(pkg, f)))]),
   );
+  for (const [f, t] of extra) files.set(f, sha256(t));
+  return new Map([...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
 /** --final's build, made anew from the tree: `dist/copyh.js` and `dist/copyh/` removed, then the lockfile's tsc. */
@@ -375,7 +502,16 @@ function rebuild(pkg) {
 }
 
 const USAGE =
-  "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final | --closure [<package folder>]";
+  "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final | --rounds --root <COPYH_ROOT> --tag <n> | --fresh2 --root <COPYH_ROOT> --tag <n> | --closure [<package folder>]";
+
+/** A later list's arguments, `--root <COPYH_ROOT> --tag <n>` (n from 2), or null. */
+function laterOf(args) {
+  if (args.length !== 5 || args[1] !== "--root" || args[3] !== "--tag")
+    return null;
+  if (!/^[1-9][0-9]*$/.test(args[4]) || Number(args[4]) < 2)
+    throw new Error(`--tag needs a number from 2, not ${args[4]}`);
+  return { root: path.resolve(args[2]), tag: Number(args[4]) };
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -386,10 +522,14 @@ async function main() {
     process.stdout.write(`${JSON.stringify({ storeClosure }, null, 2)}\n`);
     return;
   }
-  if (args[0] === "--final" && args.length === 1) {
+  const later =
+    args[0] === "--rounds" || args[0] === "--fresh2" ? laterOf(args) : null;
+  if ((args[0] === "--final" && args.length === 1) || later !== null) {
     const r = await freezeList({
       pkg: PKG,
-      tag: 1,
+      kind: args[0].slice(2),
+      tag: later === null ? 1 : later.tag,
+      root: later === null ? null : later.root,
       build: () => rebuild(PKG),
       storeProblems: (pkg) => finalProblems(pkg),
     });
@@ -440,9 +580,11 @@ async function main() {
 }
 
 module.exports = {
+  appendProblems,
   closureProblems,
   closureRecord,
   dataList,
+  differencesOf,
   finalProblems,
   freezeList,
   fundingList,

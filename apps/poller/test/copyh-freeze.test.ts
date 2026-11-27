@@ -6,12 +6,15 @@
  * list (range.ts), a file it lacks or names twice a stop; --funding's list,
  * the meta reply and every window of every coin, each held to the store's
  * list and manifest and read by the program's reader (funding.ts), and its
- * refusals. The first freeze list on made-up git repositories (never the
- * package's): --final's head, files and tag line, the gate opening on it
- * once tagged, and its refusals (a marker, C17's own sentence not one; a
- * tree not clean; a file missing; a later list's file; a closure file
- * against the four freezes; the store closure; the tag's number). A test
- * never writes the package's `copyh/` files.
+ * refusals. The freeze lists on made-up git repositories (never the
+ * package's): --final's first list, its head, files and tag line, the gate
+ * opening on it once tagged, and its refusals (a marker, C17's own sentence
+ * not one; a tree not clean; a file missing; a later list's file; a closure
+ * file against the four freezes; the store closure; the tag's number);
+ * --rounds' list with look1.sha256 as step 2 reads it, only tries.json,
+ * choice.json and look1.sha256 added, and its refusals; --fresh2's with
+ * look2.sha256, coins appended, and its refusals. A test never writes the
+ * package's `copyh/` files.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -41,6 +44,7 @@ import {
   readDataList as readCopyhList,
 } from "../src/copyh/range.js";
 import { PACKAGE_ROOT, StoreError, sha256 } from "../src/copyh/run.js";
+import { LOOK_FILES, heldLookFiles } from "../src/copyh/steps.js";
 import { readDataList } from "../src/waveh/store.js";
 import { git } from "./copyh-world.js";
 
@@ -69,32 +73,45 @@ const tool = createRequire(import.meta.url)(TOOL) as {
   }) => string;
   freezeList: (o: {
     pkg: string;
+    kind: Kind;
     tag: number;
+    root: string | null;
     build: () => void;
     storeProblems: (pkg: string) => Promise<string[]>;
   }) => Promise<{ files: number; sha256: string; written: string[] }>;
+  hashLines: (text: string) => Map<string, string>;
   markerLines: (text: string) => number[];
 };
+type Kind = "final" | "rounds" | "fresh2";
 const hash = (n: number) => n.toString(16).padStart(64, "0");
 const listText = (keys: readonly string[], from = 0) =>
   `${keys.map((k, i) => `${hash(from + i)} *${k}`).join("\n")}\n`;
 
 describe("--data", { timeout: 60_000 }, () => {
-  it("refuses a call it does not know (exit 1, its usage)", () => {
+  it("refuses a call it does not know (exit 1, its usage), and a later list's tag below 2", () => {
+    const run = (args: readonly string[]) =>
+      spawnSync(process.execPath, [TOOL, ...args], {
+        encoding: "utf8",
+        timeout: 50_000,
+      });
     for (const args of [
       ["--bogus"],
       ["--data", "--funding"],
       ["--final", "--tag", "1"],
+      ["--rounds", "--root", "x"],
+      ["--fresh2", "--tag", "3", "--root", "x"],
     ]) {
-      const r = spawnSync(process.execPath, [TOOL, ...args], {
-        encoding: "utf8",
-        timeout: 50_000,
-      });
+      const r = run(args);
       expect(r.status, args.join(" ")).toBe(1);
       expect(r.stderr, args.join(" ")).toContain(
-        "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final",
+        "usage: copyh-freeze.cjs --data [--funding <COPYH_FUNDING>] | --final | --rounds --root <COPYH_ROOT> --tag <n> | --fresh2",
       );
     }
+    const low = run(["--rounds", "--root", "x", "--tag", "1"]);
+    expect([low.status, low.stderr]).toEqual([
+      1,
+      "copyh-freeze: --tag needs a number from 2, not 1\n",
+    ]);
   });
 
   it("lists each range's files in its order with its source's hash, the sources named by SHA-256", () => {
@@ -361,16 +378,19 @@ const coinsJson = (names: readonly string[], rule = "made-up") =>
     })),
   });
 const LOCK = "lockfileVersion: made-up\n";
+const CHOICE = '{"made-up": "choice"}\n';
 
 type Repo = {
   repo: string;
   pkg: string;
+  /** COPY-H's folder: look 1's and look 2's three files and the program's choice.json. */
+  root: string;
   put: (rel: string, text: string) => void;
   gone: (rel: string) => void;
   commit: () => void;
 };
 
-/** A made-up repository: apps/poller with every file of what runs (dist and node_modules ignored, as the real one's), the four freezes naming the closure's and lz4js's files (WAVE-H's), the toolchain's versions and the lockfile, committed. */
+/** A made-up repository: apps/poller with every file of what runs (dist and node_modules ignored, as the real one's), the four freezes naming the closure's and lz4js's files (WAVE-H's), the toolchain's versions and the lockfile, committed; and COPY-H's folder. */
 function repoOf(): Repo {
   const repo = mkdtempSync(path.join(tmpdir(), "copyh-freeze-repo-"));
   const pkg = path.join(repo, "apps", "poller");
@@ -409,6 +429,14 @@ function repoOf(): Repo {
     path.join(repo, ".gitignore"),
     "apps/poller/dist/\napps/poller/node_modules/\n",
   );
+  const root = path.join(repo, "COPY-H");
+  for (const look of ["look1", "look2"]) {
+    mkdirSync(path.join(root, look), { recursive: true });
+    for (const f of LOOK_FILES)
+      writeFileSync(path.join(root, look, f), `${look}'s ${f}\n`);
+  }
+  mkdirSync(path.join(root, "rounds"));
+  writeFileSync(path.join(root, "rounds", "choice.json"), CHOICE);
   const commit = () => {
     git(repo, "add", "-A");
     git(repo, "commit", "-q", "--allow-empty", "-m", "made-up");
@@ -418,6 +446,7 @@ function repoOf(): Repo {
   return {
     repo,
     pkg,
+    root,
     put,
     gone: (rel) => rmSync(path.join(pkg, rel)),
     commit,
@@ -425,11 +454,13 @@ function repoOf(): Repo {
 }
 
 const builds: string[] = [];
-/** The first list at the made-up package, its build counted, the store closure's check giving `store`. */
-const freeze = (r: Repo, tag: number, store: string[] = []) =>
+/** A list of `kind` at the made-up package, its build counted, the store closure's check giving `store`. */
+const freeze = (r: Repo, kind: Kind, tag: number, store: string[] = []) =>
   tool.freezeList({
     pkg: r.pkg,
+    kind,
     tag,
+    root: kind === "final" ? null : r.root,
     build: () => builds.push(r.pkg),
     storeProblems: () => Promise.resolve(store),
   });
@@ -439,15 +470,36 @@ const tagged = (r: Repo, n: number) => {
   r.commit();
   git(r.repo, "tag", `copyh-freeze-${n}`);
 };
+/** A repository at its first list, tagged. */
+async function first(): Promise<Repo> {
+  const r = repoOf();
+  await freeze(r, "final", 1);
+  tagged(r, 1);
+  return r;
+}
+/** A repository at the rounds' list, a round having run, tagged. */
+async function rounds(): Promise<Repo> {
+  const r = await first();
+  r.put("copyh/choice.json", CHOICE);
+  r.put("copyh/tries.json", "{}\n");
+  r.commit();
+  await freeze(r, "rounds", 2);
+  tagged(r, 2);
+  return r;
+}
+const lookLines = (dir: string) =>
+  LOOK_FILES.map(
+    (f) => `${sha256(readFileSync(path.join(dir, f)))} *${f}\n`,
+  ).join("");
 
 describe(
-  "the first freeze list (C0, C17; temporary git repositories, never the package's)",
+  "the freeze lists (C0, C14, C17; temporary git repositories, never the package's)",
   { timeout: 120_000 },
   () => {
     it("--final writes the first list: its head, every file of what runs with its SHA-256 by path, its tag line, the program built anew first; the gate opens on it once its commit holds the tag", async () => {
       const r = repoOf();
       const commit = git(r.repo, "rev-parse", "HEAD").trim();
-      const done = await freeze(r, 1);
+      const done = await freeze(r, "final", 1);
       expect(builds.at(-1)).toBe(r.pkg);
       const text = listAt(r);
       const lines = text.split("\n");
@@ -499,7 +551,7 @@ describe(
         change(r);
         if (o.commit ?? true) r.commit();
         await expect(
-          freeze(r, o.tag ?? 1, o.store),
+          freeze(r, "final", o.tag ?? 1, o.store),
           why.source,
         ).rejects.toThrow(why);
         expect(existsSync(path.join(r.pkg, FROZEN_FILE))).toBe(false);
@@ -537,6 +589,175 @@ describe(
       await refused(
         (r) => git(r.repo, "tag", "copyh-freeze-1"),
         /copyh-freeze-1 is not the next free number \(the tags: 1\): nothing written/,
+      );
+    });
+
+    it("--rounds writes look1.sha256, step 1's three files by name in sha256sum's form, and the rounds' list, the first's but tries.json, choice.json and look1.sha256 added, with no build; step 2's gate opens on it, and step 2 holds look 1's files to it", async () => {
+      const r = await first();
+      const before = tool.hashLines(listAt(r));
+      r.put("copyh/choice.json", CHOICE);
+      r.put("copyh/tries.json", "{}\n");
+      r.commit();
+      const made = builds.length;
+      const done = await freeze(r, "rounds", 2);
+      expect(builds.length).toBe(made);
+      expect(done.written).toEqual(["copyh/look1.sha256", FROZEN_FILE]);
+      const look1 = path.join(r.root, "look1");
+      expect(
+        readFileSync(path.join(r.pkg, "copyh", "look1.sha256"), "utf8"),
+      ).toBe(lookLines(look1));
+      expect(() =>
+        heldLookFiles(look1, path.join(r.pkg, "copyh", "look1.sha256")),
+      ).not.toThrow();
+      const now = tool.hashLines(listAt(r));
+      expect([...now.keys()].filter((f) => !before.has(f))).toEqual([
+        "copyh/choice.json",
+        "copyh/look1.sha256",
+        "copyh/tries.json",
+      ]);
+      for (const [f, h] of before) expect(now.get(f), f).toBe(h);
+      expect(listAt(r)).toContain(
+        "# FROZEN: COPY-H's files of what runs (copyh/rules.md C0): the rounds' list (copyh-freeze.cjs --rounds)\n",
+      );
+      expect(listAt(r)).toContain("\n# tag copyh-freeze-2\n");
+      expect(verifyFreeze(r.pkg, "step2").ok).toBe(false);
+      tagged(r, 2);
+      expect(verifyFreeze(r.pkg, "step2")).toMatchObject({
+        ok: true,
+        tag: "copyh-freeze-2",
+      });
+      // With no round run, no tries.json: choice.json and look1.sha256 alone.
+      const none = await first();
+      none.put("copyh/choice.json", CHOICE);
+      none.commit();
+      await freeze(none, "rounds", 2);
+      expect(
+        [...tool.hashLines(listAt(none)).keys()].filter((f) => !before.has(f)),
+      ).toEqual(["copyh/choice.json", "copyh/look1.sha256"]);
+    });
+
+    it("--rounds refuses, writing nothing: choice.json not the program's or missing, a look file missing, a file of the list before changed, added elsewhere or gone, the tree's list not the tag's, a tag not the next free, a tree not clean", async () => {
+      const refused = async (
+        change: (r: Repo) => void,
+        why: RegExp,
+        o: { tag?: number; commit?: boolean; choice?: boolean } = {},
+      ) => {
+        const r = await first();
+        if (o.choice ?? true) r.put("copyh/choice.json", CHOICE);
+        change(r);
+        const list = listAt(r);
+        if (o.commit ?? true) r.commit();
+        await expect(
+          freeze(r, "rounds", o.tag ?? 2),
+          why.source,
+        ).rejects.toThrow(why);
+        expect(listAt(r)).toBe(list);
+        expect(existsSync(path.join(r.pkg, "copyh", "look1.sha256"))).toBe(
+          false,
+        );
+      };
+      await refused(
+        (r) => r.put("copyh/choice.json", '{"another": "choice"}\n'),
+        /copyh\/choice\.json is not .*choice\.json, byte for byte: nothing written/,
+      );
+      await refused(
+        () => {},
+        /the rounds' list \(copyh-freeze\.cjs --rounds\) holds copyh\/choice\.json; this tree does not: nothing written/,
+        { choice: false },
+      );
+      await refused(
+        (r) => rmSync(path.join(r.root, "look1", "report.json")),
+        /report\.json: nothing written/,
+      );
+      await refused(
+        (r) => r.put("dist/copyh/main.js", "changed\n"),
+        /changed: dist\/copyh\/main\.js: nothing written/,
+      );
+      await refused(
+        (r) => r.put("copyh/extra.json", "{}\n"),
+        /added: copyh\/extra\.json: nothing written/,
+      );
+      await refused(
+        (r) => r.gone("research/kit.js"),
+        /gone: research\/kit\.js: nothing written/,
+      );
+      await refused(
+        (r) => r.put("copyh/FROZEN.sha256", "# another list\n"),
+        /the tree's copyh\/FROZEN\.sha256 is not the one copyh-freeze-1 holds: nothing written/,
+      );
+      await refused(
+        () => {},
+        /copyh-freeze-3 is not the next free number \(the tags: 1\): nothing written/,
+        { tag: 3 },
+      );
+      await refused(
+        (r) => r.put("copyh/tries.json", "{}\n"),
+        /the tree is not clean/,
+        { commit: false },
+      );
+    });
+
+    it("--fresh2 writes look2.sha256 and FRESH-2's list, the rounds' but fresh2.sha256, funding2.sha256 and look2.sha256 added and coins appended to coins.json; FRESH-2's gate opens on it; it refuses another coins.json, a needed file missing and any other difference, writing nothing", async () => {
+      const r = await rounds();
+      const before = tool.hashLines(listAt(r));
+      r.put("copyh/fresh2.sha256", `${"1".repeat(64)} *made-up\n`);
+      r.put("copyh/funding2.sha256", `${"2".repeat(64)} *made-up\n`);
+      r.put("copyh/coins.json", coinsJson(["BTC", "ETH", "SOL"]));
+      r.commit();
+      const done = await freeze(r, "fresh2", 3);
+      expect(done.written).toEqual(["copyh/look2.sha256", FROZEN_FILE]);
+      expect(
+        readFileSync(path.join(r.pkg, "copyh", "look2.sha256"), "utf8"),
+      ).toBe(lookLines(path.join(r.root, "look2")));
+      const now = tool.hashLines(listAt(r));
+      expect([...now.keys()].filter((f) => !before.has(f))).toEqual([
+        "copyh/fresh2.sha256",
+        "copyh/funding2.sha256",
+        "copyh/look2.sha256",
+      ]);
+      for (const [f, h] of before)
+        if (f !== "copyh/coins.json") expect(now.get(f), f).toBe(h);
+      tagged(r, 3);
+      expect(verifyFreeze(r.pkg, "fresh2")).toMatchObject({
+        ok: true,
+        tag: "copyh-freeze-3",
+      });
+      const refused = async (change: (r: Repo) => void, why: RegExp) => {
+        const x = await rounds();
+        x.put("copyh/fresh2.sha256", `${"1".repeat(64)} *made-up\n`);
+        x.put("copyh/funding2.sha256", `${"2".repeat(64)} *made-up\n`);
+        change(x);
+        x.commit();
+        const list = listAt(x);
+        await expect(freeze(x, "fresh2", 3), why.source).rejects.toThrow(why);
+        expect(listAt(x)).toBe(list);
+        expect(existsSync(path.join(x.pkg, "copyh", "look2.sha256"))).toBe(
+          false,
+        );
+      };
+      await refused(
+        (x) => x.put("copyh/coins.json", coinsJson(["BTC", "ETX", "SOL"])),
+        /copyh\/coins\.json: the coin of iid 1 changed or gone: nothing written/,
+      );
+      await refused(
+        (x) => x.put("copyh/coins.json", coinsJson(["BTC"])),
+        /copyh\/coins\.json: the coin of iid 1 changed or gone: nothing written/,
+      );
+      await refused(
+        (x) =>
+          x.put(
+            "copyh/coins.json",
+            coinsJson(["BTC", "ETH", "SOL"], "another"),
+          ),
+        /copyh\/coins\.json: its rule changed: nothing written/,
+      );
+      await refused(
+        (x) => x.gone("copyh/funding2.sha256"),
+        /FRESH-2's list \(copyh-freeze\.cjs --fresh2\) holds copyh\/funding2\.sha256; this tree does not: nothing written/,
+      );
+      await refused(
+        (x) => x.put("copyh/dirs.json", "{}\n"),
+        /changed: copyh\/dirs\.json: nothing written/,
       );
     });
   },

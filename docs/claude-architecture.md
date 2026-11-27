@@ -1176,9 +1176,16 @@ next free number; each refuses a tree that is not clean and writes nothing
 when it refuses. `--final`, the first list: rules.md without a marker
 (C17), the program built anew, every `COPYH_FILES` file present and no
 later list's file, the closure and lz4js files held to the four freezes
-(RL12), the store closure equal to the record. The later lists'
-`--rounds` and `--fresh2` come next. Pinned by `test/copyh-freeze.test.ts`
-on made-up git repositories, the gate opening on the list once tagged.
+(RL12), the store closure equal to the record. `--rounds --root
+<COPYH_ROOT> --tag <n>` and `--fresh2 --root <COPYH_ROOT> --tag <n>`, no
+build: the list before (the tag n − 1's, the tree's) changed only by the
+files the gate's kinds add, `choice.json` held to the program's file and
+`look1.sha256` written from `<COPYH_ROOT>\look1\` (with `tries.json` when a
+round ran), or `fresh2.sha256`, `funding2.sha256` and `look2.sha256` from
+`look2\` with coins appended to `coins.json`; a look's list in sha256sum's
+form, its three names relative to the look's folder. Pinned by
+`test/copyh-freeze.test.ts` on made-up git repositories, the gate opening
+on each list once tagged.
 `copyh/rehearsal.json` also records
 E's store as built before the freeze: the store closure's hashes
 (`closure.ts`: the compiled graph of its entry points, `design.js` by the
