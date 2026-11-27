@@ -852,6 +852,7 @@ describe(
         largeLane: [],
         idsTwice: 0,
         sizeZero: 0,
+        largestMerged: 0,
       });
       expect(counts.build.copies).toEqual({ MAIN: 1, BROAD: 1, DAY: 1 });
       expect(counts.tripwire).toEqual({ look: e.projection, tries: [] });

@@ -145,6 +145,7 @@ describe("the build phase (C4–C8, C10, C11)", { timeout: 60_000 }, () => {
       habitsApart: 0,
       idsTwice: 0,
       sizeZero: 0,
+      largestMerged: 0,
       otherMarkets: {},
       copies: { MAIN: 1, BROAD: 1, DAY: 1 },
       keys: 2,
@@ -322,6 +323,32 @@ describe("the build phase (C4–C8, C10, C11)", { timeout: 60_000 }, () => {
       "9202",
       "9203",
     ]);
+  });
+
+  it("counts the most fills of one order event the kit merged into an entry group (the rehearsal's print; decisions 2026-11-26), an event merged into none not counted", async () => {
+    const t0 = at(3, 10);
+    /** One order event of A's: n fills of one oid at one time, each its own position before it. */
+    const event = (n: number, time: number, oid: number, from: number) =>
+      Array.from({ length: n }, (_, k) =>
+        trade(A, X, {
+          coin: "SOL",
+          side: "B",
+          sz: "1",
+          time,
+          tid: oid + k,
+          oid,
+          startPosition: `${from + k}.0`,
+          dir: "Open Long",
+        }).map((r): [number, string] => [time, r]),
+      ).flat();
+    const w = await phaseWorld([
+      // An OPEN of one fill from flat, an ADD of three 30 s after it (merged), an ADD of five 91 s after it (a group of its own).
+      ...event(1, t0, 9_401, 0),
+      ...event(3, t0 + 30_000, 9_411, 1),
+      ...event(5, t0 + 91_000, 9_421, 4),
+    ]);
+    const { built } = await buildRun(w);
+    expect(built.facts).toMatchObject({ built: 1, largestMerged: 3 });
   });
 });
 

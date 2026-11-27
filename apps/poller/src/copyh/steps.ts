@@ -958,6 +958,7 @@ export function stepCounts(o: {
       habitsApart: sum("habitsApart"),
       idsTwice: sum("idsTwice"),
       sizeZero: sum("sizeZero"),
+      largestMerged: all.reduce((m, f) => Math.max(m, f.largestMerged), 0),
       otherMarkets: byLine("otherMarkets"),
       copies: byLine("copies"),
       keys: sum("keys"),

@@ -1208,8 +1208,11 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   market a copy (id, D, exits, plan, vote, gap, C14's covariates but the
   prior mean net), and their market trades' keys in the weeks where they
   are in a line, the lines a mask; counted beside, the ids two entries
-  share (both copies, the kit's order breaking a tie) and the entries of
-  direction 0; its bytes an index line, then the facts, each coin's copies
+  share (both copies, the kit's order breaking a tie), the entries of
+  direction 0 and the most fills of one order event the kit merged into an
+  entry group (its `buildEntries` spreads them into a call: the
+  rehearsal's print, above 100,000 ruled before the freeze); its bytes an
+  index line, then the facts, each coin's copies
   a JSON line each and its keys in chunks, read a coin at a time.
 - `phase-removal.ts` (C10): REMOVAL, a part a coin: its keys from every
   BUILD and BUILD-L part (each part held to its record once a process,

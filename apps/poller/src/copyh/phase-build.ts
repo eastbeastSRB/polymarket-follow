@@ -25,7 +25,11 @@
  *   entries are copies, never keyed by the id alone, the kit's order
  *   breaking a tie of ids; the supervisor's ruling on the engine review's
  *   Q2, 2026-11-26), and the entries of direction 0 (an OPEN of size 0,
- *   which the rule of Q3 makes no entry once the rehearsal counts one).
+ *   which the rule of Q3 makes no entry once the rehearsal counts one), and
+ *   the most fills of one order event the kit merged into an entry group
+ *   (its `buildEntries` spreads a merged event's tids into a call: the
+ *   rehearsal prints it, and above 100,000 it is ruled before the freeze;
+ *   decisions 2026-11-26).
  * - A part's bytes: an index line, then the facts (the counts and the
  *   accounts named), then each coin's copies, a JSON line each, and its
  *   keys, KEYS_A_LINE a line, the index giving each run of lines, so that a
@@ -167,6 +171,8 @@ export const BuildFacts = z.object({
   idsTwice: z.number(),
   /** The stage's entries of direction 0 (Q3). */
   sizeZero: z.number(),
+  /** The most fills of one order event merged into an entry group, over the built accounts' whole histories. */
+  largestMerged: z.number(),
   otherMarkets: z.record(z.string(), z.number()),
   copies: z.record(z.string(), z.number()),
   keys: z.number(),
@@ -333,6 +339,10 @@ function buildAccount(
   facts.built += 1;
   facts.residues += residues(h.events);
   facts.chainBreaks += h.chain.breaks.length;
+  for (const g of h.groups)
+    for (const e of g.merged)
+      if (e.tids.length > facts.largestMerged)
+        facts.largestMerged = e.tids.length;
   const at = new Map(
     mondays.map((M) => {
       const r = habitsAtMonday(kit, h, normed, M);
@@ -442,6 +452,7 @@ export const buildPart: PartFunction = (inputs, ctx) => {
     habitsApart: 0,
     idsTwice: 0,
     sizeZero: 0,
+    largestMerged: 0,
     otherMarkets: {},
     copies: {},
     keys: 0,
