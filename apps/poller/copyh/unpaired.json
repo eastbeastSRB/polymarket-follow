@@ -1,5 +1,5 @@
 {
- "rule": "the last record before an archive hole; its trade's other record falls inside the hole (K3's holes)",
+ "rule": "the last record before an archive hole; its trade's other record falls inside the hole (K3's holes). Seven records, all in middle files, from E's store (manifest.json SHA-256 1e0fec9a645b3108e3866535dad72eefcb580015ba004dc2bc37d0b5c6df0fb2): the burn-in's four as committed (3280969), and three more, ruled by the supervisor 2026-11-27 on the same rule: 20250708/10 kBONK taker, hole 2025-07-08T10:30:43.356Z to 10:34:19.010Z; 20250712/8 PUMP taker, hole 2025-07-12T08:47:08.883Z to 08:54:25.701Z; 20250719/9 OP maker, hole 2025-07-19T09:53:22.351Z to 10:16:52.009Z",
  "records": [
   [
    "node_fills/hourly/20250601/11.lz4",
@@ -28,6 +28,27 @@
    1750497427664,
    "89773935895036",
    true
+  ],
+  [
+   "node_fills/hourly/20250708/10.lz4",
+   85,
+   1751970643356,
+   "870956457457006",
+   true
+  ],
+  [
+   "node_fills/hourly/20250712/8.lz4",
+   200,
+   1752310028883,
+   "12410765120022",
+   true
+  ],
+  [
+   "node_fills/hourly/20250719/9.lz4",
+   9,
+   1752918802351,
+   "439144427585893",
+   false
   ]
  ]
 }
