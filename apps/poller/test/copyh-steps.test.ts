@@ -24,7 +24,15 @@
  *   its lines are RESULT's positions' lines, and its folder holds only the
  *   unpriced phases; a window before the copy holds none;
  * - the identity's lists and files by SHA-256, a missing one refused; the
- *   logs copied beside the outputs.
+ *   logs copied beside the outputs;
+ * - step 2's refusals in C15's order, each exit 5: a second step 2,
+ *   repro.json, an unset value, step 1's three files not those
+ *   `copyh/look1.sha256` lists (a file changed, a list of another form),
+ *   E's store not that step 1's result.json names, no choice; S's store
+ *   with no record (the twin always built); step 1's positions recomputed
+ *   held to its result.json's (exit 6); through real child processes,
+ *   CONFIRM: each chosen try's set on S with every condition, the prior
+ *   mean net's among them, its statistic and reading, and MAIN on S alone.
  */
 import {
   existsSync,
@@ -39,6 +47,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
+import { confirmationOf } from "../src/copyh/confirm.js";
+import { runPhase } from "../src/copyh/engine.js";
+import { confirmOf, confirmParts } from "../src/copyh/phase-confirm.js";
+import { printCopyOf, reportOf } from "../src/copyh/prints.js";
+import { TryLine, inTry, judgedOf, type Try } from "../src/copyh/tries.js";
+import { statisticOf } from "../src/copyh/verdict.js";
 import { loadResearch } from "../src/paper/research.js";
 import {
   positionLines,
@@ -49,17 +63,24 @@ import {
   AlreadyRun,
   BuildsDiffer,
   CheckFailed,
+  PACKAGE_ROOT,
   StoreError,
   exitOf,
   fingerprintOf,
   sha256,
 } from "../src/copyh/run.js";
+import { END_S } from "../src/copyh/design.js";
 import { SEALED } from "../src/copyh/seal.js";
 import {
   StoreRecord,
+  LOOK_FILES,
   copyLogs,
   fortnightOf,
+  heldLookFiles,
+  heldRecomputed,
+  heldStepStore,
   heldStores,
+  readyForStep2,
   identityOf,
   readyForStep1,
   runEngine,
@@ -291,6 +312,24 @@ describe("E's store held to its record (A', C15 step 1's 2.)", () => {
       record: { equal: false, differences: ["the manifests' counts differ"] },
       twin: { first: "a", second: "b", equal: true },
     });
+  });
+
+  it("builds the twin always without a record (S's, FRESH-2's), and records no record's comparison", async () => {
+    const f = fakes({ twinKept: 5 });
+    const store = await heldStores({ ...f, record: null });
+    expect(f.calls).toEqual([
+      "build look1",
+      `build ${path.join("twin")}`,
+      "check",
+    ]);
+    expect(buildsOf(f.look)).toEqual({
+      first: store.id,
+      record: null,
+      twin: { first: "a", second: "b", equal: true },
+    });
+    f.calls.length = 0;
+    await heldStores({ ...f, record: null });
+    expect(f.calls).toEqual([]);
   });
 
   it("stops at exit 7 when the twin differs, its comparison still in builds.json", async () => {
@@ -814,12 +853,16 @@ describe(
 
       const result = resultOf(e.result.dir, e.result.record);
       const identity = { program: "made-up", node: process.version };
+      const step = {
+        result,
+        report: { ...reportFrom(e.result.dir, e.result.record), step: counts },
+      };
       await writeLook({
         look,
         engine: e,
         mondays: [M1, M2],
         identity,
-        counts,
+        ...step,
         log: () => {},
       });
       const lines = [
@@ -867,7 +910,7 @@ describe(
           engine: e,
           mondays: [M1, M2],
           identity,
-          counts,
+          ...step,
           log: () => {},
         }),
       ).rejects.toThrow();
@@ -880,32 +923,15 @@ describe(
 
     it("refuses positions whose lines are not RESULT's (exit 6), writing no result.json", async () => {
       const { e, counts } = first;
-      const part = readFileSync(
-        path.join(e.result.dir, "a", "result.part"),
-        "utf8",
-      );
-      const [header, resultLine, reportLine] = part.split("\n");
-      const r = JSON.parse(resultLine!) as { positions: object };
-      const bytes = `${header}\n${JSON.stringify({ ...r, positions: { lines: 1, sha256: "f".repeat(64) } })}\n${reportLine}\n`;
-      const dir = path.join(temp("result"), "result");
-      mkdirSync(path.join(dir, "a"), { recursive: true });
-      writeFileSync(path.join(dir, "a", "result.part"), bytes);
+      const r = resultOf(e.result.dir, e.result.record);
       const other = path.join(temp("look"), "COPY-H", "look1");
       const held = writeLook({
         look: other,
-        engine: {
-          ...e,
-          result: {
-            dir,
-            record: {
-              phase: "RESULT",
-              parts: [["result", sha256(header!), sha256(bytes)]],
-            },
-          },
-        },
+        engine: e,
         mondays: [M1, M2],
         identity: {},
-        counts,
+        result: { ...r, positions: { lines: 1, sha256: "f".repeat(64) } },
+        report: { step: counts },
         log: () => {},
       });
       await expect(held).rejects.toThrow(
@@ -914,5 +940,260 @@ describe(
       await held.catch((err: unknown) => expect(exitOf(err).code).toBe(6));
       expect(existsSync(path.join(other, "result.json"))).toBe(false);
     });
+
+    it("confirms the chosen tries on S and prints MAIN on S alone (CONFIRM, through real child processes): each try's set its line's copies voted by END with t in S, every condition met, the prior mean net's among them", async () => {
+      const { e } = first;
+      const tries: Try[] = [
+        { name: "MAIN", line: "MAIN", conditions: [], why: "made-up" },
+        {
+          name: "a prior mean net",
+          line: "BROAD",
+          conditions: [{ covariate: "priorMeanNetBps", op: ">", value: -1e9 }],
+          why: "made-up",
+        },
+      ];
+      const lines = [
+        ...positionLines({ prices: e.prices, rank: e.rank, mondays: [M1, M2] }),
+      ];
+      expect(lines).toHaveLength(1);
+      const confirmIn = async (from: number, to: number) => {
+        const dir = path.join(engine, `confirm-${from}`);
+        const record = await runPhase({
+          name: "CONFIRM",
+          dir,
+          module: path.join(PACKAGE_ROOT, "dist", "copyh", "phase-confirm.js"),
+          fn: "confirmPart",
+          parts: confirmParts({
+            code: "made-up",
+            prices: recordSha(e.prices.dir),
+            rank: recordSha(e.rank.dir),
+            mondays: [M1, M2],
+            tries,
+            from,
+            to,
+            z: 2.43,
+          }),
+          context: { prices: e.prices.dir, rank: e.rank.dir },
+          workers: 1,
+          heapGb: 1,
+          seal: SEAL,
+          budget: never,
+          log: () => {},
+        });
+        return confirmOf(dir, record);
+      };
+      const kit = await loadResearch();
+      // The copy's prior mean net is none (no copy of its trader before M2), so the second try's set is empty: a condition on a covariate the copy lacks is false.
+      const [{ p, line, rank }] = lines as [(typeof lines)[number]];
+      expect(
+        TryLine.parse(JSON.parse(line)).covariates.priorMeanNetBps,
+      ).toBeNull();
+      const c = await confirmIn(M1, END);
+      // The world's copy is unpriced under the 5-minute mark: MAIN's set WITHHELD before its (missing) error.
+      expect(
+        c.tries.map((t) => [t.name, t.statistic.copies, t.reading, t.s, t.z]),
+      ).toEqual([
+        ["MAIN", 1, "WITHHELD", null, null],
+        ["a prior mean net", 0, "NOT CONFIRMED", null, null],
+      ]);
+      expect(c.tries[0]!.statistic).toEqual(
+        statisticOf(kit, [judgedOf(TryLine.parse(JSON.parse(line)), "MAIN")]),
+      );
+      expect(c.tries[0]!.sentences).toEqual(
+        confirmationOf([c.tries[0]!.statistic])[0]!.sentences,
+      );
+      expect(inTry(TryLine.parse(JSON.parse(line)), tries[0]!)).toBe(true);
+      expect(c.mainOnS).toEqual(
+        JSON.parse(
+          JSON.stringify(
+            reportOf(kit, [printCopyOf(p, rank)], {
+              z: 2.43,
+              look: 2,
+              start: M1,
+              end: END,
+              endS: END_S,
+            }),
+          ),
+        ),
+      );
+      // A window that holds no copy (t one millisecond after the copy's): no set, no print of a copy.
+      const none = await confirmIn(p.t + 1, END);
+      expect(none.tries.map((t) => t.statistic.copies)).toEqual([0, 0]);
+      expect(none.mainOnS).toMatchObject({ r14: { copies: 0 } });
+      expect((await confirmIn(p.t, p.t + 1)).tries[0]!.statistic.copies).toBe(
+        1,
+      );
+    });
   },
 );
+
+describe("step 2's refusals (C15, in its order)", () => {
+  const values = {
+    labelFills: 13_000_000,
+    historyFills: 8_500_000,
+    markMinutes: 5,
+  } as const;
+  /** A COPY-H folder with step 1's files and E's store files, and a package folder with look1.sha256 and choice.json naming them. */
+  function stepWorld() {
+    const root = path.join(temp("step2"), "COPY-H");
+    const pkg = temp("pkg2");
+    const put = (file: string, text: string) => {
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, text);
+    };
+    const look1 = path.join(root, "look1");
+    put(
+      path.join(root, "repro.json"),
+      `{"identity":{"program":"this"},"passed":true}`,
+    );
+    const store = {
+      "store/manifest.json": "the manifest",
+      "builds.json": "the builds",
+      "integrity/integrity.json": "the integrity",
+    };
+    for (const [name, text] of Object.entries(store))
+      put(path.join(look1, ...name.split("/")), text);
+    const H = "0".repeat(64);
+    const result = {
+      identity: {
+        files: Object.fromEntries(
+          Object.entries(store).map(([n, t]) => [n, sha256(t)]),
+        ),
+      },
+      look: 1,
+      z: 2.81,
+      verdict: "TOO FEW TO TELL",
+      sentences: [],
+      after: false,
+      statistic: {
+        copies: 0,
+        unpriced: 0,
+        unpricedShare: 0,
+        money: null,
+        edge: { byDay: null, byWeek: null, se: null },
+        signs: { traders: null, days: null, withoutThin: null },
+      },
+      positions: {
+        lines: 0,
+        sha256: H,
+        file: { name: "positions.jsonl.gz", sha256: H },
+      },
+    };
+    put(path.join(look1, "result.json"), JSON.stringify(result));
+    put(path.join(look1, "positions.jsonl.gz"), "the positions");
+    put(path.join(look1, "report.json"), "the report");
+    const list = () =>
+      put(
+        path.join(pkg, "copyh", "look1.sha256"),
+        LOOK_FILES.map(
+          (f) => `${sha256(readFileSync(path.join(look1, f)))} *${f}\n`,
+        ).join(""),
+      );
+    list();
+    const chosen: Try = {
+      name: "a",
+      line: "BROAD",
+      conditions: [{ covariate: "coin", op: "=", value: 2 }],
+      why: "made-up",
+    };
+    put(
+      path.join(pkg, "copyh", "choice.json"),
+      JSON.stringify({
+        identity: {},
+        rounds: [],
+        qualified: [],
+        chosen: [{ round: 1, index: 0, name: "a", try: chosen, figures: {} }],
+      }),
+    );
+    const ready =
+      (v: Parameters<typeof readyForStep2>[0]["values"] = values) =>
+      () =>
+        readyForStep2({ root, packageRoot: pkg, program: "this", values: v });
+    return { root, pkg, look1, put, list, chosen, ready };
+  }
+
+  it("passes with step 1's files and E's store held to their lists, giving the values, step 1's result and the chosen tries", () => {
+    const w = stepWorld();
+    const r = w.ready()();
+    expect(r.values).toEqual(values);
+    expect(r.look1.verdict).toBe("TOO FEW TO TELL");
+    expect(r.chosen).toEqual([w.chosen]);
+  });
+
+  it("refuses a second step 2, repro.json not this program's, an unset value, a step 1 file changed or a list of another form, E's store changed, no choice, each exit 5, in that order", () => {
+    const w = stepWorld();
+    const code = (f: () => unknown) => codeOf(f);
+    w.put(path.join(w.root, "look2", "result.json"), "{}");
+    expect(w.ready()).toThrow(AlreadyRun);
+    rmSync(path.join(w.root, "look2", "result.json"));
+    w.put(
+      path.join(w.root, "repro.json"),
+      `{"identity":{"program":"other"},"passed":true}`,
+    );
+    expect(w.ready()).toThrow(/another program's \(other\)/);
+    w.put(
+      path.join(w.root, "repro.json"),
+      `{"identity":{"program":"this"},"passed":true}`,
+    );
+    expect(w.ready({ ...values, markMinutes: null })).toThrow(
+      "unset: SETTLEMENT_MARK_MINUTES (C17)",
+    );
+    for (const f of LOOK_FILES) {
+      const file = path.join(w.look1, f);
+      const bytes = readFileSync(file);
+      writeFileSync(file, Buffer.concat([bytes, Buffer.from(" ")]));
+      expect(w.ready(), f).toThrow(
+        `${file} is not the file look1.sha256 names`,
+      );
+      expect(code(w.ready())).toBe(5);
+      writeFileSync(file, bytes);
+    }
+    const listFile = path.join(w.pkg, "copyh", "look1.sha256");
+    const listed = readFileSync(listFile, "utf8");
+    writeFileSync(listFile, listed.split("\n").slice(1).join("\n"));
+    expect(w.ready()).toThrow(
+      /lists positions\.jsonl\.gz, report\.json, not a step's three files/,
+    );
+    writeFileSync(listFile, "not a list\n");
+    expect(w.ready()).toThrow(/no list of a step's files/);
+    w.list();
+    for (const name of [
+      "store/manifest.json",
+      "builds.json",
+      "integrity/integrity.json",
+    ]) {
+      const file = path.join(w.look1, ...name.split("/"));
+      const bytes = readFileSync(file);
+      writeFileSync(file, "changed");
+      expect(w.ready(), name).toThrow(
+        `${file} is not the file ${w.look1}'s result.json names`,
+      );
+      expect(code(w.ready())).toBe(5);
+      writeFileSync(file, bytes);
+    }
+    rmSync(path.join(w.pkg, "copyh", "choice.json"));
+    expect(w.ready()).toThrow(/no the rounds' choice that parses/);
+    expect(code(w.ready())).toBe(5);
+  });
+
+  it("holds a step's store files to its result.json and step 1's recomputed positions to its own (exit 6)", () => {
+    const w = stepWorld();
+    const r = w.ready()().look1;
+    expect(() => heldStepStore(w.look1, r)).not.toThrow();
+    expect(() =>
+      heldStepStore(w.look1, { ...r, identity: { files: {} } }),
+    ).toThrow(/names no store\/manifest\.json/);
+    const want = { lines: 3, sha256: "a".repeat(64) };
+    expect(() => heldRecomputed(want, want)).not.toThrow();
+    for (const again of [
+      { ...want, lines: 4 },
+      { ...want, sha256: "b".repeat(64) },
+    ]) {
+      expect(() => heldRecomputed(again, want)).toThrow(CheckFailed);
+      expect(codeOf(() => heldRecomputed(again, want))).toBe(6);
+    }
+    expect(() =>
+      heldLookFiles(w.look1, path.join(w.pkg, "copyh", "look1.sha256")),
+    ).not.toThrow();
+  });
+});

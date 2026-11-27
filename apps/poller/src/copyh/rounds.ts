@@ -55,6 +55,7 @@ import {
   REPORT_FILE,
   RESULT_FILE,
   identityOf,
+  parsedOf,
 } from "./steps.js";
 import {
   TRIES_FILE,
@@ -225,22 +226,6 @@ export const RoundFile = z.object({
   figures: z.array(TryFigures),
 });
 export type RoundFile = z.infer<typeof RoundFile>;
-
-/** A file of ours parsed by its schema, or why not (exit 5). */
-function parsedOf<T>(file: string, schema: z.ZodType<T>, what: string): T {
-  let json: unknown;
-  try {
-    json = JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    throw new StoreError(`${file}: no ${what} that parses`);
-  }
-  const r = schema.safeParse(json);
-  if (!r.success)
-    throw new StoreError(
-      `${file} is not ${what}: ${r.error.issues.map((x) => `${x.path.join(".")}: ${x.message}`).join("; ")}`,
-    );
-  return r.data;
-}
 
 /** A committed file's bytes as HEAD holds it (git, in the package folder), or null when HEAD does not hold it or git could not run. */
 export function committedOf(packageRoot: string, rel: string): Buffer | null {

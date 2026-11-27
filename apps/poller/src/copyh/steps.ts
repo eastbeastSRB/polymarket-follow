@@ -58,12 +58,15 @@ import { RehearsalRecord } from "./closure.js";
 import { CoinsFile } from "./coins.js";
 import {
   END_E,
+  END_S,
   EXITS_MAX,
   HISTORY_FILLS_MAX,
   LABEL_FILLS_MAX,
+  M0,
   REHEARSAL_WINDOW,
   SETTLEMENT_MARK_MINUTES,
   WORKER_HEAP_CAP_GB,
+  Z_LOOKS,
 } from "./design.js";
 import {
   fileSha256,
@@ -81,6 +84,7 @@ import {
   factsOf,
   laneHistoryFills,
 } from "./phase-build.js";
+import { confirmOf, confirmParts } from "./phase-confirm.js";
 import {
   labelsOf,
   labelsParts,
@@ -108,6 +112,7 @@ import {
 } from "./phase-rank.js";
 import { removalParts } from "./phase-removal.js";
 import {
+  Result,
   linesOf,
   positionLines,
   reportFrom,
@@ -120,7 +125,7 @@ import {
   tripwireParts,
   type TrySet,
 } from "./phase-tripwire.js";
-import { RANGES } from "./range.js";
+import { RANGES, readDataList } from "./range.js";
 import {
   AlreadyRun,
   COINS_FILE,
@@ -135,10 +140,10 @@ import {
   writeWhole,
   type Budget,
 } from "./run.js";
-import { checkInstant, type Seal } from "./seal.js";
+import { checkInstant, type EngineStep, type Seal } from "./seal.js";
 import { MANIFEST, Manifest, openStore, type Store } from "./store.js";
 import { buildStore, checkStores, type StoreRun } from "./stores.js";
-import type { Condition } from "./tries.js";
+import { Try, type Condition } from "./tries.js";
 import { tripwireStops, type Projection } from "./tripwire.js";
 import { manifestDifferences } from "./twin.js";
 import type { Verdict } from "./verdict.js";
@@ -199,21 +204,9 @@ export type FrozenValues = {
   readonly markMinutes: MarkMinutes | null;
 };
 
-/** Step 1's refusals in C15's order, before anything is read; the values set before the freeze, none unset. */
-export function readyForStep1(o: {
-  root: string;
-  program: string;
-  values: FrozenValues;
-}): { labelFills: number; historyFills: number; markMinutes: MarkMinutes } {
-  const result = path.join(o.root, "look1", RESULT_FILE);
-  if (existsSync(result))
-    throw new AlreadyRun(`${result} exists: step 1 is made once (C15)`);
-  const sealed = path.join(o.root, "E", "store", MANIFEST);
-  if (existsSync(sealed))
-    throw new StoreError(
-      `${sealed}: the rehearsal's store is sealed, moved aside or deleted before step 1 (C15 (c))`,
-    );
-  const file = path.join(o.root, "repro.json");
+/** repro.json passed by this very program (C15 (a): its identity's program the run's fingerprint and `passed` true; else exit 5). */
+export function reproPassed(root: string, program: string): void {
+  const file = path.join(root, "repro.json");
   let json: unknown;
   try {
     json = JSON.parse(readFileSync(file, "utf8"));
@@ -225,13 +218,29 @@ export function readyForStep1(o: {
   const repro = ReproFile.safeParse(json);
   if (!repro.success)
     throw new StoreError(`${file} is not the reproduction's record`);
-  if (repro.data.identity.program !== o.program)
+  if (repro.data.identity.program !== program)
     throw new StoreError(
-      `${file} is another program's (${repro.data.identity.program}), not this one's (${o.program})`,
+      `${file} is another program's (${repro.data.identity.program}), not this one's (${program})`,
     );
   if (!repro.data.passed)
     throw new StoreError(`${file}: the reproduction did not pass`);
-  const { labelFills, historyFills, markMinutes } = o.values;
+}
+
+/** The values set before the freeze, each set (C17). */
+export type SetValues = {
+  readonly labelFills: number;
+  readonly historyFills: number;
+  readonly markMinutes: MarkMinutes;
+};
+/** design.ts's values set before the freeze. */
+export const FROZEN_VALUES: FrozenValues = {
+  labelFills: LABEL_FILLS_MAX,
+  historyFills: HISTORY_FILLS_MAX,
+  markMinutes: SETTLEMENT_MARK_MINUTES,
+};
+/** The values set before the freeze, none unset (C17, the engine's plan Q19; else exit 5). */
+export function setValues(v: FrozenValues): SetValues {
+  const { labelFills, historyFills, markMinutes } = v;
   const unset = [
     labelFills === null ? "LABEL_FILLS_MAX" : null,
     historyFills === null ? "HISTORY_FILLS_MAX" : null,
@@ -242,6 +251,44 @@ export function readyForStep1(o: {
       `set before the freeze, and unset: ${unset.join(", ")} (C17)`,
     );
   return { labelFills, historyFills, markMinutes };
+}
+
+/** Step 1's refusals in C15's order, before anything is read: a second step 1, the rehearsal's store, repro.json, the values set before the freeze. */
+export function readyForStep1(o: {
+  root: string;
+  program: string;
+  values: FrozenValues;
+}): SetValues {
+  const result = path.join(o.root, "look1", RESULT_FILE);
+  if (existsSync(result))
+    throw new AlreadyRun(`${result} exists: step 1 is made once (C15)`);
+  const sealed = path.join(o.root, "E", "store", MANIFEST);
+  if (existsSync(sealed))
+    throw new StoreError(
+      `${sealed}: the rehearsal's store is sealed, moved aside or deleted before step 1 (C15 (c))`,
+    );
+  reproPassed(o.root, o.program);
+  return setValues(o.values);
+}
+
+/** A file of ours parsed by its schema, or why not (exit 5). */
+export function parsedOf<T>(
+  file: string,
+  schema: z.ZodType<T>,
+  what: string,
+): T {
+  let json: unknown;
+  try {
+    json = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    throw new StoreError(`${file}: no ${what} that parses`);
+  }
+  const r = schema.safeParse(json);
+  if (!r.success)
+    throw new StoreError(
+      `${file} is not ${what}: ${r.error.issues.map((x) => `${x.path.join(".")}: ${x.message}`).join("; ")}`,
+    );
+  return r.data;
 }
 
 /** How a build's manifest differs from E's record, but for the run's fields (twin.ts's comparison; the record's run fields are the build's own, which it leaves out). */
@@ -256,10 +303,10 @@ export const recordDifferences = (m: Manifest, record: StoreRecord): string[] =>
 
 const IntegrityDone = z.object({ store: z.string(), passed: z.boolean() });
 
-/** E's store held to a second build (A'): the first build in `<look>\store`, held to E's record; when they differ, the twin in `<look>\twin\store`; then the integrity, both comparisons into `<look>\builds.json`. Each piece resumes: a built store is not built again, a passed integrity of this store not run again. */
+/** A step's store held to a second build: the first build in `<look>\store`; with a record (E's in `copyh/rehearsal.json`, A'), held to it, the twin in `<look>\twin\store` built only when they differ; without one (S's, FRESH-2's), the twin always built (C15 step 2's 2.); then the twin compare and the integrity (exit 7, exit 6), the comparisons into `<look>\builds.json`. Each piece resumes: a built store is not built again, a passed integrity of this store not run again. */
 export async function heldStores(o: {
   look: string;
-  record: StoreRecord;
+  record: StoreRecord | null;
   /** stores.ts `buildStore`, into `<base>\store\`. */
   build: (base: string) => Promise<void>;
   /** stores.ts `checkStores`: `<base>\store\` and its twin when built, into `<base>\integrity\`. */
@@ -271,9 +318,11 @@ export async function heldStores(o: {
     existsSync(path.join(base, "store", MANIFEST));
   if (!built(o.look)) await o.build(o.look);
   const first = o.open(path.join(o.look, "store"));
-  const differences = recordDifferences(first.manifest, o.record);
+  const differences =
+    o.record === null ? null : recordDifferences(first.manifest, o.record);
+  const twinned = differences === null || differences.length > 0;
   const twin = path.join(o.look, "twin");
-  if (differences.length > 0 && !built(twin)) await o.build(twin);
+  if (twinned && !built(twin)) await o.build(twin);
   const integrity = path.join(o.look, "integrity");
   const doneFile = path.join(integrity, "integrity.json");
   const done =
@@ -291,9 +340,12 @@ export async function heldStores(o: {
       `${JSON.stringify(
         {
           first: first.id,
-          record: { equal: differences.length === 0, differences },
+          record:
+            differences === null
+              ? null
+              : { equal: differences.length === 0, differences },
           twin:
-            differences.length > 0 && existsSync(twinFile)
+            twinned && existsSync(twinFile)
               ? z
                   .record(z.string(), z.unknown())
                   .parse(JSON.parse(readFileSync(twinFile, "utf8")))
@@ -306,8 +358,13 @@ export async function heldStores(o: {
   }
   o.log("the store held", {
     store: first.id,
-    record: differences.length === 0 ? "equal" : "differs",
-    differences: differences.length,
+    record:
+      differences === null
+        ? "none"
+        : differences.length === 0
+          ? "equal"
+          : "differs",
+    differences: differences === null ? null : differences.length,
   });
   return first;
 }
@@ -949,23 +1006,27 @@ const CHUNK_CHARS = 1 << 20;
 
 /**
  * A look's writes in C15's order: the positions file to a temp in the
- * engine folder, gzipped as RESULT's lines come (never one string), its
- * lines' count and SHA-256 held to RESULT's (exit 6); the file hashed;
+ * engine folder, gzipped as the positions' lines come (never one string),
+ * their count and SHA-256 held to the result's (exit 6); the file hashed;
  * `result.json` written whole, its identity first, naming both hashes; the
- * file renamed into place; then `report.json`, its identity first, RESULT's
- * prints and the step's counts. Nothing about the outcome is logged.
+ * file renamed into place; then `report.json`, its identity first. Nothing
+ * about the outcome is logged. The step composes the result (RESULT's, and
+ * at step 2 the confirmations) and the report (the prints and its counts).
  */
 export async function writeLook(o: {
   look: string;
-  engine: EngineRecords;
+  engine: Pick<EngineRecords, "dir" | "prices" | "rank">;
   mondays: readonly number[];
   identity: object;
-  counts: object;
+  /** What `result.json` holds of the outcome, the positions' lines' count and SHA-256 among it. */
+  result: {
+    readonly positions: { readonly lines: number; readonly sha256: string };
+  } & Readonly<Record<string, unknown>>;
+  /** What `report.json` holds beside its identity. */
+  report: object;
   log: Log;
 }): Promise<void> {
-  const r = o.engine.result;
-  const result = resultOf(r.dir, r.record);
-  const report = reportFrom(r.dir, r.record);
+  const want = o.result.positions;
   const tmp = path.join(o.engine.dir, `${POSITIONS_FILE}.tmp`);
   const hash = createHash("sha256");
   let lines = 0;
@@ -993,18 +1054,18 @@ export async function writeLook(o: {
   }
   await pipeline(Readable.from(chunks()), createGzip(), createWriteStream(tmp));
   const linesSha = hash.digest("hex");
-  if (lines !== result.positions.lines || linesSha !== result.positions.sha256)
+  if (lines !== want.lines || linesSha !== want.sha256)
     throw new CheckFailed(
-      `the positions written (${lines} lines, ${linesSha}) are not RESULT's (${result.positions.lines}, ${result.positions.sha256})`,
+      `the positions written (${lines} lines, ${linesSha}) are not RESULT's (${want.lines}, ${want.sha256})`,
     );
   writeWhole(
     path.join(o.look, RESULT_FILE),
     `${JSON.stringify(
       {
         identity: o.identity,
-        ...result,
+        ...o.result,
         positions: {
-          ...result.positions,
+          ...want,
           file: { name: POSITIONS_FILE, sha256: fileSha256(tmp) },
         },
       },
@@ -1015,7 +1076,7 @@ export async function writeLook(o: {
   renameSync(tmp, path.join(o.look, POSITIONS_FILE));
   writeWhole(
     path.join(o.look, REPORT_FILE),
-    `${JSON.stringify({ identity: o.identity, ...report, step: o.counts }, null, 1)}\n`,
+    `${JSON.stringify({ identity: o.identity, ...o.report }, null, 1)}\n`,
   );
   o.log("done: the look's files written", {
     look: o.look,
@@ -1037,16 +1098,16 @@ export function copyLogs(root: string, look: string): number {
   return n;
 }
 
-/** What step 1 takes from main.ts, after the gate. */
-export type Step1 = {
+/** What a step takes from main.ts, after the gate. */
+export type StepRun = {
   readonly root: string;
-  /** WAVE-H's raw store. */
+  /** The step's raw store: WAVE-H's at step 1, FRESH's at step 2. */
   readonly raw: string;
   /** COPYH-FUNDING's store. */
   readonly funding: string;
   readonly roots: readonly string[];
   readonly freeze: { readonly sha256: string; readonly tag: string };
-  /** The gate's seal for step 1 (gate.ts `sealOf`). */
+  /** The gate's seal for the step (gate.ts `sealOf`). */
   readonly seal: Seal;
   readonly workers: number;
   readonly heapGb: number;
@@ -1055,17 +1116,95 @@ export type Step1 = {
   readonly log: Log;
 };
 
-/** Step 1 (C15): the refusals, E's store held, the integrity, the engine at END_E on E's Mondays, look 1's writes, the logs. */
-export async function step1(o: Step1): Promise<void> {
+/** A step's engine run on its stores, at its END, stage, Mondays and look, in its engine folder. */
+function engineRunOf(
+  o: StepRun,
+  s: {
+    readonly program: string;
+    readonly values: SetValues;
+    readonly stores: readonly Store[];
+    readonly dir: string;
+    readonly end: number;
+    readonly stage: readonly [number, number];
+    readonly mondays: readonly number[];
+    readonly look: 1 | 2;
+    readonly earlier: readonly Verdict[];
+    readonly tries: readonly TrySet[];
+    readonly pastTripwire: boolean;
+    readonly engine: EngineStep;
+  },
+): EngineRun {
+  return {
+    dir: s.dir,
+    code: s.program,
+    reading: {
+      inputs: {
+        stores: s.stores.map((x) => x.id),
+        dirs: sha256(readFileSync(DIRS_FILE)),
+      },
+      context: {
+        stores: s.stores.map((x) => x.dir),
+        roots: [...o.roots],
+        dirsFile: DIRS_FILE,
+      },
+    },
+    end: s.end,
+    stage: s.stage,
+    mondays: s.mondays,
+    limits: {
+      labelFills: s.values.labelFills,
+      historyFills: s.values.historyFills,
+      exits: EXITS_MAX,
+    },
+    lanes: {
+      labelFills: laneLabelFills(o.heapGb),
+      historyFills: laneHistoryFills(o.heapGb),
+    },
+    markMinutes: s.values.markMinutes,
+    tries: s.tries,
+    funding: {
+      store: o.funding,
+      list: FUNDING_FILE,
+      sha256: sha256(readFileSync(FUNDING_FILE)),
+    },
+    coins: new Map(
+      CoinsFile.parse(JSON.parse(readFileSync(COINS_FILE, "utf8"))).coins.map(
+        (c) => [c.iid, c.name],
+      ),
+    ),
+    look: s.look,
+    earlier: s.earlier,
+    pastTripwire: s.pastTripwire,
+    workers: o.workers,
+    heapGb: o.heapGb,
+    seal: { ...o.seal, engine: s.engine },
+    budget: o.budget,
+    log: o.log,
+  };
+}
+
+/** A step's store files by their names in its folder, as its result.json's identity names them. */
+function storeFiles(look: string, prefix: string): Record<string, string> {
+  const twin = path.join(look, "twin", "store", MANIFEST);
+  return {
+    [`${prefix}store/${MANIFEST}`]: path.join(look, "store", MANIFEST),
+    ...(existsSync(twin) ? { [`${prefix}twin/store/${MANIFEST}`]: twin } : {}),
+    [`${prefix}${BUILDS_FILE}`]: path.join(look, BUILDS_FILE),
+    [`${prefix}integrity/integrity.json`]: path.join(
+      look,
+      "integrity",
+      "integrity.json",
+    ),
+  };
+}
+
+/** Step 1 (C15): the refusals, E's store held, the integrity, the engine at END_E on E's Mondays, the fortnight, look 1's writes, the logs. */
+export async function step1(o: StepRun): Promise<void> {
   const program = fingerprintOf(PACKAGE_ROOT);
   const values = readyForStep1({
     root: o.root,
     program,
-    values: {
-      labelFills: LABEL_FILLS_MAX,
-      historyFills: HISTORY_FILLS_MAX,
-      markMinutes: SETTLEMENT_MARK_MINUTES,
-    },
+    values: FROZEN_VALUES,
   });
   const look = path.join(o.root, "look1");
   const rehearsal = RehearsalFile.safeParse(
@@ -1095,50 +1234,20 @@ export async function step1(o: Step1): Promise<void> {
     log: o.log,
   });
   const mondays = mondaysOf("E");
-  const run: EngineRun = {
+  const run = engineRunOf(o, {
+    program,
+    values,
+    stores: [store],
     dir: path.join(look, "engine"),
-    code: program,
-    reading: {
-      inputs: { stores: [store.id], dirs: sha256(readFileSync(DIRS_FILE)) },
-      context: {
-        stores: [store.dir],
-        roots: [...o.roots],
-        dirsFile: DIRS_FILE,
-      },
-    },
     end: END_E,
     stage: STAGE_WINDOWS.E,
     mondays,
-    limits: {
-      labelFills: values.labelFills,
-      historyFills: values.historyFills,
-      exits: EXITS_MAX,
-    },
-    lanes: {
-      labelFills: laneLabelFills(o.heapGb),
-      historyFills: laneHistoryFills(o.heapGb),
-    },
-    markMinutes: values.markMinutes,
-    tries: [],
-    funding: {
-      store: o.funding,
-      list: FUNDING_FILE,
-      sha256: sha256(readFileSync(FUNDING_FILE)),
-    },
-    coins: new Map(
-      CoinsFile.parse(JSON.parse(readFileSync(COINS_FILE, "utf8"))).coins.map(
-        (c) => [c.iid, c.name],
-      ),
-    ),
     look: 1,
     earlier: [],
+    tries: [],
     pastTripwire: o.pastTripwire,
-    workers: o.workers,
-    heapGb: o.heapGb,
-    seal: { ...o.seal, engine: "look1" },
-    budget: o.budget,
-    log: o.log,
-  };
+    engine: "look1",
+  });
   const engine = await runEngine(run);
   // The rehearsal's fortnight again, by this program on this store: printed beside the rehearsal's, deciding nothing (C15 (c) 10, RL7).
   const fortnight = await fortnightOf(
@@ -1157,24 +1266,255 @@ export async function step1(o: Step1): Promise<void> {
       equal: fortnight.sha256 === rehearsal.data.fortnight.sha256,
     },
   };
-  const twin = path.join(look, "twin", "store", MANIFEST);
   const identity = identityOf({
     packageRoot: PACKAGE_ROOT,
     freeze: o.freeze,
     kit: kit.fingerprint,
     files: {
       "repro.json": path.join(o.root, "repro.json"),
-      "store/manifest.json": path.join(look, "store", MANIFEST),
-      ...(existsSync(twin) ? { "twin/store/manifest.json": twin } : {}),
-      [BUILDS_FILE]: path.join(look, BUILDS_FILE),
-      "integrity/integrity.json": path.join(
-        look,
-        "integrity",
-        "integrity.json",
-      ),
+      ...storeFiles(look, ""),
     },
     heapGb: o.heapGb,
   });
-  await writeLook({ look, engine, mondays, identity, counts, log: o.log });
+  await writeLook({
+    look,
+    engine,
+    mondays,
+    identity,
+    result: resultOf(engine.result.dir, engine.result.record),
+    report: {
+      ...reportFrom(engine.result.dir, engine.result.record),
+      step: counts,
+    },
+    log: o.log,
+  });
   o.log("done: step 1", { look, logs: copyLogs(o.root, look) });
+}
+
+/** A step's three files, as `copyh/look1.sha256` (and FRESH-2's `look2.sha256`) lists them, relative to the step's folder (C14: the rounds' freeze). */
+export const LOOK_FILES = [RESULT_FILE, POSITIONS_FILE, REPORT_FILE] as const;
+export const LOOK1_LIST = "copyh/look1.sha256";
+export const CHOICE_LIST = "copyh/choice.json";
+
+/** A step's three files held to their list (sha256sum's form, `<hash> *<name>`, the three names each once): step 1's to `copyh/look1.sha256` at step 2 (C15), step 2's to `copyh/look2.sha256` at FRESH-2's stage (C14 (4)); else exit 5. */
+export function heldLookFiles(look: string, listFile: string): void {
+  let list: Map<string, string>;
+  try {
+    list = readDataList(readFileSync(listFile, "utf8"));
+  } catch {
+    throw new StoreError(`${listFile}: no list of a step's files`);
+  }
+  const names = [...list.keys()].sort();
+  if (names.join("|") !== [...LOOK_FILES].sort().join("|"))
+    throw new StoreError(
+      `${listFile} lists ${names.join(", ") || "nothing"}, not a step's three files`,
+    );
+  for (const name of LOOK_FILES) {
+    const file = path.join(look, name);
+    if (!existsSync(file) || fileSha256(file) !== list.get(name))
+      throw new StoreError(
+        `${file} is not the file ${path.basename(listFile)} names`,
+      );
+  }
+}
+
+const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
+/** A look's result.json as a later step reads it (writeLook's form): its identity's files, MAIN's reading and its positions. */
+export const LookFile = Result.extend({
+  identity: z.object({ files: z.record(z.string(), SHA256) }),
+  positions: Result.shape.positions.extend({
+    file: z.object({ name: z.literal(POSITIONS_FILE), sha256: SHA256 }),
+  }),
+});
+export type LookFile = z.infer<typeof LookFile>;
+
+/** A step's store as its result.json names it: the manifest, builds.json and the integrity, each held to its SHA-256 there (C15 step 2's 3., C14 (4); else exit 5). */
+export function heldStepStore(look: string, r: LookFile): void {
+  for (const name of [
+    `store/${MANIFEST}`,
+    BUILDS_FILE,
+    "integrity/integrity.json",
+  ]) {
+    const want = r.identity.files[name];
+    if (want === undefined)
+      throw new StoreError(`${look}'s ${RESULT_FILE} names no ${name}`);
+    const file = path.join(look, ...name.split("/"));
+    if (!existsSync(file) || fileSha256(file) !== want)
+      throw new StoreError(
+        `${file} is not the file ${look}'s ${RESULT_FILE} names`,
+      );
+  }
+}
+
+/** `copyh/choice.json` as step 2 reads it: the chosen tries whole, in the choice's order (choice.ts writes it; the rounds' freeze lists it). */
+const ChosenFile = z.object({ chosen: z.array(z.object({ try: Try })) });
+
+/** Step 2's refusals in C15's order, before anything is read: a second step 2 (its result.json); repro.json passed by this program (C15 (a)); the values set before the freeze; step 1's three files held to `copyh/look1.sha256`; E's store held to step 1's result.json; the chosen tries. Each exit 5. */
+export function readyForStep2(o: {
+  root: string;
+  packageRoot: string;
+  program: string;
+  values: FrozenValues;
+}): { values: SetValues; look1: LookFile; chosen: Try[] } {
+  const result = path.join(o.root, "look2", RESULT_FILE);
+  if (existsSync(result))
+    throw new AlreadyRun(`${result} exists: step 2 is made once (C15)`);
+  reproPassed(o.root, o.program);
+  const values = setValues(o.values);
+  const look1 = path.join(o.root, "look1");
+  heldLookFiles(look1, path.join(o.packageRoot, LOOK1_LIST));
+  const r1 = parsedOf(
+    path.join(look1, RESULT_FILE),
+    LookFile,
+    "step 1's result",
+  );
+  heldStepStore(look1, r1);
+  const choice = parsedOf(
+    path.join(o.packageRoot, CHOICE_LIST),
+    ChosenFile,
+    "the rounds' choice",
+  );
+  return { values, look1: r1, chosen: choice.chosen.map((c) => c.try) };
+}
+
+/** Step 1's positions recomputed at step 2 held to those its result.json names (C15 step 2's 3.: the lines' count and SHA-256; exit 6). */
+export function heldRecomputed(
+  again: { readonly lines: number; readonly sha256: string },
+  want: { readonly lines: number; readonly sha256: string },
+): void {
+  if (again.lines !== want.lines || again.sha256 !== want.sha256)
+    throw new CheckFailed(
+      `step 1 recomputed: its positions (${again.lines} lines, ${again.sha256}) are not those step 1's result.json names (${want.lines}, ${want.sha256})`,
+    );
+}
+
+/** Step 2 (C15): the refusals; S's store built twice, held equal, and its integrity; step 1 recomputed from E's store and held to its positions (exit 6); the engine on E ∪ S at END_S, C16 on look 2's set and each chosen try's set on S; look 2 (C12); CONFIRM, the chosen tries on S alone (C14) and MAIN on S alone (L8); the writes; the logs. */
+export async function step2(o: StepRun): Promise<void> {
+  const program = fingerprintOf(PACKAGE_ROOT);
+  const ready = readyForStep2({
+    root: o.root,
+    packageRoot: PACKAGE_ROOT,
+    program,
+    values: FROZEN_VALUES,
+  });
+  const kit = await loadResearch();
+  const look1 = path.join(o.root, "look1");
+  const look = path.join(o.root, "look2");
+  const open = (dir: string) => openStore(dir, o.roots, o.seal);
+  const E = open(path.join(look1, "store"));
+  const storeRun = (base: string): StoreRun => ({
+    range: RANGES.S,
+    raw: o.raw,
+    base,
+    roots: o.roots,
+    seal: o.seal,
+    budget: o.budget,
+    log: o.log,
+  });
+  const S = await heldStores({
+    look,
+    record: null,
+    build: (base) =>
+      buildStore({ ...storeRun(base), workers: o.workers, heapGb: o.heapGb }),
+    check: (base) => checkStores(storeRun(base)),
+    open,
+    log: o.log,
+  });
+  // Step 1 again, by this program on E's store, past its tripwire (step 1 passed it): its positions held to step 1's.
+  const again = await runEngine(
+    engineRunOf(o, {
+      program,
+      values: ready.values,
+      stores: [E],
+      dir: path.join(look, "engine", "look1"),
+      end: END_E,
+      stage: STAGE_WINDOWS.E,
+      mondays: mondaysOf("E"),
+      look: 1,
+      earlier: [],
+      tries: [],
+      pastTripwire: true,
+      engine: "look2",
+    }),
+  );
+  heldRecomputed(
+    resultOf(again.result.dir, again.result.record).positions,
+    ready.look1.positions,
+  );
+  const mondays = [...mondaysOf("E"), ...mondaysOf("S")];
+  const run = engineRunOf(o, {
+    program,
+    values: ready.values,
+    stores: [E, S],
+    dir: path.join(look, "engine"),
+    end: END_S,
+    stage: [M0, END_S],
+    mondays,
+    look: 2,
+    earlier: [ready.look1.verdict],
+    tries: ready.chosen.map((t) => ({
+      name: t.name,
+      line: t.line,
+      from: END_E,
+      to: END_S,
+      conditions: t.conditions,
+    })),
+    pastTripwire: o.pastTripwire,
+    engine: "look2",
+  });
+  const engine = await runEngine(run);
+  const confirm = await closedOf(
+    phaseOf(
+      run,
+      "CONFIRM",
+      "phase-confirm.js",
+      "confirmPart",
+      confirmParts({
+        code: program,
+        prices: shaOf(engine.prices)!,
+        rank: shaOf(engine.rank)!,
+        mondays,
+        tries: ready.chosen,
+        from: END_E,
+        to: END_S,
+        z: Z_LOOKS[1],
+      }),
+      { prices: engine.prices.dir, rank: engine.rank.dir },
+    ),
+  );
+  const why = o.budget.stop();
+  if (why !== null) throw new NotFinished(`step 2's writes wait: ${why}`);
+  const c = confirmOf(confirm.dir, confirm.record);
+  const counts = stepCounts({ engine, stores: [E, S], end: END_S });
+  const identity = identityOf({
+    packageRoot: PACKAGE_ROOT,
+    freeze: o.freeze,
+    kit: kit.fingerprint,
+    files: {
+      "repro.json": path.join(o.root, "repro.json"),
+      ...Object.fromEntries(
+        LOOK_FILES.map((f) => [`look1/${f}`, path.join(look1, f)]),
+      ),
+      ...storeFiles(look1, "look1/"),
+      ...storeFiles(look, ""),
+    },
+    heapGb: o.heapGb,
+  });
+  await writeLook({
+    look,
+    engine,
+    mondays,
+    identity,
+    result: {
+      ...resultOf(engine.result.dir, engine.result.record),
+      confirmations: c.tries,
+    },
+    report: {
+      ...reportFrom(engine.result.dir, engine.result.record),
+      mainOnS: c.mainOnS,
+      step: counts,
+    },
+    log: o.log,
+  });
+  o.log("done: step 2", { look, logs: copyLogs(o.root, look) });
 }

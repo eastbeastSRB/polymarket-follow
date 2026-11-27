@@ -242,6 +242,30 @@ describe.runIf(BUILT)("the built program", { timeout: 60_000 }, () => {
     expect(r.stderr).toContain("step1 needs COPYH_FUNDING");
   });
 
+  it("takes step 2's options and needs FRESH's store and the funding store, the gate first (exit 4 while the freeze does not verify), FRESH's store not read before it; another option, or either store unset, exit 2", () => {
+    if (verifyFreeze(PACKAGE_ROOT, "step2").ok) return;
+    const f = folders();
+    expect(
+      run(["step2", "--workers", "2", "--minutes", "5", "--past-tripwire"], f)
+        .code,
+    ).toBe(4);
+    for (const args of [
+      ["step2", "--range", "S"],
+      ["step2", "--twin"],
+      ["step2", "--round", "1"],
+      ["step2", "--past-tripwire", "--past-tripwire"],
+    ])
+      expect(run(args, f).code, args.join(" ")).toBe(2);
+    for (const key of ["COPYH_FUNDING", "FRESH_STORE"]) {
+      const without = Object.fromEntries(
+        Object.entries(f).filter(([k]) => k !== key),
+      );
+      const r = run(["step2"], without);
+      expect(r.code, key).toBe(2);
+      expect(r.stderr).toContain(`step2 needs ${key}`);
+    }
+  });
+
   it("takes a round's number and the rounds' minutes, the gate first (exit 4 while the freeze does not verify); no round, a fourth, one twice or another option, exit 2", () => {
     if (verifyFreeze(PACKAGE_ROOT, "tries").ok) return;
     const f = folders();

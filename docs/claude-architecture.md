@@ -997,8 +997,11 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   (exit 4, nothing read), then `steps.ts`'s step 1 (below); it needs
   COPYH_FUNDING. `tries --round n [--minutes m]` and `choice [--minutes
   m]`: the gate first, then a round of the owner's tries or the choice
-  (`rounds.ts`, `choice.ts`, below). `step2`, `fresh2`: the gate first;
-  their phases are still to be built.
+  (`rounds.ts`, `choice.ts`, below). `step2 [--workers n] [--minutes m]
+  [--past-tripwire]`: the gate first, then `steps.ts`'s step 2 (below); it
+  needs FRESH_STORE and COPYH_FUNDING, FRESH's store read only after the
+  gate opens it. `fresh2`: the gate first; its phases are still to be
+  built.
 
 The ranges (`range.ts`): `burnin` WAVE-H's 850 files before M₀ (counts and
 timing only), `E` WAVE-H's 8,845 files [ARCHIVE_START, END_E), `S` FRESH's
@@ -1306,6 +1309,24 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   earlier round, then the earlier try); one part computed twice;
   `rounds\choice.json`, its identity first, the chosen tries whole for
   step 2; a second choice refused (exit 5).
+- `steps.ts`, step 2 (C15) in `<COPYH_ROOT>\look2\`: its refusals in
+  C15's order, each exit 5: its `result.json`, `repro.json` not this
+  program's, an unset value, step 1's three files not those
+  `copyh/look1.sha256` lists (sha256sum's form, names relative to
+  `look1`), E's store (its manifest, `builds.json`, the integrity) not
+  that step 1's `result.json` names, no `copyh/choice.json`. S's store
+  built twice (`look2\store`, `look2\twin\store`; no record, so the twin
+  always), its integrity, `look2\builds.json`; step 1 recomputed by this
+  program in `look2\engine\look1` past its tripwire and its positions held
+  to step 1's (exit 6); the engine on E ∪ S at END_S in `look2\engine`
+  (E's and S's 72 Mondays, look 2, after look 1's verdict; C16 on look 2's
+  set and each chosen try's set on S); CONFIRM; the writes (`result.json`
+  with the confirmations, `report.json` with MAIN on S alone); the logs.
+- `phase-confirm.ts` (C14's confirmation, C13's MAIN on S alone):
+  CONFIRM, one part after RANK at step 2, computed twice: of the positions
+  with t in S, each chosen try's set (its line's copies voted by END,
+  every condition met, the prior mean net's among them), its statistic
+  and reading (`confirm.ts`), and the prints of S's voted copies.
 - `confirm.ts` (C14's confirmation on S): s = min(m ÷ SE, m′ ÷ SE′), none
   without an error; Holm's order by s (a try with no s second, equal s in
   the choice's order), the first tested at 2.24, the second at 1.96 only
