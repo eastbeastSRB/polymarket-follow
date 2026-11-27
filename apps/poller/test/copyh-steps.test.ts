@@ -38,7 +38,10 @@
  *   a run with no look; SEALED through real child processes: every line
  *   hashed as RESULT hashes it, each judged set's copies on FRESH-2, its
  *   statistic and sealed reading, MAIN's prints in FRESH-2's form, none
- *   without MAIN.
+ *   without MAIN;
+ * - the engine end to end (the engine's plan, section 12): a run stopped
+ *   inside a phase and resumed gives every phase's record of an unbroken
+ *   run; a run of other inputs over its closed phases is refused (exit 5).
  */
 import {
   existsSync,
@@ -76,6 +79,7 @@ import {
   AlreadyRun,
   BuildsDiffer,
   CheckFailed,
+  NotFinished,
   PACKAGE_ROOT,
   StoreError,
   exitOf,
@@ -1198,6 +1202,47 @@ describe(
           (s) => s.statistic.copies,
         ),
       ).toEqual([1, 0]);
+    });
+
+    it("gives a run stopped in a phase and resumed the records of an unbroken one, phase by phase (C15: a resumed command's output equals an unbroken one's); a run of other inputs over its closed phases refused (exit 5), changing nothing", async () => {
+      const dir = engineDir();
+      const o = {
+        markMinutes: 5 as const,
+        pastTripwire: true,
+        lanes: NO_LANES,
+      };
+      let asked = 0;
+      // The run's minutes spent after the budget is asked four times: a stop among the first phases' parts.
+      const stopped = runEngine({
+        ...runOf(dir, o),
+        budget: {
+          stop: () => (asked++ < 4 ? null : "the test's minutes are spent"),
+        },
+      });
+      await expect(stopped).rejects.toThrow(NotFinished);
+      await stopped.catch((err: unknown) => expect(exitOf(err).code).toBe(3));
+      expect(existsSync(path.join(dir, "labels"))).toBe(true);
+      expect(existsSync(path.join(dir, "result"))).toBe(false);
+      const e = await runEngine(runOf(dir, o));
+      const closed = (r: EngineRecords) =>
+        [
+          r.labels,
+          r.labelsL,
+          r.build,
+          r.buildL,
+          r.removal,
+          r.tripwire,
+          r.prices,
+          r.rank,
+          r.result,
+        ].map((c) => (c === null ? null : recordSha(c.dir)));
+      expect(closed(e)).toEqual(closed(first.e));
+      expect(e.projection).toEqual(first.e.projection);
+      const before = closed(e);
+      const other = runEngine(runOf(dir, { ...o, markMinutes: 60 }));
+      await expect(other).rejects.toThrow(StoreError);
+      await other.catch((err: unknown) => expect(exitOf(err).code).toBe(5));
+      expect(closed(e)).toEqual(before);
     });
   },
 );
