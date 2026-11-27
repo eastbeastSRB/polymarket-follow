@@ -142,7 +142,9 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   body:** a resume that checks only a header takes it. Hold every stretch to
   its SHA-256 before a resume skips a part, or read back the last minutes'
   parts after a crash (E's build, 2026-11-26 23:23Z: 1 of 11 torn parts had
-  a whole header; COPYH-BURNIN).
+  a whole header; COPYH-BURNIN). COPY-H's engine parts are fsynced before
+  their rename (`d2f1491`), but the store's parts are not: their code is
+  frozen, so the read-back after a crash stays the store's guard.
 - **A test of a size or a difference needs data that can show it:**
   - a one-level book or tape makes a walk's price independent of the
     walked size, so put a level boundary at the walked size;
