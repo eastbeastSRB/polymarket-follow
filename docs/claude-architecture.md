@@ -1215,7 +1215,10 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   heap given, then copy b by a new pool, so that a part's two copies never
   share a process; held byte-equal, the phase closed by its record (each
   part's header and bytes by SHA-256), else exit 7 and no record. A part's
-  file is its header line (phase, id, inputs) and its bytes; a part or a
+  file is its header line (phase, id, inputs) and its bytes, whole or as
+  chunks, written through one file descriptor a gigabyte a write at most
+  (Node refuses a write of 2 GiB, which a PRICES part can pass), flushed,
+  then renamed, so that a part in place is whole on disk; a part or a
   record of other inputs is refused (exit 5); the budget's stop is exit 3,
   resumed from whole parts; each copy's run (pid, seconds, peak RSS, heap)
   beside it. A large lane's phase is the same runner, one child at the heap
@@ -1267,7 +1270,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   STOP5, DAYS7, JUMP's J, DELAY0, DELAY+5, DELAY+15, LAST) and the
   cascade's and Binance's prints; a coin without an object, every reading
   its reason; one positions line a copy (its Zod schema `Position`), by id
-  across BUILD and BUILD-L, a tie of ids in the kit's order.
+  across BUILD and BUILD-L, a tie of ids in the kit's order, priced one at
+  a time and given in chunks of about 1 MB, never held whole.
 - `phase-rank.ts` (C7, C14): RANK, one part: MAIN's accounts at each
   Monday from BUILD's and BUILD-L's members, every priced MAIN copy of
   PRICES' parts streamed; RANK's accounts at each Monday (`rankAt`) and each
@@ -1305,7 +1309,11 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   TRIPWIRE and C16's stop when any set projected is above 1% (exit 6;
   `tripwireStop` names each) unless `--past-tripwire`,
   PRICES, RANK, RESULT; END, the stage, the Mondays and the lanes'
-  thresholds its parameters; a large lane one child at the heap cap), the
+  thresholds its parameters, the thresholds 3,500,000 capture fills and
+  2,500,000 history fills at every heap, so that a step resumed under a
+  raised `COPYH_HEAP_GB` keeps its closed phases; a large lane, and
+  RESULT, which keeps every voted copy's readings, one child at the heap
+  cap), the
   step's counts (`stepCounts`: the labels by Monday, the vault accounts,
   BUILD's facts, the tripwire's projection, C3's counts, the holes, the
   left-out takers by cause and month, each phase's runs: its parts and

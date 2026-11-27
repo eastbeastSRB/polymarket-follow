@@ -8,7 +8,8 @@
  * difference between the copies stopping the phase (exit 7) with no record;
  * a child's refusal passed on (exit 5) and its crash (exit 1), one ending
  * before it is ready a crash too; a part whose inputs pass 64 KB resumed
- * and read back by its record; each child
+ * and read back by its record; a part given as chunks written as the same
+ * part given whole, and read back by its lines; each child
  * at the heap asked, exactly; a phase only in its own step's engine folder.
  */
 import { execFileSync } from "node:child_process";
@@ -30,6 +31,7 @@ import {
   bytesAt,
   heldPart,
   partBytes,
+  partLines,
   recordAt,
   runPhase,
   type Phase,
@@ -61,6 +63,10 @@ writeFileSync(
     `import { StoreError } from ${JSON.stringify(RUN)};`,
     `const bytes = (v) => new TextEncoder().encode(JSON.stringify(v));`,
     `export const echo = (inputs, ctx) => bytes({ inputs, kit: ctx.kit.fingerprint, engine: ctx.seal.engine ?? null, context: ctx.context });`,
+    // echo's bytes as chunks: 7 bytes, an empty chunk, then 5 at a time.
+    `export function* chunks(inputs, ctx) { const b = echo(inputs, ctx); yield b.subarray(0, 7); yield new Uint8Array(0); for (let at = 7; at < b.length; at += 5) yield b.subarray(at, at + 5); }`,
+    // inputs.n lines of uneven length, in slices of 4,099 bytes that cut lines.
+    `export function* lines(inputs) { const text = Buffer.from(Array.from({ length: inputs.n }, (_, k) => JSON.stringify({ k, pad: "x".repeat(400 + (k % 97)) }) + "\\n").join("")); for (let at = 0; at < text.length; at += 4099) yield text.subarray(at, at + 4099); }`,
     `export const pid = () => bytes(process.pid);`,
     `export const heap = () => bytes(getHeapStatistics().heap_size_limit);`,
     `export const refuse = (inputs) => { if (inputs.k === 2) throw new StoreError("a listed file differs"); return bytes(inputs); };`,
@@ -269,6 +275,49 @@ describe("a phase (C15, the engine's guard)", { timeout: 60_000 }, () => {
     const sha = sha256(readFileSync(path.join(phase.dir, "record.json")));
     expect(recordAt(phase.dir, sha)).toEqual(record);
     expect(() => recordAt(phase.dir, "0".repeat(64))).toThrow(StoreError);
+  });
+
+  it("writes a part given as chunks as the same part given whole: its files, its record, and a resume of one by the other (COPYH-ENGINE-REVIEW-2 H1)", async () => {
+    const whole = phaseOf().phase;
+    const record = await runPhase(whole);
+    const chunked = phaseOf({ fn: "chunks" }).phase;
+    expect(await runPhase(chunked)).toEqual(record);
+    for (const copy of ["a", "b"])
+      for (const s of parts(5)) {
+        const file = (dir: string) => path.join(dir, copy, `${s.id}.part`);
+        expect(
+          readFileSync(file(chunked.dir)).equals(readFileSync(file(whole.dir))),
+        ).toBe(true);
+      }
+    // Stopped after two parts given as chunks, then resumed by parts given whole.
+    let calls = 0;
+    const stopped = phaseOf({
+      fn: "chunks",
+      budget: { stop: () => (calls++ >= 2 ? "its minutes are spent" : null) },
+    }).phase;
+    await expect(runPhase(stopped)).rejects.toThrow(NotFinished);
+    expect(await runPhase({ ...stopped, fn: "echo", budget: never })).toEqual(
+      record,
+    );
+  });
+
+  it("reads a part of many chunks back by its lines, a line cut across chunks and across partLines' reads", async () => {
+    const n = 3_000;
+    const { phase } = phaseOf({
+      fn: "lines",
+      parts: [{ id: "p0", inputs: { n } }],
+    });
+    const record = await runPhase(phase);
+    const want = Array.from({ length: n }, (_, k) =>
+      JSON.stringify({ k, pad: "x".repeat(400 + (k % 97)) }),
+    );
+    // The lines pass 1 MB, partLines' read: one is cut between two reads.
+    expect(want.join("\n").length).toBeGreaterThan(1024 * 1024);
+    const got = [...partLines(phase.dir, record, "p0")].map((b) =>
+      b.toString("utf8"),
+    );
+    expect(got.length).toBe(n);
+    expect(sha256(got.join("\n"))).toBe(sha256(want.join("\n")));
   });
 
   it("gives each child the heap asked, exactly: a process at that ceiling's", async () => {

@@ -82,17 +82,17 @@ import { STAGE_WINDOWS, mondaysOf } from "./instants.js";
 import type { MarkMinutes } from "./markets.js";
 import {
   BuildFacts,
+  LANE_HISTORY_FILLS,
   buildLargeParts,
   buildParts,
   coinsOf,
   factsOf,
-  laneHistoryFills,
 } from "./phase-build.js";
 import { TryConfirmation, confirmOf, confirmParts } from "./phase-confirm.js";
 import {
+  LANE_LABEL_FILLS,
   labelsOf,
   labelsParts,
-  laneLabelFills,
   largeParts,
   type LabelsPart,
   type ReadingContext,
@@ -403,7 +403,7 @@ export type EngineRun = {
     readonly historyFills: number;
     readonly exits: number;
   };
-  /** The normal lanes' thresholds, a capture's and a history's fills at most (phase-labels.ts `laneLabelFills`, phase-build.ts `laneHistoryFills`, at the heap); null: none, every account in the normal lanes. */
+  /** The normal lanes' thresholds, a capture's and a history's fills at most (phase-labels.ts `LANE_LABEL_FILLS`, phase-build.ts `LANE_HISTORY_FILLS`, at every heap); null: none, every account in the normal lanes. */
   readonly lanes: {
     readonly labelFills: number | null;
     readonly historyFills: number | null;
@@ -479,7 +479,7 @@ export type PricedRecords = {
 /** A look's engine records: through RESULT. */
 export type EngineRecords = PricedRecords & { readonly result: Closed };
 
-/** A phase of the engine's run, in its folder (`<dir>\<name>`): a large lane's one child at the heap cap, alone. */
+/** A phase of the engine's run, in its folder (`<dir>\<name>`): a large lane's, and RESULT's, one child at the heap cap, alone. */
 function phaseOf(
   o: EngineRun,
   name: string,
@@ -487,7 +487,7 @@ function phaseOf(
   fn: string,
   parts: Phase["parts"],
   context: unknown,
-  lane = false,
+  atCap = false,
 ): Phase {
   return {
     name,
@@ -496,8 +496,8 @@ function phaseOf(
     fn,
     parts,
     context,
-    workers: lane ? 1 : o.workers,
-    heapGb: lane ? WORKER_HEAP_CAP_GB : o.heapGb,
+    workers: atCap ? 1 : o.workers,
+    heapGb: atCap ? WORKER_HEAP_CAP_GB : o.heapGb,
     seal: o.seal,
     budget: o.budget,
     log: o.log,
@@ -731,7 +731,7 @@ export async function pricedPhases(o: EngineRun): Promise<PricedRecords> {
   };
 }
 
-/** A look's engine: the phases through RANK, then RESULT (C12, MAIN's set at the look's z). */
+/** A look's engine: the phases through RANK, then RESULT (C12, MAIN's set at the look's z), one child at the heap cap: it keeps every voted copy's readings for the prints (COPYH-ENGINE-REVIEW-2 M2). */
 export async function runEngine(o: EngineRun): Promise<EngineRecords> {
   const look = o.look;
   if (look === null)
@@ -754,6 +754,7 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
         earlier: [...o.earlier],
       }),
       { prices: p.prices.dir, rank: p.rank.dir },
+      true,
     ),
   );
   return { ...p, result };
@@ -1227,10 +1228,7 @@ export function engineRunOf(
       historyFills: s.values.historyFills,
       exits: EXITS_MAX,
     },
-    lanes: {
-      labelFills: laneLabelFills(o.heapGb),
-      historyFills: laneHistoryFills(o.heapGb),
-    },
+    lanes: { labelFills: LANE_LABEL_FILLS, historyFills: LANE_HISTORY_FILLS },
     markMinutes: s.values.markMinutes,
     tries: s.tries,
     funding: {

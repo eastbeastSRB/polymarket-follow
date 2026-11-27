@@ -23,7 +23,10 @@
  * - A part's bytes: one positions line a copy, by id, BUILD's and
  *   BUILD-L's together (a tie of ids is one account's, in the kit's order:
  *   the sort is stable), so that RESULT merges the coins' parts into the
- *   positions' order: the copy as BUILD planned it and its readings.
+ *   positions' order: the copy as BUILD planned it and its readings. The
+ *   copies are priced one at a time and their lines given in chunks of
+ *   about 1 MB: a coin's part can pass 2 GiB, and neither its positions nor
+ *   its lines are held whole (COPYH-ENGINE-REVIEW-2 H1).
  */
 import { z } from "zod";
 import { DAYS7_MS, jumpRatio, stopInstant } from "../paper/copy.js";
@@ -147,17 +150,17 @@ function judgedOf(
 
 const unjudged: Judged = { d: null, reason: ENTRY_UNPRICED, edge: null };
 
-/** Every copy of one coin priced (C7–C11, C13), in the copies' order. */
-export function priceCoin(
+/** Every copy of one coin priced (C7–C11, C13), in the copies' order, one at a time. */
+export function* priceCoin(
   kit: Research,
   copies: readonly Copy[],
   p: CoinPricing,
-): Position[] {
+): Generator<Position> {
   const markets: CoinMarkets | null =
     p.coin === null ? null : coinMarkets(kit, p.coin, p.rows, p.markMinutes);
   const settings =
     p.coin === null || markets === null ? null : settingsOf(kit, p.coin.bars);
-  return copies.map((c): Position => {
+  const priceOne = (c: Copy): Position => {
     const tIn = c.t + c.D;
     const followed = { dir: c.dir, t: c.t, D: c.D };
     const index = p.mondays.indexOf(c.M);
@@ -265,27 +268,28 @@ export function priceCoin(
       judged,
       main,
     };
-  });
+  };
+  for (const c of copies) yield priceOne(c);
 }
 
 /** Copies by id; equal ids 0, so that a stable sort keeps the kit's order (the supervisor's ruling on the engine review's Q2). */
 export const byId = (a: { id: string }, b: { id: string }): number =>
   a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
-/** A coin's positions, BUILD's and BUILD-L's copies priced together by id (a tie in the kit's order): PRICES' part, and the rehearsal's fortnight in memory (steps.ts `fortnightOf`). */
-export function coinPositions(
+/** A coin's positions, BUILD's and BUILD-L's copies priced together by id (a tie in the kit's order), one at a time: PRICES' part, and the rehearsal's fortnight in memory (steps.ts `fortnightOf`). */
+export function* coinPositions(
   kit: Research,
   i: PricesInputs,
   c: PricesContext,
   seal: Seal,
-): Position[] {
+): Generator<Position> {
   const { coin, rows } = coinReadingOf(c, i, seal);
   const copies = coinCopies(c.build, recordAt(c.build, i.build[0]), i.iid);
   if (i.build[1] !== null)
     for (const x of coinCopies(c.large, recordAt(c.large, i.build[1]), i.iid))
       copies.push(x);
   copies.sort(byId);
-  return priceCoin(kit, copies, {
+  yield* priceCoin(kit, copies, {
     coin,
     rows,
     tables: removalTablesOf(c.removal, recordAt(c.removal, i.removal), i.iid),
@@ -294,18 +298,29 @@ export function coinPositions(
   });
 }
 
-/** PRICES's function (engine.ts `PartFunction`): the coin's positions lines. */
-export const pricesPart: PartFunction = (inputs, ctx) => {
-  const positions = coinPositions(
+/** A chunk of a PRICES part's lines at least, in characters: a write a line is slow. */
+const CHUNK_CHARS = 1 << 20;
+
+/** PRICES's function (engine.ts `PartFunction`): the coin's positions lines, given a chunk at a time. */
+export const pricesPart: PartFunction = function* (inputs, ctx) {
+  let chunk: string[] = [];
+  let size = 0;
+  for (const pos of coinPositions(
     ctx.kit,
     PricesInputs.parse(inputs),
     PricesContext.parse(ctx.context),
     ctx.seal,
-  );
-  const lines: Buffer[] = [];
-  for (const pos of positions)
-    lines.push(Buffer.from(`${JSON.stringify(pos)}\n`, "utf8"));
-  return Buffer.concat(lines);
+  )) {
+    const line = `${JSON.stringify(pos)}\n`;
+    chunk.push(line);
+    size += line.length;
+    if (size >= CHUNK_CHARS) {
+      yield Buffer.from(chunk.join(""), "utf8");
+      chunk = [];
+      size = 0;
+    }
+  }
+  if (chunk.length > 0) yield Buffer.from(chunk.join(""), "utf8");
 };
 
 /** PRICES's parts: one a coin the BUILD phases hold, each with its coins.json name. */

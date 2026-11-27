@@ -40,8 +40,11 @@
  *   statistic and sealed reading, MAIN's prints in FRESH-2's form, none
  *   without MAIN;
  * - the engine end to end (the engine's plan, section 12): a run stopped
- *   inside a phase and resumed gives every phase's record of an unbroken
- *   run; a run of other inputs over its closed phases is refused (exit 5).
+ *   inside a phase and resumed under a raised heap gives every phase's
+ *   record of an unbroken run; a run of other inputs over its closed phases
+ *   is refused (exit 5); a step's engine run the same at any heap but for
+ *   the heap itself (its lanes' thresholds never scaled), RESULT one child
+ *   at the heap cap.
  */
 import {
   existsSync,
@@ -86,13 +89,20 @@ import {
   fingerprintOf,
   sha256,
 } from "../src/copyh/run.js";
-import { END_S } from "../src/copyh/design.js";
+import {
+  END_S,
+  WORKER_HEAP_CAP_GB,
+  WORKER_HEAP_GB,
+} from "../src/copyh/design.js";
+import { LANE_HISTORY_FILLS } from "../src/copyh/phase-build.js";
+import { LANE_LABEL_FILLS } from "../src/copyh/phase-labels.js";
 import { SEALED } from "../src/copyh/seal.js";
 import {
   FORTNIGHT_MINUTES,
   StoreRecord,
   LOOK_FILES,
   copyLogs,
+  engineRunOf,
   fortnightOf,
   heldLookFiles,
   heldRecomputed,
@@ -685,6 +695,10 @@ describe(
       expect(new Set(runsOf(e.labels.dir).map((r) => r.heapGb))).toEqual(
         new Set([1]),
       );
+      // RESULT keeps every voted copy's readings: one child at the heap cap (COPYH-ENGINE-REVIEW-2 M2).
+      expect(runsOf(e.result.dir).map((r) => r.heapGb)).toEqual([
+        WORKER_HEAP_CAP_GB,
+      ]);
       const result = resultOf(e.result.dir, e.result.record);
       expect(result).toMatchObject({ look: 1, z: 2.81, verdict: "WITHHELD" });
       first = {
@@ -1264,7 +1278,7 @@ describe(
       ).toEqual([1, 0]);
     });
 
-    it("gives a run stopped in a phase and resumed the records of an unbroken one, phase by phase (C15: a resumed command's output equals an unbroken one's); a run of other inputs over its closed phases refused (exit 5), changing nothing", async () => {
+    it("gives a run stopped in a phase and resumed under a raised heap the records of an unbroken one, phase by phase (C15: a resumed command's output equals an unbroken one's, a later run under a larger ceiling); a run of other inputs over its closed phases refused (exit 5), changing nothing", async () => {
       const dir = engineDir();
       const o = {
         markMinutes: 5 as const,
@@ -1283,7 +1297,14 @@ describe(
       await stopped.catch((err: unknown) => expect(exitOf(err).code).toBe(3));
       expect(existsSync(path.join(dir, "labels"))).toBe(true);
       expect(existsSync(path.join(dir, "result"))).toBe(false);
-      const e = await runEngine(runOf(dir, o));
+      // Resumed under a larger ceiling (COPYH_HEAP_GB, C15): the parts before the stop at 1 GB, those after at 2.
+      const e = await runEngine({ ...runOf(dir, o), heapGb: 2 });
+      expect(new Set(runsOf(e.labels.dir).map((r) => r.heapGb))).toEqual(
+        new Set([1, 2]),
+      );
+      expect(new Set(runsOf(e.build.dir).map((r) => r.heapGb))).toEqual(
+        new Set([2]),
+      );
       const closed = (r: EngineRecords) =>
         [
           r.labels,
@@ -1303,6 +1324,48 @@ describe(
       await expect(other).rejects.toThrow(StoreError);
       await other.catch((err: unknown) => expect(exitOf(err).code).toBe(5));
       expect(closed(e)).toEqual(before);
+    });
+
+    it("makes a step's engine run the same at any heap but for the heap itself: the lanes' thresholds are never scaled by it (COPYH-ENGINE-REVIEW-2 M1)", () => {
+      const dir = engineDir();
+      const log = () => {};
+      const at = (heapGb: number) =>
+        engineRunOf(
+          {
+            roots: world.context.roots,
+            funding: F.store,
+            seal: SEAL,
+            workers: 3,
+            heapGb,
+            budget: never,
+            log,
+          },
+          {
+            program: "made-up",
+            values: { labelFills: 1e9, historyFills: 2e9, markMinutes: 5 },
+            stores: [world.store],
+            dir,
+            end: END,
+            stage: [M1, END],
+            mondays: [M1, M2],
+            look: 1,
+            earlier: [],
+            tries: [],
+            pastTripwire: false,
+            engine: "look1",
+            fundingList: F.list,
+          },
+        );
+      const base = at(WORKER_HEAP_GB);
+      expect(base.lanes).toEqual({
+        labelFills: LANE_LABEL_FILLS,
+        historyFills: LANE_HISTORY_FILLS,
+      });
+      for (const heapGb of [WORKER_HEAP_GB + 4, WORKER_HEAP_CAP_GB]) {
+        const raised = at(heapGb);
+        expect(raised.heapGb).toBe(heapGb);
+        expect({ ...raised, heapGb: base.heapGb }).toEqual(base);
+      }
     });
   },
 );

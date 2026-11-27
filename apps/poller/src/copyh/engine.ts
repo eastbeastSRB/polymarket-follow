@@ -8,10 +8,12 @@
  * - A part's file is its header line, the JSON of its phase, id and inputs
  *   (everything its bytes are a function of: the code's fingerprint, the
  *   stores' and lists' hashes, earlier records, END, the window, the
- *   settlement mark), then the bytes the phase's function gives. A part or
- *   a record found with another header is refused (exit 5: moved aside by
- *   hand), never reused or overwritten. No heap and no time is in a part:
- *   no output depends on them (C15).
+ *   settlement mark), then the bytes the phase's function gives, whole or
+ *   as chunks; it is written through one file descriptor, flushed, then
+ *   renamed, so that a part in place is whole on disk. A part or a record
+ *   found with another header is refused (exit 5: moved aside by hand),
+ *   never reused or overwritten. No heap and no time is in a part: no
+ *   output depends on them (C15).
  * - The children: a pool of `workers` long-lived processes
  *   (`child_process.fork` of engine-worker.js at the heap given, the
  *   program's idle priority inherited) computes the phase's missing a
@@ -28,12 +30,15 @@ import { fork } from "node:child_process";
 import {
   closeSync,
   existsSync,
+  fsyncSync,
   mkdirSync,
   openSync,
   readFileSync,
   readSync,
   readdirSync,
+  renameSync,
   rmSync,
+  writeSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -44,9 +49,10 @@ import {
   BuildsDiffer,
   NotFinished,
   PACKAGE_ROOT,
+  RENAME_PAUSE_MS,
+  RENAME_TRIES,
   StoreError,
   sha256,
-  writeUnflushed,
   writeWhole,
   type Budget,
 } from "./run.js";
@@ -63,6 +69,9 @@ export const ENGINE_WORKER_FILE = path.join(
 /** A part of a phase: its id (a file's name) and its inputs, all its bytes are a function of. */
 export type PartSpec = { readonly id: string; readonly inputs: unknown };
 
+/** A part's bytes: whole, or as chunks in their order (a PRICES part, a coin's positions, can pass 2 GiB, which no one buffer or write takes). */
+export type PartBytes = Uint8Array | Iterable<Uint8Array>;
+
 /** A phase's function, in a compiled module: a part's bytes from its inputs; `context` is where it reads them (folders, roots), the same for every part of the phase and none of its identity. */
 export type PartFunction = (
   inputs: unknown,
@@ -71,7 +80,7 @@ export type PartFunction = (
     readonly seal: Seal;
     readonly context: unknown;
   },
-) => Uint8Array | Promise<Uint8Array>;
+) => PartBytes | Promise<PartBytes>;
 
 /** One part asked of a child. */
 export type Job = {
@@ -102,6 +111,47 @@ export type Reply =
       readonly message: string;
     };
 
+/** The bytes of one write at most: Node refuses a write of 2^31 bytes or more (Node 24.13, measured 2026-11-27: COPYH-ENGINE-REVIEW-2 H1). */
+const WRITE_MAX = 2 ** 30;
+
+/**
+ * A part written whole: its header line and then its bytes, a chunk at a
+ * time, to `<file>.tmp` through one file descriptor, flushed, then renamed
+ * over the file, a refused rename tried again as run.ts's writers try it
+ * (its loop copied: run.ts is a store-closure file). So a part in place is
+ * whole on disk, and a crash leaves at most a temp, which the next run
+ * removes (COPYH-ENGINE-REVIEW-2 M3).
+ */
+function writePart(file: string, header: string, bytes: PartBytes): void {
+  const fd = openSync(`${file}.tmp`, "w");
+  try {
+    const put = (b: Uint8Array) => {
+      for (let at = 0; at < b.length;)
+        at += writeSync(fd, b, at, Math.min(b.length - at, WRITE_MAX));
+    };
+    put(Buffer.from(`${header}\n`, "utf8"));
+    for (const chunk of bytes instanceof Uint8Array ? [bytes] : bytes)
+      put(chunk);
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  for (let i = 1; ; i++) {
+    try {
+      renameSync(`${file}.tmp`, file);
+      return;
+    } catch (err) {
+      if (i >= RENAME_TRIES) throw err;
+      Atomics.wait(
+        new Int32Array(new SharedArrayBuffer(4)),
+        0,
+        0,
+        RENAME_PAUSE_MS,
+      );
+    }
+  }
+}
+
 /** In the child: one part computed by its phase's function and written whole, its header line first. */
 export async function runJob(job: Job, kit: Promise<Research>): Promise<Reply> {
   const t0 = performance.now();
@@ -119,10 +169,7 @@ export async function runJob(job: Job, kit: Promise<Research>): Promise<Reply> {
       seal: job.seal,
       context: job.context,
     });
-    writeUnflushed(
-      job.file,
-      Buffer.concat([Buffer.from(`${job.header}\n`), bytes]),
-    );
+    writePart(job.file, job.header, bytes);
     return {
       ok: true,
       id: job.id,

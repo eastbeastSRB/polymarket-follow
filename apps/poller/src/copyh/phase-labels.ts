@@ -24,12 +24,7 @@ import path from "node:path";
 import { z } from "zod";
 import { DAY_MS } from "../schedule.js";
 import { readBucket, vaultsOf, type AccountView } from "./accounts.js";
-import {
-  ARCHIVE_START,
-  BUCKETS,
-  LABEL_CAPTURE_DAYS,
-  WORKER_HEAP_GB,
-} from "./design.js";
+import { ARCHIVE_START, BUCKETS, LABEL_CAPTURE_DAYS } from "./design.js";
 import { DirsFile, kindsOf } from "./dirs.js";
 import type { PartFunction, PartSpec, PhaseRecord } from "./engine.js";
 import { partBytes } from "./engine.js";
@@ -48,10 +43,8 @@ import { MANIFEST, openStore, type Store } from "./store.js";
 
 /** The Mondays of a LABELS part (a part constant: it decides nothing). */
 export const LABELS_BLOCK = 8;
-/** The normal lane's capture at most, at WORKER_HEAP_GB: a market maker's capture there fits within half the heap (the kit's 0.77 KB a fill and the reader's 0.25 KB, COPYH-ENGINE's measure, 2026-11-26); scaled by the heap. */
+/** The normal lane's capture at most: a market maker's capture there fits within half of an 8 GB heap (the kit's 0.77 KB a fill and the reader's 0.25 KB, COPYH-ENGINE's measure, 2026-11-26). Never scaled by the heap: a part's inputs hold it, so a heap raised in a step would make its closed phases of other inputs (COPYH-ENGINE-REVIEW-2 M1). */
 export const LANE_LABEL_FILLS = 3_500_000;
-export const laneLabelFills = (heapGb: number): number =>
-  Math.floor((LANE_LABEL_FILLS * heapGb) / WORKER_HEAP_GB);
 
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
 /** Where a phase reads the step's reading: its stores' folders in time order, the run's roots, dirs.json. */
