@@ -134,7 +134,15 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
 - **After the breaks, remove each junction link in a scratch copy on its
   own** (`cmd /c rmdir <link>`, no `/s`). The copy is then a plain folder,
   and a later cleanup cannot follow it into the repository's `node_modules`
-  (EXTRACT-FIX-2, 2026-11-18).
+  (EXTRACT-FIX-2, 2026-11-18). Run it from PowerShell, then check the link
+  is gone: from Git Bash, `MSYS_NO_PATHCONV=1 cmd //c rmdir <link>` opens an
+  interactive cmd that removes nothing and still exits 0 (COPYH-ENGINE-8,
+  2026-11-27).
+- **A crash mid-write can leave a file whose header is whole over a torn
+  body:** a resume that checks only a header takes it. Hold every stretch to
+  its SHA-256 before a resume skips a part, or read back the last minutes'
+  parts after a crash (E's build, 2026-11-26 23:23Z: 1 of 11 torn parts had
+  a whole header; COPYH-BURNIN).
 - **A test of a size or a difference needs data that can show it:**
   - a one-level book or tape makes a walk's price independent of the
     walked size, so put a level boundary at the walked size;
