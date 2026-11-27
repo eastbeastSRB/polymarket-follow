@@ -7,14 +7,17 @@
  *   the phases before any price and TRIPWIRE, MAIN's copy projected under
  *   both settlement marks, the mark they set (60) and the fortnight priced
  *   in memory at it (the 60-minute fortnight's, not the 5's); the counts
- *   and the prints; no file of priced copies written;
+ *   and the prints, the sizes of the priced phases among them; the two
+ *   checks (C15 (c) 5 and 7: KIT, the label bound's check), their lanes
+ *   changing nothing; no file of priced copies written;
  * - `rehearsal.json`'s content read by step 1's schema (steps.ts
  *   `RehearsalFile`), its identity, store record and closure;
  * - the counts' pieces on made-up copies and stores: the copies a week by
- *   line with MAIN's legs, the survival curve at whole hours and its share,
- *   the long share by day; RL11's settlements, a trade in the Settlement's
- *   own minute left out; the worker heap and the settlement mark on both
- *   sides of their bounds.
+ *   line with MAIN's legs, and by coin, the survival curve at whole hours
+ *   and its share, the long share by day; RL11's settlements, a trade in
+ *   the Settlement's own minute left out; the worker heap and the
+ *   settlement mark on both sides of their bounds; the checks' pieces (the
+ *   pass mark, the ten largest exit rows, the caps' counts).
  */
 import {
   mkdirSync,
@@ -27,13 +30,30 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { readBucket } from "../src/copyh/accounts.js";
 import { storeClosure } from "../src/copyh/closure.js";
-import { fileSha256 } from "../src/copyh/engine.js";
+import { PhaseRecord, fileSha256 } from "../src/copyh/engine.js";
+import { historyOf } from "../src/copyh/entries.js";
 import { dayOf, mondayOf } from "../src/copyh/instants.js";
-import type { Copy } from "../src/copyh/phase-build.js";
+import { normOf } from "../src/copyh/normalize.js";
+import {
+  largestExitsOf,
+  type BuildFacts,
+  type Copy,
+} from "../src/copyh/phase-build.js";
+import {
+  checksOf,
+  labelCheckOf,
+  type MondayCheck,
+} from "../src/copyh/phase-check.js";
+import type { LabelsPart } from "../src/copyh/phase-labels.js";
 import {
   CAPS_BASE,
+  CHECK_BUCKETS,
+  CHECK_MONDAYS,
   REHEARSAL_FILE,
+  capsOf,
+  checksOn,
   copyCounts,
   readyForRehearsal,
   rehearsalJson,
@@ -48,14 +68,18 @@ import {
   RehearsalFile,
   StoreRecord,
   fortnightOf,
+  unpricedPhases,
   type EngineRun,
 } from "../src/copyh/steps.js";
 import { MANIFEST, Store, openStore } from "../src/copyh/store.js";
 import { loadResearch } from "../src/paper/research.js";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../src/schedule.js";
+import { KINDS } from "./copyh-engine-world.js";
 import { COINS, addr, record, trade } from "./copyh-world.js";
 import {
   A,
+  A_ORDERS,
+  B,
   END,
   M1,
   M2,
@@ -124,6 +148,9 @@ const runAt = (dir: string, markMinutes: 5 | 60 = 5): EngineRun => ({
   budget: never,
   log: () => {},
 });
+
+/** The label bound's check on the world: A's bucket at M2, where A is MAIN's. */
+const CHECK = { buckets: [1], mondays: [M2] };
 
 /** A COPY-H folder whose E holds the world's store as its first build and as its twin (`twin`: a twin's manifest of other bytes), its integrity as given (none: not written). */
 function eFolder(o: {
@@ -274,17 +301,20 @@ describe(
       world.store.seal,
     );
 
-    it("runs the phases before any price and TRIPWIRE, sets the settlement mark from its projection, prices the fortnight in memory at that mark, and writes no file of priced copies", async () => {
+    it("runs the phases before any price, TRIPWIRE and the two checks, sets the settlement mark from its projection, prices the fortnight in memory at that mark, and writes no file of priced copies", async () => {
       r = await rehearsalOf({
         run: runAt(engine),
         stores: [store],
         kit,
         window: [M1, END],
+        check: CHECK,
         pricing: never,
       });
       expect(readdirSync(engine).sort()).toEqual([
         "build",
         "fortnight",
+        "kit",
+        "labelcheck",
         "labels",
         "removal",
         "tripwire",
@@ -339,6 +369,25 @@ describe(
         copies: { MAIN: 1, BROAD: 1, DAY: 1 },
         mainAfterSettlement: {},
       });
+      // The sizes of the priced phases (COPYH-ENGINE-REVIEW-2 Q2): each BUILD part's bytes after its header line, and by coin the copies by line with their lines' bytes and the keys' lines', read here from A's part.
+      const lines = readFileSync(path.join(build, "a", "b001.part"), "utf8")
+        .split("\n")
+        .slice(1, -1);
+      const bytesOf = (ls: readonly string[]) =>
+        ls.reduce((s, l) => s + Buffer.byteLength(l) + 1, 0);
+      expect(r.counts.sizes.parts.map(([p]) => p)).toEqual(
+        record.parts.map(([id]) => `BUILD/${id}`),
+      );
+      expect(r.counts.sizes.parts[1]).toEqual(["BUILD/b001", bytesOf(lines)]);
+      expect(r.counts.sizes.coins).toEqual([
+        {
+          iid: SOL,
+          coin: "SOL",
+          copies: { MAIN: 1, BROAD: 1, DAY: 1 },
+          copyBytes: bytesOf(lines.filter((l) => l.startsWith('{"id":'))),
+          keyBytes: bytesOf(lines.filter((l) => l.startsWith("[["))),
+        },
+      ]);
       expect(r.prints).toEqual({
         idsTwice: 0,
         sizeZero: 0,
@@ -390,6 +439,111 @@ describe(
         cutParts: false,
       });
     });
+
+    it("runs the two checks (C15 (c) 5 and 7): the kit alone on the built account with the most exit rows, its history's counts and its two runs, the freeze not waiting; the caps' counts, none past a lane; the label bound's check at M2, both captures alike on the world, MAIN's account under both, passing", () => {
+      // The kit's reference on A's fills to END, read from the store apart from the phase.
+      const start = world.store.manifest.start;
+      const view = readBucket([world.store], 1, { from: start, to: END }, KINDS)
+        .filter((v) => v.addr === A)
+        .at(0)!;
+      const fills = view.rows(start, END);
+      const built = historyOf(kit, normOf(fills), { fills: 2e9, exits: 3e9 });
+      if (built.kind !== "built") throw new Error("A is built");
+      const h = built.history;
+      expect(fills.length).toBe(A_ORDERS.length);
+      const run = expect.objectContaining({ heapGb: 1 }) as unknown;
+      expect(r.counts.exits).toEqual({
+        aboveMax: [],
+        largestUnder: [[A, h.exitRows, A_ORDERS.length]],
+        kit: {
+          addr: A,
+          fills: A_ORDERS.length,
+          events: h.events.length,
+          cycles: h.cycles.length,
+          groups: h.groups.length,
+          exitRows: h.exitRows,
+          runs: [run, run],
+          freezeWaits: false,
+        },
+      });
+      expect(h.events.length).toBe(A_ORDERS.length);
+      expect(r.values.kit).toEqual({ freezeWaits: false });
+      expect(r.counts.caps).toEqual({
+        labels: [M1, M2].map((M) => ({
+          M: iso(M),
+          deferred: [],
+          largeLabels: {},
+          tooLarge: [],
+        })),
+        histories: { largeLane: [], tooManyFills: [] },
+        largest: { p1CapturePastLane: null, history: null },
+      });
+      // Bucket 01's accounts but V, the vault: A MAIN's under both captures, B the maker, C silent in the 14 days.
+      expect(r.counts.labelBound).toEqual({
+        passMark: 0.01,
+        mondays: [
+          {
+            M: iso(M2),
+            checked: 3,
+            main90: 1,
+            mainWhole: 1,
+            mainDiffer: 0,
+            labelDiffer: 0,
+            differ: [],
+            apart: [],
+            pass: true,
+          },
+        ],
+        pass: true,
+      });
+      expect(r.values.labelBound).toEqual({ pass: true });
+      expect(r.counts.checkRuns).toMatchObject({
+        kit: { parts: 1 },
+        labelCheck: { parts: 1 },
+        labelCheckL: null,
+      });
+    });
+
+    it("changes nothing by its lanes in the checks: every threshold 0, the kit runs at the heap cap and the label bound's check in its large lane, one child at the cap, its result the normal lanes'", async () => {
+      const run: EngineRun = {
+        ...runAt(
+          path.join(
+            temp("rehearse-lanes"),
+            "COPY-H",
+            "E",
+            "rehearsal",
+            "engine",
+          ),
+        ),
+        lanes: { labelFills: 0, historyFills: 0 },
+      };
+      const u = await unpricedPhases(run);
+      const c = await checksOn(run, u, CHECK);
+      const cap = expect.objectContaining({ heapGb: 20 }) as unknown;
+      expect(c.exits).toEqual({
+        ...r.counts.exits,
+        kit: { ...r.counts.exits.kit, runs: [cap, cap] },
+      });
+      expect(c.labelBound).toEqual(r.counts.labelBound);
+      expect(c.runs.labelCheckL).toMatchObject({ parts: 1 });
+      for (const copy of ["a", "b"])
+        expect(
+          JSON.parse(
+            readFileSync(
+              path.join(run.dir, "labelcheck-l", copy, "b001-m000.run.json"),
+              "utf8",
+            ),
+          ),
+        ).toMatchObject({ heapGb: 20 });
+      // A and B past the lane at M2, C silent in the 14 days.
+      const dir = path.join(run.dir, "labelcheck");
+      const record = PhaseRecord.parse(
+        JSON.parse(readFileSync(path.join(dir, "record.json"), "utf8")),
+      );
+      expect(
+        checksOf(dir, record)[0]!.mondays[0]!.deferred.map(([a]) => a),
+      ).toEqual([A, B]);
+    }, 300_000);
 
     it("writes rehearsal.json's content as step 1 reads it: its identity first, E's store record, this build's store closure, the fortnight, the caps' base", () => {
       const f = eFolder({ integrity: passed });
@@ -460,11 +614,12 @@ function copyOf(o: {
   dir?: number;
   flag?: Copy["plan"]["flag"];
   settled?: boolean;
+  iid?: number;
 }): Copy {
   return {
     id: `c${o.t}`,
     addr: A,
-    iid: SOL,
+    iid: o.iid ?? SOL,
     dir: o.dir ?? 1,
     type: "OPEN",
     t: o.t,
@@ -527,8 +682,13 @@ describe(
         copyOf({ t: M2 + 4 * H, legs: [[H, 1, "CLOSE"]], voted: false }),
         // BROAD only: its copy counted, nothing else.
         copyOf({ t: M2 + 5 * H, legs: [[H, 1, "CLOSE"]], lines: ["BROAD"] }),
-        // A short of the next week, closed within its first hour.
-        copyOf({ t: week2 + H, legs: [[0.5 * H, 1, "CLOSE"]], dir: -1 }),
+        // A short of the next week on BTC, closed within its first hour.
+        copyOf({
+          t: week2 + H,
+          legs: [[0.5 * H, 1, "CLOSE"]],
+          dir: -1,
+          iid: 0,
+        }),
       ];
       const c = copyCounts(copies);
       expect(c.weeks).toEqual([
@@ -540,6 +700,11 @@ describe(
         { M: iso(copies[5]!.M), copies: { MAIN: 1 }, legs: { CLOSE: 1 } },
       ]);
       expect(copies[0]!.M).not.toBe(copies[5]!.M);
+      // By coin and line, every copy (the sizes of the priced phases).
+      expect(c.coins).toEqual([
+        { iid: 0, copies: { MAIN: 1 } },
+        { iid: SOL, copies: { MAIN: 4, BROAD: 1 } },
+      ]);
       expect(c.survival).toEqual({
         copies: 4,
         censored: 1,
@@ -552,6 +717,7 @@ describe(
       ]);
       expect(copyCounts([])).toEqual({
         weeks: [],
+        coins: [],
         survival: { copies: 0, censored: 0, open: [], share: [] },
         longShare: [],
       });
@@ -673,3 +839,152 @@ describe(
     });
   },
 );
+
+describe("the checks' pieces (C15 (c) 5 and 7, RL4)", () => {
+  const M = Date.parse("2026-02-02T00:00:00Z");
+  const day = (o: Partial<MondayCheck>): MondayCheck => ({
+    M,
+    checked: 0,
+    main90: 0,
+    mainWhole: 0,
+    differ: [],
+    apart: [],
+    deferred: [],
+    ...o,
+  });
+  /** n differences: of MAIN (directional on the 90-day capture, churner on the whole, MAIN on the 90-day alone), or of the label alone (churner against mixed, MAIN on neither). */
+  const differs = (n: number, of: "main" | "label") =>
+    Array.from({ length: n }, (_, k): MondayCheck["differ"][number] =>
+      of === "main"
+        ? [addr(k), "directional", "churner", true, false]
+        : [addr(k), "churner", "unclassified — mixed", false, false],
+    );
+
+  it("takes the check's eight buckets, 0 mod 32, and its four Mondays of E", () => {
+    expect(CHECK_BUCKETS).toEqual([0, 32, 64, 96, 128, 160, 192, 224]);
+    expect(CHECK_MONDAYS.map((t) => new Date(t).toISOString())).toEqual([
+      "2025-12-01T00:00:00.000Z",
+      "2026-02-02T00:00:00.000Z",
+      "2026-04-06T00:00:00.000Z",
+      "2026-05-25T00:00:00.000Z",
+    ]);
+    for (const t of CHECK_MONDAYS) expect(mondayOf(t)).toBe(t);
+  });
+
+  it("passes the label bound at a Monday while MAIN's differences number under 1% of the accounts meeting MAIN under the whole capture, a difference of the label alone listed and not counted; none differing passes", () => {
+    const at = (mainWhole: number, differ: MondayCheck["differ"]) =>
+      labelCheckOf([{ mondays: [day({ mainWhole, differ })] }], [M], 0.01);
+    expect(at(100, differs(1, "main")).pass).toBe(false);
+    expect(at(101, differs(1, "main")).pass).toBe(true);
+    expect(at(0, []).pass).toBe(true);
+    expect(at(0, differs(1, "main")).pass).toBe(false);
+    const labelsOnly = at(0, differs(3, "label"));
+    expect(labelsOnly.mondays[0]).toMatchObject({
+      mainDiffer: 0,
+      labelDiffer: 3,
+      pass: true,
+    });
+    expect(labelsOnly.mondays[0]!.differ).toEqual(differs(3, "label"));
+    // The parts' Mondays summed, each Monday on its own; one failing fails the check.
+    const two = labelCheckOf(
+      [
+        { mondays: [day({ checked: 2, main90: 1, mainWhole: 1 })] },
+        {
+          mondays: [
+            day({
+              checked: 5,
+              main90: 1,
+              mainWhole: 2,
+              differ: differs(1, "main"),
+              apart: [[addr(9), 2e7]],
+            }),
+          ],
+        },
+      ],
+      [M],
+      0.01,
+    );
+    expect(two.mondays[0]).toEqual({
+      M: new Date(M).toISOString(),
+      checked: 7,
+      main90: 2,
+      mainWhole: 3,
+      mainDiffer: 1,
+      labelDiffer: 1,
+      differ: differs(1, "main"),
+      apart: [[addr(9), 2e7]],
+      pass: false,
+    });
+    expect(two.pass).toBe(false);
+  });
+
+  it("names the ten built accounts with the most exit rows, a tie by address", () => {
+    const xs = Array.from({ length: 12 }, (_, k): [string, number, number] => [
+      addr(20 - k),
+      k < 2 ? 50 : k,
+      k,
+    ]);
+    expect(largestExitsOf(xs).map(([a, rows]) => [a, rows])).toEqual([
+      [addr(19), 50],
+      [addr(20), 50],
+      ...Array.from({ length: 8 }, (_, k) => [addr(9 + k), 11 - k]),
+    ]);
+  });
+
+  it("gives the caps' counts Monday by Monday: the captures past the lane with their large-lane label, those above the cap, the histories with their P1 Mondays, and the largest of each that is P1", () => {
+    const [a, b, c, d] = [1, 2, 3, 4].map((n) => addr(n));
+    const monday = (o: Partial<LabelsPart["mondays"][number]>) => ({
+      M,
+      counts: {},
+      p1: [],
+      tooLarge: [],
+      deferred: [],
+      ...o,
+    });
+    const labels: LabelsPart[] = [
+      {
+        vaults: [],
+        mondays: [
+          monday({
+            p1: [d!],
+            deferred: [
+              [a!, 5e6],
+              [b!, 4e6],
+            ],
+            tooLarge: [[c!, 2e7]],
+          }),
+        ],
+      },
+    ];
+    const large: LabelsPart[] = [
+      {
+        vaults: [],
+        mondays: [monday({ counts: { directional: 1, churner: 1 }, p1: [a!] })],
+      },
+    ];
+    const build: Pick<BuildFacts, "deferred" | "tooManyFills"> = {
+      deferred: [[a!, 3e6]],
+      tooManyFills: [[d!, 9e6]],
+    };
+    expect(
+      capsOf(labels, large, {
+        largeLane: build.deferred,
+        tooManyFills: build.tooManyFills,
+      }),
+    ).toEqual({
+      labels: [
+        {
+          M: new Date(M).toISOString(),
+          deferred: [
+            [a, 5e6, true],
+            [b, 4e6, false],
+          ],
+          largeLabels: { directional: 1, churner: 1 },
+          tooLarge: [[c, 2e7]],
+        },
+      ],
+      histories: { largeLane: [[a, 3e6, 1]], tooManyFills: [[d, 9e6, 1]] },
+      largest: { p1CapturePastLane: 5e6, history: 9e6 },
+    });
+  });
+});

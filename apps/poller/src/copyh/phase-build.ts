@@ -30,7 +30,8 @@
  *   (its `buildEntries` spreads a merged event's tids into a call: the
  *   rehearsal prints it, and above 100,000 it is ruled before the freeze;
  *   decisions 2026-11-26), and by coin the entries of MAIN's accounts after
- *   the coin's first Settlement (RL11, the rehearsal's count).
+ *   the coin's first Settlement (RL11, the rehearsal's count), and the built
+ *   accounts with the most exit rows (C15 (c) 5).
  * - A part's bytes: an index line, then the facts (the counts and the
  *   accounts named), then each coin's copies, a JSON line each, and its
  *   keys, KEYS_A_LINE a line, the index giving each run of lines, so that a
@@ -79,6 +80,16 @@ export const MASK: Readonly<Record<Line, number>> = {
 };
 /** The keys of a part's line at most (a part constant: it decides nothing). */
 export const KEYS_A_LINE = 100_000;
+/** The built accounts with the most exit rows the rehearsal names, beside those above EXITS_MAX (C15 (c) 5: the ten largest under it). */
+export const LARGEST_EXITS = 10;
+/** The most exit rows first, a tie by address, LARGEST_EXITS at most. */
+export const largestExitsOf = (
+  xs: readonly (readonly [string, number, number])[],
+): [string, number, number][] =>
+  xs
+    .map((x): [string, number, number] => [x[0], x[1], x[2]])
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .slice(0, LARGEST_EXITS);
 
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
 export const BuildInputs = ReadingInputs.extend({
@@ -172,6 +183,8 @@ export const BuildFacts = z.object({
   sizeZero: z.number(),
   /** The most fills of one order event merged into an entry group, over the built accounts' whole histories. */
   largestMerged: z.number(),
+  /** The built accounts with the most exit rows, LARGEST_EXITS at most: [account, exit rows, fills] (the rehearsal's count, C15 (c) 5). */
+  largestExits: z.array(z.tuple([z.string(), z.number(), z.number()])),
   otherMarkets: z.record(z.string(), z.number()),
   /** By coin's iid: the entries of accounts in MAIN at their Monday whose instant lies after their coin's first Settlement (RL11, the rehearsal's count). */
   mainAfterSettlement: z.record(z.string(), z.number()),
@@ -338,6 +351,7 @@ function buildAccount(
   if (built.kind === "too many fills") throw new Error("counted above");
   const h = built.history;
   facts.built += 1;
+  facts.largestExits.push([view.addr, h.exitRows, fills]);
   facts.residues += residues(h.events);
   facts.chainBreaks += h.chain.breaks.length;
   for (const g of h.groups)
@@ -462,6 +476,7 @@ export const buildPart: PartFunction = (inputs, ctx) => {
     idsTwice: 0,
     sizeZero: 0,
     largestMerged: 0,
+    largestExits: [],
     otherMarkets: {},
     mainAfterSettlement: {},
     copies: {},
@@ -501,6 +516,7 @@ export const buildPart: PartFunction = (inputs, ctx) => {
     throw new StoreError(
       `bucket ${i.bucket}: a deferred account is not P1 in its reading`,
     );
+  facts.largestExits = largestExitsOf(facts.largestExits);
   // The body: the facts, then each coin's copies by id (a tie in the kit's order: the sort is stable), a line each, and its keys, KEYS_A_LINE a line.
   const lines: Buffer[] = [];
   let at = 0;
@@ -579,6 +595,23 @@ export function factsOf(
 ): BuildFacts {
   const part = indexOf(dir, record, id);
   return BuildFacts.parse(linesOf(runOf(part, part.index.facts), id)[0]);
+}
+
+/** A closed BUILD or BUILD-L part's bytes, and by coin its copies' and its keys' bytes, by its index alone (the rehearsal's sizes of the priced phases: COPYH-ENGINE-REVIEW-2 Q2, decisions 2026-11-27). */
+export function partSizesOf(
+  dir: string,
+  record: PhaseRecord,
+  id: string,
+): { bytes: number; coins: [iid: number, copies: number, keys: number][] } {
+  const part = indexOf(dir, record, id);
+  return {
+    bytes: statSync(part.file).size - heldPart(dir, record, id).start,
+    coins: part.index.coins.map(([iid, copies, keys]) => [
+      iid,
+      copies[1],
+      keys[1],
+    ]),
+  };
 }
 
 /** One coin's copies from every part of a closed BUILD or BUILD-L phase, each part read by its index alone. */

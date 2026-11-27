@@ -12,12 +12,18 @@
  * - the engine's phases before any price in `E\rehearsal\engine`, every part
  *   twice (steps.ts: LABELS, LABELS-L, BUILD, BUILD-L, REMOVAL, then
  *   TRIPWIRE, MAIN's set projected under both settlement marks, no stop);
+ * - its two checks (phase-check.ts), parts as the engine's: KIT, the kit on
+ *   the built account with the most exit rows under EXITS_MAX alone (C15 (c)
+ *   5: the freeze waits when a run of it passes one part's minutes or half
+ *   its child's heap, RH1 (b)), and the label bound's check on the 1/32
+ *   slice at its four Mondays (C15 (c) 7, its pass mark RL4's);
  * - the values its counts set before the freeze (C17): C9's settlement mark
  *   (C16: 60 minutes when the 5-minute projection is above 0.5%; the freeze
  *   waits while the set mark's is above 1%) and C15's worker heap (twice the
  *   largest peak measured, rounded up to a whole GB; above the cap the parts
  *   are cut smaller instead); the caps' are read with their large lane's
- *   labels (C15 (c) 5);
+ *   labels (C15 (c) 5: the captures and histories past the normal lanes'
+ *   thresholds and above the caps, with their fills, by Monday);
  * - in memory, started only while `pricing` allows (the run's budget less
  *   steps.ts's FORTNIGHT_MINUTES): the fortnight priced at the mark set (C15
  *   (c) 10, steps.ts `fortnightOf`), then the counts from the closed phases;
@@ -27,11 +33,14 @@
  *   --closure`'s form, closure.ts's; its manifest without the run's fields),
  *   the fortnight, the caps' base, the values, the prints (the ids met
  *   twice, the entries of size 0, the largest merged order event) and the
- *   counts (C15 (c) 1–4, 6, 8 and 9).
+ *   counts (C15 (c) 1–9, with the sizes of the priced phases from BUILD:
+ *   each part's bytes, and by coin its copies by line and their bytes,
+ *   COPYH-ENGINE-REVIEW-2 Q2; REMOVAL's and TRIPWIRE's peaks are among
+ *   every phase's runs).
  * Each heavy piece resumes from whole parts: a run whose minutes are spent
  * exits 3, and the next run goes on.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import {
@@ -42,18 +51,41 @@ import {
 import { HOUR_MS, MINUTE_MS } from "../schedule.js";
 import { storeClosure } from "./closure.js";
 import {
+  BUCKETS,
   END_E,
   HISTORY_FILLS_MAX,
+  LABEL_CHECK_MONDAYS,
+  LABEL_CHECK_PASS,
+  LABEL_CHECK_SLICE,
   LABEL_FILLS_MAX,
+  PART_MINUTES,
   REHEARSAL_WINDOW,
   SETTLEMENT_MARK_SWITCH,
   TRIPWIRE_STOP,
   WORKER_HEAP_CAP_GB,
 } from "./design.js";
-import { fileSha256 } from "./engine.js";
+import { fileSha256, partBytes } from "./engine.js";
 import { STAGE_WINDOWS, dayOf, mondaysOf } from "./instants.js";
 import { readBars, type MarkMinutes } from "./markets.js";
-import { MASK, coinCopies, factsOf, type Copy } from "./phase-build.js";
+import {
+  MASK,
+  coinCopies,
+  factsOf,
+  largestExitsOf,
+  partSizesOf,
+  type BuildFacts,
+  type Copy,
+} from "./phase-build.js";
+import {
+  KitPart,
+  bucketOf,
+  checksOf,
+  kitParts,
+  labelCheckOf,
+  labelCheckParts,
+  largeCheckParts,
+} from "./phase-check.js";
+import { labelsOf, type LabelsPart } from "./phase-labels.js";
 import { LINES } from "./lines.js";
 import { tripwireOf } from "./phase-tripwire.js";
 import {
@@ -69,9 +101,12 @@ import { SEALED } from "./seal.js";
 import {
   IDENTITY_LISTS,
   StoreRecord,
+  closedOf,
   engineRunOf,
   fortnightOf,
   parsedOf,
+  phaseOf,
+  runsOf,
   stepCounts,
   tripwirePhase,
   unpricedPhases,
@@ -177,12 +212,13 @@ function* copiesOf(u: Unpriced): Generator<Copy> {
 const holdOf = (c: Copy): number =>
   c.plan.legs.reduce((h, l) => (l.h > h ? l.h : h), 0);
 
-/** Count 2's copies a week by line and MAIN's legs a week by kind (a settled copy's last leg "settled"), and count 4 on MAIN's voted copies (H1 fix 7): the survival curve of their holds (at each whole hour after the follow instant, the copies still open and their open share) and MAIN's long share by UTC day of the follow instant. */
+/** Count 2's copies a week by line and MAIN's legs a week by kind (a settled copy's last leg "settled"), and the copies by coin and line (the sizes of the priced phases, COPYH-ENGINE-REVIEW-2 Q2); count 4 on MAIN's voted copies (H1 fix 7): the survival curve of their holds (at each whole hour after the follow instant, the copies still open and their open share) and MAIN's long share by UTC day of the follow instant. */
 export function copyCounts(copies: Iterable<Copy>) {
   const weeks = new Map<
     number,
     { copies: Record<string, number>; legs: Record<string, number> }
   >();
+  const coins = new Map<number, Record<string, number>>();
   const open: number[] = [];
   const share: number[] = [];
   const days = new Map<number, { copies: number; longs: number }>();
@@ -194,8 +230,13 @@ export function copyCounts(copies: Iterable<Copy>) {
   };
   for (const c of copies) {
     const w = weeks.get(c.M) ?? { copies: {}, legs: {} };
-    for (const l of c.lines) w.copies[l] = (w.copies[l] ?? 0) + 1;
+    const coin = coins.get(c.iid) ?? {};
+    for (const l of c.lines) {
+      w.copies[l] = (w.copies[l] ?? 0) + 1;
+      coin[l] = (coin[l] ?? 0) + 1;
+    }
     weeks.set(c.M, w);
+    coins.set(c.iid, coin);
     if (!c.lines.includes("MAIN")) continue;
     c.plan.legs.forEach((leg, k) => {
       const kind =
@@ -225,6 +266,9 @@ export function copyCounts(copies: Iterable<Copy>) {
     weeks: [...weeks]
       .sort(([a], [b]) => a - b)
       .map(([M, w]) => ({ M: new Date(M).toISOString(), ...w })),
+    coins: [...coins]
+      .sort(([a], [b]) => a - b)
+      .map(([iid, byLine]) => ({ iid, copies: byLine })),
     survival: {
       copies: voted,
       censored,
@@ -236,6 +280,43 @@ export function copyCounts(copies: Iterable<Copy>) {
       .map(([d, x]) => ({
         day: new Date(d).toISOString().slice(0, 10),
         ...x,
+      })),
+  };
+}
+
+/** The sizes of the priced phases from BUILD on all of E (COPYH-ENGINE-REVIEW-2 Q2, decisions 2026-11-27; counts of memberships, no price): each BUILD and BUILD-L part's bytes, and by coin its copies by line (copyCounts') with the bytes of its copies' and its keys' lines over both phases, what a PRICES part of the coin reads. */
+export function sizesOf(
+  builds: readonly (Closed | null)[],
+  copies: readonly {
+    readonly iid: number;
+    readonly copies: Readonly<Record<string, number>>;
+  }[],
+  names: ReadonlyMap<number, string>,
+) {
+  const parts: [string, number][] = [];
+  const bytes = new Map<number, { copyBytes: number; keyBytes: number }>();
+  for (const c of builds)
+    if (c !== null)
+      for (const [id] of c.record.parts) {
+        const s = partSizesOf(c.dir, c.record, id);
+        parts.push([`${c.record.phase}/${id}`, s.bytes]);
+        for (const [iid, copyBytes, keyBytes] of s.coins) {
+          const b = bytes.get(iid) ?? { copyBytes: 0, keyBytes: 0 };
+          b.copyBytes += copyBytes;
+          b.keyBytes += keyBytes;
+          bytes.set(iid, b);
+        }
+      }
+  const byLine = new Map(copies.map((c) => [c.iid, c.copies]));
+  return {
+    parts,
+    coins: [...bytes]
+      .sort(([a], [b]) => a - b)
+      .map(([iid, b]) => ({
+        iid,
+        coin: names.get(iid) ?? null,
+        copies: byLine.get(iid) ?? {},
+        ...b,
       })),
   };
 }
@@ -329,22 +410,261 @@ export function workerHeapOf(
   return { largestMb, at, gb, cutParts: gb > WORKER_HEAP_CAP_GB };
 }
 
+/** The label bound's check's buckets (C15 (c) 7): the addresses whose number is 0 mod 32, eight whole buckets of the 256. */
+export const CHECK_BUCKETS = Array.from(
+  { length: BUCKETS },
+  (_, b) => b,
+).filter((b) => b % LABEL_CHECK_SLICE[0] === LABEL_CHECK_SLICE[1]);
+/** The label bound's check's Mondays (C15 (c) 7), as instants. */
+export const CHECK_MONDAYS = LABEL_CHECK_MONDAYS.map((d) =>
+  Date.parse(`${d}T00:00:00Z`),
+);
+
+/** A check part's run as the runner keeps it beside the part. */
+const KitRun = z.object({
+  seconds: z.number(),
+  maxRssMb: z.number(),
+  heapGb: z.number(),
+});
+
+/**
+ * The rehearsal's two checks (C15 (c) 5 and 7), as parts after the unpriced
+ * phases, no price: KIT on the built account with the most exit rows under
+ * EXITS_MAX (none when no account is built), one child at the heap cap when
+ * BUILD-L built it; LABELCHECK on the check's buckets at its Mondays, its
+ * large lane LABELCHECK-L one child at the cap. Their prints: the exit rows
+ * of the accounts above EXITS_MAX and of the largest under it, the kit's
+ * history counts on that account and its two runs, the freeze waiting when
+ * either passes one part's minutes or half its child's heap (RH1 (b)); the
+ * label bound's check by Monday and its pass (RL4).
+ */
+export async function checksOn(
+  run: EngineRun,
+  u: Unpriced,
+  check: {
+    readonly buckets: readonly number[];
+    readonly mondays: readonly number[];
+  },
+) {
+  const facts = (c: Closed | null): BuildFacts[] =>
+    c === null
+      ? []
+      : c.record.parts.map(([id]) => factsOf(c.dir, c.record, id));
+  const built = [...facts(u.build), ...facts(u.buildL)];
+  const largest = largestExitsOf(built.flatMap((f) => f.largestExits));
+  const top = largest[0];
+  const inLargeLane = new Set(
+    facts(u.build).flatMap((f) => f.deferred.map(([a]) => a)),
+  );
+  const kit =
+    top === undefined
+      ? null
+      : await closedOf(
+          phaseOf(
+            run,
+            "KIT",
+            "phase-check.js",
+            "kitPart",
+            kitParts({
+              ...run.reading.inputs,
+              code: run.code,
+              addr: top[0],
+              bucket: bucketOf(top[0]),
+              end: run.end,
+              limits: {
+                fills: run.limits.historyFills,
+                exits: run.limits.exits,
+              },
+            }),
+            run.reading.context,
+            inLargeLane.has(top[0]),
+          ),
+        );
+  const spec = labelCheckParts(
+    {
+      ...run.reading.inputs,
+      code: run.code,
+      fillsMax: run.limits.labelFills,
+      lane: run.lanes.labelFills,
+    },
+    check.buckets,
+    check.mondays,
+  );
+  const labelCheck = await closedOf(
+    phaseOf(
+      run,
+      "LABELCHECK",
+      "phase-check.js",
+      "labelCheckPart",
+      spec,
+      run.reading.context,
+    ),
+  );
+  const normal = checksOf(labelCheck.dir, labelCheck.record);
+  const largeSpec = largeCheckParts(spec, normal);
+  const labelCheckL =
+    largeSpec.length === 0
+      ? null
+      : await closedOf(
+          phaseOf(
+            run,
+            "LABELCHECK-L",
+            "phase-check.js",
+            "labelCheckLargePart",
+            largeSpec,
+            run.reading.context,
+            true,
+          ),
+        );
+  const runsOfKit = (c: Closed) =>
+    (["a", "b"] as const).map((copy) =>
+      KitRun.parse(
+        JSON.parse(
+          readFileSync(path.join(c.dir, copy, "kit.run.json"), "utf8"),
+        ),
+      ),
+    );
+  const kitRuns = kit === null ? null : runsOfKit(kit);
+  return {
+    exits: {
+      aboveMax: built.flatMap((f) => f.tooManyExits),
+      largestUnder: largest,
+      kit:
+        kit === null || kitRuns === null
+          ? null
+          : {
+              ...KitPart.parse(
+                JSON.parse(
+                  partBytes(kit.dir, kit.record, "kit").toString("utf8"),
+                ),
+              ),
+              runs: kitRuns,
+              freezeWaits: kitRuns.some(
+                (r) =>
+                  r.seconds > PART_MINUTES * 60 ||
+                  r.maxRssMb > (r.heapGb * 1024) / 2,
+              ),
+            },
+    },
+    labelBound: labelCheckOf(
+      [
+        ...normal,
+        ...(labelCheckL === null
+          ? []
+          : checksOf(labelCheckL.dir, labelCheckL.record)),
+      ],
+      check.mondays,
+      LABEL_CHECK_PASS,
+    ),
+    runs: {
+      kit: runsOf(kit),
+      labelCheck: runsOf(labelCheck),
+      labelCheckL: runsOf(labelCheckL),
+    },
+  };
+}
+
+/**
+ * Count 5's caps (C4, C5), which set them [SET BEFORE THE FREEZE]: Monday by
+ * Monday the captures past the normal lane's threshold, with their fills and
+ * their label from the large lane (directional: P1 there, every Monday of E
+ * being covered), and those above LABEL_FILLS_MAX; the histories in BUILD-L
+ * and above HISTORY_FILLS_MAX, each with its fills and its P1 Mondays (BUILD
+ * reads P1 accounts alone); and the largest P1 capture past the lane and the
+ * largest history among them.
+ */
+export function capsOf(
+  labels: readonly LabelsPart[],
+  large: readonly LabelsPart[],
+  build: {
+    readonly largeLane: readonly (readonly [string, number])[];
+    readonly tooManyFills: readonly (readonly [string, number])[];
+  },
+) {
+  const p1Mondays = new Map<string, number>();
+  for (const part of [...labels, ...large])
+    for (const d of part.mondays)
+      for (const a of d.p1) p1Mondays.set(a, (p1Mondays.get(a) ?? 0) + 1);
+  const largeP1 = new Map<number, Set<string>>();
+  const largeLabels = new Map<number, Record<string, number>>();
+  for (const part of large)
+    for (const d of part.mondays) {
+      const set = largeP1.get(d.M) ?? new Set<string>();
+      for (const a of d.p1) set.add(a);
+      largeP1.set(d.M, set);
+      const counts = largeLabels.get(d.M) ?? {};
+      for (const [label, n] of Object.entries(d.counts))
+        counts[label] = (counts[label] ?? 0) + n;
+      largeLabels.set(d.M, counts);
+    }
+  const byMonday = new Map<
+    number,
+    { deferred: [string, number, boolean][]; tooLarge: [string, number][] }
+  >();
+  for (const part of labels)
+    for (const d of part.mondays) {
+      const m = byMonday.get(d.M) ?? { deferred: [], tooLarge: [] };
+      for (const [a, fills] of d.deferred)
+        m.deferred.push([a, fills, largeP1.get(d.M)?.has(a) ?? false]);
+      for (const t of d.tooLarge) m.tooLarge.push([t[0], t[1]]);
+      byMonday.set(d.M, m);
+    }
+  const largest = (xs: readonly number[]) =>
+    xs.reduce<number | null>((m, x) => (m === null || x > m ? x : m), null);
+  const histories = (xs: readonly (readonly [string, number])[]) =>
+    xs.map(([a, fills]): [string, number, number] => [
+      a,
+      fills,
+      p1Mondays.get(a) ?? 0,
+    ]);
+  const mondays = [...byMonday]
+    .sort(([a], [b]) => a - b)
+    .map(([M, m]) => ({
+      M: new Date(M).toISOString(),
+      deferred: m.deferred,
+      largeLabels: largeLabels.get(M) ?? {},
+      tooLarge: m.tooLarge,
+    }));
+  return {
+    labels: mondays,
+    histories: {
+      largeLane: histories(build.largeLane),
+      tooManyFills: histories(build.tooManyFills),
+    },
+    largest: {
+      p1CapturePastLane: largest(
+        mondays.flatMap((m) =>
+          m.deferred.filter(([, , p1]) => p1).map(([, fills]) => fills),
+        ),
+      ),
+      history: largest(
+        [...build.largeLane, ...build.tooManyFills].map(([, fills]) => fills),
+      ),
+    },
+  };
+}
+
 /** C9's settlement mark from C16's projection on all of E (C17): 60 minutes when the 5-minute rule projects above 0.5% unpriced; the freeze waits while the mark set still projects above 1%. */
 export function settlementMarkOf(shares: { 5: number; 60: number }) {
   const minutes: MarkMinutes = shares[5] > SETTLEMENT_MARK_SWITCH ? 60 : 5;
   return { shares, minutes, freezeWaits: shares[minutes] > TRIPWIRE_STOP };
 }
 
-/** The rehearsal's engine on a reading and what it gives, the store's record and identity aside: the unpriced phases and TRIPWIRE, the values, then in memory the fortnight priced at the mark set and the counts. */
+/** The rehearsal's engine on a reading and what it gives, the store's record and identity aside: the unpriced phases, TRIPWIRE and the two checks (the label bound's on `check`'s buckets and Mondays), the values, then in memory the fortnight priced at the mark set and the counts. */
 export async function rehearsalOf(o: {
   run: EngineRun;
   stores: readonly Store[];
   kit: Research;
   window: readonly [number, number];
+  check: {
+    readonly buckets: readonly number[];
+    readonly mondays: readonly number[];
+  };
   pricing: Budget;
 }) {
   const u = await unpricedPhases(o.run);
   const tripwire = await tripwirePhase(o.run, u);
+  const checks = await checksOn(o.run, u, o.check);
   const projected = {
     5: tripwireOf(tripwire.dir, tripwire.record, 5),
     60: tripwireOf(tripwire.dir, tripwire.record, 60),
@@ -379,16 +699,24 @@ export async function rehearsalOf(o: {
     end: o.run.end,
   });
   const b = counts.build;
+  const parts = (c: Closed | null): LabelsPart[] =>
+    c === null ? [] : [...labelsOf(c.dir, c.record).values()];
+  const { coins, ...copies } = copyCounts(copiesOf(u));
   const more = {
     tripwire: projected,
     memberships: membershipsOf([u.build, u.buildL], o.run.mondays),
-    ...copyCounts(copiesOf(u)),
+    ...copies,
+    sizes: sizesOf([u.build, u.buildL], coins, o.run.coins),
     settlements: settlementsOf(
       o.stores,
       o.run.end,
       b.mainAfterSettlement,
       o.run.coins,
     ),
+    exits: checks.exits,
+    caps: capsOf(parts(u.labels), parts(u.labelsL), b),
+    labelBound: checks.labelBound,
+    checkRuns: checks.runs,
     seconds: Math.round(performance.now() - t0) / 1000,
   };
   return {
@@ -403,6 +731,8 @@ export async function rehearsalOf(o: {
         })),
         Math.round(process.resourceUsage().maxRSS / 1024),
       ),
+      kit: { freezeWaits: checks.exits.kit?.freezeWaits ?? false },
+      labelBound: { pass: checks.labelBound.pass },
     },
     prints: {
       idsTwice: b.idsTwice,
@@ -466,6 +796,7 @@ export async function rehearse(o: RehearseRun): Promise<void> {
     stores: [ready.store],
     kit,
     window: REHEARSAL_WINDOW,
+    check: { buckets: CHECK_BUCKETS, mondays: CHECK_MONDAYS },
     pricing: o.pricing,
   });
   const out = path.join(dir, REHEARSAL_FILE);

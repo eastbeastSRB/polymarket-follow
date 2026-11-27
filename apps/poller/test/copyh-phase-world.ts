@@ -167,11 +167,12 @@ export type PhaseWorld = {
   context: { stores: string[]; roots: string[]; dirsFile: string };
 };
 
-/** The world's store (with `extra` records) and dirs.json, as a phase reads them. */
+/** The world's store (with `extra` records; its window from `start` to END) and dirs.json, as a phase reads them. */
 export async function phaseWorld(
   extra: readonly [number, string][] = [],
+  start = START,
 ): Promise<PhaseWorld> {
-  const store = await storeOf(filesOf(recordsOf(extra)), START, END);
+  const store = await storeOf(filesOf(recordsOf(extra)), start, END);
   const dirsFile = path.join(
     mkdtempSync(path.join(tmpdir(), "copyh-dirs-")),
     "dirs.json",

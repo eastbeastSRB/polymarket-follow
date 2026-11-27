@@ -980,7 +980,16 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   refusals, each exit 5: a second rehearsal, a cap unset, E's store or its
   twin not built, its integrity not passed for both. The engine's phases
   before any price in `E\rehearsal\engine` (LABELS to REMOVAL, then
-  TRIPWIRE: MAIN's set under both settlement marks, no stop); the values
+  TRIPWIRE: MAIN's set under both settlement marks, no stop); its two
+  checks (`phase-check.ts`), as parts: KIT, the kit alone on the built
+  account with the most exit rows under EXITS_MAX (one child at the heap
+  cap when BUILD-L built it; the freeze waits when a run of it passes one
+  part's minutes or half its child's heap), and the label bound's check,
+  LABELCHECK and LABELCHECK-L, on the eight buckets 0 mod 32 at the four
+  check Mondays (each account's label and MAIN's conditions from C5's
+  90-day capture and from the whole capture from ARCHIVE_START, every
+  difference listed; it passes at a Monday when MAIN's differences number
+  under 1% of the accounts meeting MAIN under the whole capture); the values
   its counts set before the freeze (C9's mark: 60 minutes when the 5-minute
   projection is above 0.5%, the freeze waiting while the mark set's is above
   1%; C15's worker heap: twice the largest peak measured, an engine part's,
@@ -993,12 +1002,18 @@ failed, 7 two builds differ. No part starts in 02:30–06:00Z or
   fortnight, the caps' base (0.77 and 1.18 KB a fill, half the 20 GB lane),
   the values, the prints (the ids met twice, the entries of size 0, the
   largest merged order event, ruled before the freeze above 100,000) and the
-  counts (C15 (c) 1–4, 6, 8, 9: the step's counts, the tripwire's two
+  counts (C15 (c) 1–9: the step's counts, the tripwire's two
   projections, the lines' memberships by Monday, the copies a week by line
-  with MAIN's legs by kind, the survival curve of MAIN's voted copies by
+  with MAIN's legs by kind, the sizes of the priced phases from BUILD
+  (each part's bytes; by coin its copies by line and their lines' bytes:
+  COPYH-ENGINE-REVIEW-2 Q2), the survival curve of MAIN's voted copies by
   whole hour with its open share, MAIN's long share by day, each coin's
-  first Settlement with its market trades and MAIN's entries after it, E's
-  integrity's K1 and K3). No file of priced copies is written.
+  first Settlement with its market trades and MAIN's entries after it, the
+  exit rows above EXITS_MAX and of the ten largest under it with KIT's
+  counts and runs, the caps' counts by Monday (the captures and histories
+  past the normal lanes' thresholds and above the caps, with their fills,
+  the large lane's labels and the P1 Mondays), the label bound's check,
+  E's integrity's K1 and K3). No file of priced copies is written.
 - `coins`: `<COPYH_ROOT>\coins.json` from COPYH-FUNDING's stored `meta`
   reply (`info/meta.json`), held to its one line in the funding store's
   `manifest.jsonl`, in the reply's `universe` order (iid = index, delisted
@@ -1242,9 +1257,11 @@ rehearsal's fortnight and the tests' worlds. A module a rule:
   direction 0 and the most fills of one order event the kit merged into an
   entry group (its `buildEntries` spreads them into a call: the
   rehearsal's print, above 100,000 ruled before the freeze), and by coin
-  the entries of MAIN's accounts after the coin's first Settlement (RL11);
+  the entries of MAIN's accounts after the coin's first Settlement (RL11),
+  and the ten built accounts with the most exit rows (C15 (c) 5);
   its bytes an index line, then the facts, each coin's copies
-  a JSON line each and its keys in chunks, read a coin at a time.
+  a JSON line each and its keys in chunks, read a coin at a time (and
+  sized by the index alone, `partSizesOf`, the rehearsal's print).
 - `phase-removal.ts` (C10): REMOVAL, a part a coin: its keys from every
   BUILD and BUILD-L part (each part held to its record once a process,
   `heldPart`, then its coin's lines read by the index), a Monday at a time
@@ -1255,6 +1272,17 @@ rehearsal's fortnight and the tests' worlds. A module a rule:
   the windows `copyh/funding.sha256` lists for it that start before END,
   each file held to its line and read through the seal, rows at or after
   END dropped.
+- `phase-check.ts` (C15 (c) 5 and 7): the rehearsal's checks. KIT, one
+  part: an account's fills to END through the kit's history, as BUILD's,
+  its bytes the history's counts. LABELCHECK, a part a bucket and a
+  Monday: each account but the vault accounts, past the 14 days' check,
+  labelled from C5's 90-day capture and from the whole capture from
+  ARCHIVE_START, MAIN's account-level conditions under each (the habits
+  from its fills before M, `labels.ts` `habitsBefore`); a whole capture
+  above LABEL_FILLS_MAX counted apart, one past the normal lane's
+  threshold deferred to LABELCHECK-L, one child at the heap cap. Pinned
+  where the bound binds by `test/copyh-phase-check.test.ts` (a store past
+  90 days, a cycle opened 100 days before M).
 - `phase-tripwire.ts` (C16): TRIPWIRE, before any price, a part a coin:
   MAIN's copies voted by END from BUILD and BUILD-L, projected on the
   coin's marks and funding hours under both settlement rules (a coin

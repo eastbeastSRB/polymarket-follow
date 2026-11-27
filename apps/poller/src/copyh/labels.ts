@@ -109,6 +109,22 @@ export const isP1 = (label: string, coverage: Coverage): boolean =>
 export const straddles = (events: readonly OrderEvent[], M: number): boolean =>
   events.some((e) => e.t < M && e.t1 >= M);
 
+/** The habits at M computed from the fills before M alone (oldest first): their events, cycles and entry groups. */
+export function habitsBefore(
+  kit: Research,
+  fills: readonly Fill[],
+  M: number,
+): Habits {
+  const events = kit.entries.toEvents(fillsBefore(fills, M));
+  return kit.labels.habitsAt(
+    {
+      cycles: kit.entries.toCycles(events),
+      groups: kit.entries.buildEntries(events, -Infinity, Infinity, MERGE_MS),
+    },
+    M,
+  );
+}
+
 /**
  * The habits at M from the fills before M: from the whole history's cycles
  * and groups when no order event straddles M, else computed apart from the
@@ -132,15 +148,5 @@ export function habitsAtMonday(
       ),
       apart: false,
     };
-  const events = kit.entries.toEvents(fillsBefore(fills, M));
-  return {
-    habits: kit.labels.habitsAt(
-      {
-        cycles: kit.entries.toCycles(events),
-        groups: kit.entries.buildEntries(events, -Infinity, Infinity, MERGE_MS),
-      },
-      M,
-    ),
-    apart: true,
-  };
+  return { habits: habitsBefore(kit, fills, M), apart: true };
 }

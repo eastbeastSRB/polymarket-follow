@@ -88,6 +88,7 @@ import {
   buildParts,
   coinsOf,
   factsOf,
+  largestExitsOf,
 } from "./phase-build.js";
 import { FUNDING_WINDOW } from "./phase-coin.js";
 import { TryConfirmation, confirmOf, confirmParts } from "./phase-confirm.js";
@@ -483,7 +484,7 @@ export type PricedRecords = {
 export type EngineRecords = PricedRecords & { readonly result: Closed };
 
 /** A phase of the engine's run, in its folder (`<dir>\<name>`): a large lane's, and RESULT's, one child at the heap cap, alone. */
-function phaseOf(
+export function phaseOf(
   o: EngineRun,
   name: string,
   module: string,
@@ -506,7 +507,7 @@ function phaseOf(
     log: o.log,
   };
 }
-const closedOf = async (p: Phase): Promise<Closed> => ({
+export const closedOf = async (p: Phase): Promise<Closed> => ({
   dir: p.dir,
   record: await runPhase(p),
 });
@@ -854,7 +855,7 @@ export const FORTNIGHT_MINUTES = 5;
 const RunFile = z.object({ seconds: z.number(), maxRssMb: z.number() });
 
 /** A closed phase's runs, both copies: its parts, their seconds summed, the slowest part's copy and the largest peak with the part's copy it was measured after (a child's peak RSS so far: the `.run.json` beside each part). */
-function runsOf(c: Closed | null) {
+export function runsOf(c: Closed | null) {
   if (c === null) return null;
   let seconds = 0;
   let maxRssMb = 0;
@@ -1004,6 +1005,7 @@ export function stepCounts(o: {
       idsTwice: sum("idsTwice"),
       sizeZero: sum("sizeZero"),
       largestMerged: all.reduce((m, f) => Math.max(m, f.largestMerged), 0),
+      largestExits: largestExitsOf(all.flatMap((f) => f.largestExits)),
       otherMarkets: byKey("otherMarkets"),
       mainAfterSettlement: byKey("mainAfterSettlement"),
       copies: byKey("copies"),

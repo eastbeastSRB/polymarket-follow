@@ -147,6 +147,7 @@ describe("the build phase (C4–C8, C10, C11)", { timeout: 60_000 }, () => {
       idsTwice: 0,
       sizeZero: 0,
       largestMerged: 0,
+      largestExits: [[A, e.h.exitRows, e.fills.length]],
       otherMarkets: {},
       mainAfterSettlement: {},
       copies: { MAIN: 1, BROAD: 1, DAY: 1 },

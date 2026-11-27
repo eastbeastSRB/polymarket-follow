@@ -114,7 +114,8 @@ export const LabelsPart = z.object({
 });
 export type LabelsPart = z.infer<typeof LabelsPart>;
 
-const captureStart = (M: number) =>
+/** C5's capture's first instant at M: max(ARCHIVE_START, M − 90 d). */
+export const captureStart = (M: number) =>
   Math.max(ARCHIVE_START, M - LABEL_CAPTURE_DAYS * DAY_MS);
 const encode = (v: unknown) => new TextEncoder().encode(JSON.stringify(v));
 
