@@ -1293,6 +1293,15 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   earlier round, then the earlier try); one part computed twice;
   `rounds\choice.json`, its identity first, the chosen tries whole for
   step 2; a second choice refused (exit 5).
+- `confirm.ts` (C14's confirmation on S): s = min(m ÷ SE, m′ ÷ SE′), none
+  without an error; Holm's order by s (a try with no s second, equal s in
+  the choice's order), the first tested at 2.24, the second at 1.96 only
+  when the first's s exceeded 2.24; each try's reading, the first that
+  holds (WITHHELD, no s, not tested, CONFIRMED with C12's three sign
+  conditions, NOT CONFIRMED), its sentences written in advance.
+- `fresh2.ts` (C14's sealed judgment): a set's reading on FRESH-2 at z (a
+  try's 1.96, MAIN's KEEP 1.645): WITHHELD, no error, CONFIRMED (both
+  lower bounds above 0 and the three sign conditions), NOT CONFIRMED.
 
 The caps are `design.ts`'s, provisional until the rehearsal: a label
 capture of more than 13,000,000 fills and a history of more than 8,500,000
