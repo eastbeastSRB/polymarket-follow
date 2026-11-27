@@ -6,8 +6,10 @@
  * plan and the coin's marks written out here, a settlement unmarked under
  * the 5-minute rule and marked under the 60-minute one, the hours without
  * a row counted; the lanes changing nothing (the copy from BUILD-L); the
- * set MAIN's copies voted by END alone, each leg at t + D + h; the coin's
- * reading:
+ * set MAIN's copies voted by END alone, each leg at t + D + h; each try's
+ * set beside it (C16 at step 2): its line's copies voted by END with t in
+ * its window, 1 ms either side, every condition met but those on the prior
+ * mean net, which the projection leaves out; the coin's reading:
  * its funding list held to the part's, each window held to its line, a
  * window starting at END never opened, rows at or after END dropped,
  * another coin's windows not read; a coin the reading holds no bars of
@@ -29,8 +31,11 @@ import { coinReadingOf } from "../src/copyh/phase-coin.js";
 import {
   coinProjection,
   plannedOf,
+  readsPrice,
+  triedOf,
   tripwireOf,
   tripwireParts,
+  type TrySet,
 } from "../src/copyh/phase-tripwire.js";
 import { StoreError, sha256 } from "../src/copyh/run.js";
 import { coinMarksOf, projectionOf } from "../src/copyh/tripwire.js";
@@ -86,7 +91,9 @@ const F = fundingWorld([
 const SOL_HOURS = hoursOf(START, LAST_ROW + HOUR_MS);
 
 /** LABELS and BUILD on bucket 01, then TRIPWIRE's parts on the coins BUILD holds. */
-async function tripwireRun(o: { funding?: string; lane?: number | null } = {}) {
+async function tripwireRun(
+  o: { funding?: string; lane?: number | null; tries?: TrySet[] } = {},
+) {
   const engine = engineDir();
   const l = await labelsRun(world, engine);
   const parts = buildParts({
@@ -136,6 +143,7 @@ async function tripwireRun(o: { funding?: string; lane?: number | null } = {}) {
         ],
         end: END,
         funding: o.funding ?? F.sha256,
+        tries: o.tries ?? [],
       },
       coins.map((iid) => [iid, COINS[iid]!] as const),
     ),
@@ -216,6 +224,96 @@ describe("the tripwire's phase (C16)", { timeout: 60_000 }, () => {
         { ...c!, lines: ["BROAD", "DAY"] },
       ]),
     ).toEqual([want]);
+  });
+
+  it("takes a try's set by its line, the vote, t in its window [from, to) and its conditions, but those on the prior mean net", () => {
+    const [c] = coinCopies(run.build.dir, run.buildRecord, SOL);
+    const want = plannedOf([c!]);
+    expect(want).toHaveLength(1);
+    const set = (o: Partial<TrySet> = {}): TrySet => ({
+      name: "made-up",
+      line: "MAIN",
+      from: c!.t,
+      to: c!.t + 1,
+      conditions: [],
+      ...o,
+    });
+    expect(triedOf([c!], set())).toEqual(want);
+    expect(triedOf([c!], set({ from: c!.t + 1, to: c!.t + 2 }))).toEqual([]);
+    expect(triedOf([c!], set({ from: c!.t - 1, to: c!.t }))).toEqual([]);
+    expect(triedOf([{ ...c!, voted: false }], set())).toEqual([]);
+    const broad = { ...c!, lines: ["BROAD" as const, "DAY" as const] };
+    expect(triedOf([broad], set())).toEqual([]);
+    expect(triedOf([broad], set({ line: "BROAD" }))).toEqual(want);
+    const n = c!.covariates.closedCycles;
+    const cycles = (op: ">=" | ">", value: number) =>
+      set({ conditions: [{ covariate: "closedCycles", op, value }] });
+    expect(triedOf([c!], cycles(">=", n))).toEqual(want);
+    expect(triedOf([c!], cycles(">", n))).toEqual([]);
+    // The prior mean net's conditions are left out of the projection, whatever they say.
+    const prior = {
+      covariate: "priorMeanNetBps",
+      op: ">",
+      value: 1e9,
+    } as const;
+    expect(triedOf([c!], set({ conditions: [prior] }))).toEqual(want);
+    expect(readsPrice(prior)).toBe(true);
+    expect(
+      [
+        "closedCycles",
+        "medianHoldHours",
+        "longShare",
+        "entries",
+        "coin",
+        "sizeUsd",
+        "priorCopies",
+      ].some((covariate) =>
+        readsPrice({ covariate, op: ">", value: 0 } as never),
+      ),
+    ).toBe(false);
+  });
+
+  it("projects each try's set beside MAIN's, under both rules, a set of none counting none", async () => {
+    const [c] = coinCopies(run.build.dir, run.buildRecord, SOL);
+    const sets: TrySet[] = [
+      {
+        name: "BROAD at t",
+        line: "BROAD",
+        from: c!.t,
+        to: c!.t + 1,
+        conditions: [],
+      },
+      {
+        name: "after t",
+        line: "MAIN",
+        from: c!.t + 1,
+        to: END,
+        conditions: [],
+      },
+      {
+        name: "a prior mean net, left out",
+        line: "MAIN",
+        from: M1,
+        to: END,
+        conditions: [{ covariate: "priorMeanNetBps", op: ">", value: 1e9 }],
+      },
+    ];
+    const tried = await tripwireRun({ tries: sets });
+    const record = await runPhase(tried.tw);
+    for (const mm of [5, 60] as const) {
+      const main = tripwireOf(tried.tw.dir, record, mm);
+      expect(main.copies).toBe(1);
+      expect(tripwireOf(tried.tw.dir, record, mm, 0)).toEqual(main);
+      expect(tripwireOf(tried.tw.dir, record, mm, 1)).toMatchObject({
+        copies: 0,
+        share: 0,
+        settled: 0,
+        gap: 0,
+      });
+      expect(tripwireOf(tried.tw.dir, record, mm, 2)).toEqual(main);
+    }
+    expect(tripwireOf(tried.tw.dir, record, 5)).toMatchObject({ share: 1 });
+    expect(() => tripwireOf(tried.tw.dir, record, 5, 3)).toThrow(/no try at 3/);
   });
 
   it("refuses a funding list other than its part's", async () => {

@@ -1214,8 +1214,11 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
 - `phase-tripwire.ts` (C16): TRIPWIRE, before any price, a part a coin:
   MAIN's copies voted by END from BUILD and BUILD-L, projected on the
   coin's marks and funding hours under both settlement rules (a coin
-  without bars: no mark); the parts summed (`tripwireOf`) into the set's
-  projection, whose share stops the step above 1%.
+  without bars: no mark); beside it each try's set given (at step 2 each
+  chosen try's set on S: its line's copies voted by END with t in its
+  window, every condition met but those on the prior mean net, a price,
+  which the projection leaves out and names); the parts summed
+  (`tripwireOf`) into each set's projection.
 - `phase-prices.ts` (C7–C11, C13): PRICES, a part a coin, its two market
   objects and settings held one coin at a time: each copy's money (the
   taker setting on the VWAP object), its thin flag, d and x′ in each of its
@@ -1258,7 +1261,8 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   two compared (exit 7); both comparisons in `look1\builds.json`. Then
   the integrity (`look1\integrity\`), the engine's phases in
   `look1\engine` (`runEngine`: LABELS, LABELS-L, BUILD, BUILD-L, REMOVAL,
-  TRIPWIRE and C16's stop above 1% (exit 6) unless `--past-tripwire`,
+  TRIPWIRE and C16's stop when any set projected is above 1% (exit 6;
+  `tripwireStop` names each) unless `--past-tripwire`,
   PRICES, RANK, RESULT; END, the stage, the Mondays and the lanes'
   thresholds its parameters; a large lane one child at the heap cap), the
   step's counts (`stepCounts`: the labels by Monday, the vault accounts,

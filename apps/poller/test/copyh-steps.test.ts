@@ -9,6 +9,9 @@
  *   twin and none built; not equal, the twin built and compared, the
  *   difference listed; a resumed run building and checking nothing again; a
  *   twin that differs (exit 7) still recorded in builds.json;
+ * - C16's stop over every set projected: MAIN's look set and each try's,
+ *   each above 1% named, a try projected without its conditions on the prior
+ *   mean net saying so; none past the tripwire;
  * - on the phases' world through real child processes, every part of every
  *   phase: the engine stopped at the tripwire above 1% (exit 6), its phases
  *   closed up to TRIPWIRE and none priced, then run on with
@@ -56,10 +59,13 @@ import {
   readyForStep1,
   runEngine,
   stepCounts,
+  tripwireStop,
   writeLook,
   type EngineRecords,
   type EngineRun,
 } from "../src/copyh/steps.js";
+import type { TrySet } from "../src/copyh/phase-tripwire.js";
+import type { Projection } from "../src/copyh/tripwire.js";
 import { MANIFEST, openStore, type Manifest } from "../src/copyh/store.js";
 import { HOUR_MS } from "../src/schedule.js";
 import { COINS, addr, trade } from "./copyh-world.js";
@@ -294,6 +300,58 @@ describe("E's store held to its record (A', C15 step 1's 2.)", () => {
   });
 });
 
+describe("C16's stop over every set projected (RH1 (a))", () => {
+  const p = (copies: number, unpriced: number): Projection => ({
+    copies,
+    unpriced: {
+      "no mark at the follow instant": unpriced,
+      "no mark at an exit instant": 0,
+      "a funding settlement without a mark": 0,
+    },
+    share: copies === 0 ? 0 : unpriced / copies,
+    settled: 0,
+    missingHours: 0,
+    copiesMissing: 0,
+    gap: 0,
+  });
+  const prior = { covariate: "priorMeanNetBps", op: ">", value: 0 } as const;
+  const tryOf = (name: string, projection: Projection, leftOut = false) => ({
+    name,
+    line: "MAIN" as const,
+    leftOut: leftOut ? [prior] : [],
+    projection,
+  });
+
+  it("stops on any set above 1%, naming each, MAIN's first; none at 1% or past the tripwire", () => {
+    const tail =
+      "projected unpriced, above 1% (C16): a decisions entry runs on with --past-tripwire, or ends there";
+    expect(
+      tripwireStop(p(1000, 10), [tryOf("a", p(100, 1))], false),
+    ).toBeNull();
+    expect(tripwireStop(p(1000, 11), [], false)).toBe(
+      `the tripwire: 1.10% of MAIN's 1000 copies ${tail}`,
+    );
+    expect(
+      tripwireStop(
+        p(1000, 10),
+        [
+          tryOf("a", p(100, 2)),
+          tryOf("b", p(100, 1)),
+          tryOf("c", p(50, 1), true),
+        ],
+        false,
+      ),
+    ).toBe(
+      `the tripwire: 2.00% of the try "a"'s 100 copies; 2.00% of the try "c"'s 50 copies (projected without its conditions on the prior mean net) ${tail}`,
+    );
+    expect(tripwireStop(p(10, 1), [tryOf("a", p(10, 1))], false)).toBe(
+      `the tripwire: 10.00% of MAIN's 10 copies; 10.00% of the try "a"'s 10 copies ${tail}`,
+    );
+    expect(tripwireStop(p(10, 1), [tryOf("a", p(10, 1))], true)).toBeNull();
+    expect(tripwireStop(p(0, 0), [tryOf("a", p(0, 0))], false)).toBeNull();
+  });
+});
+
 describe("the identity and the logs (C0; the store review's L15)", () => {
   it("names the lists and the step's files by SHA-256, and refuses a missing one", () => {
     const pkg = temp("pkg");
@@ -424,6 +482,7 @@ const runOf = (
     markMinutes: 5 | 60;
     pastTripwire: boolean;
     lanes: { labelFills: number | null; historyFills: number | null };
+    tries?: TrySet[];
   },
 ): EngineRun => ({
   dir,
@@ -438,6 +497,7 @@ const runOf = (
   limits: { labelFills: 1e9, historyFills: 2e9, exits: 3e9 },
   lanes: o.lanes,
   markMinutes: o.markMinutes,
+  tries: o.tries ?? [],
   funding: { store: F.store, list: F.list, sha256: F.sha256 },
   coins: new Map(COINS.map((c, i) => [i, c])),
   look: 1,
@@ -527,7 +587,10 @@ describe(
         end: END,
         funding: F.sha256,
       };
-      expect(headerOf(e.tripwire.dir, "c002").inputs).toEqual(coin);
+      expect(headerOf(e.tripwire.dir, "c002").inputs).toEqual({
+        ...coin,
+        tries: [],
+      });
       expect(headerOf(e.prices.dir, "c002").inputs).toEqual({
         ...coin,
         removal: recordSha(e.removal.dir),
@@ -561,15 +624,54 @@ describe(
       };
     });
 
-    it("runs on under the 60-minute settlement mark, which projects none unpriced", async () => {
+    it("runs on under the 60-minute settlement mark, which projects none unpriced, a try's set projected beside MAIN's", async () => {
+      const prior = {
+        covariate: "priorMeanNetBps",
+        op: ">",
+        value: 0,
+      } as const;
+      const sets: TrySet[] = [
+        {
+          name: "BROAD",
+          line: "BROAD",
+          from: M1,
+          to: END,
+          conditions: [prior],
+        },
+        { name: "none", line: "MAIN", from: END - 1, to: END, conditions: [] },
+      ];
       const e = await runEngine(
         runOf(engineDir(), {
           markMinutes: 60,
           pastTripwire: false,
           lanes: NO_LANES,
+          tries: sets,
         }),
       );
       expect(e.projection).toMatchObject({ copies: 1, share: 0 });
+      expect(e.tries).toEqual([
+        {
+          name: "BROAD",
+          line: "BROAD",
+          leftOut: [prior],
+          projection: e.projection,
+        },
+        {
+          name: "none",
+          line: "MAIN",
+          leftOut: [],
+          projection: expect.objectContaining({
+            copies: 0,
+            share: 0,
+          }) as unknown,
+        },
+      ]);
+      expect(headerOf(e.tripwire.dir, "c002").inputs).toMatchObject({
+        tries: sets,
+      });
+      expect(
+        stepCounts({ engine: e, stores: [world.store], end: END }).tripwire,
+      ).toEqual({ look: e.projection, tries: e.tries });
       expect(headerOf(e.prices.dir, "c002").inputs).toMatchObject({
         markMinutes: 60,
       });
@@ -642,7 +744,7 @@ describe(
         sizeZero: 0,
       });
       expect(counts.build.copies).toEqual({ MAIN: 1, BROAD: 1, DAY: 1 });
-      expect(counts.tripwire).toEqual(e.projection);
+      expect(counts.tripwire).toEqual({ look: e.projection, tries: [] });
       expect(counts.stores).toEqual([
         expect.objectContaining({
           store: world.store.id,

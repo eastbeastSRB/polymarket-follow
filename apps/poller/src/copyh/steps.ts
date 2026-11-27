@@ -94,7 +94,12 @@ import {
   resultOf,
   resultParts,
 } from "./phase-result.js";
-import { tripwireOf, tripwireParts } from "./phase-tripwire.js";
+import {
+  readsPrice,
+  tripwireOf,
+  tripwireParts,
+  type TrySet,
+} from "./phase-tripwire.js";
 import { RANGES } from "./range.js";
 import {
   AlreadyRun,
@@ -113,6 +118,7 @@ import {
 import { checkInstant, type Seal } from "./seal.js";
 import { MANIFEST, Manifest, openStore, type Store } from "./store.js";
 import { buildStore, checkStores, type StoreRun } from "./stores.js";
+import type { Condition } from "./tries.js";
 import { tripwireStops, type Projection } from "./tripwire.js";
 import { manifestDifferences } from "./twin.js";
 import type { Verdict } from "./verdict.js";
@@ -304,6 +310,8 @@ export type EngineRun = {
     readonly historyFills: number | null;
   };
   readonly markMinutes: MarkMinutes;
+  /** The sets C16 projects beside MAIN's look set (step 2: each chosen try's set on S; none at step 1). */
+  readonly tries: readonly TrySet[];
   /** The funding store, its list (`copyh/funding.sha256`) and the list's SHA-256. */
   readonly funding: {
     readonly store: string;
@@ -322,6 +330,38 @@ export type EngineRun = {
   readonly budget: Budget;
   readonly log: Log;
 };
+/** A try's set as C16 projected it: its name and line, the conditions the projection left out (those on the prior mean net, a price: the engine's plan, Q2), its projection. */
+export type TryProjection = {
+  readonly name: string;
+  readonly line: TrySet["line"];
+  readonly leftOut: readonly Condition[];
+  readonly projection: Projection;
+};
+
+/** C16's stop: every set projected above 1% named, MAIN's look set first, a try's set saying whether it was projected without its conditions on the prior mean net; null when none is above, or the step runs past the tripwire. */
+export function tripwireStop(
+  main: Projection,
+  tries: readonly TryProjection[],
+  pastTripwire: boolean,
+): string | null {
+  const pct = (p: Projection) => (p.share * 100).toFixed(2);
+  const above = [
+    ...(tripwireStops(main.share, pastTripwire)
+      ? [`${pct(main)}% of MAIN's ${main.copies} copies`]
+      : []),
+    ...tries.flatMap((t) =>
+      tripwireStops(t.projection.share, pastTripwire)
+        ? [
+            `${pct(t.projection)}% of the try ${JSON.stringify(t.name)}'s ${t.projection.copies} copies${t.leftOut.length > 0 ? " (projected without its conditions on the prior mean net)" : ""}`,
+          ]
+        : [],
+    ),
+  ];
+  return above.length === 0
+    ? null
+    : `the tripwire: ${above.join("; ")} projected unpriced, above 1% (C16): a decisions entry runs on with --past-tripwire, or ends there`;
+}
+
 export type EngineRecords = {
   readonly dir: string;
   readonly labels: Closed;
@@ -331,6 +371,7 @@ export type EngineRecords = {
   readonly removal: Closed;
   readonly tripwire: Closed;
   readonly projection: Projection;
+  readonly tries: readonly TryProjection[];
   readonly prices: Closed;
   readonly rank: Closed;
   readonly result: Closed;
@@ -475,16 +516,20 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
       "TRIPWIRE",
       "phase-tripwire.js",
       "tripwirePart",
-      tripwireParts(coin, named),
+      tripwireParts({ ...coin, tries: [...o.tries] }, named),
       coinContext,
     ),
   );
   const projection = tripwireOf(tripwire.dir, tripwire.record, o.markMinutes);
-  o.log("the tripwire", { markMinutes: o.markMinutes, ...projection });
-  if (tripwireStops(projection.share, o.pastTripwire))
-    throw new CheckFailed(
-      `the tripwire: ${(projection.share * 100).toFixed(2)}% of MAIN's ${projection.copies} copies projected unpriced, above 1% (C16): a decisions entry runs on with --past-tripwire, or ends there`,
-    );
+  const tries = o.tries.map((s, k): TryProjection => ({
+    name: s.name,
+    line: s.line,
+    leftOut: s.conditions.filter(readsPrice),
+    projection: tripwireOf(tripwire.dir, tripwire.record, o.markMinutes, k),
+  }));
+  o.log("the tripwire", { markMinutes: o.markMinutes, ...projection, tries });
+  const stop = tripwireStop(projection, tries, o.pastTripwire);
+  if (stop !== null) throw new CheckFailed(stop);
 
   const prices = await run(
     phase(
@@ -544,6 +589,7 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     removal,
     tripwire,
     projection,
+    tries,
     prices,
     rank,
     result,
@@ -687,7 +733,7 @@ export function stepCounts(o: {
       copies: byLine("copies"),
       keys: sum("keys"),
     },
-    tripwire: e.projection,
+    tripwire: { look: e.projection, tries: e.tries },
     stores: o.stores.map((s) => ({
       store: s.id,
       range: s.manifest.range,
@@ -925,6 +971,7 @@ export async function step1(o: Step1): Promise<void> {
       historyFills: laneHistoryFills(o.heapGb),
     },
     markMinutes: values.markMinutes,
+    tries: [],
     funding: {
       store: o.funding,
       list: FUNDING_FILE,
