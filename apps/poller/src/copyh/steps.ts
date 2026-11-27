@@ -48,7 +48,11 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 import { z } from "zod";
-import { LIB_EXITS_SHA256, loadResearch } from "../paper/research.js";
+import {
+  LIB_EXITS_SHA256,
+  loadResearch,
+  type Research,
+} from "../paper/research.js";
 import { columnOf } from "./accounts.js";
 import { RehearsalRecord } from "./closure.js";
 import { CoinsFile } from "./coins.js";
@@ -57,6 +61,7 @@ import {
   EXITS_MAX,
   HISTORY_FILLS_MAX,
   LABEL_FILLS_MAX,
+  REHEARSAL_WINDOW,
   SETTLEMENT_MARK_MINUTES,
   WORKER_HEAP_CAP_GB,
 } from "./design.js";
@@ -85,10 +90,25 @@ import {
   type ReadingContext,
   type ReadingInputs,
 } from "./phase-labels.js";
-import { pricesParts } from "./phase-prices.js";
-import { rankParts } from "./phase-rank.js";
+import {
+  byId,
+  coinPositions,
+  positionOf,
+  pricesParts,
+  type Position,
+} from "./phase-prices.js";
+import {
+  Rank,
+  mainAccountsOf,
+  rankInputOf,
+  rankOf,
+  rankParts,
+  tablesOf,
+  type RankInput,
+} from "./phase-rank.js";
 import { removalParts } from "./phase-removal.js";
 import {
+  linesOf,
   positionLines,
   reportFrom,
   resultOf,
@@ -158,8 +178,19 @@ export const StoreRecord = Manifest.omit({
   code: true,
 });
 export type StoreRecord = z.infer<typeof StoreRecord>;
-/** `copyh/rehearsal.json` as step 1 reads it: the store's closure (closure.ts) and E's store; its other fields are the rehearsal's counts. */
-export const RehearsalFile = RehearsalRecord.extend({ store: StoreRecord });
+/** What the rehearsal's priced fortnight gives (C15 (c) 10, `fortnightOf`): the SHA-256 of its copies' lines as `positions.jsonl.gz` writes them, by entry id, their count, the copies by line and the legs by kind (a settled copy's last leg "settled"). */
+export const Fortnight = z.object({
+  sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  lines: z.number().int().nonnegative(),
+  byLine: z.record(z.string(), z.number()),
+  legs: z.record(z.string(), z.number()),
+});
+export type Fortnight = z.infer<typeof Fortnight>;
+/** `copyh/rehearsal.json` as step 1 reads it: the store's closure (closure.ts), E's store and the fortnight; its other fields are the rehearsal's counts. */
+export const RehearsalFile = RehearsalRecord.extend({
+  store: StoreRecord,
+  fortnight: Fortnight,
+});
 
 /** The values set before the freeze that step 1 reads (C17). */
 export type FrozenValues = {
@@ -377,16 +408,17 @@ export type EngineRecords = {
   readonly result: Closed;
 };
 
-/** The engine's phases in order, each resumed or closed by engine.ts: the labels and the build with their large lanes (one child at the heap cap, alone), the removal, C16's tripwire and its stop (exit 6 above 1% unless `--past-tripwire`), then the prices, RANK and RESULT. */
-export async function runEngine(o: EngineRun): Promise<EngineRecords> {
-  const phase = (
-    name: string,
-    module: string,
-    fn: string,
-    parts: Phase["parts"],
-    context: unknown,
-    lane = false,
-  ): Phase => ({
+/** A phase of the engine's run, in its folder (`<dir>\<name>`): a large lane's one child at the heap cap, alone. */
+function phaseOf(
+  o: EngineRun,
+  name: string,
+  module: string,
+  fn: string,
+  parts: Phase["parts"],
+  context: unknown,
+  lane = false,
+): Phase {
+  return {
     name,
     dir: path.join(o.dir, name.toLowerCase()),
     module: path.join(PACKAGE_ROOT, "dist", "copyh", module),
@@ -398,13 +430,31 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     seal: o.seal,
     budget: o.budget,
     log: o.log,
-  });
-  const run = async (p: Phase): Promise<Closed> => ({
-    dir: p.dir,
-    record: await runPhase(p),
-  });
-  const { inputs: reading, context: readingContext } = o.reading;
+  };
+}
+const closedOf = async (p: Phase): Promise<Closed> => ({
+  dir: p.dir,
+  record: await runPhase(p),
+});
 
+/** The engine's phases before any price, each resumed or closed by engine.ts. */
+export type Unpriced = {
+  readonly labels: Closed;
+  readonly labelsL: Closed | null;
+  readonly build: Closed;
+  readonly buildL: Closed | null;
+  readonly removal: Closed;
+  /** BUILD-L's folder, read by the later phases whether or not it ran. */
+  readonly largeDir: string;
+  /** BUILD's and BUILD-L's records by SHA-256, as a later part names them. */
+  readonly builds: [string, string | null];
+  /** The coins the BUILD phases hold, by iid, with coins.json's names. */
+  readonly named: readonly (readonly [iid: number, name: string])[];
+};
+
+/** The labels and the build with their large lanes (one child at the heap cap, alone), then the removal: no price. */
+export async function unpricedPhases(o: EngineRun): Promise<Unpriced> {
+  const { inputs: reading, context: readingContext } = o.reading;
   const labelsSpec = labelsParts({
     code: o.code,
     reading,
@@ -412,8 +462,9 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     fillsMax: o.limits.labelFills,
     lane: o.lanes.labelFills,
   });
-  const labels = await run(
-    phase(
+  const labels = await closedOf(
+    phaseOf(
+      o,
       "LABELS",
       "phase-labels.js",
       "labelsPart",
@@ -425,7 +476,8 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     labelsSpec,
     labelsOf(labels.dir, labels.record),
   );
-  const labelsLPhase = phase(
+  const labelsLPhase = phaseOf(
+    o,
     "LABELS-L",
     "phase-labels.js",
     "labelsLargePart",
@@ -433,8 +485,8 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     readingContext,
     true,
   );
-  const labelsL = largeLabels.length === 0 ? null : await run(labelsLPhase);
-
+  const labelsL =
+    largeLabels.length === 0 ? null : await closedOf(labelsLPhase);
   const buildSpec = buildParts({
     ...reading,
     code: o.code,
@@ -450,8 +502,8 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     labels: labels.dir,
     large: labelsLPhase.dir,
   };
-  const build = await run(
-    phase("BUILD", "phase-build.js", "buildPart", buildSpec, buildContext),
+  const build = await closedOf(
+    phaseOf(o, "BUILD", "phase-build.js", "buildPart", buildSpec, buildContext),
   );
   const largeBuild = buildLargeParts(
     buildSpec,
@@ -462,7 +514,8 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
       ]),
     ),
   );
-  const buildLPhase = phase(
+  const buildLPhase = phaseOf(
+    o,
     "BUILD-L",
     "phase-build.js",
     "buildPart",
@@ -470,7 +523,7 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     buildContext,
     true,
   );
-  const buildL = largeBuild.length === 0 ? null : await run(buildLPhase);
+  const buildL = largeBuild.length === 0 ? null : await closedOf(buildLPhase);
   const builds: [string, string | null] = [shaOf(build)!, shaOf(buildL)];
   const iids = [
     ...new Set([
@@ -484,10 +537,9 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
       throw new StoreError(`iid ${iid}: a coin coins.json does not hold`);
     return [iid, name] as const;
   });
-  const large = { build: build.dir, large: buildLPhase.dir };
-
-  const removal = await run(
-    phase(
+  const removal = await closedOf(
+    phaseOf(
+      o,
       "REMOVAL",
       "phase-removal.js",
       "removalPart",
@@ -495,28 +547,50 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
         { code: o.code, build: builds, mondays: [...o.mondays] },
         iids,
       ),
-      large,
+      { build: build.dir, large: buildLPhase.dir },
     ),
   );
-  const coin = {
-    ...reading,
-    code: o.code,
-    build: builds,
-    end: o.end,
-    funding: o.funding.sha256,
+  return {
+    labels,
+    labelsL,
+    build,
+    buildL,
+    removal,
+    largeDir: buildLPhase.dir,
+    builds,
+    named,
   };
-  const coinContext = {
-    ...readingContext,
-    ...large,
-    fundingStore: o.funding.store,
-    fundingList: o.funding.list,
-  };
-  const tripwire = await run(
-    phase(
+}
+
+/** A coin phase's inputs (TRIPWIRE, PRICES) but its coin: the reading, the builds, END and the funding list. */
+const coinInputsOf = (o: EngineRun, u: Unpriced) => ({
+  ...o.reading.inputs,
+  code: o.code,
+  build: u.builds,
+  end: o.end,
+  funding: o.funding.sha256,
+});
+/** Where a coin phase reads: the reading's stores, the builds' folders, the funding store and its list. */
+const coinContextOf = (o: EngineRun, u: Unpriced) => ({
+  ...o.reading.context,
+  build: u.build.dir,
+  large: u.largeDir,
+  fundingStore: o.funding.store,
+  fundingList: o.funding.list,
+});
+
+/** The engine's phases in order: the unpriced ones, C16's tripwire and its stop (exit 6 when any set projected is above 1%, unless `--past-tripwire`), then the prices, RANK and RESULT. */
+export async function runEngine(o: EngineRun): Promise<EngineRecords> {
+  const u = await unpricedPhases(o);
+  const coin = coinInputsOf(o, u);
+  const coinContext = coinContextOf(o, u);
+  const tripwire = await closedOf(
+    phaseOf(
+      o,
       "TRIPWIRE",
       "phase-tripwire.js",
       "tripwirePart",
-      tripwireParts({ ...coin, tries: [...o.tries] }, named),
+      tripwireParts({ ...coin, tries: [...o.tries] }, u.named),
       coinContext,
     ),
   );
@@ -531,39 +605,42 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
   const stop = tripwireStop(projection, tries, o.pastTripwire);
   if (stop !== null) throw new CheckFailed(stop);
 
-  const prices = await run(
-    phase(
+  const prices = await closedOf(
+    phaseOf(
+      o,
       "PRICES",
       "phase-prices.js",
       "pricesPart",
       pricesParts(
         {
           ...coin,
-          removal: shaOf(removal)!,
+          removal: shaOf(u.removal)!,
           mondays: [...o.mondays],
           markMinutes: o.markMinutes,
         },
-        named,
+        u.named,
       ),
-      { ...coinContext, removal: removal.dir },
+      { ...coinContext, removal: u.removal.dir },
     ),
   );
-  const rank = await run(
-    phase(
+  const rank = await closedOf(
+    phaseOf(
+      o,
       "RANK",
       "phase-rank.js",
       "rankPart",
       rankParts({
         code: o.code,
-        build: builds,
+        build: u.builds,
         prices: shaOf(prices)!,
         mondays: [...o.mondays],
       }),
-      { ...large, prices: prices.dir },
+      { build: u.build.dir, large: u.largeDir, prices: prices.dir },
     ),
   );
-  const result = await run(
-    phase(
+  const result = await closedOf(
+    phaseOf(
+      o,
       "RESULT",
       "phase-result.js",
       "resultPart",
@@ -582,11 +659,11 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
   );
   return {
     dir: o.dir,
-    labels,
-    labelsL,
-    build,
-    buildL,
-    removal,
+    labels: u.labels,
+    labelsL: u.labelsL,
+    build: u.build,
+    buildL: u.buildL,
+    removal: u.removal,
     tripwire,
     projection,
     tries,
@@ -594,6 +671,77 @@ export async function runEngine(o: EngineRun): Promise<EngineRecords> {
     rank,
     result,
   };
+}
+
+/**
+ * The rehearsal's priced fortnight (C15 (c) 10; the engine's plan, section
+ * 15), the rehearsal's and step 1's: the copies with t in a window [from,
+ * to), END its end, the run's Mondays in it, by the code that prices at
+ * step 1 — the unpriced phases as parts in `o.dir`, then each coin's
+ * positions (phase-prices.ts `coinPositions`) and RANK (`rankOf`) in this
+ * process, in memory: no file of priced copies is written (M9). Each
+ * position is held as its JSON line and parsed back as a part's reader
+ * parses it, and RANK reads them in PRICES' parts' order (the coins', then
+ * each coin's by id), so that each line is the one `positions.jsonl.gz`
+ * would hold.
+ */
+export async function fortnightOf(
+  o: EngineRun,
+  kit: Research,
+  window: readonly [number, number],
+): Promise<Fortnight> {
+  const [from, to] = window;
+  const mondays = o.mondays.filter((M) => M >= from && M < to);
+  const f: EngineRun = { ...o, end: to, stage: [from, to], mondays };
+  const u = await unpricedPhases(f);
+  const why = f.budget.stop();
+  if (why !== null)
+    throw new NotFinished(`the fortnight's prices wait: ${why}`);
+  const c = { ...coinContextOf(f, u), removal: u.removal.dir };
+  const inputs = {
+    ...coinInputsOf(f, u),
+    removal: shaOf(u.removal)!,
+    mondays,
+    markMinutes: f.markMinutes,
+  };
+  const held: { id: string; line: string }[] = [];
+  const ranked: RankInput[] = [];
+  for (const [iid, coin] of u.named)
+    for (const pos of coinPositions(kit, { ...inputs, iid, coin }, c, f.seal)) {
+      const line = JSON.stringify(pos);
+      const p = positionOf(Buffer.from(line, "utf8"));
+      held.push({ id: p.id, line });
+      ranked.push(rankInputOf(p, mondays));
+    }
+  held.sort(byId);
+  const members = [u.build, u.buildL].flatMap((x) =>
+    x === null
+      ? []
+      : x.record.parts.map(([id]) => factsOf(x.dir, x.record, id).members),
+  );
+  const rank = Rank.parse(
+    JSON.parse(
+      JSON.stringify(rankOf(mondays, mainAccountsOf(members), ranked)),
+    ),
+  );
+  function* positions(): Generator<Position> {
+    for (const h of held) yield positionOf(Buffer.from(h.line, "utf8"));
+  }
+  const hash = createHash("sha256");
+  let lines = 0;
+  const byLine: Record<string, number> = {};
+  const legs: Record<string, number> = {};
+  for (const { p, line } of linesOf(positions(), tablesOf(rank), mondays)) {
+    hash.update(`${line}\n`);
+    lines += 1;
+    for (const l of p.lines) byLine[l] = (byLine[l] ?? 0) + 1;
+    p.plan.legs.forEach((leg, k) => {
+      const kind =
+        p.plan.settled && k === p.plan.legs.length - 1 ? "settled" : leg.kind;
+      legs[kind] = (legs[kind] ?? 0) + 1;
+    });
+  }
+  return { sha256: hash.digest("hex"), lines, byLine, legs };
 }
 
 const RunFile = z.object({ seconds: z.number(), maxRssMb: z.number() });
@@ -947,7 +1095,7 @@ export async function step1(o: Step1): Promise<void> {
     log: o.log,
   });
   const mondays = mondaysOf("E");
-  const engine = await runEngine({
+  const run: EngineRun = {
     dir: path.join(look, "engine"),
     code: program,
     reading: {
@@ -990,11 +1138,25 @@ export async function step1(o: Step1): Promise<void> {
     seal: { ...o.seal, engine: "look1" },
     budget: o.budget,
     log: o.log,
-  });
+  };
+  const engine = await runEngine(run);
+  // The rehearsal's fortnight again, by this program on this store: printed beside the rehearsal's, deciding nothing (C15 (c) 10, RL7).
+  const fortnight = await fortnightOf(
+    { ...run, dir: path.join(look, "engine", "fortnight") },
+    kit,
+    REHEARSAL_WINDOW,
+  );
   // The counts and the writes are no part: they start only while the run has minutes left (C15: a run ends inside 15).
   const why = o.budget.stop();
   if (why !== null) throw new NotFinished(`step 1's writes wait: ${why}`);
-  const counts = stepCounts({ engine, stores: [store], end: END_E });
+  const counts = {
+    ...stepCounts({ engine, stores: [store], end: END_E }),
+    fortnight: {
+      ...fortnight,
+      rehearsal: rehearsal.data.fortnight.sha256,
+      equal: fortnight.sha256 === rehearsal.data.fortnight.sha256,
+    },
+  };
   const twin = path.join(look, "twin", "store", MANIFEST);
   const identity = identityOf({
     packageRoot: PACKAGE_ROOT,

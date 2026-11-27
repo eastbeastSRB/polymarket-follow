@@ -20,6 +20,9 @@
  *   result.json's, each output's identity first, the step's counts beside
  *   RESULT's prints; result.json written before the file is renamed into
  *   place and before report.json (a rename refused leaves result.json alone);
+ * - the rehearsal's priced fortnight, in memory: on the whole world's window
+ *   its lines are RESULT's positions' lines, and its folder holds only the
+ *   unpriced phases; a window before the copy holds none;
  * - the identity's lists and files by SHA-256, a missing one refused; the
  *   logs copied beside the outputs.
  */
@@ -36,6 +39,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
+import { loadResearch } from "../src/paper/research.js";
 import {
   positionLines,
   reportFrom,
@@ -54,6 +58,7 @@ import { SEALED } from "../src/copyh/seal.js";
 import {
   StoreRecord,
   copyLogs,
+  fortnightOf,
   heldStores,
   identityOf,
   readyForStep1,
@@ -722,6 +727,48 @@ describe(
       expect(counts.build).toEqual({
         ...first.counts.build,
         largeLane: [[A, expect.any(Number) as number]],
+      });
+    });
+
+    it("prices the rehearsal's fortnight in memory by the code that prices at step 1: on the whole world's window its lines are RESULT's, no file of priced copies written; a window before the copy holds none", async () => {
+      const kit = await loadResearch();
+      const r = resultOf(first.e.result.dir, first.e.result.record);
+      const dir = path.join(engineDir(), "fortnight");
+      const run = runOf(dir, {
+        markMinutes: 5,
+        pastTripwire: true,
+        lanes: NO_LANES,
+      });
+      const f = await fortnightOf(run, kit, [M1, END]);
+      const [p] = [
+        ...positionLines({
+          prices: first.e.prices,
+          rank: first.e.rank,
+          mondays: [M1, M2],
+        }),
+      ].map((l) => l.p);
+      expect(f).toEqual({
+        sha256: r.positions.sha256,
+        lines: 1,
+        byLine: { MAIN: 1, BROAD: 1, DAY: 1 },
+        legs: { [p!.plan.legs[0]!.kind]: 1 },
+      });
+      expect(p!.plan.legs).toHaveLength(1);
+      expect(readdirSync(dir).sort()).toEqual(["build", "labels", "removal"]);
+      const none = await fortnightOf(
+        runOf(path.join(engineDir(), "fortnight"), {
+          markMinutes: 5,
+          pastTripwire: true,
+          lanes: NO_LANES,
+        }),
+        kit,
+        [M1, M2],
+      );
+      expect(none).toEqual({
+        sha256: sha256(""),
+        lines: 0,
+        byLine: {},
+        legs: {},
       });
     });
 

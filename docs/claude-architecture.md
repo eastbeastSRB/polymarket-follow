@@ -1274,7 +1274,16 @@ rehearsal's fortnight and the tests' worlds. Built so far, a module a rule:
   `report.json` (RESULT's prints and the counts); then the logs copied to
   `look1\logs\` (`copyLogs`). Every output's identity (`identityOf`): the
   program, the freeze, the kit, lib-exits, `copyh/`'s seven lists and the
-  step's files by SHA-256, the shared files, the heap, Node.
+  step's files by SHA-256, the shared files, the heap, Node. The
+  rehearsal's priced fortnight (`fortnightOf`, C15 (c) 10), the
+  rehearsal's and step 1's: the copies with t in [2025-06-30, 2025-07-14),
+  END its end, the unpriced phases as parts (`unpricedPhases`, the head of
+  `runEngine`), then each coin's positions and RANK in the parent, in
+  memory, no file of priced copies written; its output the SHA-256 of the
+  lines `positions.jsonl.gz` would hold, by entry id, their count, the
+  copies by line and the legs by kind. Step 1 runs it on its own store in
+  `look1\engine\fortnight` and prints it beside `copyh/rehearsal.json`'s
+  (its `fortnight`), and whether they are equal, deciding nothing.
 - `tries.ts` (C14): a try's form, `copyh/tries.json` (each try its line,
   MAIN or BROAD, its conditions on C14's covariates by name, one of `>=`,
   `>`, `<=`, `<`, `=` and `one of`, and why; at most 3 rounds of 8, 6 and 4

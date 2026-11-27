@@ -203,11 +203,20 @@ export const rankParts = (o: RankInputs): PartSpec[] => [
   { id: "rank", inputs: o },
 ];
 
-/** A closed RANK phase's tables: RANK's accounts by Monday and the prior mean net by trader and Monday, each pair RANK holds. */
-export function rankTablesOf(dir: string, record: PhaseRecord) {
-  const r = Rank.parse(
-    JSON.parse(partBytes(dir, record, "rank").toString("utf8")),
+/** A closed RANK phase's tables, held to its record. */
+export const rankTablesOf = (dir: string, record: PhaseRecord): RankTables =>
+  tablesOf(
+    Rank.parse(JSON.parse(partBytes(dir, record, "rank").toString("utf8"))),
   );
+
+/** RANK's tables: RANK's accounts by Monday and the prior mean net by trader and Monday, each pair RANK holds. */
+export type RankTables = {
+  readonly inRank: (addr: string, k: number) => boolean;
+  readonly prior: (addr: string, k: number) => number | null;
+};
+
+/** RANK's tables of its bytes (a closed part's, or the fortnight's in memory). */
+export function tablesOf(r: Rank): RankTables {
   const rank = new Map(r.rank.map(([k, addrs]) => [k, new Set(addrs)]));
   const prior = new Map<string, number | null>();
   for (const [addr, at] of r.prior)

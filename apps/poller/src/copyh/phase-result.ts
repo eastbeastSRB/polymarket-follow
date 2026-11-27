@@ -25,7 +25,7 @@ import { END_S, Z_LOOKS } from "./design.js";
 import type { PartFunction, PartSpec, PhaseRecord } from "./engine.js";
 import { partBytes, partLines, recordAt } from "./engine.js";
 import { positionOf, type Position } from "./phase-prices.js";
-import { rankTablesOf } from "./phase-rank.js";
+import { rankTablesOf, type RankTables } from "./phase-rank.js";
 import { printCopyOf, reportOf, type PrintCopy } from "./prints.js";
 import { StoreError } from "./run.js";
 import {
@@ -168,9 +168,21 @@ export function* positionLines(o: {
   rank: { dir: string; record: PhaseRecord };
   mondays: readonly number[];
 }): Generator<{ p: Position; line: string; rank: boolean }> {
-  const t = rankTablesOf(o.rank.dir, o.rank.record);
-  for (const p of positionsInOrder(o.prices.dir, o.prices.record)) {
-    const k = o.mondays.indexOf(p.M);
+  yield* linesOf(
+    positionsInOrder(o.prices.dir, o.prices.record),
+    rankTablesOf(o.rank.dir, o.rank.record),
+    o.mondays,
+  );
+}
+
+/** Positions' lines, in the positions' order, with RANK's tables: a closed PRICES phase's, or the fortnight's in memory (steps.ts `fortnightOf`). */
+export function* linesOf(
+  positions: Iterable<Position>,
+  t: RankTables,
+  mondays: readonly number[],
+): Generator<{ p: Position; line: string; rank: boolean }> {
+  for (const p of positions) {
+    const k = mondays.indexOf(p.M);
     if (k < 0)
       throw new StoreError(`${p.id}: a copy of a Monday not the step's`);
     // An account in RANK at M is in MAIN there, so each of its copies of M is MAIN's (C7).

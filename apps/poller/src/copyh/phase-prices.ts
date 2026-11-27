@@ -45,6 +45,7 @@ import { moneyOf, planOf, stopUntil } from "./money.js";
 import { Copy, coinCopies } from "./phase-build.js";
 import { CoinContext, CoinInputs, coinReadingOf } from "./phase-coin.js";
 import { removalTablesOf } from "./phase-removal.js";
+import type { Seal } from "./seal.js";
 import { settingsOf } from "./setting.js";
 
 const SHA256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -57,6 +58,7 @@ export const PricesInputs = CoinInputs.extend({
 });
 export type PricesInputs = z.infer<typeof PricesInputs>;
 export const PricesContext = CoinContext.extend({ removal: z.string() });
+export type PricesContext = z.infer<typeof PricesContext>;
 
 /** The kit's reason for d when the entry has no mark (C11). */
 export const ENTRY_UNPRICED = "entry unpriced";
@@ -270,23 +272,36 @@ export function priceCoin(
 export const byId = (a: { id: string }, b: { id: string }): number =>
   a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
-/** PRICES's function (engine.ts `PartFunction`): the coin's positions lines. */
-export const pricesPart: PartFunction = (inputs, ctx) => {
-  const i = PricesInputs.parse(inputs);
-  const c = PricesContext.parse(ctx.context);
-  const { coin, rows } = coinReadingOf(c, i, ctx.seal);
+/** A coin's positions, BUILD's and BUILD-L's copies priced together by id (a tie in the kit's order): PRICES' part, and the rehearsal's fortnight in memory (steps.ts `fortnightOf`). */
+export function coinPositions(
+  kit: Research,
+  i: PricesInputs,
+  c: PricesContext,
+  seal: Seal,
+): Position[] {
+  const { coin, rows } = coinReadingOf(c, i, seal);
   const copies = coinCopies(c.build, recordAt(c.build, i.build[0]), i.iid);
   if (i.build[1] !== null)
     for (const x of coinCopies(c.large, recordAt(c.large, i.build[1]), i.iid))
       copies.push(x);
   copies.sort(byId);
-  const positions = priceCoin(ctx.kit, copies, {
+  return priceCoin(kit, copies, {
     coin,
     rows,
     tables: removalTablesOf(c.removal, recordAt(c.removal, i.removal), i.iid),
     mondays: i.mondays,
     markMinutes: i.markMinutes,
   });
+}
+
+/** PRICES's function (engine.ts `PartFunction`): the coin's positions lines. */
+export const pricesPart: PartFunction = (inputs, ctx) => {
+  const positions = coinPositions(
+    ctx.kit,
+    PricesInputs.parse(inputs),
+    PricesContext.parse(ctx.context),
+    ctx.seal,
+  );
   const lines: Buffer[] = [];
   for (const pos of positions)
     lines.push(Buffer.from(`${JSON.stringify(pos)}\n`, "utf8"));
