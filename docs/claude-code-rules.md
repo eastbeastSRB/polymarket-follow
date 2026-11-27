@@ -313,6 +313,10 @@ The supervisor owns this file (CLAUDE.md, WHO EDITS WHICH DOC).
   (COPYH-FUNDING, 2026-11-25).
 - **A breaks round counts a run where no test passed or failed as invalid,
   never as a kill** (COPYH-FUNDING, 2026-11-25).
+- **A breaks `-t` pattern includes the test that makes its describe's shared
+  state,** as an alternative in the regex ("stops at the tripwire above
+  1%|fortnight"); a control run of each pattern at HEAD, with no break,
+  catches one that does not (COPYH-BREAKS-2, 2026-11-27).
 - **A Task Scheduler time literal is local:** `-At 'HH:MM'` is read as local
   time when the task is registered and stored in UTC, so a registration made
   in summer time lands an hour earlier in UTC; compute the trigger from the
